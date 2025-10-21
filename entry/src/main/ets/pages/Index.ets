@@ -51,7 +51,7 @@ struct WebViewWithButtons {
           Image(this.isLoading ? $r('app.media.close') : $r('app.media.refresh'))
             .width(24)
             .height(24)
-            .fillColor(this.isLoading ? '#ff3b30' : Color.White) // 加载中时图标变红色
+            .fillColor(this.isLoading ? '#ff3b30' : Color.White)
         }
         .onClick(() => {
           if (this.isLoading) {
@@ -122,7 +122,7 @@ struct WebViewWithButtons {
           .stateEffect(true)
         }
       }
-      .position({ x: '90%', y: '80%' })
+      .position({ x: '83%', y: '80%' })
       .alignItems(HorizontalAlign.End)
     }
     .width('100%')

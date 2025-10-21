@@ -1,6 +1,20 @@
 {
   "app": {
-    "signingConfigs": [],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/Key.p12",
+          "storePassword": "0000001EDEB8B5589C8AB4D57EFA56EECF69289438AAEA65463AF901C1B42C7CA3285D0ADE464BB7B09E7BA54EEC",
+          "keyAlias": "key",
+          "keyPassword": "0000001EC34D38FACF30B73CDC4215C444816BC5119E6C0C562EA3B4F5C6E2F7D5BEEE4CE3342673657EC31B67D7",
+          "signAlg": "SHA256withECDSA",
+          "profile": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/dashboardRelease.p7b",
+          "certpath": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/dashboard.cer"
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",
