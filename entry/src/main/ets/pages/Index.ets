@@ -1,6 +1,5 @@
 import { webview } from '@kit.ArkWeb';
 import prompt from '@ohos.prompt';
-
 @Entry
 @Component
 struct WebViewWithButtons {
@@ -122,7 +121,7 @@ struct WebViewWithButtons {
           .stateEffect(true)
         }
       }
-      .position({ x: '83%', y: '80%' })
+      .position({ x: '90%', y: '80%' })
       .alignItems(HorizontalAlign.End)
     }
     .width('100%')
