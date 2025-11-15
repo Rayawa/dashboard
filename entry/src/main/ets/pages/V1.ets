@@ -2,9 +2,9 @@ import { webview } from '@kit.ArkWeb';
 import prompt from '@ohos.prompt';
 @Entry
 @Component
-struct dashboardV2 {
+export struct V1 {
   private webController: webview.WebviewController = new webview.WebviewController();
-  @State url: string = 'https://hmos.txit.top/dashboard';
+  @State url: string = 'http://shenjack.top:10003/dashboard';
   @State isLoading: boolean = false;
   @State progress: number = 0;
   @State showBackToTop: boolean = false;
@@ -114,32 +114,30 @@ struct dashboardV2 {
         .stateEffect(true)
 
         // 回到顶部按钮（滚动时显示）
-        if (this.showBackToTop) {
-          Button() {
-            Image($r('app.media.arrow_up'))
-              .width(24)
-              .height(24)
-              .fillColor(Color.White)
-          }
-          .onClick(() => {
-            this.webController.scrollTo(0, 0);
-            prompt.showToast({
-              message: '回到顶部',
-              duration: 500
-            });
-          })
-          .type(ButtonType.Circle)
-          .backgroundColor($r('sys.color.point_color_checked'))
-          .width(50)
-          .height(50)
-          .shadow({
-            radius: 4,
-            color: '#182431',
-            offsetX: 2,
-            offsetY: 4
-          })
-          .stateEffect(true)
+        Button() {
+          Image($r('app.media.arrow_up'))
+            .width(24)
+            .height(24)
+            .fillColor(Color.White)
         }
+        .onClick(() => {
+          this.webController.scrollTo(0, 0);
+          prompt.showToast({
+            message: '回到顶部',
+            duration: 500
+          });
+        })
+        .type(ButtonType.Circle)
+        .backgroundColor($r('sys.color.point_color_checked'))
+        .width(50)
+        .height(50)
+        .shadow({
+          radius: 4,
+          color: '#182431',
+          offsetX: 2,
+          offsetY: 4
+        })
+        .stateEffect(true)
       }
       .position({ x: 20, y: '70%' })
       .alignItems(HorizontalAlign.Start)
