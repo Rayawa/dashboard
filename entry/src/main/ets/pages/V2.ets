@@ -15,6 +15,7 @@ export struct V2 {
         src: this.url,
         controller: this.webController
       })
+        .domStorageAccess(true)
         .onPageBegin(() => {
           this.isLoading = true;
           this.progress = 10;
@@ -82,7 +83,7 @@ export struct V2 {
             });
           } else {
             this.webController.refresh();
-            this.isLoading = true; // 开始加载
+            this.isLoading = true;
             prompt.showToast({
               message: '刷新中...',
               duration: 1000
@@ -108,30 +109,30 @@ export struct V2 {
         .margin({ bottom: 12 })
         .stateEffect(true)
 
-          Button() {
-            Image($r('app.media.arrow_up'))
-              .width(24)
-              .height(24)
-              .fillColor(Color.White)
-          }
-          .onClick(() => {
-            this.webController.scrollTo(0, 0);
-            prompt.showToast({
-              message: '回到顶部',
-              duration: 500
-            });
-          })
-          .type(ButtonType.Circle)
-          .backgroundColor($r('sys.color.point_color_checked'))
-          .width(50)
-          .height(50)
-          .shadow({
-            radius: 4,
-            color: '#182431',
-            offsetX: 2,
-            offsetY: 4
-          })
-          .stateEffect(true)
+        Button() {
+          Image($r('app.media.arrow_up'))
+            .width(24)
+            .height(24)
+            .fillColor(Color.White)
+        }
+        .onClick(() => {
+          this.webController.scrollTo(0, 0);
+          prompt.showToast({
+            message: '回到顶部',
+            duration: 500
+          });
+        })
+        .type(ButtonType.Circle)
+        .backgroundColor($r('sys.color.point_color_checked'))
+        .width(50)
+        .height(50)
+        .shadow({
+          radius: 4,
+          color: '#182431',
+          offsetX: 2,
+          offsetY: 4
+        })
+        .stateEffect(true)
       }
       .position({ x: 20, y: '70%' })
       .alignItems(HorizontalAlign.Start)

@@ -33,6 +33,7 @@ struct tab {
     }) {
       TabContent() {V1()}.tabBar(this.TabBuilder('V1', 0, $r('app.media.V1_selected'), $r('app.media.V1')))
       TabContent() {V2()}.tabBar(this.TabBuilder('V2', 1, $r('app.media.V2_selected'), $r('app.media.V2')))
+     // TabContent() {V1()}.tabBar(this.TabBuilder('V1', 0, $r('app.media.V1_selected'), $r('app.media.V1')))
     }
     .width('100%')
     .backgroundColor(Color.White)

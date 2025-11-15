@@ -15,6 +15,7 @@ export struct V1 {
         src: this.url,
         controller: this.webController
       })
+        .domStorageAccess(true)
         .onPageBegin(() => {
           this.isLoading = true;
           this.progress = 10;
