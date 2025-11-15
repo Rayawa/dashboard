@@ -1,4 +1,3 @@
-// WebViewButtons.ets
 import { webview } from '@kit.ArkWeb';
 import prompt from '@ohos.prompt';
 
@@ -7,7 +6,6 @@ export struct WebViewButtons {
   @Link isLoading: boolean
   @Link showBackToTop: boolean
 
-  // 使用回调函数来处理按钮点击事件
   @Prop onBack: () => void
   @Prop onRefresh: () => void
   @Prop onStop: () => void

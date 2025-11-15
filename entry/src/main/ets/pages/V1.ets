@@ -32,7 +32,6 @@ export struct V1 {
         .width('100%')
         .height('100%')
 
-      // 顶部进度条
       if (this.isLoading) {
         Progress({ value: this.progress, total: 100 })
           .width('100%')
@@ -40,17 +39,14 @@ export struct V1 {
           .color($r('sys.color.point_color_checked'))
       }
 
-      // 右下角按钮组
       Column() {
-        // 网页返回按钮（常驻显示）
         Button() {
-          Image($r('app.media.arrow_back'))  // 使用返回图标
+          Image($r('app.media.arrow_back'))
             .width(24)
             .height(24)
             .fillColor(Color.White)
         }
         .onClick(() => {
-          // 执行网页后退操作
           this.webController.backward();
           prompt.showToast({
             message: '返回上一页',
@@ -58,7 +54,7 @@ export struct V1 {
           });
         })
         .type(ButtonType.Circle)
-        .backgroundColor('#ffffffff')  // 使用绿色区分功能
+        .backgroundColor('#ffffffff')
         .width(50)
         .height(50)
         .shadow({
@@ -70,7 +66,6 @@ export struct V1 {
         .margin({ bottom: 12 })
         .stateEffect(true)
 
-        // 刷新/停止加载按钮
         Button() {
           Image(this.isLoading ? $r('app.media.close') : $r('app.media.refresh'))
             .width(24)
@@ -87,7 +82,7 @@ export struct V1 {
             });
           } else {
             this.webController.refresh();
-            this.isLoading = true; // 开始加载
+            this.isLoading = true;
             prompt.showToast({
               message: '刷新中...',
               duration: 1000
@@ -113,7 +108,6 @@ export struct V1 {
         .margin({ bottom: 12 })
         .stateEffect(true)
 
-        // 回到顶部按钮（滚动时显示）
         Button() {
           Image($r('app.media.arrow_up'))
             .width(24)
