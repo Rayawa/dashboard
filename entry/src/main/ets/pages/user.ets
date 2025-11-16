@@ -23,11 +23,11 @@ export struct user {
           .width('90%')
           .justifyContent(FlexAlign.SpaceBetween)
 
-          Divider().margin(5).width('75%')
+          Divider().margin(5).width('90%')
           Row() {
             Row(){
               Image($r('app.media.api')).height(25).width(25)
-              Text('API文档').margin({ left: 6 }).fontSize(20)
+              Text('API文档').margin({ left: 7 }).fontSize(20)
             }
             Image($r('app.media.right')).height(25).width(25)
           }
@@ -36,11 +36,11 @@ export struct user {
           .width('90%')
           .justifyContent(FlexAlign.SpaceBetween)
 
-          Divider().margin(5).width('85%')
+          Divider().margin(5).width('90%')
           Row() {
             Row(){
               Image($r('app.media.contact')).height(25).width(25)
-              Text('联系我们').margin({ left: 6 }).fontSize(20)
+              Text('联系我们').margin({ left: 7 }).fontSize(20)
             }
             Image($r('app.media.right')).height(25).width(25)
           }
@@ -58,7 +58,7 @@ export struct user {
           Row() {
             Row(){
               Image($r('app.media.settings')).height(25).width(25)
-              Text('设置').margin({ left: 6 }).fontSize(20)
+              Text('设置').margin({ left: 7 }).fontSize(20)
             }
             Image($r('app.media.right')).height(30).width(30)
           }
