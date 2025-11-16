@@ -60,6 +60,15 @@ export struct V1 {
             }
           }, interval);
         })
+
+      MenuItem({
+        startIcon: $r('app.media.switch'),
+        content: "切换V2"
+      })
+        .onClick(() => {
+          router.back();
+          prompt.showToast({ message: '切换V2', duration: 500 });
+        })
     }
   }
 
@@ -107,10 +116,10 @@ export struct V1 {
             .fontWeight(FontWeight.Bold)
             .margin({ left: 15 })
           Row() {
-            Image($r('app.media.switch'))
+            Image($r('app.media.user'))
               .height(24).width(24)
               .margin({ right: 30 })
-              .onClick(() => router.back())
+              .onClick(() => router.pushUrl({ url: 'pages/user' }))
             Image($r('app.media.menu'))
               .height(24).width(24)
               .margin({ right: 30 })
@@ -125,7 +134,7 @@ export struct V1 {
           .width('100%')
           .height(0.5)
           .fill("#a6d5d5d5")
-          .position({ x: 0, y: 77 })
+          .position({ x: 0, y: 78 })
 
       }
       .backgroundBlurStyle(BlurStyle.Thin)
@@ -136,7 +145,7 @@ export struct V1 {
         Progress({ value: this.progress, total: 100 })
           .width('100%')
           .height(3)
-          .position({ x: 0, y: 78 })
+          .position({ x: 0, y: 79 })
       }
     }
     .width('100%')
