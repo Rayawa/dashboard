@@ -1,5 +1,11 @@
 {
   "src": [
-    "pages/Index"
+    "pages/IndexV1",
+    "pages/Index",
+    "pages/user",
+    "pages/user/log",
+    "pages/user/contact",
+    "pages/user/api",
+    "pages/user/settings"
   ]
 }
