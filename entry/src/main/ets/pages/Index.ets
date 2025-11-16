@@ -1,5 +1,7 @@
 import {V1} from '../pages/V1'
 import {V2} from '../pages/V2'
+import {blurTry} from '../pages/blurtry'
+
 @Extend(Text)
 function barStyle(color:Color){
   .backgroundColor(color).width('100%').height('100%').fontColor(Color.White)
@@ -33,6 +35,7 @@ struct tab {
     }) {
       TabContent() {V2()}.tabBar(this.TabBuilder('V2', 0, $r('app.media.V2_selected'), $r('app.media.V2')))
       TabContent() {V1()}.tabBar(this.TabBuilder('V1', 1, $r('app.media.V1_selected'), $r('app.media.V1')))
+      TabContent() {blurTry()}.tabBar(this.TabBuilder('blurTry', 2, $r('app.media.V1_selected'), $r('app.media.V1')))
     }
     .width('100%')
     .backgroundColor(Color.White)

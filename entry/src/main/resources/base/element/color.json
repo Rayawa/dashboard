@@ -3,6 +3,39 @@
     {
       "name": "start_window_background",
       "value": "#FFFFFF"
+    },
+    {
+      "name": "white_90",
+      "value": "#FFFFFFE6"
+    },
+    {
+      "name": "white_80",
+      "value": "#FFFFFFCC"
+    },
+    {
+      "name": "white_70",
+      "value": "#FFFFFFB2"
+    },
+    {
+      "name": "white_56",
+      "value": "#FFFFFF8F"
+    },
+    {
+      "name": "white_40",
+      "value": "#FFFFFF66"
+    },
+    {
+      "name": "white_25",
+      "value": "#FFFFFF40"
+    },
+    {
+      "name": "white_10",
+      "value": "#FFFFFF1A"
+    },
+    {
+      "name": "white_0",
+      "value": "#FFFFFF00"
     }
+
   ]
 }
