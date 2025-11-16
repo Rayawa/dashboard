@@ -1,8 +1,6 @@
 {
   "src": [
-    "pages/Index",
-    "pages/V1",
-    "pages/blurtry",
-    "pages/V2"
+    "pages/IndexV1",
+    "pages/Index"
   ]
 }
