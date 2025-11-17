@@ -109,9 +109,8 @@ export struct V2 {
         Column() {
           Text('\n').fontSize(14)
         }
-
         Row() {
-          Text('Gallery Dashboard')
+          Text('应用看板')
             .fontSize(21)
             .fontWeight(FontWeight.Bold)
             .margin({ left: 15 })

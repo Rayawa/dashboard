@@ -6,6 +6,6 @@
     "pages/user/log",
     "pages/user/contact",
     "pages/user/api",
-    "pages/user/settings"
+    "pages/user/about"
   ]
 }

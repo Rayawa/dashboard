@@ -58,11 +58,11 @@ export struct user {
           Row() {
             Row(){
               Image($r('app.media.settings')).height(25).width(25)
-              Text('设置').margin({ left: 7 }).fontSize(20)
+              Text('关于').margin({ left: 7 }).fontSize(20)
             }
             Image($r('app.media.right')).height(30).width(30)
           }
-          .onClick(() => router.pushUrl({ url: 'pages/user/settings' }))
+          .onClick(() => router.pushUrl({ url: 'pages/user/about' }))
           .height(60)
           .width('90%')
           .justifyContent(FlexAlign.SpaceBetween)
