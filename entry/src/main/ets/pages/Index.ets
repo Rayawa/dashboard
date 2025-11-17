@@ -39,7 +39,7 @@ export struct V2 {
         .onClick(() => {
           prompt.showToast({ message: '回到顶部', duration: 500 });
           const duration = 500;
-          const frames = 120;
+          const frames = 60;
           const interval = duration / frames;
 
           const startY = this.scrollY;
@@ -76,7 +76,6 @@ export struct V2 {
 
   @State url: string = 'https://hmos.txit.top/dashboard';
   @State mode: WebDarkMode = WebDarkMode.Auto;
-  @State access: boolean = true;
   @State isLoading: boolean = false;
   @State progress: number = 0;
   @State scrollY: number = 0;
@@ -89,6 +88,7 @@ export struct V2 {
         Column()
           .width('100%')
           .height(Math.max(this.NAV_HEIGHT - this.scrollY, 0))
+          .backgroundColor("#EEF6FE")
 
         Web({
           src: this.url,
@@ -96,7 +96,7 @@ export struct V2 {
         })
           .domStorageAccess(true)
           .darkMode(this.mode)
-          .forceDarkAccess(this.access)
+          .forceDarkAccess(true)
           .width('100%')
           .height('100%')
           .onPageBegin(() => this.isLoading = true)
@@ -144,7 +144,7 @@ export struct V2 {
         Progress({ value: this.progress, total: 100 })
           .width('100%')
           .height(3)
-          .position({ x: 0, y: 79 })
+          .position({ x: 0, y: 78 })
       }
     }
     .width('100%')
