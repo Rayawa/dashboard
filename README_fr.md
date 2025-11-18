@@ -1,6 +1,6 @@
 # Tableau de Bord d'Application (Gallery Dashboard)
 
-### [README Anglais](https://github.com/Rayawa/dashboard/master/README_en.md) | [中文README](https://github.com/Rayawa/dashboard/master/README.md)
+### [README Anglais](README_en.md) | [中文README](README.md)
 
 Ce projet implémente une page de tableau de bord embarqué pour mobile avec barre de navigation, contrôles de menu, état de chargement de page et animations de retour en haut, basé sur ArkTS et ArkWeb WebView.
 
