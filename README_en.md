@@ -1,6 +1,6 @@
 # Application Dashboard (Gallery Dashboard)
 
-### [中文README](https://github.com/Rayawa/dashboard/master/README.md) | [French README](https://github.com/Rayawa/dashboard/master/README_fr.md)
+### [中文README](README.md) | [French README](README_fr.md)
 
 This project implements a mobile embedded dashboard page with navigation bar, menu controls, page loading status, and back-to-top animations based on ArkTS and ArkWeb WebView.
 
