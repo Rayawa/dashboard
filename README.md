@@ -1,6 +1,6 @@
 # 应用看板 (Gallery Dashboard)
 
-### [English README](https://github.com/Rayawa/dashboard/master/README_en.md) | [README Français](https://github.com/Rayawa/dashboard/master/README_fr.md)
+### [English README](README_en.md) | [README Français](README_fr.md)
 
 该项目基于 ArkTS 与 ArkWeb WebView 实现了一个带导航栏、菜单控制、页面加载状态与回到顶部动画的移动端嵌入式 Dashboard 页面。
 
