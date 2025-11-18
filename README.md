@@ -1,8 +1,8 @@
-# Dashboard (ArkTS + ArkWeb)
+# 应用看板 (Gallery Dashboard)
 
-该项目基于 ArkTS 与 ArkWeb WebView
-实现了一个带导航栏、菜单控制、页面加载状态与回到顶部动画的移动端嵌入式
-Dashboard 页面。
+### [English README](https://github.com/Rayawa/dashboard/master/README_en.md) | [French README](https://github.com/Rayawa/dashboard/master/README_fr.md)
+
+该项目基于 ArkTS 与 ArkWeb WebView 实现了一个带导航栏、菜单控制、页面加载状态与回到顶部动画的移动端嵌入式 Dashboard 页面。
 
 核心功能包括： - WebView 页面加载、刷新、停止加载、返回 -
 自定义导航栏（标题 + 用户入口 + 菜单按钮） -
@@ -10,18 +10,24 @@ Dashboard 页面。
 页面加载进度条 - 滚动监听与回到顶部的动画效果 - 深色模式控制 - DOM
 存储授权与 WebView 相关配置
 
+## ArkWeb内网站：[V2站](https://hmos.txit.top/dashboard) ｜ [V1站](http://shenjack.top:10003/dashboard)
+鸣谢：[shenjack](https://github.com/shenjackyuanjie)、[2b2ttianxiu]()
+
 ## 项目结构摘要
 
-主要页面文件：
+主要页面文件：`entry/src/main/ets/pages/Index.ets`
 
-    entry/src/main/ets/pages/Index.ets
+资源文件：`AppScope/resources/base/media` | `AppScope/resources/dark/media`（深色模式）
+
+    
 
 核心组件：
 
 -   V2：Dashboard 主页面组件
--   WebviewController：用于控制 WebView
-    的行为（刷新、停止、滚动、导航等）
--   自定义 Menu()：绑定到导航栏右侧菜单按钮
+-   WebviewController：用于控制ArkWeb行为为（刷新、停止、滚动、导航等）
+-   TopNavBar：提供全局统一的导航栏视觉样式与功能，在高斯模糊之上显示页面标题，我的按钮和菜单栏。在保留全局功能的情况下增加页面沉浸感与美感。
+-   Menu：TopNavBar的菜单栏统一管理组件，使用.bindMenu(this.Menu)调用，便于维护与增删内容。
+
 
 ## 功能说明
 
@@ -65,13 +71,9 @@ NAV_HEIGHT：导航栏高度
 
 ## 回到顶部动画逻辑
 
-基于 cubic ease-out：
-
 easing = 1 - (1 - progress)\^3\
 newY = startY \* (1 - easing)
 
 60 帧动画，每帧 8.33ms。
 
-## License
 
-MIT
