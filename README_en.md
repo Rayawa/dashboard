@@ -14,7 +14,7 @@ Core features include:
 - DOM storage authorization and WebView related configurations
 
 ## ArkWeb Internal Sites: [V2 Site](https://hmos.txit.top/dashboard) | [V1 Site](http://shenjack.top:10003/dashboard)
-Acknowledgments: [shenjack](https://github.com/shenjackyuanjie), [2b2ttianxiu]()
+Acknowledgments: [shenjack](https://github.com/shenjackyuanjie), [2b2ttianxiu](https://github.com/tianxiu2b2t)
 
 ## Project Structure Summary
 
