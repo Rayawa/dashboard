@@ -14,7 +14,7 @@ Les fonctionnalités principales incluent :
 - Autorisation du stockage DOM et configurations liées au WebView
 
 ## Sites Internes ArkWeb : [Site V2](https://hmos.txit.top/dashboard) | [Site V1](http://shenjack.top:10003/dashboard)
-Remerciements : [shenjack](https://github.com/shenjackyuanjie), [2b2ttianxiu]()
+Remerciements : [shenjack](https://github.com/shenjackyuanjie), [2b2ttianxiu](https://github.com/tianxiu2b2t)
 
 ## Résumé de la Structure du Projet
 
