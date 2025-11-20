@@ -11,7 +11,7 @@
 存储授权与 WebView 相关配置
 
 ## ArkWeb内网站：[V2站](https://hmos.txit.top/dashboard) ｜ [V1站](http://shenjack.top:10003/dashboard)
-鸣谢：[shenjack](https://github.com/shenjackyuanjie)、[2b2ttianxiu]()
+鸣谢：[shenjack](https://github.com/shenjackyuanjie)、[2b2ttianxiu](https://github.com/tianxiu2b2t)
 
 ## 项目结构摘要
 
