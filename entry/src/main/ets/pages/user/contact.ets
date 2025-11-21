@@ -81,7 +81,7 @@ export struct contact {
   @State progress: number = 0;
   @State scrollY: number = 0;
 
-  private readonly NAV_HEIGHT: number = 70;
+  private readonly NAV_HEIGHT: number = 40;
 
   build() {
     Stack() {
