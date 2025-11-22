@@ -1,7 +1,7 @@
 import { webview } from "@kit.ArkWeb";
 import { router, prompt } from "@kit.ArkUI";
 import window from '@ohos.window';
-
+//still to fix: 状态栏
 @Entry
 @Component
 export struct V2 {
