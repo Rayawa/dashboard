@@ -4,7 +4,7 @@ import window from '@ohos.window';
 
 @Entry
 @Component
-export struct V1 {
+struct V1 {
   @Builder
   Menu() {
     MenuItemGroup() {

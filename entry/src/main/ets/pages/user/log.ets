@@ -3,7 +3,7 @@ import { router, prompt } from "@kit.ArkUI";
 
 @Entry
 @Component
-export struct log {
+struct log {
   @Builder
   Menu() {
     MenuItemGroup() {

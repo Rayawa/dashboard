@@ -9,7 +9,7 @@ interface GeneratedObjectLiteralInterface_1 {
 
 @Entry
 @Component
-export struct about {
+struct about {
   @State isDialogShow: boolean = false; // 控制对话框显示
 
   build() {

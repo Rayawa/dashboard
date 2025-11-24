@@ -4,7 +4,7 @@ import window from '@ohos.window';
 //still to fix: 状态栏
 @Entry
 @Component
-export struct V2 {
+struct V2 {
   @Builder
   Menu() {
     MenuItemGroup() {

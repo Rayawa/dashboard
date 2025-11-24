@@ -2,7 +2,7 @@ import { router } from "@kit.ArkUI"
 
 @Entry
 @Component
-export struct user {
+struct user {
   build() {
     Stack() {
       Column() {
