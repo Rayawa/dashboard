@@ -1,6 +1,7 @@
 import { webview } from "@kit.ArkWeb";
 import { router, prompt } from "@kit.ArkUI";
 import window from '@ohos.window';
+
 //still to fix: 状态栏
 @Entry
 @Component
@@ -56,6 +57,9 @@ struct V2 {
 
   private win: window.Window | null = null;
   async aboutToAppear() {
+    const customUA = webview.WebviewController.getDefaultUserAgent()
+      + " Hm_dashboard" ;
+    webview.WebviewController.setAppCustomUserAgent(customUA);
     this.win = await window.getLastWindow(getContext());
     const isDark = this.mode === WebDarkMode.On;
     this.win.setWindowSystemBarProperties({

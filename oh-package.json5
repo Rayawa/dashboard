@@ -1,6 +1,6 @@
 {
   "modelVersion": "6.0.0",
-  "description": "Please describe the basic information.",
+  "description": "鸿蒙应用市场数据看板",
   "dependencies": {
   },
   "devDependencies": {
