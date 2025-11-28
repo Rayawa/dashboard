@@ -118,11 +118,12 @@ struct user {
 
               Text('Version 1.0.0')
                 .fontColor('#888')
-                .margin(10)
-              Text('本应用备案域名：rayawa.top').margin(10).fontColor('#888')
+                .margin(5)
+                .fontSize(12)
+              Text('本应用备案域名：rayawa.top').fontSize(12).margin(5).fontColor('#888')
               Hyperlink('https://beian.miit.gov.cn/#/Integrated/index', '备案号')
                 .color(Color.Blue)
-                .margin(10)
+                .margin(5)
             }
             .width('100%')
             .alignItems(HorizontalAlign.Center)
