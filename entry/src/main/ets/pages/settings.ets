@@ -1,11 +1,10 @@
 import { prompt, router } from "@kit.ArkUI"
-// import webview from '@ohos.web.webview';
+import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
 
 @Entry
 @Component
-struct user {
-  // private webviewController: webview.WebviewController = new webview.WebviewController();
+struct settings {
 
   build() {
     Column() {
@@ -125,32 +124,15 @@ struct user {
                 .margin(5)
                 .fontSize(12)
               Text('本应用备案域名：rayawa.top').fontSize(12).margin(5).fontColor('#888')
-              Hyperlink('https://beian.miit.gov.cn/#/Integrated/index', '备案号')
-                .color(Color.Blue)
-                .margin(10)
-                .onClick(() => {
-                  prompt.showToast({
-                    message: '跳转到外部链接',
-                    duration: 500
-                  });
-                  setTimeout(() => {}, 500);
-                })
-
-              // Column() {
-              //   Text('备案号')
-              //     .fontSize(12)
-              //     .fontColor(Color.Blue)
-              //     .onClick(() => {
-              //     try {
-              //       this.webviewController.loadUrl('https://beian.miit.gov.cn/#/Integrated/index');
-              //       prompt.showToast({ message: '跳转到外部链接', duration: 500 });
-              //     } catch (error) {
-              //       console.error('打开链接失败:', (error as BusinessError).message);
-              //       prompt.showToast({ message: '打开链接失败', duration: 500 });
-              //     }
-              //   })
-              // }
-              // .margin(5)
+              Column() {
+                Text('备案号')
+                  .fontSize(12)
+                  .fontColor(Color.Blue)
+                  .onClick(() => {
+                    this.openLink();
+                  })
+              }
+              .margin(5)
             }
             .width('100%')
             .alignItems(HorizontalAlign.Center)
@@ -162,7 +144,6 @@ struct user {
             Column() {
               Text('\n').fontSize(14)
             }
-
             Row() {
               Text('我的')
                 .fontSize(21)
@@ -192,4 +173,21 @@ struct user {
         .backgroundColor($r('app.color.backcolor'))
       }
     }
-  }}
+  }
+  async openLink() {
+    const url = 'https://beian.miit.gov.cn/#/Integrated/index';
+    try {
+      prompt.showToast({ message: '正在跳转...', duration: 500 });
+      let context = getContext(this) as common.UIAbilityContext;
+      await context.startAbility({
+        action: "ohos.want.action.viewData",
+        entities: ["entity.system.browsable"],
+        uri: url
+      } as Want);
+
+    } catch (error) {
+      console.error('打开链接失败:', (error as BusinessError).message);
+      prompt.showToast({ message: '打开链接失败', duration: 1000 });
+    }
+  }
+}
