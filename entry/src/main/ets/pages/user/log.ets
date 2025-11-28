@@ -116,10 +116,10 @@ struct log {
             .fontWeight(FontWeight.Bold)
             .margin({ left: 15 })
           Row() {
-            Image($r('app.media.user'))
+            Image($r('app.media.arrow_back'))
               .height(24).width(24)
               .margin({ right: 30 })
-              .onClick(() => router.pushUrl({ url: 'pages/user' }))
+              .onClick(() => router.back())
             Image($r('app.media.menu'))
               .height(24).width(24)
               .margin({ right: 30 })

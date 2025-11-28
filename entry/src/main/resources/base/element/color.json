@@ -35,6 +35,14 @@
     {
       "name": "white_0",
       "value": "#FFFFFF00"
+    },
+    {
+      "name": "background",
+      "value": "#F8F8F8"
+    },
+    {
+      "name": "backcolor",
+      "value": "#F2F7FF"
     }
   ]
 }

@@ -4,109 +4,160 @@ import { router } from "@kit.ArkUI"
 @Component
 struct user {
   build() {
-    Stack() {
-      Column() {
-        Column()
+    Column() {
+      Stack() {
+        Column() {
+          Column()
+            .width('100%')
+            .height(90)
+
+          Column() {
+            Column() {
+              Image($r('app.media.app_icon'))
+                .height(100)
+                .width(100)
+                .borderRadius($r('sys.float.corner_radius_level6'))
+                .margin({ top: 10 })
+              Text('应用看板').fontWeight(800).fontSize(30).margin({ top: 10 })
+              Text('Gallery Dashboard').fontWeight(600).fontSize(20).margin({ top: 5, bottom: 10 })
+              Divider().margin(10).margin({bottom:20})
+
+              Column() {
+                Row() {
+                  Row() {
+                    Image($r('app.media.log'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('更新日志')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/log' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+                Divider()
+                  .strokeWidth(0.5)
+                  .margin({ left: 16, right: 16 })
+
+                Row() {
+                  Row() {
+                    Image($r('app.media.api'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('API文档')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/api' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+                Divider()
+                  .strokeWidth(0.5)
+                  .margin({ left: 16, right: 16 })
+
+                Row() {
+                  Row() {
+                    Image($r('app.media.contact'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('联系我们')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/contact' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+              }
+              .backgroundColor($r('app.color.background'))
+              .borderRadius(16)
+              .shadow({
+                radius: 8,
+                color: '#1a000000',
+                offsetX: 0,
+                offsetY: 2
+              })
+              .width('90%')
+              .margin({ bottom: 20 })
+
+              Text('Version 1.0.0')
+                .fontColor('#888')
+                .margin(10)
+              Text('本应用备案域名：rayawa.top').margin(10).fontColor('#888')
+              Hyperlink('https://beian.miit.gov.cn/#/Integrated/index', '备案号')
+                .color(Color.Blue)
+                .margin(10)
+            }
+            .width('100%')
+            .alignItems(HorizontalAlign.Center)
+          }
           .width('100%')
-          .height(90)
+          .height('100%')
 
-        Column() {
-          Row() {
-            Row(){
-              Image($r('app.media.log')).height(25).width(25)
-              Text('更新日志').margin({ left: 6 }).fontSize(20)
+          Column() {
+            Column() {
+              Text('\n').fontSize(14)
             }
-            Image($r('app.media.right')).height(25).width(25)
-          }
-          .onClick(() => router.pushUrl({ url: 'pages/user/log' }))
-          .height(60)
-          .width('90%')
-          .justifyContent(FlexAlign.SpaceBetween)
 
-          Divider().margin(5).width('90%')
-          Row() {
-            Row(){
-              Image($r('app.media.api')).height(25).width(25)
-              Text('API文档').margin({ left: 7 }).fontSize(20)
+            Row() {
+              Text('我的')
+                .fontSize(21)
+                .fontWeight(FontWeight.Bold)
+                .margin({ left: 25 })
+              Image($r('app.media.arrow_back'))
+                .height(24).width(24)
+                .margin({ right: 30 })
+                .onClick(() => router.back())
             }
-            Image($r('app.media.right')).height(25).width(25)
+            .width('100%')
+            .justifyContent(FlexAlign.SpaceBetween)
+            .height(45)
+
+            Rect()
+              .width('100%')
+              .height(0.5)
+              .fill("#a6d5d5d5")
+              .position({ x: 0, y: 78 })
+
           }
-          .onClick(() => router.pushUrl({ url: 'pages/user/api' }))
-          .height(60)
-          .width('90%')
-          .justifyContent(FlexAlign.SpaceBetween)
-
-          Divider().margin(5).width('90%')
-          Row() {
-            Row(){
-              Image($r('app.media.contact')).height(25).width(25)
-              Text('联系我们').margin({ left: 7 }).fontSize(20)
-            }
-            Image($r('app.media.right')).height(25).width(25)
-          }
-          .onClick(() => router.pushUrl({ url: 'pages/user/contact' }))
-          .height(60)
-          .width('90%')
-          .justifyContent(FlexAlign.SpaceBetween)
-      }
-        .borderRadius($r('sys.float.corner_radius_level4'))
-        .backgroundColor('#05000000')
-        .width('90%')
-        .margin(10)
-
-        Column() {
-          Row() {
-            Row(){
-              Image($r('app.media.settings')).height(25).width(25)
-              Text('关于').margin({ left: 7 }).fontSize(20)
-            }
-            Image($r('app.media.right')).height(30).width(30)
-          }
-          .onClick(() => router.pushUrl({ url: 'pages/user/about' }))
-          .height(60)
-          .width('90%')
-          .justifyContent(FlexAlign.SpaceBetween)
-        }
-        .borderRadius($r('sys.float.corner_radius_level4'))
-        .backgroundColor('#05000000')
-        .width('90%')
-        .margin(10)
-
-
-
-      Column() {
-        Column() {
-          Text('\n').fontSize(14)
-        }
-
-        Row() {
-          Text('我的')
-            .fontSize(21)
-            .fontWeight(FontWeight.Bold)
-            .margin({ left: 25 })
-          Image($r('app.media.arrow_back'))
-            .height(24).width(24)
-            .margin({ right: 30 })
-            .onClick(() => router.back())
+          .backgroundBlurStyle(BlurStyle.Thin)
+          .position({ x: 0, y: 0 })
+          .width('100%')
         }
         .width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .height(45)
-
-        Rect()
-          .width('100%')
-          .height(0.5)
-          .fill("#a6d5d5d5")
-          .position({ x: 0, y: 78 })
-
+        .backgroundColor($r('app.color.backcolor'))
       }
-      .backgroundBlurStyle(BlurStyle.Thin)
-      .position({ x: 0, y: 0 })
-      .width('100%')
-
     }
-    .width('100%')
-    .height('100%')
-  }
-}
-}
+  }}
