@@ -75,5 +75,3 @@ easing = 1 - (1 - progress)\^3\
 newY = startY \* (1 - easing)
 
 60 帧动画，每帧 8.33ms。
-
-
