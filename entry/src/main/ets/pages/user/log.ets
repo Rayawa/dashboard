@@ -8,15 +8,6 @@ struct log {
   Menu() {
     MenuItemGroup() {
       MenuItem({
-        startIcon: $r('app.media.arrow_back'),
-        content: "返回上级"
-      })
-        .onClick(() => {
-          this.webController.backward();
-          prompt.showToast({ message: '返回上级', duration: 500 });
-        })
-
-      MenuItem({
         startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'),
         content: this.isLoading ? "停止刷新" : "刷新页面"
       })
@@ -60,15 +51,6 @@ struct log {
             }
           }, interval);
         })
-
-      MenuItem({
-        startIcon: $r('app.media.switch'),
-        content: "切换V1"
-      })
-        .onClick(() => {
-          router.pushUrl({ url: 'pages/IndexV1' });
-          prompt.showToast({ message: '切换V1', duration: 500 });
-        })
     }
   }
 
@@ -81,13 +63,14 @@ struct log {
   @State progress: number = 0;
   @State scrollY: number = 0;
 
-  private readonly NAV_HEIGHT: number = 70;
+  private readonly NAV_HEIGHT: number = 72;
 
   build() {
     Stack() {
       Column() {
         Column()
           .width('100%')
+          .backgroundColor($r('app.color.backcolor'))
           .height(Math.max(this.NAV_HEIGHT - this.scrollY, 0))
 
         Web({
@@ -98,6 +81,7 @@ struct log {
           .darkMode(this.mode)
           .forceDarkAccess(this.access)
           .width('100%')
+          .backgroundColor($r('app.color.backcolor'))
           .height('100%')
           .onPageBegin(() => this.isLoading = true)
           .onProgressChange((p) => this.progress = p.newProgress)
@@ -134,7 +118,7 @@ struct log {
           .width('100%')
           .height(0.5)
           .fill("#a6d5d5d5")
-          .position({ x: 0, y: 78 })
+          .position({ x: 0, y: 77 })
 
       }
       .backgroundBlurStyle(BlurStyle.Thin)
@@ -145,7 +129,7 @@ struct log {
         Progress({ value: this.progress, total: 100 })
           .width('100%')
           .height(3)
-          .position({ x: 0, y: 79 })
+          .position({ x: 0, y: 77 })
       }
     }
     .width('100%')

@@ -2,7 +2,7 @@
   "src": [
     "pages/IndexV1",
     "pages/Index",
-    "pages/user",
+    "pages/settings",
     "pages/user/log",
     "pages/user/contact",
     "pages/user/api",

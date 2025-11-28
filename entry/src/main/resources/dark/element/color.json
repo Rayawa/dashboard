@@ -2,15 +2,27 @@
   "color": [
     {
       "name": "start_window_background",
-      "value": "#000000"
+      "value": "#0F1A2A"
     },
     {
       "name": "background",
-      "value": "#2A2A2A"
+      "value": "#1A2B3C"
     },
     {
       "name": "backcolor",
-      "value": "#FF0D1326"
+      "value": "#0F1A2A"
+    },
+    {
+      "name": "navcolor",
+      "value": "#FF0B131F"
+    },
+    {
+      "name": "border",
+      "value": "#2A3B4C"
+    },
+    {
+      "name": "diff_content",
+      "value": "#4A9CE2"
     }
   ]
 }

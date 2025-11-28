@@ -96,13 +96,14 @@ struct V2 {
   @State progress: number = 0;
   @State scrollY: number = 0;
 
-  private readonly NAV_HEIGHT: number = 70;
+  private readonly NAV_HEIGHT: number = 72;
 
   build() {
     Stack() {
       Column() {
         Column()
           .width('100%')
+          .backgroundColor($r('app.color.navcolor'))
           .height(Math.max(this.NAV_HEIGHT - this.scrollY, 0))
 
         Web({
@@ -113,6 +114,7 @@ struct V2 {
           .darkMode(this.mode)
           .forceDarkAccess(true)
           .width('100%')
+          .backgroundColor($r('app.color.backcolor'))
           .height('100%')
           .onPageBegin(() => this.isLoading = true)
           .onProgressChange((p) => this.progress = p.newProgress)
@@ -130,14 +132,14 @@ struct V2 {
             .fontWeight(FontWeight.Bold)
             .margin({ left: 15 })
           Row() {
-            Image($r('app.media.user'))
-              .height(24).width(24)
-              .margin({ right: 30 })
-              .onClick(() => router.pushUrl({ url: 'pages/user' }))
             Image($r('app.media.menu'))
               .height(24).width(24)
               .margin({ right: 30 })
               .bindMenu(this.Menu)
+            Image($r('app.media.settings'))
+              .height(24).width(24)
+              .margin({ right: 30 })
+              .onClick(() => router.pushUrl({ url: 'pages/settings' }))
           }
         }
         .width('100%')
@@ -147,8 +149,8 @@ struct V2 {
         Rect()
           .width('100%')
           .height(0.5)
-          .fill("#a6d5d5d5")
-          .position({ x: 0, y: 78 })
+          .fill($r('app.color.border'))
+          .position({ x: 0, y: 77 })
 
       }
       .backgroundBlurStyle(BlurStyle.Thin)
@@ -159,7 +161,7 @@ struct V2 {
         Progress({ value: this.progress, total: 100 })
           .width('100%')
           .height(3)
-          .position({ x: 0, y: 78 })
+          .position({ x: 0, y: 77 })
       }
     }
     .width('100%')

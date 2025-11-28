@@ -5,44 +5,24 @@
       "value": "#FFFFFF"
     },
     {
-      "name": "white_90",
-      "value": "#FFFFFFE6"
-    },
-    {
-      "name": "white_80",
-      "value": "#FFFFFFCC"
-    },
-    {
-      "name": "white_70",
-      "value": "#FFFFFFB2"
-    },
-    {
-      "name": "white_56",
-      "value": "#FFFFFF8F"
-    },
-    {
-      "name": "white_40",
-      "value": "#FFFFFF66"
-    },
-    {
-      "name": "white_25",
-      "value": "#FFFFFF40"
-    },
-    {
-      "name": "white_10",
-      "value": "#FFFFFF1A"
-    },
-    {
-      "name": "white_0",
-      "value": "#FFFFFF00"
-    },
-    {
       "name": "background",
-      "value": "#F8F8F8"
+      "value": "#FFF6F9FF"
     },
     {
       "name": "backcolor",
-      "value": "#F2F7FF"
+      "value": "#EEF6FE"
+    },
+    {
+      "name": "navcolor",
+      "value": "#FFEEF4FE"
+    },
+    {
+      "name": "border",
+      "value": "#B8D0E5"
+    },
+    {
+      "name": "diff_content",
+      "value": "#1E6FCD"
     }
   ]
 }

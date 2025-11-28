@@ -18,9 +18,9 @@ struct user {
                 .width(100)
                 .borderRadius($r('sys.float.corner_radius_level6'))
                 .margin({ top: 10 })
-              Text('应用看板').fontWeight(800).fontSize(30).margin({ top: 10 })
-              Text('Gallery Dashboard').fontWeight(600).fontSize(20).margin({ top: 5, bottom: 10 })
-              Divider().margin(10).margin({bottom:20})
+              Text('应用看板').fontWeight(800).fontSize(30).margin({ top: 20 }).fontColor($r('app.color.diff_content'))
+              Text('Gallery Dashboard').fontWeight(600).fontSize(20).margin({ top: 10 })
+              Divider().margin({top:30,bottom:30}).color($r('app.color.border'))
 
               Column() {
                 Row() {
@@ -47,6 +47,7 @@ struct user {
                 .padding({ left: 16, right: 16 })
 
                 Divider()
+                  .color($r('app.color.border'))
                   .strokeWidth(0.5)
                   .margin({ left: 16, right: 16 })
 
@@ -75,6 +76,7 @@ struct user {
 
                 Divider()
                   .strokeWidth(0.5)
+                  .color($r('app.color.border'))
                   .margin({ left: 16, right: 16 })
 
                 Row() {
@@ -101,6 +103,8 @@ struct user {
                 .padding({ left: 16, right: 16 })
 
               }
+              .borderWidth(0.5)
+              .borderColor($r('app.color.border'))
               .backgroundColor($r('app.color.background'))
               .borderRadius(16)
               .shadow({
@@ -148,8 +152,8 @@ struct user {
             Rect()
               .width('100%')
               .height(0.5)
-              .fill("#a6d5d5d5")
-              .position({ x: 0, y: 78 })
+              .fill($r('app.color.border'))
+              .position({ x: 0, y: 77 })
 
           }
           .backgroundBlurStyle(BlurStyle.Thin)
