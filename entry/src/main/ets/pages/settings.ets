@@ -176,18 +176,34 @@ struct settings {
   }
   async openLink() {
     const url = 'https://beian.miit.gov.cn/#/Integrated/index';
-    try {
-      prompt.showToast({ message: '正在跳转...', duration: 500 });
-      let context = getContext(this) as common.UIAbilityContext;
-      await context.startAbility({
-        action: "ohos.want.action.viewData",
-        entities: ["entity.system.browsable"],
-        uri: url
-      } as Want);
-
-    } catch (error) {
-      console.error('打开链接失败:', (error as BusinessError).message);
-      prompt.showToast({ message: '打开链接失败', duration: 1000 });
-    }
+    AlertDialog.show({
+      title: '即将离开本应用',
+      message: '是否跳转到浏览器',
+      primaryButton: {
+        value: '取消',
+        fontColor:Color.Red,
+        action: () => {
+          console.log('点击了取消按钮');
+        },
+      },
+      secondaryButton: {
+        value: '确定',
+        fontColor:$r('app.color.border'),
+        action: async (): Promise<void> => {
+          try {
+            prompt.showToast({ message: '正在跳转...', duration: 500 });
+            let context = getContext(this) as common.UIAbilityContext;
+            await context.startAbility({
+              action: "ohos.want.action.viewData",
+              entities: ["entity.system.browsable"],
+              uri: url
+            } as Want);
+          } catch (error) {
+            console.error('打开链接失败:', (error as BusinessError).message);
+            prompt.showToast({ message: '打开链接失败', duration: 1000 });
+          }
+        }
+      },
+    })
   }
 }
