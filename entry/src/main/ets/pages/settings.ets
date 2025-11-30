@@ -188,7 +188,7 @@ struct settings {
       },
       secondaryButton: {
         value: '确定',
-        fontColor:$r('app.color.border'),
+        fontColor:Color.Blue,
         action: async (): Promise<void> => {
           try {
             prompt.showToast({ message: '正在跳转...', duration: 500 });
