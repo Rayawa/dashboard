@@ -18,7 +18,7 @@
         "srcEntry": "./ets/entryability/EntryAbility.ets",
         "description": "$string:EntryAbility_desc",
 //        "icon": "$media:layered_image",
-//        "label": "$string:app_name",
+        "label": "$string:EntryAbility_label",
         "startWindowIcon": "$media:startIcon",
         "startWindowBackground": "$color:start_window_background",
         "exported": true,
@@ -34,7 +34,7 @@
             "uris": [
               {
                 "scheme": "file",
-                "utd": "general.text",
+                "utd": "general.hyperlink",
                 "maxFileSupported": 1
               }
             ]
@@ -52,17 +52,39 @@
       }
     ],
     "extensionAbilities": [
+//      {
+//        "name": "EntryBackupAbility",
+//        "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ets",
+//        "type": "backup",
+//        "exported": false,
+//        "metadata": [
+//          {
+//            "name": "ohos.extension.backup",
+//            "resource": "$profile:backup_config"
+//          }
+//        ],
+//      },
       {
-        "name": "EntryBackupAbility",
-        "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ets",
-        "type": "backup",
-        "exported": false,
-        "metadata": [
+        "name": "ShareAbility",
+        "srcEntry": "./ets/pages/share.ets",
+        "description": "用来处理分享页面的",
+        "label": "$string:ShareAbility_label",
+        "type": "share",
+        "exported": true,
+        "skills": [
           {
-            "name": "ohos.extension.backup",
-            "resource": "$profile:backup_config"
+            "actions": [
+              "ohos.want.action.sendData"
+            ],
+            "uris": [
+              {
+                "scheme": "file",
+                "utd": "general.hyperlink",
+                "maxFileSupported": 1
+              }
+            ]
           }
-        ],
+        ]
       }
     ],
     "requestPermissions": [

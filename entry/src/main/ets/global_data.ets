@@ -7,6 +7,6 @@ export const APP_VERSION: string = "1.1.0-alpha.2";
  * @returns
  */
 export function APP_UA(): string {
-  
-  return `${APP_VERSION}`
+
+  return `top.rayawa.dashboard ${APP_VERSION}`
 }

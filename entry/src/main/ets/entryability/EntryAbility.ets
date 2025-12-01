@@ -11,8 +11,10 @@ export default class EntryAbility extends UIAbility {
     // 处理分享
     systemShare.getSharedData(want)
       .then((data: systemShare.SharedData) => {
+
         data.getRecords().forEach((record: systemShare.SharedRecord) => {
           // 处理分享数据
+
         });
       }).catch((error: BusinessError) => {
       hilog.error(DOMAIN, 'share_handle', `Failed to getSharedData. Code: ${error.code}, message: ${error.message}`);

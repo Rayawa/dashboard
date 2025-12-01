@@ -1,6 +1,8 @@
 import { webview } from "@kit.ArkWeb";
-import { router, prompt } from "@kit.ArkUI";
+import { router } from "@kit.ArkUI";
 import window from '@ohos.window';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { APP_UA } from "../global_data";
 
 @Entry
 @Component
@@ -13,7 +15,7 @@ struct V1 {
         content: "返回上级"
       })
         .onClick(() => {
-          this.webController.backward();
+          this.web_controller.backward();
           const ui_content = this.getUIContext();
           const prompt_action = ui_content.getPromptAction();
           prompt_action.showToast({ message: '返回上级', duration: 500 });
@@ -27,11 +29,11 @@ struct V1 {
           const ui_content = this.getUIContext();
           const prompt_action = ui_content.getPromptAction();
           if (this.isLoading) {
-            this.webController.stop();
+            this.web_controller.stop();
             this.isLoading = false;
             prompt_action.showToast({ message: '停止刷新', duration: 500 });
           } else {
-            this.webController.refresh();
+            this.web_controller.refresh();
             this.isLoading = true;
             prompt_action.showToast({ message: '刷新页面', duration: 500 });
           }
@@ -54,8 +56,10 @@ struct V1 {
         content: "切换V2"
       })
         .onClick(() => {
-          router.back();
-          prompt.showToast({ message: '切换V2', duration: 500 });
+          const ui_content = this.getUIContext();
+          const prompt_action = ui_content.getPromptAction();
+          ui_content.getRouter().back();
+          prompt_action.showToast({ message: '切换V2', duration: 500 });
         })
     }
   }
@@ -85,15 +89,15 @@ struct V1 {
       const progress = frame / frames;
       const easing = 1 - Math.pow(1 - progress, 3);
       const newY = startY * (1 - easing);
-      this.webController.scrollTo(0, newY);
+      this.web_controller.scrollTo(0, newY);
 
       if (frame >= frames) {
         clearInterval(timer);
-        this.webController.scrollTo(0, 0);
+        this.web_controller.scrollTo(0, 0);
       }
     }, interval);
   }
-  private webController: webview.WebviewController = new webview.WebviewController();
+  private web_controller: webview.WebviewController = new webview.WebviewController();
 
   @State url: string = 'http://shenjack.top:10003/dashboard';
   @State mode: WebDarkMode = WebDarkMode.Auto;
@@ -113,7 +117,7 @@ struct V1 {
 
         Web({
           src: this.url,
-          controller: this.webController
+          controller: this.web_controller
         })
           .domStorageAccess(true)
           .darkMode(this.mode)
@@ -125,6 +129,14 @@ struct V1 {
           .onProgressChange((p) => this.progress = p.newProgress)
           .onPageEnd(() => this.isLoading = false)
           .onScroll((e) => this.scrollY = e.yOffset)
+          .onControllerAttached(() => {
+            // for API 17, API 20 可以直接 setAppCustomUserAgent()
+            try {
+              this.web_controller.setCustomUserAgent(APP_UA());
+            } catch (error) {
+              console.error(`ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`);
+            }
+          })
       }
 
       Column() {

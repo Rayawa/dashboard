@@ -1,6 +1,8 @@
 import { webview } from "@kit.ArkWeb";
 import { router, prompt } from "@kit.ArkUI";
 import window from '@ohos.window';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { APP_UA } from "../global_data";
 
 //still to fix: 状态栏
 @Entry
@@ -14,7 +16,7 @@ struct V2 {
         content: "返回上级"
       })
         .onClick(() => {
-          this.webController.backward();
+          this.web_controller.backward();
           prompt.showToast({ message: '返回上级', duration: 500 });
         })
 
@@ -24,11 +26,11 @@ struct V2 {
       })
         .onClick(() => {
           if (this.isLoading) {
-            this.webController.stop();
+            this.web_controller.stop();
             this.isLoading = false;
             prompt.showToast({ message: '停止刷新', duration: 500 });
           } else {
-            this.webController.refresh();
+            this.web_controller.refresh();
             this.isLoading = true;
             prompt.showToast({ message: '刷新页面', duration: 500 });
           }
@@ -55,9 +57,7 @@ struct V2 {
 
   private win: window.Window | null = null;
   async aboutToAppear() {
-    const customUA = webview.WebviewController.getDefaultUserAgent()
-      + " Hm_dashboard" ;
-    webview.WebviewController.setAppCustomUserAgent(customUA);
+
     this.win = await window.getLastWindow(getContext());
     const isDark = this.mode === WebDarkMode.On;
     this.win.setWindowSystemBarProperties({
@@ -78,15 +78,15 @@ struct V2 {
       const progress = frame / frames;
       const easing = 1 - Math.pow(1 - progress, 3);
       const newY = startY * (1 - easing);
-      this.webController.scrollTo(0, newY);
+      this.web_controller.scrollTo(0, newY);
 
       if (frame >= frames) {
         clearInterval(timer);
-        this.webController.scrollTo(0, 0);
+        this.web_controller.scrollTo(0, 0);
       }
     }, interval);
   }
-  private webController: webview.WebviewController = new webview.WebviewController();
+  private web_controller: webview.WebviewController = new webview.WebviewController();
 
   @State url: string = 'https://hmos.txit.top/dashboard';
   @State mode: WebDarkMode = WebDarkMode.Auto;
@@ -106,7 +106,7 @@ struct V2 {
 
         Web({
           src: this.url,
-          controller: this.webController
+          controller: this.web_controller
         })
           .domStorageAccess(true)
           .darkMode(this.mode)
@@ -118,6 +118,14 @@ struct V2 {
           .onProgressChange((p) => this.progress = p.newProgress)
           .onPageEnd(() => this.isLoading = false)
           .onScroll((e) => this.scrollY = e.yOffset)
+          .onControllerAttached(() => {
+            // for API 17, API 20 可以直接 setAppCustomUserAgent()
+            try {
+              this.web_controller.setCustomUserAgent(APP_UA());
+            } catch (error) {
+              console.error(`ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`);
+            }
+          })
       }
 
       Column() {

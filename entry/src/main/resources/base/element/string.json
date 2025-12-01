@@ -10,7 +10,7 @@
     },
     {
       "name": "EntryAbility_label",
-      "value": "label"
+      "value": "打开看板投稿"
     },
     {
       "name": "MainAbility_desc",
@@ -19,6 +19,10 @@
     {
       "name": "MainAbility_label",
       "value": "label"
+    },
+    {
+      "name": "ShareAbility_label",
+      "value": "按现有信息投稿到看板"
     }
   ]
 }
