@@ -125,7 +125,7 @@ struct settings {
                 .fontSize(12)
               Text('本应用备案域名：rayawa.top').fontSize(12).margin(5).fontColor('#888')
               Column() {
-                Text('备案号')
+                Text('京ICP备2025153453号')
                   .fontSize(12)
                   .fontColor(Color.Blue)
                   .onClick(() => {

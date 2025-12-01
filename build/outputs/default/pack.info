@@ -4,8 +4,8 @@
 			"bundleName": "top.rayawa.dashboard",
 			"bundleType": "app",
 			"version": {
-				"code": 1000002,
-				"name": "1.0.0-rc.1"
+				"code": 1000003,
+				"name": "1.0.0"
 			}
 		},
 		"modules": [
