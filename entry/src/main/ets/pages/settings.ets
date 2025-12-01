@@ -1,6 +1,7 @@
-import { prompt, router } from "@kit.ArkUI"
+import { router } from "@kit.ArkUI"
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
+import { APP_VERSION } from "../global_data";
 
 @Entry
 @Component
@@ -119,7 +120,7 @@ struct settings {
               .width('90%')
               .margin({ bottom: 20 })
 
-              Text('Version 1.1.0-alpha.2')
+              Text(`Version ${APP_VERSION}`)
                 .fontColor('#888')
                 .margin(5)
                 .fontSize(12)
@@ -176,7 +177,9 @@ struct settings {
   }
   async openLink() {
     const url = 'https://beian.miit.gov.cn/#/Integrated/index';
-    this.getUIContext().showAlertDialog({
+    const ui_content = this.getUIContext();
+    const prompt_action = ui_content.getPromptAction();
+    ui_content.showAlertDialog({
       title: '即将离开本应用',
       message: '是否跳转到浏览器',
       primaryButton: {
@@ -191,8 +194,8 @@ struct settings {
         fontColor:Color.Blue,
         action: async (): Promise<void> => {
           try {
-            prompt.showToast({ message: '正在跳转...', duration: 500 });
-            let context = getContext(this) as common.UIAbilityContext;
+            prompt_action.showToast({ message: '正在跳转...', duration: 500 });
+            let context = ui_content.getHostContext() as common.UIAbilityContext;
             await context.startAbility({
               action: "ohos.want.action.viewData",
               entities: ["entity.system.browsable"],
@@ -200,7 +203,7 @@ struct settings {
             } as Want);
           } catch (error) {
             console.error('打开链接失败:', (error as BusinessError).message);
-            prompt.showToast({ message: '打开链接失败', duration: 1000 });
+            prompt_action.showToast({ message: '打开链接失败', duration: 1000 });
           }
         }
       },

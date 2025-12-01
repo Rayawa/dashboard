@@ -14,7 +14,9 @@ struct V1 {
       })
         .onClick(() => {
           this.webController.backward();
-          prompt.showToast({ message: '返回上级', duration: 500 });
+          const ui_content = this.getUIContext();
+          const prompt_action = ui_content.getPromptAction();
+          prompt_action.showToast({ message: '返回上级', duration: 500 });
         })
 
       MenuItem({
@@ -22,14 +24,16 @@ struct V1 {
         content: this.isLoading ? "停止刷新" : "刷新页面"
       })
         .onClick(() => {
+          const ui_content = this.getUIContext();
+          const prompt_action = ui_content.getPromptAction();
           if (this.isLoading) {
             this.webController.stop();
             this.isLoading = false;
-            prompt.showToast({ message: '停止刷新', duration: 500 });
+            prompt_action.showToast({ message: '停止刷新', duration: 500 });
           } else {
             this.webController.refresh();
             this.isLoading = true;
-            prompt.showToast({ message: '刷新页面', duration: 500 });
+            prompt_action.showToast({ message: '刷新页面', duration: 500 });
           }
         })
 
@@ -38,7 +42,9 @@ struct V1 {
         content: "回到顶部"
       })
         .onClick(() => {
-          prompt.showToast({ message: '回到顶部', duration: 500 })
+          const ui_content = this.getUIContext();
+          const prompt_action = ui_content.getPromptAction();
+          prompt_action.showToast({ message: '回到顶部', duration: 500 })
           this.scrollToTop();
         })
 
