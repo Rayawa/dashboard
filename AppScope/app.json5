@@ -2,8 +2,8 @@
   "app": {
     "bundleName": "top.rayawa.dashboard",
     "vendor": "example",
-    "versionCode": 1010014,
-    "versionName": "1.1.0-alpha.1",
+    "versionCode": 1010015,
+    "versionName": "1.1.0-alpha.2",
     "icon": "$media:layered_image",
     "label": "$string:app_name"
   }

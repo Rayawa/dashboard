@@ -49,7 +49,7 @@ struct V1 {
       })
         .onClick(() => {
           router.back();
-          prompt.showToast({ message: '切换V1', duration: 500 });
+          prompt.showToast({ message: '切换V2', duration: 500 });
         })
     }
   }
