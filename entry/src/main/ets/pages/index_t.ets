@@ -16,8 +16,10 @@ struct V2 {
         content: "返回上级"
       })
         .onClick(() => {
+          const ui_content = this.getUIContext();
+          const prompt_action = ui_content.getPromptAction();
           this.web_controller.backward();
-          prompt.showToast({ message: '返回上级', duration: 500 });
+          prompt_action.showToast({ message: '返回上级', duration: 500 });
         })
 
       MenuItem({
@@ -25,14 +27,16 @@ struct V2 {
         content: this.isLoading ? "停止刷新" : "刷新页面"
       })
         .onClick(() => {
+          const ui_content = this.getUIContext();
+          const prompt_action = ui_content.getPromptAction();
           if (this.isLoading) {
             this.web_controller.stop();
             this.isLoading = false;
-            prompt.showToast({ message: '停止刷新', duration: 500 });
+            prompt_action.showToast({ message: '停止刷新', duration: 500 });
           } else {
             this.web_controller.refresh();
             this.isLoading = true;
-            prompt.showToast({ message: '刷新页面', duration: 500 });
+            prompt_action.showToast({ message: '刷新页面', duration: 500 });
           }
         })
 
@@ -41,7 +45,9 @@ struct V2 {
         content: "回到顶部"
       })
         .onClick(() => {
-          prompt.showToast({ message: '回到顶部', duration: 500 })
+          const ui_content = this.getUIContext();
+          const prompt_action = ui_content.getPromptAction();
+          prompt_action.showToast({ message: '回到顶部', duration: 500 })
           this.scrollToTop();
         })
       MenuItem({
@@ -49,8 +55,11 @@ struct V2 {
         content: "换到 S 版本"
       })
         .onClick(() => {
-          router.pushUrl({ url: 'pages/index_s' });
-          prompt.showToast({ message: '切换到 S 版本', duration: 500 });
+          const ui_content = this.getUIContext();
+          const prompt_action = ui_content.getPromptAction();
+          ui_content.getRouter().clear();
+          ui_content.getRouter().pushUrl({ url: 'pages/index_s' });
+          prompt_action.showToast({ message: '换到 S 版本', duration: 500 });
         })
     }
   }

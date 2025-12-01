@@ -58,7 +58,8 @@ struct V1 {
         .onClick(() => {
           const ui_content = this.getUIContext();
           const prompt_action = ui_content.getPromptAction();
-          ui_content.getRouter().back();
+          ui_content.getRouter().clear();
+          ui_content.getRouter().pushUrl({ url: 'pages/index_t' });
           prompt_action.showToast({ message: '换到 T 版本', duration: 500 });
         })
     }
