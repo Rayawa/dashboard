@@ -15,7 +15,7 @@
     "abilities": [
       {
         "name": "EntryAbility",
-        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "srcEntry": "./ets/ability/EntryAbility.ets",
         "description": "$string:EntryAbility_desc",
 //        "icon": "$media:layered_image",
         "label": "$string:EntryAbility_label",
@@ -43,7 +43,7 @@
       },
       {
         "name": "MainAbility",
-        "srcEntry": "./ets/mainability/MainAbility.ets",
+        "srcEntry": "./ets/ability/MainAbility.ets",
         "description": "$string:MainAbility_desc",
         "icon": "$media:layered_image",
         "label": "$string:MainAbility_label",
@@ -66,7 +66,7 @@
 //      },
       {
         "name": "ShareAbility",
-        "srcEntry": "./ets/pages/share.ets",
+        "srcEntry": "./ets/ability/ShareAbility.ets",
         "description": "用来处理分享页面的",
         "label": "$string:ShareAbility_label",
         "type": "share",
