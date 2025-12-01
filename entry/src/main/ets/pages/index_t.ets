@@ -46,7 +46,7 @@ struct V2 {
         })
       MenuItem({
         startIcon: $r('app.media.switch'),
-        content: "切换V1"
+        content: "换到 S 版本"
       })
         .onClick(() => {
           router.pushUrl({ url: 'pages/index_s' });

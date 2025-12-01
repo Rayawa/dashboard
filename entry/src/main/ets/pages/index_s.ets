@@ -53,13 +53,13 @@ struct V1 {
 
       MenuItem({
         startIcon: $r('app.media.switch'),
-        content: "切换V2"
+        content: "换到 T 版本"
       })
         .onClick(() => {
           const ui_content = this.getUIContext();
           const prompt_action = ui_content.getPromptAction();
           ui_content.getRouter().back();
-          prompt_action.showToast({ message: '切换V2', duration: 500 });
+          prompt_action.showToast({ message: '换到 T 版本', duration: 500 });
         })
     }
   }
