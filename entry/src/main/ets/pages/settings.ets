@@ -176,7 +176,7 @@ struct settings {
   }
   async openLink() {
     const url = 'https://beian.miit.gov.cn/#/Integrated/index';
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '即将离开本应用',
       message: '是否跳转到浏览器',
       primaryButton: {
