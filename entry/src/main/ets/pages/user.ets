@@ -5,16 +5,9 @@ import { APP_VERSION } from "../global_data";
 
 @Entry
 @Component
-struct settings {
-
+struct user {
   build() {
-    Column() {
       Stack() {
-        Column() {
-          Column()
-            .width('100%')
-            .height(90)
-
           Column() {
             Column() {
               Image($r('app.media.app_icon'))
@@ -26,7 +19,9 @@ struct settings {
               Text('Gallery Dashboard').fontWeight(600).fontSize(20).margin({ top: 10 })
               Divider().margin({top:30,bottom:30}).color($r('app.color.border'))
 
+              Text('Web相关').margin({bottom:15}).width('90%').fontWeight(FontWeight.Bold).fontSize(20)
               Column() {
+
                 Row() {
                   Row() {
                     Image($r('app.media.log'))
@@ -34,7 +29,7 @@ struct settings {
                       .width(24)
                       .objectFit(ImageFit.Contain)
 
-                    Text('更新日志')
+                    Text('Web更新日志')
                       .fontSize(16)
                       .margin({ left: 12 })
                   }
@@ -118,7 +113,75 @@ struct settings {
                 offsetY: 2
               })
               .width('90%')
-              .margin({ bottom: 20 })
+
+              Divider().margin({top:30,bottom:30}).color($r('app.color.border'))
+
+              Text('App相关').margin({bottom:15}).width('90%').fontWeight(FontWeight.Bold).fontSize(20)
+              Column(){
+                Row() {
+                  Row() {
+                    Image($r('app.media.app_log'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('App更新日志')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/app_log' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+                Divider()
+                  .color($r('app.color.border'))
+                  .strokeWidth(0.5)
+                  .margin({ left: 16, right: 16 })
+                Row() {
+                  Row() {
+                    Image($r('app.media.contact'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('联系我们')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/app_contact' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+              }
+              .borderWidth(0.5)
+              .borderColor($r('app.color.border'))
+              .backgroundColor($r('app.color.background'))
+              .borderRadius(16)
+              .shadow({
+                radius: 8,
+                color: '#1a000000',
+                offsetX: 0,
+                offsetY: 2
+              })
+              .width('90%')
+
+              Divider().margin({top:30,bottom:30}).color($r('app.color.border'))
 
               Text(`Version ${APP_VERSION}`)
                 .fontColor('#888')
@@ -138,6 +201,8 @@ struct settings {
             .width('100%')
             .alignItems(HorizontalAlign.Center)
           }
+          .margin({bottom:40})
+          .margin({top:72})
           .width('100%')
           .height('100%')
 
@@ -169,11 +234,8 @@ struct settings {
           .backgroundBlurStyle(BlurStyle.Thin)
           .position({ x: 0, y: 0 })
           .width('100%')
-        }
-        .width('100%')
-        .backgroundColor($r('app.color.backcolor'))
       }
-    }
+      .backgroundColor($r('app.color.backcolor'))
   }
   async openLink() {
     const url = 'https://beian.miit.gov.cn/#/Integrated/index';

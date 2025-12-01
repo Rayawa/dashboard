@@ -138,7 +138,6 @@ struct V1 {
             }
           })
       }
-
       Column() {
         Column() {
           Text('\n').fontSize(14)
@@ -153,10 +152,10 @@ struct V1 {
               .height(24).width(24)
               .margin({ right: 30 })
               .bindMenu(this.Menu)
-            Image($r('app.media.settings'))
+            Image($r('app.media.user'))
               .height(24).width(24)
               .margin({ right: 30 })
-              .onClick(() => router.pushUrl({ url: 'pages/settings' }))
+              .onClick(() => router.pushUrl({ url: 'pages/user' }))
           }
         }
         .width('100%')
