@@ -42,8 +42,6 @@ struct V2 {
           prompt.showToast({ message: '回到顶部', duration: 500 })
           this.scrollToTop();
         })
-
-
       MenuItem({
         startIcon: $r('app.media.switch'),
         content: "切换V1"

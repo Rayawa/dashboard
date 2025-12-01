@@ -119,7 +119,7 @@ struct settings {
               .width('90%')
               .margin({ bottom: 20 })
 
-              Text('Version 1.0.0')
+              Text('Version 1.1.0-alpha.1')
                 .fontColor('#888')
                 .margin(5)
                 .fontSize(12)
