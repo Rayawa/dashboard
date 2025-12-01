@@ -67,14 +67,15 @@ export default class EntryAbility extends UIAbility {
     }
   }
 
+  // 导航栏沉浸
   async setCutoutMode(windowStage: window.WindowStage) {
     try {
       const windowClass = await windowStage.getMainWindow();
       await windowClass.setWindowLayoutFullScreen(true);
       const avoidArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
       hilog.info(DOMAIN, 'dashboard', 'Avoid area: %{public}s', JSON.stringify(avoidArea));
-      await windowClass.setWindowSystemBarEnable([]);
-      // await windowClass.setFullScreen(true);
+      // await windowClass.setWindowSystemBarEnable([]);
+      await windowClass.setFullScreen(true);
 
     } catch (err) {
       hilog.error(DOMAIN, 'dashboard', 'Failed to set cutout mode. Cause: %{public}s', JSON.stringify(err));
