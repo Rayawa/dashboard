@@ -1,7 +1,7 @@
 {
   "src": [
-    "pages/IndexV1",
-    "pages/Index",
+    "pages/index_s",
+    "pages/index_t",
     "pages/user",
     "pages/user/log",
     "pages/user/contact",

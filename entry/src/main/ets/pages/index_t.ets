@@ -49,8 +49,8 @@ struct V2 {
         content: "切换V1"
       })
         .onClick(() => {
-          router.pushUrl({ url: 'pages/IndexV1' });
-          prompt.showToast({ message: '切换V1', duration: 500 });
+          router.pushUrl({ url: 'pages/index_s' });
+          prompt.showToast({ message: '切换到 S 版本', duration: 500 });
         })
     }
   }
@@ -121,7 +121,7 @@ struct V2 {
           .onControllerAttached(() => {
             // for API 17, API 20 可以直接 setAppCustomUserAgent()
             try {
-              this.web_controller.setCustomUserAgent(APP_UA());
+              this.web_controller.setCustomUserAgent(APP_UA);
             } catch (error) {
               console.error(`ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`);
             }

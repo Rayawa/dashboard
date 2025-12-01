@@ -46,7 +46,7 @@ export struct TopNavBar {
         content: "切换V1"
       })
         .onClick(() => {
-          router.pushUrl({ url: 'pages/IndexV1' });
+          router.pushUrl({ url: 'pages/index_s' });
           prompt.showToast({ message: '切换V1', duration: 500 });
         })
     }
