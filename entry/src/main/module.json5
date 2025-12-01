@@ -15,7 +15,7 @@
     "abilities": [
       {
         "name": "EntryAbility",
-        "srcEntry": "./ets/ability/EntryAbility.ets",
+        "srcEntry": "./ets/ability/entry.ets",
         "description": "$string:EntryAbility_desc",
 //        "icon": "$media:layered_image",
         "label": "$string:EntryAbility_label",
@@ -29,21 +29,13 @@
             ],
             "actions": [
               "ohos.want.action.home",
-              "ohos.want.action.sendData"
-            ],
-            "uris": [
-              {
-                "scheme": "file",
-                "utd": "general.hyperlink",
-                "maxFileSupported": 1
-              }
             ]
           }
         ]
       },
       {
         "name": "MainAbility",
-        "srcEntry": "./ets/ability/MainAbility.ets",
+        "srcEntry": "./ets/ability/main.ets",
         "description": "$string:MainAbility_desc",
         "icon": "$media:layered_image",
         "label": "$string:MainAbility_label",
@@ -65,10 +57,32 @@
 //        ],
 //      },
       {
-        "name": "ShareAbility",
-        "srcEntry": "./ets/ability/ShareAbility.ets",
-        "description": "用来处理分享页面的",
-        "label": "$string:ShareAbility_label",
+        "name": "simple_share_ability",
+        "srcEntry": "./ets/ability/simple_share.ets",
+        "description": "简单分享详细页面",
+        "label": "$string:simple_share_label",
+        "type": "share",
+        "exported": true,
+        "skills": [
+          {
+            "actions": [
+              "ohos.want.action.sendData"
+            ],
+            "uris": [
+              {
+                "scheme": "file",
+                "utd": "general.hyperlink",
+                "maxFileSupported": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "complex_share_ability",
+        "srcEntry": "./ets/ability/complex_share.ets",
+        "description": "复杂分享详细页面",
+        "label": "$string:complex_share_label",
         "type": "share",
         "exported": true,
         "skills": [

@@ -10,7 +10,7 @@
     },
     {
       "name": "EntryAbility_label",
-      "value": "打开看板投稿"
+      "value": "鸿蒙应用市场看板"
     },
     {
       "name": "MainAbility_desc",
@@ -21,8 +21,12 @@
       "value": "label"
     },
     {
-      "name": "ShareAbility_label",
-      "value": "按现有信息投稿到看板"
+      "name": "simple_share_label",
+      "value": "按已有信息投稿到看板"
+    },
+    {
+      "name": "complex_share_label",
+      "value": "填写信息投稿到看板"
     }
   ]
 }
