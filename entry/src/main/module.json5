@@ -28,7 +28,15 @@
               "entity.system.home"
             ],
             "actions": [
-              "ohos.want.action.home"
+              "ohos.want.action.home",
+              "ohos.want.action.sendData"
+            ],
+            "uris": [
+              {
+                "scheme": "file",
+                "utd": "general.text",
+                "maxFileSupported": 1
+              }
             ]
           }
         ]
