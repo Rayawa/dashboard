@@ -63,7 +63,7 @@ struct contact {
   @State progress: number = 0;
   @State scrollY: number = 0;
 
-  private readonly NAV_HEIGHT: number = 72;
+  private readonly NAV_HEIGHT: number = 42;
 
   build() {
     Stack() {
