@@ -1,7 +1,7 @@
 //shenjack
 import { deviceInfo } from '@kit.BasicServicesKit';
 
-export const APP_VERSION: string = "1.1.0-alpha.2";
+export const APP_VERSION: string = "1.1.0-alpha.4";
 
 /**
  * 生成程序 UA
