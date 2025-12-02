@@ -59,8 +59,8 @@ struct user {
     const ui_content = this.getUIContext();
     const prompt_action = ui_content.getPromptAction();
     ui_content.showAlertDialog({
-      title: '即将离开本应用',
-      message: '是否跳转到浏览器',
+      title: '是否跳转到浏览器',
+      message: '即将访问ICP/IP地址/域名信息备案管理系统',
       primaryButton: {
         value: '取消',
         fontColor:Color.Red,
@@ -115,21 +115,31 @@ struct user {
 
               Column(){
                 Row() {
-                  Image($r('app.media.user'))
-                    .height(24)
-                    .width(24)
-                    .objectFit(ImageFit.Contain)
+                  // 左侧固定部分
+                  Row() {
+                    Image($r('app.media.user'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
 
-                  Text('用户名')
-                    .fontSize(16)
-                    .margin({ left: 12 })
-                    .fontWeight(FontWeight.Medium)
+                    Text('用户名')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                      .fontWeight(FontWeight.Medium)
+                  }
+                  .constraintSize({
+                    minWidth: 50 // 设置最小宽度
+                  })
 
+                  // 右侧自适应输入框
                   TextInput({
                     text: this.userName,
                     placeholder: '设置用户名'
                   })
-                    .width('70%')
+                    .layoutWeight(1) // 使用layoutWeight而不是flexGrow
+                    .constraintSize({
+                      maxWidth: '80%' // 限制最大宽度
+                    })
                     .height(40)
                     .margin({ left: 12 })
                     .borderRadius(16)
@@ -153,14 +163,15 @@ struct user {
                 .height(56)
                 .width('100%')
                 .justifyContent(FlexAlign.SpaceBetween)
-                .padding({ left: 16, right: 16 })
+                .alignItems(VerticalAlign.Center)
+                .padding({ top: 2, left: 16, right: 16 })
 
                 Row(){
                   if (this.userName === this.deviceName) {
                     Text(`当前使用设备名称: ${deviceInfo.productModel}`)
                       .fontSize(12)
                       .fontColor('#666')
-                      .margin({right:3})
+                      .margin({right:5})
                   }
                   Text('已自动保存')
                     .fontSize(12)

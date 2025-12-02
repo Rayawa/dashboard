@@ -56,10 +56,6 @@ struct app_log {
       Stack() {
         Scroll(){
           Column() {
-            Column()
-              .width('100%')
-              .backgroundColor($r('app.color.navcolor'))
-              .height(82)
             ForEach(this.updateLogs, (log: UpdateLog) => {
               Column() {
                 Row() {
@@ -117,7 +113,7 @@ struct app_log {
               .margin({ bottom: 16 })
             })
           }
-          .margin({top:20,bottom:20})
+          .margin({top:100,bottom:20})
           .width('100%')
           .alignItems(HorizontalAlign.Center)
         }

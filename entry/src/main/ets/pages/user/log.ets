@@ -48,7 +48,7 @@ struct api {
   @State progress: number = 0;
   @State scrollY: number = 0;
   @State isV2: boolean = true;
-  private readonly NAV_HEIGHT: number = 82;
+  private readonly NAV_HEIGHT: number = 45;
 
   build() {
     Stack() {
