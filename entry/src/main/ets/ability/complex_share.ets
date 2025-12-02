@@ -19,6 +19,7 @@ export class ShareAbility extends ShareExtensionAbility {
         console.error(`Failed to getSharedData. Code: ${error.code}, message: ${error.message}`);
         session.terminateSelf();
       });
+
     // session.terminateSelfWithResult({
     //   resultCode: systemShare.ShareAbilityResultCode.CLOSE
     // })

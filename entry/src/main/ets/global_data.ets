@@ -10,3 +10,5 @@ export const APP_VERSION: string = "1.1.0-alpha.2";
 export const APP_UA: string = (() => {
   return `top.rayawa.dashboard ${APP_VERSION} ${deviceInfo.osFullName} ${deviceInfo.productModel} ${deviceInfo.sdkApiVersion}`
 })();
+
+export const SUBMIT_PLATFORM: string = `ray_dashboard ${APP_VERSION}`
