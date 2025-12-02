@@ -10,7 +10,7 @@ class UpdateLog {
 
 @Entry
 @Component
-struct UpdateLogPage {
+struct app_log {
   @State updateLogs: UpdateLog[] = [
     {
       version: 'V1.1.0-beta.1',
@@ -54,110 +54,100 @@ struct UpdateLogPage {
   build() {
     Column() {
       Stack() {
+        Scroll(){
           Column() {
-            Column() {
-              Text('版本记录')
-                .margin({ bottom: 15 })
-                .width('90%')
-                .fontWeight(FontWeight.Bold)
-                .fontSize(20)
-              Scroll(){
-                Column() {
-                  ForEach(this.updateLogs, (log: UpdateLog) => {
-                    Column() {
-                      Row() {
-                        Column() {
-                          Row() {
-                            Text(log.version)
-                              .fontSize(18)
-                              .fontWeight(FontWeight.Medium)
-                            if (log.isRelease) {
-                              Text('正式版')
-                                .fontSize(12)
-                                .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-                                .backgroundColor('#FF6A39')
-                                .fontColor('#fff')
-                                .borderRadius(6)
-                                .margin({ left: 8 })
-                            }
-                          }
-                          Text(log.date)
-                            .fontSize(13)
-                            .fontColor('#999')
-                            .margin({ top: 4 })
-                        }
+            Column()
+              .width('100%')
+              .backgroundColor($r('app.color.navcolor'))
+              .height(72)
+            ForEach(this.updateLogs, (log: UpdateLog) => {
+              Column() {
+                Row() {
+                  Column() {
+                    Row() {
+                      Text(log.version)
+                        .fontSize(18)
+                        .fontWeight(FontWeight.Medium)
+                      if (log.isRelease) {
+                        Text('正式版')
+                          .fontSize(12)
+                          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                          .backgroundColor('#FF6A39')
+                          .fontColor('#fff')
+                          .borderRadius(6)
+                          .margin({ left: 8 })
                       }
-                      Column({ space: 6 }) {
-                        ForEach(log.items, (item: string) => {
-                          Row() {
-                            Text('•')
-                              .fontSize(16)
-                              .fontWeight(600)
-                              .fontColor('#666')
-                            Text(item)
-                              .margin({ left: 8 })
-                              .fontSize(15)
-                              .lineHeight(20)
-                          }
-                        })
-                      }
-                      .margin({ top: 10 })
                     }
-                    .padding(16)
-                    .borderRadius(16)
-                    .backgroundColor($r('app.color.background'))
-                    .shadow({
-                      radius: 8,
-                      color: '#1a000000',
-                      offsetX: 0,
-                      offsetY: 2
-                    })
-                    .width('90%')
-                    .margin({ bottom: 16 })
+                    Text(log.date)
+                      .fontSize(13)
+                      .fontColor('#999')
+                      .margin({ top: 4 })
+                  }
+                }
+                Column({ space: 5 }) {
+                  ForEach(log.items, (item: string) => {
+                    Row() {
+                      Text('•')
+                        .fontSize(16)
+                        .fontWeight(600)
+                        .fontColor('#666')
+                      Text(item)
+                        .margin({ left: 8 })
+                        .fontSize(15)
+                        .lineHeight(20)
+                    }
                   })
                 }
+                .margin({ top: 10 })
               }
-
-            }
-            .width('100%')
-            .alignItems(HorizontalAlign.Center)
-            .margin({ bottom: 40 })
+              .padding(16)
+              .borderRadius(16)
+              .backgroundColor($r('app.color.background'))
+              .shadow({
+                radius: 8,
+                color: '#1a000000',
+                offsetX: 0,
+                offsetY: 2
+              })
+              .width('90%')
+              .margin({ bottom: 16 })
+            })
           }
           .margin({top:20,bottom:20})
-          .margin({top:72})
           .width('100%')
-          .height('100%')
+          .alignItems(HorizontalAlign.Center)
+        }
+        .width('100%')
+        .height('100%')
 
+        Column() {
+          Column() { Text('\n').fontSize(14) }
+          Row() {
+            Text('更新日志')
+              .fontSize(21)
+              .fontWeight(FontWeight.Bold)
+              .margin({ left: 25 })
 
-          Column() {
-            Column() { Text('\n').fontSize(14) }
-            Row() {
-              Text('更新日志')
-                .fontSize(21)
-                .fontWeight(FontWeight.Bold)
-                .margin({ left: 25 })
-
-              Image($r('app.media.arrow_back'))
-                .height(24)
-                .width(24)
-                .margin({ right: 30 })
-                .onClick(() => router.back())
-            }
-            .width('100%')
-            .justifyContent(FlexAlign.SpaceBetween)
-            .height(45)
-
-            Rect()
-              .width('100%')
-              .height(0.5)
-              .fill($r('app.color.border'))
-              .position({ x: 0, y: 77 })
-
+            Image($r('app.media.arrow_back'))
+              .height(24)
+              .width(24)
+              .margin({ right: 30 })
+              .onClick(() => router.back())
           }
-          .backgroundBlurStyle(BlurStyle.Thin)
-          .position({ x: 0, y: 0 })
           .width('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
+          .height(45)
 
+          Rect()
+            .width('100%')
+            .height(0.5)
+            .fill($r('app.color.border'))
+            .position({ x: 0, y: 77 })
+
+        }
+        .backgroundBlurStyle(BlurStyle.Thin)
+        .position({ x: 0, y: 0 })
+        .width('100%')
       }
       .backgroundColor($r('app.color.backcolor'))
     }
