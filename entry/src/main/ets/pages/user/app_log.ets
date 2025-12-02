@@ -115,7 +115,7 @@ struct app_log {
           }
           .margin({top:20,bottom:20})
           .width('100%')
-          .alignItems(HorizontalAlign.Center)
+          .alignItems(HorizontalAlign.Start)
         }
         .width('100%')
         .height('100%')

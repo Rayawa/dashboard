@@ -9,6 +9,10 @@
       "value": "#FFF6F9FF"
     },
     {
+      "name": "diff_background",
+      "value": "#FFE1E4EA"
+    },
+    {
       "name": "backcolor",
       "value": "#EEF6FE"
     },
