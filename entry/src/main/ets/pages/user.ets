@@ -9,8 +9,6 @@ import deviceInfo from '@ohos.deviceInfo';
 struct user {
   @State userName: string = ''
   @State deviceName: string = ''
-
-
   async getPreference(): Promise<preferences.Preferences> {
     const context = getContext(this) as common.Context;
     return await preferences.getPreferences(context, 'user_settings');
@@ -99,17 +97,13 @@ struct user {
       Stack() {
         Scroll(){
           Column() {
-            Column()
-              .width('100%')
-              .backgroundColor($r('app.color.navcolor'))
-              .height(72)
             Column() {
               Column() {
                 Image($r('app.media.app_icon'))
                   .height(100)
                   .width(100)
                   .borderRadius($r('sys.float.corner_radius_level6'))
-                  .margin({ top: 10 })
+                  .margin({ top: 82 })
                 Text('应用看板')
                   .fontWeight(800)
                   .fontSize(30)
@@ -126,16 +120,16 @@ struct user {
                     .width(24)
                     .objectFit(ImageFit.Contain)
 
-                  Text('设置用户名')
+                  Text('用户名')
                     .fontSize(16)
                     .margin({ left: 12 })
                     .fontWeight(FontWeight.Medium)
 
                   TextInput({
                     text: this.userName,
-                    placeholder: '请输入用户名'
+                    placeholder: '设置用户名'
                   })
-                    .width('60%')
+                    .width('70%')
                     .height(40)
                     .margin({ left: 12 })
                     .borderRadius(16)

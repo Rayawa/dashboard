@@ -17,7 +17,7 @@ struct app_log {
       date: '2025-12-?',
       isRelease: false,
       type:'beta',
-      items: ['1', '2', '3']
+      items: ['增加shareAbility接口，现在可以通过应用市场投稿app添加信息', '统一了所有web界面UA', '在我的界面增加了用户名，App更新日志，问题与反馈与使用教程界面', '将V1与V2页面合并']
     },
     {
       version: 'V1.0.0',
@@ -47,7 +47,7 @@ struct app_log {
       date: '2025-11-29',
       isRelease: false,
       type:'Beta',
-      items: ['点击输入文本', '点击输入文本']
+      items: ['添加V1与V2的web界面', '添加了user界面', '添加了顶部导航条和menu']
     }
   ];
 
@@ -92,10 +92,14 @@ struct app_log {
                         .fontWeight(600)
                         .fontColor('#666')
                       Text(item)
-                        .margin({ left: 8 })
+                        .margin({ left: 5 })
                         .fontSize(15)
                         .lineHeight(20)
+                        .flexShrink(1)
                     }
+                    .justifyContent(FlexAlign.Start)
+                    .width('100%')
+                    .padding({right:5})
                   })
                 }
                 .margin({ top: 10 })
@@ -115,7 +119,7 @@ struct app_log {
           }
           .margin({top:20,bottom:20})
           .width('100%')
-          .alignItems(HorizontalAlign.Start)
+          .alignItems(HorizontalAlign.Center)
         }
         .width('100%')
         .height('100%')

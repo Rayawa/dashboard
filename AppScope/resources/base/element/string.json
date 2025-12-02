@@ -2,7 +2,8 @@
   "string": [
     {
       "name": "app_name",
-      "value": "应用看板"
+      "value": "应用看板",
+      "module_desc": "鸿蒙应用市场看板"
     }
   ]
 }
