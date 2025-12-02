@@ -1,7 +1,6 @@
 {
   "src": [
     "pages/index",
-    "pages/indexV1",
     "pages/WebView",
     "pages/user",
     "pages/user/log",

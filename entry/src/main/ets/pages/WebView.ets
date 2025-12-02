@@ -1,79 +1,64 @@
 import { webview } from "@kit.ArkWeb";
 import { prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
-import { BusinessError } from '@kit.BasicServicesKit';
-import { APP_UA } from "../global_data";
+import { APP_UA } from "../global_data"; //shenjack的UA
+import { KnockController } from '../controller/KnockController'; //Rayawa的分享
+import { Logger } from '../utils/Logger'; //Rayawa的分享
+import { common } from "@kit.AbilityKit"; //Rayawa的分享
 
 @Entry
 @Component
-struct WebView {
-  @Builder
-  Menu() {
-    MenuItemGroup() {
-      MenuItem({
-        startIcon: $r('app.media.arrow_back'),
-        content: "返回上级"
-      })
-        .onClick(() => {
-          this.web_controller.backward();
-          const ui_content = this.getUIContext();
-          const prompt_action = ui_content.getPromptAction();
-          prompt_action.showToast({ message: '返回上级', duration: 500 });
-        })
-      MenuItem({
-        startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'),
-        content: this.isLoading ? "停止刷新" : "刷新页面"
-      })
-        .onClick(() => {
-          const ui_content = this.getUIContext();
-          const prompt_action = ui_content.getPromptAction();
-          if (this.isLoading) {
-            this.web_controller.stop();
-            this.isLoading = false;
-            prompt_action.showToast({ message: '停止刷新', duration: 500 });
-          } else {
-            this.web_controller.refresh();
-            this.isLoading = true;
-            prompt_action.showToast({ message: '刷新页面', duration: 500 });
-          }
-        })
-      MenuItem({
-        startIcon: $r('app.media.arrow_up'),
-        content: "回到顶部"
-      })
-        .onClick(() => {
-          const ui_content = this.getUIContext();
-          const prompt_action = ui_content.getPromptAction();
-          prompt_action.showToast({ message: '回到顶部', duration: 500 })
-          this.scrollToTop();
-        })
-      MenuItem({
-        startIcon: $r('app.media.switch'),
-        content: this.isV2 ? "切换到V1" : "切换到V2"
-      })
-        .onClick(() => { this.switchWebVersion(); })
-    }
-  }
+export struct WebView {
+  private web_controller: webview.WebviewController = new webview.WebviewController();
+  private win: window.Window | null = null; //Rayawa的状态栏颜色
+  private knockController: KnockController | undefined = undefined; //Rayawa的分享
 
-  private win: window.Window | null = null;
+  @State url: string = 'https://hmos.txit.top/dashboard';
+  @State mode: WebDarkMode = WebDarkMode.Auto;
+  @State isLoading: boolean = false;
+  @State progress: number = 0;
+  @State scrollY: number = 0;
+  @State isV2: boolean = true;
+  private readonly NAV_HEIGHT: number = 72;
+
   async aboutToAppear() {
-    const customUA = webview.WebviewController.getDefaultUserAgent()
-      + " Hm_dashboard";
+    //shenjack的UA
+    const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
     webview.WebviewController.setAppCustomUserAgent(customUA);
     this.win = await window.getLastWindow(getContext());
+    //UA结束
+
+    //Rayawa的状态栏颜色
     const isDark = this.mode === WebDarkMode.On;
     this.win.setWindowSystemBarProperties({
       statusBarColor: '#00000000',
       statusBarContentColor: isDark ? '#FFFFFF' : '#000000'
     });
+    //状态栏颜色结束
+
+    //Rayawa的分享
+    const uiAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
+    this.knockController = KnockController.getInstance(uiAbilityContext, this);
+    this.knockController.immersiveListening();
   }
+  aboutToDisappear() {
+    this.knockController?.immersiveDisableListening();
+  }
+  public async getCurrentWebUrl(): Promise<string> {
+    try {
+      return await this.web_controller.getUrl();
+    } catch (err) {
+      Logger.error('WebView', '获取 WebView URL 失败: ' + err);
+      return '';
+    }
+  }
+    //分享结束
 
   private scrollToTop() {
     const duration = 500;
     const frames = 60;
     const interval = duration / frames;
     const startY = this.scrollY;
-
     let frame = 0;
     const timer = setInterval(() => {
       frame++;
@@ -81,7 +66,6 @@ struct WebView {
       const easing = 1 - Math.pow(1 - progress, 3);
       const newY = startY * (1 - easing);
       this.web_controller.scrollTo(0, newY);
-
       if (frame >= frames) {
         clearInterval(timer);
         this.web_controller.scrollTo(0, 0);
@@ -91,27 +75,29 @@ struct WebView {
 
   private switchWebVersion(): void {
     const switchVersion = this.isV2 ? 'V2' : 'V1';
-    if (this.isV2) {
-      this.url = 'http://shenjack.top:10003/dashboard';
-    } else {
-      this.url = 'https://hmos.txit.top/dashboard';
-    }
-    this.web_controller.refresh();
+    this.url = this.isV2 ? 'http://shenjack.top:10003/dashboard' : 'https://hmos.txit.top/dashboard';
     this.isV2 = !this.isV2;
-    prompt.showToast({
-      message: `切换至${switchVersion}`,
-      duration: 500
-    });
+    this.web_controller.loadUrl(this.url);
+    prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
   }
 
-  private web_controller: webview.WebviewController = new webview.WebviewController();
-  @State url: string = 'https://hmos.txit.top/dashboard';
-  @State mode: WebDarkMode = WebDarkMode.Auto;
-  @State isLoading: boolean = false;
-  @State progress: number = 0;
-  @State scrollY: number = 0;
-  @State isV2: boolean = true;
-  private readonly NAV_HEIGHT: number = 72;
+  @Builder
+  Menu() {
+    MenuItemGroup() {
+      MenuItem({ startIcon: $r('app.media.arrow_back'), content: "返回上级" })
+        .onClick(() => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); });
+      MenuItem({ startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'),
+        content: this.isLoading ? "停止刷新" : "刷新页面" })
+        .onClick(() => {
+          if (this.isLoading) { this.web_controller.stop(); this.isLoading = false; prompt.showToast({ message: '停止刷新', duration: 500 }); }
+          else { this.web_controller.refresh(); this.isLoading = true; prompt.showToast({ message: '刷新页面', duration: 500 }); }
+        });
+      MenuItem({ startIcon: $r('app.media.arrow_up'), content: "回到顶部" })
+        .onClick(() => { prompt.showToast({ message: '回到顶部', duration: 500 }); this.scrollToTop(); });
+      MenuItem({ startIcon: $r('app.media.switch'), content: this.isV2 ? "切换到V1" : "切换到V2" })
+        .onClick(() => { this.switchWebVersion(); });
+    }
+  }
 
   build() {
     Stack() {
@@ -119,8 +105,7 @@ struct WebView {
         Column()
           .width('100%')
           .backgroundColor($r('app.color.navcolor'))
-          .height(Math.max(this.NAV_HEIGHT - this.scrollY, 0))
-
+          .height(Math.max(this.NAV_HEIGHT - this.scrollY, 0));
         Web({
           src: this.url,
           controller: this.web_controller
@@ -135,59 +120,29 @@ struct WebView {
           .onProgressChange((p) => this.progress = p.newProgress)
           .onPageEnd(() => this.isLoading = false)
           .onScroll((e) => this.scrollY = e.yOffset)
-          .onControllerAttached(() => {
-            // for API 17, API 20 可以直接 setAppCustomUserAgent()
-            try {
-              this.web_controller.setCustomUserAgent(APP_UA);
-            } catch (error) {
-              console.error(`ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`);
-            }
-          })
+          .onControllerAttached(() => { try { this.web_controller.setCustomUserAgent(APP_UA); } catch {} });//shenjack的UA
       }
 
       Column() {
         Column() {
-          Text('\n').fontSize(14)
+          Text('\n').fontSize(14);
           Row() {
-            Text(this.isV2 ? "应用看板V2" : "应用看板V1")
-              .fontSize(21)
-              .fontWeight(FontWeight.Bold)
-              .margin({ left: 15 })
+            Text(this.isV2 ? "应用看板V2" : "应用看板V1").fontSize(21).fontWeight(FontWeight.Bold).margin({ left: 15 });
             Row() {
-              Image($r('app.media.menu'))
-                .height(24).width(24)
-                .margin({ right: 30 })
-                .bindMenu(this.Menu)
-              Image($r('app.media.user'))
-                .height(24).width(24)
-                .margin({ right: 30 })
-                .onClick(() => router.pushUrl({ url: 'pages/user' }))
+              Image($r('app.media.menu')).height(24).width(24).margin({ right: 30 }).bindMenu(this.Menu);
+              Image($r('app.media.user')).height(24).width(24).margin({ right: 30 }).onClick(() => router.pushUrl({ url: 'pages/user' }));
             }
           }
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween)
-          .height(45)
-
-          Rect()
-            .width('100%')
-            .height(0.5)
-            .fill($r('app.color.border'))
-            .position({ x: 0, y: 77 })
-
+          .width('100%').justifyContent(FlexAlign.SpaceBetween).height(45);
+          Rect().width('100%').height(0.5).fill($r('app.color.border')).position({ x: 0, y: 77 });
         }
-        .backgroundBlurStyle(BlurStyle.Thin)
-        .position({ x: 0, y: 0 })
-        .width('100%')
+        .backgroundBlurStyle(BlurStyle.Thin).position({ x: 0, y: 0 }).width('100%');
 
         if (this.isLoading) {
-          Progress({ value: this.progress, total: 100 })
-            .width('100%')
-            .height(3)
-            .position({ x: 0, y: 77 })
+          Progress({ value: this.progress, total: 100 }).width('100%').height(3).position({ x: 0, y: 77 });
         }
       }
-      .position({ x: 0, y: 0 })
-      .width('100%')
+      .position({ x: 0, y: 0 }).width('100%');
     }
   }
 }
