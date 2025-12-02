@@ -1,10 +1,15 @@
 import { webview } from "@kit.ArkWeb";
 import { prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
+import { BusinessError } from '@ohos.base';
 import { APP_UA } from "../global_data"; //shenjack的UA
 import { KnockController } from '../controller/KnockController'; //Rayawa的分享
 import { Logger } from '../utils/Logger'; //Rayawa的分享
 import { common } from "@kit.AbilityKit"; //Rayawa的分享
+import systemShare from '@hms.collaboration.systemShare'; //Rayawa的分享
+import { uniformTypeDescriptor } from '@kit.ArkData';
+
+
 
 @Entry
 @Component
@@ -37,6 +42,10 @@ export struct WebView {
     //状态栏颜色结束
 
     //Rayawa的分享
+    // const params = this.getUIContext().getRouter().getParams() as Record<string, string>;
+    // if (params.url) {
+    //   this.url = params.url;
+    // }
     const uiAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
     this.knockController = KnockController.getInstance(uiAbilityContext, this);
     this.knockController.immersiveListening();
@@ -48,11 +57,31 @@ export struct WebView {
     try {
       return await this.web_controller.getUrl();
     } catch (err) {
-      Logger.error('WebView', '获取 WebView URL 失败: ' + err);
+      Logger.error('WebView', '获取 WebView URL 失败: ' + (err as BusinessError).message);
       return '';
     }
   }
-    //分享结束
+  private async sharePage() {
+    try {
+      const currentUrl = await this.getCurrentWebUrl();
+      const appLink = `dashboard://openPage?url=${encodeURIComponent(currentUrl)}`;
+
+      let data: systemShare.SharedData = new systemShare.SharedData({
+        utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
+        content: currentUrl,
+        title: '应用看板链接分享',
+        description: `${currentUrl}`,
+      });
+
+      let controller: systemShare.ShareController = new systemShare.ShareController(data);
+      const context = getContext(this) as common.UIAbilityContext;
+      await controller.show(context, {});
+      Logger.info('WebView', '分享成功: ' + currentUrl);
+    } catch (error) {
+        Logger.error('WebView', '分享失败: ' + JSON.stringify(error));
+      }
+    }
+  //分享结束
 
   private scrollToTop() {
     const duration = 500;
@@ -86,14 +115,22 @@ export struct WebView {
     MenuItemGroup() {
       MenuItem({ startIcon: $r('app.media.arrow_back'), content: "返回上级" })
         .onClick(() => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); });
-      MenuItem({ startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'),
-        content: this.isLoading ? "停止刷新" : "刷新页面" })
+      MenuItem({ startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'), content: this.isLoading ? "停止刷新" : "刷新页面" })
         .onClick(() => {
-          if (this.isLoading) { this.web_controller.stop(); this.isLoading = false; prompt.showToast({ message: '停止刷新', duration: 500 }); }
-          else { this.web_controller.refresh(); this.isLoading = true; prompt.showToast({ message: '刷新页面', duration: 500 }); }
+          if (this.isLoading) {
+            this.web_controller.stop();
+            this.isLoading = false;
+            prompt.showToast({ message: '停止刷新', duration: 500 });
+          } else {
+            this.web_controller.refresh();
+            this.isLoading = true;
+            prompt.showToast({ message: '刷新页面', duration: 500 });
+          }
         });
       MenuItem({ startIcon: $r('app.media.arrow_up'), content: "回到顶部" })
         .onClick(() => { prompt.showToast({ message: '回到顶部', duration: 500 }); this.scrollToTop(); });
+      MenuItem({ startIcon: $r('app.media.share'), content: "分享页面" })
+        .onClick(() => { this.sharePage(); });
       MenuItem({ startIcon: $r('app.media.switch'), content: this.isV2 ? "切换到V1" : "切换到V2" })
         .onClick(() => { this.switchWebVersion(); });
     }
@@ -102,14 +139,9 @@ export struct WebView {
   build() {
     Stack() {
       Column() {
-        Column()
-          .width('100%')
-          .backgroundColor($r('app.color.navcolor'))
-          .height(Math.max(this.NAV_HEIGHT - this.scrollY, 0));
-        Web({
-          src: this.url,
-          controller: this.web_controller
-        })
+        Column().width('100%').backgroundColor($r('app.color.navcolor')).height(Math.max(this.NAV_HEIGHT - this.scrollY, 0));
+
+        Web({ src: this.url, controller: this.web_controller })
           .domStorageAccess(true)
           .darkMode(this.mode)
           .forceDarkAccess(true)

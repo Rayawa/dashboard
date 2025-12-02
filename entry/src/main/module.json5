@@ -24,13 +24,13 @@
         "exported": true,
         "skills": [
           {
-            "entities": [
-              "entity.system.home"
-            ],
-            "actions": [
-              "ohos.want.action.home",
-            ]
-          }
+            "entities": ["entity.system.home"],
+            "actions": ["ohos.want.action.home"]
+          },
+//          {
+//            "entities": ["top.rayawa.dashboard"],
+//            "actions": ["ohos.want.action.view"]
+//          }
         ]
       },
       {
