@@ -123,7 +123,7 @@ struct app_log {
         Column() {
           Column() { Text('\n').fontSize(14) }
           Row() {
-            Text('更新日志')
+            Text('App更新日志')
               .fontSize(21)
               .fontWeight(FontWeight.Bold)
               .margin({ left: 25 })

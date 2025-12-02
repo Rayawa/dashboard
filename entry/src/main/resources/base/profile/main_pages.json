@@ -1,7 +1,8 @@
 {
   "src": [
-    "pages/index_s",
-    "pages/index_t",
+    "pages/index",
+    "pages/indexV1",
+    "pages/WebView",
     "pages/user",
     "pages/user/log",
     "pages/user/contact",

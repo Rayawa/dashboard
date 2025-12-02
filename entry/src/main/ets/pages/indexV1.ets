@@ -1,5 +1,5 @@
 import { webview } from "@kit.ArkWeb";
-import { router } from "@kit.ArkUI";
+import { prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { APP_UA } from "../global_data";
@@ -20,7 +20,6 @@ struct V1 {
           const prompt_action = ui_content.getPromptAction();
           prompt_action.showToast({ message: '返回上级', duration: 500 });
         })
-
       MenuItem({
         startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'),
         content: this.isLoading ? "停止刷新" : "刷新页面"
@@ -38,7 +37,6 @@ struct V1 {
             prompt_action.showToast({ message: '刷新页面', duration: 500 });
           }
         })
-
       MenuItem({
         startIcon: $r('app.media.arrow_up'),
         content: "回到顶部"
@@ -49,18 +47,16 @@ struct V1 {
           prompt_action.showToast({ message: '回到顶部', duration: 500 })
           this.scrollToTop();
         })
-
-
       MenuItem({
         startIcon: $r('app.media.switch'),
-        content: "换到 T 版本"
+        content: "切换V2"
       })
         .onClick(() => {
           const ui_content = this.getUIContext();
           const prompt_action = ui_content.getPromptAction();
           ui_content.getRouter().clear();
-          ui_content.getRouter().pushUrl({ url: 'pages/index_t' });
-          prompt_action.showToast({ message: '换到 T 版本', duration: 500 });
+          ui_content.getRouter().pushUrl({ url: 'pages/indexV2' });
+          prompt_action.showToast({ message: '切换V2', duration: 500 });
         })
     }
   }
@@ -68,7 +64,7 @@ struct V1 {
   private win: window.Window | null = null;
   async aboutToAppear() {
     const customUA = webview.WebviewController.getDefaultUserAgent()
-      + " Hm_dashboard" ;
+      + " Hm_dashboard";
     webview.WebviewController.setAppCustomUserAgent(customUA);
     this.win = await window.getLastWindow(getContext());
     const isDark = this.mode === WebDarkMode.On;
@@ -98,14 +94,13 @@ struct V1 {
       }
     }, interval);
   }
-  private web_controller: webview.WebviewController = new webview.WebviewController();
 
+  private web_controller: webview.WebviewController = new webview.WebviewController();
   @State url: string = 'http://shenjack.top:10003/dashboard';
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
   @State progress: number = 0;
   @State scrollY: number = 0;
-
   private readonly NAV_HEIGHT: number = 72;
 
   build() {
@@ -139,49 +134,50 @@ struct V1 {
             }
           })
       }
+
       Column() {
         Column() {
           Text('\n').fontSize(14)
-        }
-        Row() {
-          Text('应用看板V1')
-            .fontSize(21)
-            .fontWeight(FontWeight.Bold)
-            .margin({ left: 15 })
           Row() {
-            Image($r('app.media.menu'))
-              .height(24).width(24)
-              .margin({ right: 30 })
-              .bindMenu(this.Menu)
-            Image($r('app.media.user'))
-              .height(24).width(24)
-              .margin({ right: 30 })
-              .onClick(() => router.pushUrl({ url: 'pages/user' }))
+            Text('应用看板V1')
+              .fontSize(21)
+              .fontWeight(FontWeight.Bold)
+              .margin({ left: 15 })
+            Row() {
+              Image($r('app.media.menu'))
+                .height(24).width(24)
+                .margin({ right: 30 })
+                .bindMenu(this.Menu)
+              Image($r('app.media.user'))
+                .height(24).width(24)
+                .margin({ right: 30 })
+                .onClick(() => router.pushUrl({ url: 'pages/user' }))
+            }
           }
+          .width('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
+          .height(45)
+
+          Rect()
+            .width('100%')
+            .height(0.5)
+            .fill($r('app.color.border'))
+            .position({ x: 0, y: 77 })
+
         }
+        .backgroundBlurStyle(BlurStyle.Thin)
+        .position({ x: 0, y: 0 })
         .width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .height(45)
 
-        Rect()
-          .width('100%')
-          .height(0.5)
-          .fill($r('app.color.border'))
-          .position({ x: 0, y: 77 })
-
+        if (this.isLoading) {
+          Progress({ value: this.progress, total: 100 })
+            .width('100%')
+            .height(3)
+            .position({ x: 0, y: 77 })
+        }
       }
-      .backgroundBlurStyle(BlurStyle.Thin)
-      .position({ x: 0, y: 0 })
       .width('100%')
-
-      if (this.isLoading) {
-        Progress({ value: this.progress, total: 100 })
-          .width('100%')
-          .height(3)
-          .position({ x: 0, y: 77 })
-      }
+      .height('100%')
     }
-    .width('100%')
-    .height('100%')
   }
 }

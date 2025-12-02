@@ -1,13 +1,12 @@
 import { webview } from "@kit.ArkWeb";
-import { router, prompt } from "@kit.ArkUI";
+import { prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { APP_UA } from "../global_data";
 
-//still to fix: 状态栏
 @Entry
 @Component
-struct V2 {
+struct WebView {
   @Builder
   Menu() {
     MenuItemGroup() {
@@ -16,12 +15,11 @@ struct V2 {
         content: "返回上级"
       })
         .onClick(() => {
+          this.web_controller.backward();
           const ui_content = this.getUIContext();
           const prompt_action = ui_content.getPromptAction();
-          this.web_controller.backward();
           prompt_action.showToast({ message: '返回上级', duration: 500 });
         })
-
       MenuItem({
         startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'),
         content: this.isLoading ? "停止刷新" : "刷新页面"
@@ -39,7 +37,6 @@ struct V2 {
             prompt_action.showToast({ message: '刷新页面', duration: 500 });
           }
         })
-
       MenuItem({
         startIcon: $r('app.media.arrow_up'),
         content: "回到顶部"
@@ -52,21 +49,17 @@ struct V2 {
         })
       MenuItem({
         startIcon: $r('app.media.switch'),
-        content: "换到 S 版本"
+        content: this.isV2 ? "切换到V1" : "切换到V2"
       })
-        .onClick(() => {
-          const ui_content = this.getUIContext();
-          const prompt_action = ui_content.getPromptAction();
-          ui_content.getRouter().clear();
-          ui_content.getRouter().pushUrl({ url: 'pages/index_s' });
-          prompt_action.showToast({ message: '换到 S 版本', duration: 500 });
-        })
+        .onClick(() => { this.switchWebVersion(); })
     }
   }
 
   private win: window.Window | null = null;
   async aboutToAppear() {
-
+    const customUA = webview.WebviewController.getDefaultUserAgent()
+      + " Hm_dashboard";
+    webview.WebviewController.setAppCustomUserAgent(customUA);
     this.win = await window.getLastWindow(getContext());
     const isDark = this.mode === WebDarkMode.On;
     this.win.setWindowSystemBarProperties({
@@ -95,14 +88,29 @@ struct V2 {
       }
     }, interval);
   }
-  private web_controller: webview.WebviewController = new webview.WebviewController();
 
+  private switchWebVersion(): void {
+    const switchVersion = this.isV2 ? 'V2' : 'V1';
+    if (this.isV2) {
+      this.url = 'http://shenjack.top:10003/dashboard';
+    } else {
+      this.url = 'https://hmos.txit.top/dashboard';
+    }
+    this.web_controller.refresh();
+    this.isV2 = !this.isV2;
+    prompt.showToast({
+      message: `切换至${switchVersion}`,
+      duration: 500
+    });
+  }
+
+  private web_controller: webview.WebviewController = new webview.WebviewController();
   @State url: string = 'https://hmos.txit.top/dashboard';
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
   @State progress: number = 0;
   @State scrollY: number = 0;
-
+  @State isV2: boolean = true;
   private readonly NAV_HEIGHT: number = 72;
 
   build() {
@@ -140,46 +148,46 @@ struct V2 {
       Column() {
         Column() {
           Text('\n').fontSize(14)
-        }
-        Row() {
-          Text('应用看板')
-            .fontSize(21)
-            .fontWeight(FontWeight.Bold)
-            .margin({ left: 15 })
           Row() {
-            Image($r('app.media.menu'))
-              .height(24).width(24)
-              .margin({ right: 30 })
-              .bindMenu(this.Menu)
-            Image($r('app.media.user'))
-              .height(24).width(24)
-              .margin({ right: 30 })
-              .onClick(() => router.pushUrl({ url: 'pages/user' }))
+            Text(this.isV2 ? "应用看板V2" : "应用看板V1")
+              .fontSize(21)
+              .fontWeight(FontWeight.Bold)
+              .margin({ left: 15 })
+            Row() {
+              Image($r('app.media.menu'))
+                .height(24).width(24)
+                .margin({ right: 30 })
+                .bindMenu(this.Menu)
+              Image($r('app.media.user'))
+                .height(24).width(24)
+                .margin({ right: 30 })
+                .onClick(() => router.pushUrl({ url: 'pages/user' }))
+            }
           }
-        }
-        .width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .height(45)
-
-        Rect()
           .width('100%')
-          .height(0.5)
-          .fill($r('app.color.border'))
-          .position({ x: 0, y: 77 })
+          .justifyContent(FlexAlign.SpaceBetween)
+          .height(45)
 
+          Rect()
+            .width('100%')
+            .height(0.5)
+            .fill($r('app.color.border'))
+            .position({ x: 0, y: 77 })
+
+        }
+        .backgroundBlurStyle(BlurStyle.Thin)
+        .position({ x: 0, y: 0 })
+        .width('100%')
+
+        if (this.isLoading) {
+          Progress({ value: this.progress, total: 100 })
+            .width('100%')
+            .height(3)
+            .position({ x: 0, y: 77 })
+        }
       }
-      .backgroundBlurStyle(BlurStyle.Thin)
       .position({ x: 0, y: 0 })
       .width('100%')
-
-      if (this.isLoading) {
-        Progress({ value: this.progress, total: 100 })
-          .width('100%')
-          .height(3)
-          .position({ x: 0, y: 77 })
-      }
     }
-    .width('100%')
-    .height('100%')
   }
 }
