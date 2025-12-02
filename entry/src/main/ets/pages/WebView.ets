@@ -24,7 +24,7 @@ export struct WebView {
   @State progress: number = 0;
   @State scrollY: number = 0;
   @State isV2: boolean = true;
-  private readonly NAV_HEIGHT: number = 72;
+  private readonly NAV_HEIGHT: number = 82;
 
   async aboutToAppear() {
     //shenjack的UA
@@ -132,20 +132,20 @@ export struct WebView {
         Column() {
           Text('\n').fontSize(14);
           Row() {
-            Text(this.isV2 ? "应用看板V2" : "应用看板V1").fontSize(21).fontWeight(FontWeight.Bold).margin({ left: 20 });
+            Text(this.isV2 ? "应用看板V2" : "应用看板V1").fontSize(23).fontWeight(FontWeight.Bold).margin({ left: 20 });
             Row() {
-              Image($r('app.media.switch')).height(24).width(24).margin({ right: 25 }).onClick(() => { this.switchWebVersion(); });
-              Image($r('app.media.share')).height(24).width(24).margin({ right: 25 }).onClick(() => { this.sharePage(); });
-              Image($r('app.media.user')).height(24).width(24).margin({ right: 25 }).onClick(() => router.pushUrl({ url: 'pages/user' }));
+              Image($r('app.media.switch')).height(28).width(28).margin({ right: 30 }).onClick(() => { this.switchWebVersion(); });
+              Image($r('app.media.share')).height(28).width(28).margin({ right: 30 }).onClick(() => { this.sharePage(); });
+              Image($r('app.media.user')).height(28).width(28).margin({ right: 25 }).onClick(() => router.pushUrl({ url: 'pages/user' }));
             }
           }
-          .width('100%').justifyContent(FlexAlign.SpaceBetween).height(45);
-          Rect().width('100%').height(0.5).fill($r('app.color.border')).position({ x: 0, y: 77 });
+          .width('100%').justifyContent(FlexAlign.SpaceBetween).height(55);
+          Rect().width('100%').height(0.5).fill($r('app.color.border')).position({ x: 0, y: 87 });
         }
         .backgroundBlurStyle(BlurStyle.Thin).position({ x: 0, y: 0 }).width('100%');
 
         if (this.isLoading) {
-          Progress({ value: this.progress, total: 100 }).width('100%').height(3).position({ x: 0, y: 77 });
+          Progress({ value: this.progress, total: 100 }).width('100%').height(3).position({ x: 0, y: 87 });
         }
       }
       .position({ x: 0, y: 0 }).width('100%');

@@ -1,5 +1,5 @@
 import { webview } from "@kit.ArkWeb";
-import { router } from "@kit.ArkUI";
+import { prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { APP_UA } from "../../global_data";
@@ -7,49 +7,6 @@ import { APP_UA } from "../../global_data";
 @Entry
 @Component
 struct api {
-  @Builder
-  Menu() {
-    MenuItemGroup() {
-      MenuItem({
-        startIcon: $r('app.media.arrow_back'),
-        content: "返回上级"
-      })
-        .onClick(() => {
-          this.web_controller.backward();
-          const ui_content = this.getUIContext();
-          const prompt_action = ui_content.getPromptAction();
-          prompt_action.showToast({ message: '返回上级', duration: 500 });
-        })
-      MenuItem({
-        startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'),
-        content: this.isLoading ? "停止刷新" : "刷新页面"
-      })
-        .onClick(() => {
-          const ui_content = this.getUIContext();
-          const prompt_action = ui_content.getPromptAction();
-          if (this.isLoading) {
-            this.web_controller.stop();
-            this.isLoading = false;
-            prompt_action.showToast({ message: '停止刷新', duration: 500 });
-          } else {
-            this.web_controller.refresh();
-            this.isLoading = true;
-            prompt_action.showToast({ message: '刷新页面', duration: 500 });
-          }
-        })
-      MenuItem({
-        startIcon: $r('app.media.arrow_up'),
-        content: "回到顶部"
-      })
-        .onClick(() => {
-          const ui_content = this.getUIContext();
-          const prompt_action = ui_content.getPromptAction();
-          prompt_action.showToast({ message: '回到顶部', duration: 500 })
-          this.scrollToTop();
-        })
-    }
-  }
-
   private win: window.Window | null = null;
   async aboutToAppear() {
     const customUA = webview.WebviewController.getDefaultUserAgent()
@@ -91,7 +48,7 @@ struct api {
   @State progress: number = 0;
   @State scrollY: number = 0;
   @State isV2: boolean = true;
-  private readonly NAV_HEIGHT: number = 72;
+  private readonly NAV_HEIGHT: number = 82;
 
   build() {
     Stack() {
@@ -127,47 +84,36 @@ struct api {
 
       Column() {
         Column() {
-          Text('\n').fontSize(14)
+          Text('\n').fontSize(14);
           Row() {
-            Text("API文档")
-              .fontSize(21)
-              .fontWeight(FontWeight.Bold)
-              .margin({ left: 15 })
+            Text("API文档").fontSize(23).fontWeight(FontWeight.Bold).margin({ left: 20 });
             Row() {
-              Image($r('app.media.menu'))
-                .height(24).width(24)
-                .margin({ right: 30 })
-                .bindMenu(this.Menu)
-              Image($r('app.media.arrow_back'))
-                .height(24).width(24)
-                .margin({ right: 30 })
-                .onClick(() => router.back())
+              Image(this.isLoading ? $r('app.media.close') : $r('app.media.refresh')).height(28).width(28).margin({ right: 30 })
+                .onClick(() => {
+                  if (this.isLoading) {
+                    this.web_controller.stop();
+                    this.isLoading = false;
+                    prompt.showToast({ message: '停止刷新', duration: 500 });
+                  } else {
+                    this.web_controller.refresh();
+                    this.isLoading = true;
+                    prompt.showToast({ message: '刷新页面', duration: 500 });
+                  }
+                })
+              Image($r('app.media.arrow_up')).height(28).width(28).margin({ right: 30 }).onClick(() => { prompt.showToast({ message: '回到顶部', duration: 500 }); this.scrollToTop(); });
+              Image($r('app.media.arrow_back')).height(28).width(28).margin({ right: 25 }).onClick(() => router.back());
             }
           }
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween)
-          .height(45)
-
-          Rect()
-            .width('100%')
-            .height(0.5)
-            .fill($r('app.color.border'))
-            .position({ x: 0, y: 77 })
-
+          .width('100%').justifyContent(FlexAlign.SpaceBetween).height(55);
+          Rect().width('100%').height(0.5).fill($r('app.color.border')).position({ x: 0, y: 87 });
         }
-        .backgroundBlurStyle(BlurStyle.Thin)
-        .position({ x: 0, y: 0 })
-        .width('100%')
+        .backgroundBlurStyle(BlurStyle.Thin).position({ x: 0, y: 0 }).width('100%');
 
         if (this.isLoading) {
-          Progress({ value: this.progress, total: 100 })
-            .width('100%')
-            .height(3)
-            .position({ x: 0, y: 77 })
+          Progress({ value: this.progress, total: 100 }).width('100%').height(3).position({ x: 0, y: 87 });
         }
       }
-      .position({ x: 0, y: 0 })
-      .width('100%')
+      .position({ x: 0, y: 0 }).width('100%');
     }
   }
 }

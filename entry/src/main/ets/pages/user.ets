@@ -103,7 +103,7 @@ struct user {
                   .height(100)
                   .width(100)
                   .borderRadius($r('sys.float.corner_radius_level6'))
-                  .margin({ top: 82 })
+                  .margin({ top: 85 })
                 Text('应用看板')
                   .fontWeight(800)
                   .fontSize(30)
@@ -389,29 +389,28 @@ struct user {
         .height('100%')
 
         Column() {
-          Column() {
-            Text('\n').fontSize(14)
-          }
-
+          Column() { Text('\n').fontSize(14) }
           Row() {
             Text('我的')
-              .fontSize(21)
+              .fontSize(23)
               .fontWeight(FontWeight.Bold)
-              .margin({ left: 25 })
+              .margin({ left: 20 })
+
             Image($r('app.media.arrow_back'))
-              .height(24).width(24)
-              .margin({ right: 30 })
+              .height(28)
+              .width(28)
+              .margin({ right: 25 })
               .onClick(() => router.back())
           }
           .width('100%')
           .justifyContent(FlexAlign.SpaceBetween)
-          .height(45)
+          .height(55)
 
           Rect()
             .width('100%')
             .height(0.5)
             .fill($r('app.color.border'))
-            .position({ x: 0, y: 77 })
+            .position({ x: 0, y: 87 })
 
         }
         .backgroundBlurStyle(BlurStyle.Thin)

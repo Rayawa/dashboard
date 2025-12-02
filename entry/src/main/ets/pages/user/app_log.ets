@@ -17,7 +17,7 @@ struct app_log {
       date: '2025-12-?',
       isRelease: false,
       type:'beta',
-      items: ['增加shareAbility接口，现在可以通过应用市场投稿app添加信息', '统一了所有web界面UA', '在我的界面增加了用户名，App更新日志，问题与反馈与使用教程界面', '将V1与V2页面合并']
+      items: ['增加shareAbility接口，现在可以通过应用市场投稿app添加信息', '统一了所有web界面UA', '在我的界面增加了用户名，App更新日志，问题与反馈与使用教程界面', '将V1与V2页面合并，并重新设计导航条与按钮逻辑']
     },
     {
       version: 'V1.0.0',
@@ -59,7 +59,7 @@ struct app_log {
             Column()
               .width('100%')
               .backgroundColor($r('app.color.navcolor'))
-              .height(72)
+              .height(82)
             ForEach(this.updateLogs, (log: UpdateLog) => {
               Column() {
                 Row() {
@@ -128,25 +128,25 @@ struct app_log {
           Column() { Text('\n').fontSize(14) }
           Row() {
             Text('App更新日志')
-              .fontSize(21)
+              .fontSize(23)
               .fontWeight(FontWeight.Bold)
-              .margin({ left: 25 })
+              .margin({ left: 20 })
 
             Image($r('app.media.arrow_back'))
-              .height(24)
-              .width(24)
-              .margin({ right: 30 })
+              .height(28)
+              .width(28)
+              .margin({ right: 25 })
               .onClick(() => router.back())
           }
           .width('100%')
           .justifyContent(FlexAlign.SpaceBetween)
-          .height(45)
+          .height(55)
 
           Rect()
             .width('100%')
             .height(0.5)
             .fill($r('app.color.border'))
-            .position({ x: 0, y: 77 })
+            .position({ x: 0, y: 87 })
 
         }
         .backgroundBlurStyle(BlurStyle.Thin)
