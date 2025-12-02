@@ -6,8 +6,8 @@
     "pages/user/log",
     "pages/user/contact",
     "pages/user/api",
-    "pages/user/ICP",
-    "pages/user/app_contact",
-    "pages/user/app_log"
+    "pages/user/issue",
+    "pages/user/app_log",
+    "pages/user/tutorial"
   ]
 }
