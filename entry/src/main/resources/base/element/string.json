@@ -27,6 +27,458 @@
     {
       "name": "complex_share_label",
       "value": "填写信息投稿到看板"
+    },
+    {
+      "name": "system_share",
+      "value": "System Share"
+    },
+    {
+      "name": "huawei_share",
+      "value": "Huawei Share"
+    },
+    {
+      "name": "huawei_share_title",
+      "value": "Huawei Share Demo"
+    },
+    {
+      "name": "photo_reason",
+      "value": "Obtaining Thumbnails for Display"
+    },
+    {
+      "name": "ShareUIAbility_label",
+      "value": "Target Application"
+    },
+    {
+      "name": "ShareExtensionAbility_label",
+      "value": "Level-2 panel"
+    },
+    {
+      "name": "CustomUTDAbility_label",
+      "value": "CustomUTDAbility"
+    },
+    {
+      "name": "navigation_toolbar_model",
+      "value": "Access Mode"
+    },
+    {
+      "name": "navigation_toolbar_base",
+      "value": "Basic Use"
+    },
+    {
+      "name": "navigation_toolbar_function",
+      "value": "Function Example"
+    },
+    {
+      "name": "navigation_toolbar_utd",
+      "value": "Typical Scenarios"
+    },
+    {
+      "name": "navigation_toolbar_knock",
+      "value": "Knock Share"
+    },
+    {
+      "name": "navigation_toolbar_gesture",
+      "value": "Gesture Share"
+    },
+    {
+      "name": "share_btn",
+      "value": "To share"
+    },
+    {
+      "name": "text_sharing",
+      "value": "Text/Link sharing"
+    },
+    {
+      "name": "text_sharing_description",
+      "value": "Provides cross-application sharing examples such as texts and links."
+    },
+    {
+      "name": "image_sharing",
+      "value": "Image sharing"
+    },
+    {
+      "name": "image_sharing_description",
+      "value": "Provides cross-application image sharing examples."
+    },
+    {
+      "name": "video_sharing",
+      "value": "Video sharing"
+    },
+    {
+      "name": "video_sharing_description",
+      "value": "Provides cross-application image sharing examples."
+    },
+    {
+      "name": "share_selection_mode",
+      "value": "Switching between single-choice mode and batch mode"
+    },
+    {
+      "name": "share_preview_mode",
+      "value": "The default mode (preview card) and preview mode switch are implemented."
+    },
+    {
+      "name": "share_excluded_abilities_print",
+      "value": "Enables the exclusion of \"print\" operations from the action area"
+    },
+    {
+      "name": "share_close_listening",
+      "value": "The function of listening to the event of disabling the sharing panel is implemented."
+    },
+    {
+      "name": "function_title",
+      "value": "Function description"
+    },
+    {
+      "name": "dismiss_description_1",
+      "value": "Developers can register a dismiss event listener for the sharing panel to close using the on method."
+    },
+    {
+      "name": "dismiss_description_2",
+      "value": "This event is triggered when the sharing panel is closed."
+    },
+    {
+      "name": "dismiss_description_3",
+      "value": "Developers can cancel registered event listeners by calling the off method."
+    },
+    {
+      "name": "shareCompleted_description_1",
+      "value": "Developers can register a shareCompleted event listener to monitor user sharing operations using the on method."
+    },
+    {
+      "name": "shareCompleted_description_2",
+      "value": "When a user triggers a share, the event listener returns the target application or action that the user is sharing."
+    },
+    {
+      "name": "shareCompleted_description_3",
+      "value": "Developers can use this callback to obtain the event of successful user sharing and the target application for data statistics."
+    },
+    {
+      "name": "shareCompleted_description_4",
+      "value": "Developers can cancel registered event listeners by calling the off method."
+    },
+    {
+      "name": "single_mode",
+      "value": "Single-choice mode"
+    },
+    {
+      "name": "batch_mode",
+      "value": "Batch mode"
+    },
+    {
+      "name": "default_mode",
+      "value": "Default mode"
+    },
+    {
+      "name": "detail_mode",
+      "value": "Preview image mode"
+    },
+    {
+      "name": "tab_text_1",
+      "value": "Data 1"
+    },
+    {
+      "name": "tab_text_2",
+      "value": "Data 2"
+    },
+    {
+      "name": "tab_text_3",
+      "value": "More data"
+    },
+    {
+      "name": "level_2",
+      "value": "Level-2 panel"
+    },
+    {
+      "name": "target_app",
+      "value": "Target App"
+    },
+    {
+      "name": "action_back",
+      "value": "Back"
+    },
+    {
+      "name": "action_start_ability",
+      "value": "Open the app"
+    },
+    {
+      "name": "share_content",
+      "value": "Received shared content"
+    },
+    {
+      "name": "image_type",
+      "value": "Image Type"
+    },
+    {
+      "name": "link_type",
+      "value": "Link Type"
+    },
+    {
+      "name": "poster_type",
+      "value": "Link + Poster Scenario"
+    },
+    {
+      "name": "text_type",
+      "value": "Plain text type"
+    },
+    {
+      "name": "video_type",
+      "value": "Video Type"
+    },
+    {
+      "name": "compressed_package_type",
+      "value": "Compressed Package Type"
+    },
+    {
+      "name": "select",
+      "value": "Selecting"
+    },
+    {
+      "name": "selected",
+      "value": "Selected"
+    },
+    {
+      "name": "add_data",
+      "value": "Adding a Record."
+    },
+    {
+      "name": "clearing_data",
+      "value": "Clear the record."
+    },
+    {
+      "name": "delete",
+      "value": "Delete"
+    },
+    {
+      "name": "confirm",
+      "value": "Confirm"
+    },
+    {
+      "name": "share_to",
+      "value": "Share to"
+    },
+    {
+      "name": "app",
+      "value": "App"
+    },
+    {
+      "name": "access_model_title",
+      "value": "Two Access Modes for Host App"
+    },
+    {
+      "name": "full_title",
+      "value": "1. Full connection mode"
+    },
+    {
+      "name": "full_model",
+      "value": "Directly invoke the system sharing panel."
+    },
+    {
+      "name": "full_description",
+      "value": "Applies to Huawei-developed applications and third-party partners who have no business requirements for the sharing area. Directly use the system panel to reduce development costs."
+    },
+    {
+      "name": "half_title",
+      "value": "2. Half connection mode"
+    },
+    {
+      "name": "half_model",
+      "value": "Partner self-development and sharing capabilities & Add a system sharing entry"
+    },
+    {
+      "name": "half_description",
+      "value": "Applicable to third-party partners who have business requirements in the sharing area or have their own unique business logic."
+    },
+    {
+      "name": "knock_title",
+      "value": "knock share"
+    },
+    {
+      "name": "immersive_title",
+      "value": "I saw the only landform that China doesn't have, the fjord landform."
+    },
+    {
+      "name": "immersive_description",
+      "value": "HarmonyShare · 2.208 million playbacks"
+    },
+    {
+      "name": "white_title",
+      "value": "Coastal scenery · Clear weather"
+    },
+    {
+      "name": "white_description",
+      "value": "HarmonyShare · 2.208 million playbacks"
+    },
+    {
+      "name": "knock_close_other",
+      "value": "Disable other knock events."
+    },
+    {
+      "name": "knock_purity_title",
+      "value": "Picture-only layout"
+    },
+    {
+      "name": "knock_immersive_title",
+      "value": "Immersive large card layout"
+    },
+    {
+      "name": "knock_white_title",
+      "value": "White card up and down layout"
+    },
+    {
+      "name": "knock_share_title",
+      "value": "Initiate Sharing"
+    },
+    {
+      "name": "reject_title",
+      "value": "Refuse to share"
+    },
+    {
+      "name": "send_only_title",
+      "value": "One-way team formation "
+    },
+    {
+      "name": "send_only_description",
+      "value": "The \"sendOnly\" attribute is typically used in gaming and social applications. For example, when both parties are in a game team room, there might be a conflict when attempting to invite the other party to join by simply touching. In such cases, setting the \"sendOnly\" attribute can prompt the user to try again after one party has exited. "
+    },
+    {
+      "name": "delay_title",
+      "value": "Delayed update of preview image"
+    },
+    {
+      "name": "delay_description",
+      "value": "When receiving a tap callback, if the preview image needs to be downloaded from the cloud, you can first call the share interface to initiate the sharing process. Once the preview image is downloaded, use updateShareData to update the preview image. "
+    },
+    {
+      "name": "sandbox_title",
+      "value": "Direct app sandbox"
+    },
+    {
+      "name": "sandbox_description",
+      "value": "By lightly tapping the window of a PC/2in1 device with a mobile phone, you can directly access the application sandbox."
+    },
+    {
+      "name": "sandbox_account",
+      "value": "Touch the phone and PC/2in1 device together, which only"
+    },
+    {
+      "name": "sandbox_note",
+      "value": "This example only supports receiving one image, which is configured through the capabilities field. "
+    },
+    {
+      "name": "sandbox_result",
+      "value": "Result"
+    },
+    {
+      "name": "knock_register_title",
+      "value": "Tap to Register"
+    },
+    {
+      "name": "knock_register_description",
+      "value": "Tap to Register"
+    },
+    {
+      "name": "knock_reject_title",
+      "value": "Tap to decline this sharing"
+    },
+    {
+      "name": "knock_reject_description",
+      "value": "Tap to decline this sharing"
+    },
+    {
+      "name": "pcKnock_register_title",
+      "value": "PC multi-window registration"
+    },
+    {
+      "name": "pcKnock_register_description",
+      "value": "PC multi-window registration"
+    },
+    {
+      "name": "pcKnock_reject_title",
+      "value": "PC multi-window refuses this sharing session"
+    },
+    {
+      "name": "pcKnock_reject_description",
+      "value": "PC multi-window refuses this sharing session"
+    },
+    {
+      "name": "knock_listening",
+      "value": "knock event listening"
+    },
+    {
+      "name": "knock_click",
+      "value": "click to enable knock monitoring"
+    },
+    {
+      "name": "knock_no_title",
+      "value": "When only preview image parameters are transferred, the image-only layout is used."
+    },
+    {
+      "name": "knock_image_upper_limit",
+      "value": "When the aspect ratio of the preview image is less than 1:1, the immersive large-card layout is used."
+    },
+    {
+      "name": "knock_image_lower_limit",
+      "value": "When the aspect ratio of the preview image is greater than 1:1, the top-down layout of the white card is used."
+    },
+    {
+      "name": "share_timer",
+      "value": "When receiving a tap callback, prepare the data to be shared within 3 seconds and trigger the sending using the share method. "
+    },
+    {
+      "name": "reject_timer",
+      "value": "When a touch callback is received, if the data is not ready to be shared within 3 seconds, use this method to reject the sharing and provide the reason to the user."
+    },
+    {
+      "name": "precautions",
+      "value": "Precautions:"
+    },
+    {
+      "name": "knock_precautions_1",
+      "value": "1. When the page to be shared is displayed, use the harmonyShare.on() method to register the touch listening event."
+    },
+    {
+      "name": "knock_precautions_2",
+      "value": "2. When leaving the page to be shared, use the harmonyShare.off() method to cancel the touch listening event."
+    },
+    {
+      "name": "knock_precautions_3",
+      "value": "3. When the application returns to the background, use the harmonyShare.off() method to cancel the touch listening event."
+    },
+    {
+      "name": "gesture_title",
+      "value": "Grab & drop"
+    },
+    {
+      "name": "gesture_listening",
+      "value": "grab & drop event listening"
+    },
+    {
+      "name": "gesture_click",
+      "value": "click to enable grab & drop monitoring"
+    },
+    {
+      "name": "gesture_precautions_1",
+      "value": "1. Turn on the Air Transfer switch to experience it. Go to Settings > System > Shortcuts & gestures > Grab & drop"
+    },
+    {
+      "name": "gesture_file_title",
+      "value": "Grab & drop file"
+    },
+    {
+      "name": "gesture_close_other",
+      "value": "Disable other gesture events."
+    },
+    {
+      "name": "only_pc_supported",
+      "value": "Please experience using the PC/2in1 device."
+    },
+    {
+      "name": "success_supported",
+      "value": "The sandbox received successfully."
+    },
+    {
+      "name": "tap_to_share_tips",
+      "value": "Prompt: When users enter an interface or scenario that supports tap-to-share functionality, providing appropriate guidance and prompts can effectively enhance their willingness to share. "
     }
   ]
 }
