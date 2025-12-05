@@ -18,6 +18,7 @@ export struct WebView {
   @State rejectStatus: boolean = false;
   @State updateStatus: boolean = false;
   @State url: string = 'https://hmos.txit.top/dashboard';
+  @State currentUrl: string = '';
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
   @State progress: number = 0;
@@ -64,30 +65,30 @@ export struct WebView {
   }
   public async getCurrentWebUrl(): Promise<string> {
     try {
-      return await this.web_controller.getUrl();
+      return this.web_controller.getUrl();
     } catch (err) {
       Logger.error('WebView', '获取 WebView URL 失败: ' + (err as BusinessError).message);
       return '';
     }
   }
-  private async share() {
+  private async shareUrl() {
     const uiContext: UIContext = this.getUIContext();
     const contextFaker: Context = uiContext.getHostContext() as Context;
-    const currentUrl = await this.getCurrentWebUrl();
+    this.currentUrl = await this.getCurrentWebUrl();
     const resourceMgr: resourceManager.ResourceManager = contextFaker.resourceManager;
     let fileData: Uint8Array | undefined = undefined;
 
     try {
-      fileData = await resourceMgr.getMediaContent($r('app.media.share').id);
+      fileData = await resourceMgr.getMediaContent($r('app.media.app_icon').id);
     } catch (error) {
       Logger.error(`getMediaContent error. Code: ${error?.code}, message: ${error?.message}`);
     }
 
     let shareData: systemShare.SharedData = new systemShare.SharedData({
       utd: utd.UniformDataType.HYPERLINK,
-      content: this.url,
+      content: `${this.currentUrl}`,
       title: '应用看板链接分享',
-      description: `${currentUrl}`,
+      description: `${this.currentUrl}`,
       thumbnail: fileData,
     });
     let controller: systemShare.ShareController = new systemShare.ShareController(shareData);
@@ -101,16 +102,14 @@ export struct WebView {
       Logger.error(`ShareController show error. code: ${error?.code}, message: ${error?.message}`);
     });
   }
-  private purityCallback = (sharableTarget: harmonyShare.SharableTarget) => {
-  const uiContext: UIContext = this.getUIContext();
-  const currentUrl = this.getCurrentWebUrl();
-  let shareData: systemShare.SharedData = new systemShare.SharedData({
-    utd: utd.UniformDataType.HYPERLINK,
-    content: 'https://dashboard.drcn.agconnect.link/ZB3p',
-    title: '应用看板链接分享',
-    description: `${currentUrl}`,
-
-  });
+  private purityCallback = async (sharableTarget: harmonyShare.SharableTarget) => {
+    this.currentUrl = await this.getCurrentWebUrl();
+    let shareData: systemShare.SharedData = new systemShare.SharedData({
+      utd: utd.UniformDataType.HYPERLINK,
+      content: `${this.currentUrl}`,
+      title: '应用看板链接分享',
+      description: this.currentUrl,
+    });
   sharableTarget.share(shareData);
 }
   @Builder
@@ -139,7 +138,7 @@ export struct WebView {
           Row() {
             Text(this.isV2 ? "应用看板V2" : "应用看板V1").fontSize(23).fontWeight(FontWeight.Bold).margin({ left: 20 });
             Row() {
-              Image($r('app.media.share')).height(28).width(28).margin({ right: 30 }).onClick(() => { this.share(); });
+              Image($r('app.media.share')).height(28).width(28).margin({ right: 30 }).onClick(() => { this.shareUrl(); });
               Image($r('app.media.menu')).height(28).width(28).margin({ right: 30 }).bindMenu(this.Menu);
               Image($r('app.media.user')).height(28).width(28).margin({ right: 25 }).onClick(() => router.pushUrl({ url: 'pages/user' }));
             }
