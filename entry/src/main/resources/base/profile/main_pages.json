@@ -3,10 +3,10 @@
     "pages/WebView",
     "pages/index",
     "pages/user",
-    "pages/user/log",
-    "pages/user/contact",
-    "pages/user/api",
-    "pages/user/issue",
+    "pages/user/web_log",
+    "pages/user/web_api",
+    "pages/user/web_contact",
+    "pages/user/feedback",
     "pages/user/app_log",
     "pages/user/tutorial"
   ]
