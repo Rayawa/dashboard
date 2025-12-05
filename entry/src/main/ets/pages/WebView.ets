@@ -112,6 +112,8 @@ export struct WebView {
   @Builder
   Menu() {
     MenuItemGroup() {
+      MenuItem({ startIcon: $r('app.media.app_log'), content: "(dev)API" })
+        .onClick(() => { router.pushUrl({ url: 'pages/index' }); prompt.showToast({ message: '返回上级', duration: 500 }); });
       MenuItem({ startIcon: $r('app.media.arrow_back'), content: "返回上级" })
         .onClick(() => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); });
       MenuItem({ startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'), content: this.isLoading ? "停止刷新" : "刷新页面" })
@@ -149,6 +151,7 @@ export struct WebView {
           .onPageEnd(() => this.isLoading = false)
           .onScroll((e) => this.scrollY = e.yOffset)
           .onControllerAttached(() => { try { this.web_controller.setCustomUserAgent(APP_UA); } catch {} });//shenjack的UA
+        Column().width('100%').backgroundColor($r('app.color.backcolor')).height(200);
       }
 
       Column() {

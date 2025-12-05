@@ -1,4 +1,4 @@
-// ModalComponents.ets
+
 @Component
 export struct HelpModal {
   @Link isVisible: boolean

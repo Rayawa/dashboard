@@ -214,7 +214,7 @@ struct user {
                     .width(16)
                     .objectFit(ImageFit.Contain)
                 }
-                .onClick(() => router.pushUrl({ url: 'pages/user/log' }))
+                .onClick(() => router.pushUrl({ url: 'pages/user/web_log' }))
                 .height(56)
                 .width('100%')
                 .justifyContent(FlexAlign.SpaceBetween)
@@ -270,7 +270,7 @@ struct user {
                     .width(16)
                     .objectFit(ImageFit.Contain)
                 }
-                .onClick(() => router.pushUrl({ url: 'pages/user/api' }))
+                .onClick(() => router.pushUrl({ url: 'pages/user/web_api' }))
                 .height(56)
                 .width('100%')
                 .justifyContent(FlexAlign.SpaceBetween)
@@ -298,7 +298,7 @@ struct user {
                     .width(16)
                     .objectFit(ImageFit.Contain)
                 }
-                .onClick(() => router.pushUrl({ url: 'pages/user/contact' }))
+                .onClick(() => router.pushUrl({ url: 'pages/user/web_contact' }))
                 .height(56)
                 .width('100%')
                 .justifyContent(FlexAlign.SpaceBetween)
@@ -354,7 +354,7 @@ struct user {
                     .width(16)
                     .objectFit(ImageFit.Contain)
                 }
-                .onClick(() => router.pushUrl({ url: 'pages/user/issue' }))
+                .onClick(() => router.pushUrl({ url: 'pages/user/feedback' }))
                 .height(56)
                 .width('100%')
                 .justifyContent(FlexAlign.SpaceBetween)
@@ -383,7 +383,7 @@ struct user {
               Column() {
                 Text('京ICP备2025153453号')
                   .fontSize(12)
-                  .fontColor(Color.Blue)
+                  .fontColor($r('app.color.diff_content'))
                   .onClick(() => {
                     this.openLink();
                   })

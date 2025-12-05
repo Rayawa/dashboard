@@ -1,9 +1,7 @@
-// ChartsAreaComponent.ets
 @Component
 export struct TopDownloadChartComponent {
   build() {
     Column() {
-      // 标题
       Row() {
         Text('总下载榜')
           .fontSize(18)
@@ -18,7 +16,7 @@ export struct TopDownloadChartComponent {
 
       // 图表容器
       Column() {
-        // 这里放置图表组件
+        //图表组件
         Text('图表区域 - 总下载榜')
           .fontSize(16)
           .fontColor('#374151')
@@ -75,7 +73,6 @@ export struct ChartsAreaComponent {
 export struct NonHuaweiDownloadChartComponent {
   build() {
     Column() {
-      // 标题
       Row() {
         Text('非华为应用/内置应用下载榜')
           .fontSize(18)
@@ -114,7 +111,6 @@ struct ChartCardComponent {
 
   build() {
     Column() {
-      // 标题
       Row() {
         Text(this.title)
           .fontSize(16)
