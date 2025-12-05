@@ -17,7 +17,11 @@ struct app_log {
       date: '2025-12-?',
       isRelease: false,
       type:'beta',
-      items: ['增加shareAbility接口，现在可以通过应用市场投稿app添加信息', '统一了所有web界面UA', '在我的界面增加了用户名，App更新日志，问题与反馈与使用教程界面', '将V1与V2页面合并，并重新设计导航条与按钮逻辑']
+      items: ['增加shareAbility接口，现在可以通过应用市场投稿app添加信息',
+        '统一了所有web界面UA',
+        '在我的界面增加了用户名，App更新日志，问题与反馈与使用教程界面',
+        '将V1与V2页面合并，并重新设计导航条与按钮逻辑',
+        '融入原生API组件']
     },
     {
       version: 'V1.0.0',

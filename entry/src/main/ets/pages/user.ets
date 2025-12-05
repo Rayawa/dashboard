@@ -3,7 +3,7 @@ import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
 import { APP_VERSION } from "../global_data";
 import preferences from '@ohos.data.preferences';
-import deviceInfo from '@ohos.deviceInfo';
+import { deviceInfo } from '@kit.BasicServicesKit';
 @Entry
 @Component
 struct user {
