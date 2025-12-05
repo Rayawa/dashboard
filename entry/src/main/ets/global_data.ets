@@ -2,6 +2,8 @@
 import { deviceInfo } from '@kit.BasicServicesKit';
 
 export const APP_VERSION: string = "1.1.0-alpha.5";
+export const userName: string = AppStorage.Get('userName') || '';
+
 
 /**
  * 生成程序 UA

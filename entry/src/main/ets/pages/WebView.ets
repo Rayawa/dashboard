@@ -215,7 +215,7 @@ export struct WebView {
     } else {
       try {
         const uiContext: UIContext = this.getUIContext();
-        uiContext.getPromptAction().showToast({ message: $r('app.string.knock_close_other') });
+        uiContext.getPromptAction().showToast({ message: 'Disable other knock events.' });
       } catch (error) {
         Logger.error(`showToast error. Code: ${error?.code}, message: ${error?.message}`);
       }

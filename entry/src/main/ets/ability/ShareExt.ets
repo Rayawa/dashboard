@@ -1,7 +1,6 @@
 import { AbilityConstant, ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
-import Logger from '../utils/Logger';
+import { Logger } from '../utils/Logger';
 
-let logger = Logger.getLogger('[ShareExtAbility]');
 
 interface IStorage {
   ShareExtAbilityWant: Want,
@@ -12,7 +11,7 @@ export default class ShareExtAbility extends ShareExtensionAbility {
   onCreate(launchParam: AbilityConstant.LaunchParam): void {
     if (launchParam.launchReasonMessage === 'ReasonMessage_SystemShare') {
       // 识别为被系统分享拉起
-      logger.info('被拉起原因：系统分享');
+      Logger.info('被拉起原因：系统分享');
     }
   }
 
@@ -22,7 +21,7 @@ export default class ShareExtAbility extends ShareExtensionAbility {
     try {
       session.loadContent('pages/ShareExtDialog', storage);
     } catch (error) {
-      logger.error(`loadContent error. Code: ${error?.code}, message: ${error?.message}`);
+      Logger.error(`loadContent error. Code: ${error?.code}, message: ${error?.message}`);
     }
   }
 }

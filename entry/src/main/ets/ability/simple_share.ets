@@ -14,7 +14,9 @@ export class ShareAbility extends ShareExtensionAbility {
     systemShare.getSharedData(want)
       .then((data: systemShare.SharedData) => {
         data.getRecords().forEach((record: systemShare.SharedRecord) => {
-          // 处理分享数据
+          console.info("Share content: {}", record.content)
+          // -> http get
+          //处理分享数据
         });
       })
       .catch((error: BusinessError) => {

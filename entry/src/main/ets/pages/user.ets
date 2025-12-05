@@ -4,10 +4,11 @@ import { BusinessError } from '@ohos.base';
 import { APP_VERSION } from "../global_data";
 import preferences from '@ohos.data.preferences';
 import { deviceInfo } from '@kit.BasicServicesKit';
+
 @Entry
 @Component
-struct user {
-  @State userName: string = ''
+export struct user {
+  @StorageLink('userName') userName: string = ''
   @State deviceName: string = ''
   async getPreference(): Promise<preferences.Preferences> {
     const context = getContext(this) as common.Context;
@@ -19,15 +20,27 @@ struct user {
       const savedName = await pref.get('userName', '');
 
       if (savedName && savedName !== '') {
-        this.userName = savedName.toString();
+        AppStorage.SetOrCreate('userName', savedName.toString());
       } else {
         await this.loadDeviceName();
-        this.userName = this.deviceName;
+        AppStorage.SetOrCreate('userName', this.deviceName);
       }
     } catch (err) {
       console.error('Failed to load user name', err);
       await this.loadDeviceName();
-      this.userName = this.deviceName;
+      AppStorage.SetOrCreate('userName', this.deviceName);
+    }
+  }
+
+  async saveUserName() {
+    try {
+      const pref = await this.getPreference();
+      await pref.put('userName', this.userName);
+      await pref.flush();
+      AppStorage.SetOrCreate('userName', this.userName);
+      console.info('User name saved:', this.userName);
+    } catch (err) {
+      console.error('Failed to save user name', err);
     }
   }
   async loadDeviceName() {
@@ -36,16 +49,6 @@ struct user {
     } catch (err) {
       console.error('Failed to get device name', err);
       this.deviceName = '我的设备';
-    }
-  }
-  async saveUserName() {
-    try {
-      const pref = await this.getPreference();
-      await pref.put('userName', this.userName);
-      await pref.flush();
-      console.info('User name saved:', this.userName);
-    } catch (err) {
-      console.error('Failed to save user name', err);
     }
   }
   async resetToDeviceName() {

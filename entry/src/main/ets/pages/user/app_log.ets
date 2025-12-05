@@ -1,5 +1,4 @@
 import { router } from '@kit.ArkUI'
-
 class UpdateLog {
   version: string = '';
   date: string = '';

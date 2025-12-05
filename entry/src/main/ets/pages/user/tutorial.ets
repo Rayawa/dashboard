@@ -1,11 +1,12 @@
 @Entry
 @Component
 struct Tutorial {
+  @StorageLink('userName') userName: string = ''
   @State message: string = 'Hello World';
 
   build() {
     RelativeContainer() {
-      Text(this.message)
+      Text(this.userName)
         .id('TutorialHelloWorld')
         .fontSize($r('app.float.page_text_font_size'))
         .fontWeight(FontWeight.Bold)
