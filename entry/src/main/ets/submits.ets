@@ -111,13 +111,9 @@ export function submit_app_with_user_data(user_data: SubmitBody): SubmitResult |
           note: user_data.note,
         }
       }
-    }).catch(() => {
-      console.warn(`dashboard share web request faild`)
-    }).then((response: http.HttpResponse | void) => {
-      if (response == void) {
-        return;
-      }
-    });
+    }, (err: BusinessError, data: http.HttpResponse) => {
+
+    })
   } finally {
     request.destroy();
   }
