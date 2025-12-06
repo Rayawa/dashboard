@@ -207,7 +207,7 @@ export struct WebView {
   @Builder
   Menu() {
     MenuItemGroup() {
-      MenuItem({ startIcon: $r('app.media.app_log'), content: "(dev)API" })
+      MenuItem({ startIcon: $r('app.media.api'), content: "(dev)API" })
         .onClick(() => { router.pushUrl({ url: 'pages/index' }); prompt.showToast({ message: '原生版本', duration: 500 }); });
       MenuItem({ startIcon: $r('app.media.arrow_back'), content: "返回上级" })
         .onClick(() => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); });

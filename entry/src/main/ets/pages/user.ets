@@ -334,7 +334,7 @@ export struct user {
 
                 Row() {
                   Row() {
-                    Image($r('app.media.tutorial'))
+                    Image($r('app.media.info'))
                       .height(24)
                       .width(24)
                       .objectFit(ImageFit.Contain)

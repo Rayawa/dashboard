@@ -135,7 +135,7 @@ struct contact {
         Column() {
           Column() { Text('\n').fontSize(14) }
           Row() {
-            Text('联系我们')
+            Text('问题反馈 & 联系我们')
               .fontSize(23)
               .fontWeight(FontWeight.Bold)
               .margin({ left: 20 })
