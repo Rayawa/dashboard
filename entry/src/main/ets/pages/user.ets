@@ -103,7 +103,6 @@ export struct user {
                   .height(100)
                   .width(100)
                   .borderRadius($r('sys.float.corner_radius_level6'))
-                  .margin({ top: 85 })
                 Text('应用看板')
                   .fontWeight(800)
                   .fontSize(30)
@@ -391,7 +390,7 @@ export struct user {
             .width('100%')
             .alignItems(HorizontalAlign.Center)
           }
-          .margin({ top: 20, bottom: 20 })
+          .margin({ top: 100, bottom: 20 })
           .width('100%')
         }
         .width('100%')
