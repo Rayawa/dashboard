@@ -110,7 +110,7 @@ export async function submit_app_with_user_data(user_data: SubmitBody): Promise<
     const fmt_json = `{"pkg_name": "${user_data.app_query}",
       "comment": {
         "platform": "${SUBMIT_PLATFORM}",
-        "username": "${username}"
+        "user": "${username}"
         ${note}
       }}`;
     console.log(`submitting  ${AppStorage.get('userName')}`);
