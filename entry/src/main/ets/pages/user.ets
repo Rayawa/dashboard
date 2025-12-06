@@ -159,7 +159,7 @@ export struct user {
                       this.saveUserName();
                     })
 
-                  Image($r('app.media.issue'))
+                  Image($r('app.media.question'))
                     .margin({ left: 12 })
                     .height(24)
                     .width(24)
@@ -168,7 +168,7 @@ export struct user {
                       this.handlePopup = !this.handlePopup;
                     })
                     .bindPopup(this.handlePopup, {
-                      message: '用于您投稿时提交给应用看板的用户名\n详情见使用教程-投稿功能',
+                      message: '用于您投稿应用时的默认用户名\n详情见请“使用教程-投稿功能”',
                       placement: Placement.Top,
                       showInSubWindow: false,
                       onStateChange: (e) => {
