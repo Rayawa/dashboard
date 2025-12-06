@@ -2,7 +2,7 @@
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { parse_app_id_from_url } from '../submits';
+import { parse_app_id_from_url, SubmitBody, submit_app_with_user_data } from '../submits';
 
 /**
  * 这个 ability 是用来直接接受并投稿链接的
@@ -20,10 +20,17 @@ export class ShareAbility extends ShareExtensionAbility {
             return;
           }
           const content: string = record.content!.toString();
-          console.info(`dashboard_parse ${parse_app_id_from_url(content)}`);
+          const pared_url = parse_app_id_from_url(content);
+          if (pared_url == null) {
+            console.warn(`dashboard share get unparseable url ${content}`);
+            return;
+          }
+          const app_query = pared_url!.toString();
+          console.info(`dashboard_parse ${app_query}`);
           console.info(`dashboard_get_share ${content}`);
-          // -> http get
-          //处理分享数据
+
+          const submit_body = new SubmitBody(null, app_query, null);
+          submit_app_with_user_data(submit_body);
         });
       })
       .catch((error: BusinessError) => {

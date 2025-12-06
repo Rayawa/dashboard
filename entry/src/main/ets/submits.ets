@@ -1,5 +1,7 @@
 //shenjack
 import { http } from '@kit.NetworkKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { common } from '@kit.AbilityKit';
 import { SUBMIT_PLATFORM, SUBMIT_USERNAME } from './global_data';
 
 export class SubmitResult {
@@ -23,10 +25,20 @@ export class SubmitResult {
 
 export class SubmitBody {
   public username: string = SUBMIT_USERNAME();
-  public platform: string = SUBMIT_PLATFORM;
+  public app_query: string = "";
+  public note: string | null;
 
-  constructor(username: string | undefined) {
+  constructor(username: string | null = null,
+    app_query: string,
+    note: string | null = null
+  ) {
     this.username = username || SUBMIT_USERNAME();
+    this.app_query = app_query;
+    this.note = note
+  }
+
+  have_note(): boolean {
+    return this.note == null;
   }
 }
 
@@ -83,13 +95,31 @@ export function parse_app_id_from_url(url: string): string | null {
   return null;
 }
 
-// export function submit_app_with_user_data(user_data: SubmitBody): SubmitResult {
-//   const username = user_data.username;
-//   let request = http.createHttp();
-//   const body = {
-//
-//   };
-//   request.request("").then();
-//   request.destroy();
-// 	return ;
-// }
+export function submit_app_with_user_data(user_data: SubmitBody): SubmitResult | null {
+  let request = http.createHttp();
+  let data: JSON;
+  try {
+    request.request("http://shenjack.top:10003/api/v0/", {
+      method: http.RequestMethod.POST,
+      expectDataType: http.HttpDataType.OBJECT,
+      usingCache: false, // 提交可不能用 cache
+      extraData: {
+        pkg_name: user_data.app_query,
+        comment: {
+          platform: SUBMIT_PLATFORM,
+          username: SUBMIT_USERNAME(),
+          note: user_data.note,
+        }
+      }
+    }).catch(() => {
+      console.warn(`dashboard share web request faild`)
+    }).then((response: http.HttpResponse | void) => {
+      if (response == void) {
+        return;
+      }
+    });
+  } finally {
+    request.destroy();
+  }
+  return null;
+}
