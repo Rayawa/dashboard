@@ -34,8 +34,8 @@ export class ShareAbility extends ShareExtensionAbility {
         session.terminateSelf();
       });
 
-    // session.terminateSelfWithResult({
-    //   resultCode: systemShare.ShareAbilityResultCode.CLOSE
-    // })
+    session.terminateSelfWithResult({
+      resultCode: systemShare.ShareAbilityResultCode.CLOSE
+    })
   }
 }
