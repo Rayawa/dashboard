@@ -2,9 +2,9 @@ import { webview } from "@kit.ArkWeb";
 import { prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
 import { BusinessError } from '@ohos.base';
-import { APP_UA } from "../global_data"; //shenjack的UA
-import { Logger } from '../utils/Logger'; //Rayawa的分享
-import { common } from "@kit.AbilityKit"; //Rayawa的分享
+import { APP_UA } from "../global_data";
+import { Logger } from '../utils/Logger';
+import { common } from "@kit.AbilityKit";
 import { harmonyShare, systemShare } from '@kit.ShareKit';
 import { uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
@@ -12,19 +12,13 @@ import { resourceManager } from '@kit.LocalizationKit';
 @Entry
 @Component
 export struct WebView {
-  private web_controller: webview.WebviewController = new webview.WebviewController();
-  private win: window.Window | null = null; //Rayawa的状态栏颜色
-  @State ShareStatus: boolean = false;
-  @State rejectStatus: boolean = false;
-  @State updateStatus: boolean = false;
-  @State url: string = 'https://hmos.txit.top/dashboard';
-  @State currentUrl: string = '';
+  @State url: string = 'https://hmos.txit.top/dashboard';//entry
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
   @State progress: number = 0;
-  @State scrollY: number = 0;
-  @State isV2: boolean = true;
   private readonly NAV_HEIGHT: number = 82;
+  private web_controller: webview.WebviewController = new webview.WebviewController();
+  private win: window.Window | null = null;
 
   async aboutToAppear() {
     //shenjack的UA
@@ -49,20 +43,89 @@ export struct WebView {
     const context: Context = uiContext.getHostContext() as Context;
     context.eventHub.on('onFocus', () => {
       if (this.isNoListening()) {
-        this.shareListening();
+        this.shareListening();//启用两种监听
       }
     });
     context.eventHub.on('onBackGround', () => {
       this.onBackGround();
     });
+    harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });//错误处理
   }
   aboutToDisappear() {
-    this.shareDisablingListening();
+    this.shareDisablingListening();//关闭监听
     const uiContext: UIContext = this.getUIContext();
     const context: Context = uiContext.getHostContext() as Context;
     context.eventHub.off('onFocus');
     context.eventHub.off('onBackGround');
   }
+  private onBackGround() {
+    this.shareDisablingListening();
+  }
+
+  //回到顶部方法
+  @State scrollY: number = 0;
+  private scrollToTop() {
+    const duration = 500;
+    const frames = 60;
+    const interval = duration / frames;
+    const startY = this.scrollY;
+    let frame = 0;
+    const timer = setInterval(() => {
+      frame++;
+      const progress = frame / frames;
+      const easing = 1 - Math.pow(1 - progress, 3);
+      const newY = startY * (1 - easing);
+      this.web_controller.scrollTo(0, newY);
+      if (frame >= frames) {
+        clearInterval(timer);
+        this.web_controller.scrollTo(0, 0);
+      }
+    }, interval);
+  }
+
+  //切换V1V2方法
+  @State isV2: boolean = true;
+  private switchWebVersion(): void {
+    const switchVersion = this.isV2 ? 'V1' : 'V2';
+    this.url = this.isV2 ? 'http://shenjack.top:10003/dashboard' : 'https://hmos.txit.top/dashboard';
+    this.isV2 = !this.isV2;
+    this.web_controller.loadUrl(this.url);
+    prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
+  }
+
+  //开启关闭监听方法
+  private shareListening() {
+    if (this.isNoListening()) {
+      harmonyShare.on('knockShare', this.purityCallback);
+      harmonyShare.on('gesturesShare', this.immersiveCallback);
+      this.ShareStatus = true;
+    } else {
+      try {
+        const uiContext: UIContext = this.getUIContext();
+        uiContext.getPromptAction().showToast({ message: 'Disable other knock events.' });
+      } catch (error) {
+        Logger.error(`showToast error. Code: ${error?.code}, message: ${error?.message}`);
+      }
+    }
+  }
+  private shareDisablingListening() {
+    harmonyShare.off('knockShare', this.purityCallback);
+    harmonyShare.off('gesturesShare', this.immersiveCallback);
+    this.ShareStatus = false;
+  }
+
+  //监听状态控制
+  @State ShareStatus: boolean = false;//监听状态控制
+  @State rejectStatus: boolean = false;//监听状态控制
+  @State updateStatus: boolean = false;//监听状态控制
+  private isNoListening() {
+    return !this.ShareStatus && !this.rejectStatus && !this.updateStatus;
+  }
+
+  //获得页面URL
+  @State currentUrl: string = '';//分享URL注册
   public async getCurrentWebUrl(): Promise<string> {
     try {
       return this.web_controller.getUrl();
@@ -71,19 +134,19 @@ export struct WebView {
       return '';
     }
   }
+
+  //按钮分享URL方法
   private async shareUrl() {
     const uiContext: UIContext = this.getUIContext();
     const contextFaker: Context = uiContext.getHostContext() as Context;
-    this.currentUrl = await this.getCurrentWebUrl();
     const resourceMgr: resourceManager.ResourceManager = contextFaker.resourceManager;
+    this.currentUrl = await this.getCurrentWebUrl();
     let fileData: Uint8Array | undefined = undefined;
-
     try {
       fileData = await resourceMgr.getMediaContent($r('app.media.app_icon').id);
     } catch (error) {
       Logger.error(`getMediaContent error. Code: ${error?.code}, message: ${error?.message}`);
     }
-
     let shareData: systemShare.SharedData = new systemShare.SharedData({
       utd: utd.UniformDataType.HYPERLINK,
       content: `${this.currentUrl}`,
@@ -102,6 +165,7 @@ export struct WebView {
       Logger.error(`ShareController show error. code: ${error?.code}, message: ${error?.message}`);
     });
   }
+  //碰一碰分享方法
   private purityCallback = async (sharableTarget: harmonyShare.SharableTarget) => {
     this.currentUrl = await this.getCurrentWebUrl();
     let shareData: systemShare.SharedData = new systemShare.SharedData({
@@ -110,10 +174,58 @@ export struct WebView {
       title: '应用看板链接分享',
       description: this.currentUrl,
     });
-  sharableTarget.share(shareData);
-}
+    sharableTarget.share(shareData);
+  }
+  //隔空抓取方法
+  private immersiveCallback = async (sharableTarget: harmonyShare.SharableTarget) => {
+    const uiContext: UIContext = this.getUIContext();
+    const contextFaker: Context = uiContext.getHostContext() as Context;
+    const resourceMgr: resourceManager.ResourceManager = contextFaker.resourceManager;
+    this.currentUrl = await this.getCurrentWebUrl();
+    let fileData: Uint8Array | undefined = undefined;
+    try {
+      fileData = await resourceMgr.getMediaContent($r('app.media.app_icon').id);
+    } catch (error) {
+      Logger.error(`getMediaContent error. Code: ${error?.code}, message: ${error?.message}`);
+    }
+    let shareData: systemShare.SharedData = new systemShare.SharedData({
+      utd: utd.UniformDataType.HYPERLINK,
+      content: `${this.currentUrl}`,
+      title: '应用看板链接分享',
+      description: this.currentUrl,
+      thumbnail: fileData,
+    });
+    sharableTarget.share(shareData);
+  }
+
+  //菜单栏
   @Builder
-  Dashboard(){
+  Menu() {
+    MenuItemGroup() {
+      MenuItem({ startIcon: $r('app.media.app_log'), content: "(dev)API" })
+        .onClick(() => { router.pushUrl({ url: 'pages/index' }); prompt.showToast({ message: '原生版本', duration: 500 }); });
+      MenuItem({ startIcon: $r('app.media.arrow_back'), content: "返回上级" })
+        .onClick(() => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); });
+      MenuItem({ startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'), content: this.isLoading ? "停止刷新" : "刷新页面" })
+        .onClick(() => {
+          if (this.isLoading) {
+            this.web_controller.stop();
+            this.isLoading = false;
+            prompt.showToast({ message: '停止刷新', duration: 500 });
+          } else {
+            this.web_controller.refresh();
+            this.isLoading = true;
+            prompt.showToast({ message: '刷新页面', duration: 500 });
+          }
+        });
+      MenuItem({ startIcon: $r('app.media.arrow_up'), content: "回到顶部" })
+        .onClick(() => { prompt.showToast({ message: '回到顶部', duration: 500 }); this.scrollToTop(); });
+      MenuItem({ startIcon: $r('app.media.switch'), content: this.isV2 ? "切换到V1" : "切换到V2" })
+        .onClick(() => { this.switchWebVersion(); });
+    }
+  }
+
+  build() {
     Stack() {
       Column() {
         Column().width('100%').backgroundColor($r('app.color.navcolor')).height(Math.max(this.NAV_HEIGHT - this.scrollY, 0));
@@ -153,85 +265,6 @@ export struct WebView {
         }
       }
       .position({ x: 0, y: 0 }).width('100%');
-    }
-  }
-  @Builder
-  Menu() {
-    MenuItemGroup() {
-      MenuItem({ startIcon: $r('app.media.app_log'), content: "(dev)API" })
-        .onClick(() => { router.pushUrl({ url: 'pages/index' }); prompt.showToast({ message: '原生版本', duration: 500 }); });
-      MenuItem({ startIcon: $r('app.media.arrow_back'), content: "返回上级" })
-        .onClick(() => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); });
-      MenuItem({ startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'), content: this.isLoading ? "停止刷新" : "刷新页面" })
-        .onClick(() => {
-          if (this.isLoading) {
-            this.web_controller.stop();
-            this.isLoading = false;
-            prompt.showToast({ message: '停止刷新', duration: 500 });
-          } else {
-            this.web_controller.refresh();
-            this.isLoading = true;
-            prompt.showToast({ message: '刷新页面', duration: 500 });
-          }
-        });
-      MenuItem({ startIcon: $r('app.media.arrow_up'), content: "回到顶部" })
-        .onClick(() => { prompt.showToast({ message: '回到顶部', duration: 500 }); this.scrollToTop(); });
-      MenuItem({ startIcon: $r('app.media.switch'), content: this.isV2 ? "切换到V1" : "切换到V2" })
-        .onClick(() => { this.switchWebVersion(); });
-    }
-  }
-  private scrollToTop() {
-    const duration = 500;
-    const frames = 60;
-    const interval = duration / frames;
-    const startY = this.scrollY;
-    let frame = 0;
-    const timer = setInterval(() => {
-      frame++;
-      const progress = frame / frames;
-      const easing = 1 - Math.pow(1 - progress, 3);
-      const newY = startY * (1 - easing);
-      this.web_controller.scrollTo(0, newY);
-      if (frame >= frames) {
-        clearInterval(timer);
-        this.web_controller.scrollTo(0, 0);
-      }
-    }, interval);
-  }
-  private switchWebVersion(): void {
-    const switchVersion = this.isV2 ? 'V1' : 'V2';
-    this.url = this.isV2 ? 'http://shenjack.top:10003/dashboard' : 'https://hmos.txit.top/dashboard';
-    this.isV2 = !this.isV2;
-    this.web_controller.loadUrl(this.url);
-    prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
-  }
-  private onBackGround() {
-    this.shareDisablingListening();
-  }
-  private shareListening() {
-    if (this.isNoListening()) {
-      harmonyShare.on('knockShare', this.purityCallback);
-      this.ShareStatus = true;
-    } else {
-      try {
-        const uiContext: UIContext = this.getUIContext();
-        uiContext.getPromptAction().showToast({ message: 'Disable other knock events.' });
-      } catch (error) {
-        Logger.error(`showToast error. Code: ${error?.code}, message: ${error?.message}`);
-      }
-    }
-  }
-  private shareDisablingListening() {
-    harmonyShare.off('knockShare', this.purityCallback);
-    this.ShareStatus = false;
-  }
-  private isNoListening() {
-    return !this.ShareStatus && !this.rejectStatus && !this.updateStatus;
-  }
-
-  build() {
-    Column(){
-      this.Dashboard()
     }
   }
 }

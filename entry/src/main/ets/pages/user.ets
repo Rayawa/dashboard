@@ -31,7 +31,6 @@ export struct user {
       AppStorage.SetOrCreate('userName', this.deviceName);
     }
   }
-
   async saveUserName() {
     try {
       const pref = await this.getPreference();
@@ -56,7 +55,6 @@ export struct user {
     this.userName = this.deviceName;
     await this.saveUserName();
   }
-
   async openLink() {
     const url = 'https://beian.miit.gov.cn/#/Integrated/index';
     const ui_content = this.getUIContext();
@@ -91,7 +89,6 @@ export struct user {
       },
     })
   }
-
   aboutToAppear() {
     this.loadUserName();
   }
