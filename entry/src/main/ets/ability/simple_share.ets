@@ -15,9 +15,13 @@ export class ShareAbility extends ShareExtensionAbility {
     systemShare.getSharedData(want)
       .then((data: systemShare.SharedData) => {
         data.getRecords().forEach((record: systemShare.SharedRecord) => {
-          const content = record.content || '';
-          console.info(`dashboard_get_share ${content}`);
+          if (record.content == undefined) {
+            console.warn("dashboard share get undefined content!");
+            return;
+          }
+          const content: string = record.content!.toString();
           console.info(`dashboard_parse ${parse_app_id_from_url(content)}`);
+          console.info(`dashboard_get_share ${content}`);
           // -> http get
           //处理分享数据
         });
