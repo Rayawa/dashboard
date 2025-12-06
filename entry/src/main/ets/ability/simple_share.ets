@@ -1,7 +1,8 @@
-//shenjack
+// shenjack
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { parse_app_id_from_url } from '../submits';
 
 /**
  * 这个 ability 是用来直接接受并投稿链接的
@@ -14,7 +15,9 @@ export class ShareAbility extends ShareExtensionAbility {
     systemShare.getSharedData(want)
       .then((data: systemShare.SharedData) => {
         data.getRecords().forEach((record: systemShare.SharedRecord) => {
-          console.info("Share content: {}", record.content)
+          const content = record.content || '';
+          console.info("dashboard_get_share: ", content);
+          console.info("dashboard_parse: ", parse_app_id_from_url(content));
           // -> http get
           //处理分享数据
         });
