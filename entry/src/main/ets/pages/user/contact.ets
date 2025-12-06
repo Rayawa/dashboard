@@ -89,7 +89,7 @@ struct contact {
                   .fontWeight(FontWeight.Bold)
                   .margin({ bottom: 6 })
 
-                Text('Harmony Gallery官方交流群')
+                Text('Harmony Gallery 官方交流群')
                   .fontSize(15)
                   .margin({ bottom: 8 })
 
@@ -174,7 +174,7 @@ struct contact {
       let systemPasteboard = pasteboard.getSystemPasteboard()
       await systemPasteboard.setData(pasteData)
       prompt.showToast({
-        message: `已复制：${message}`,
+        message: `已复制${message}`,
         duration: 2000
       })
     } catch (error) {

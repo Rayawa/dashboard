@@ -283,7 +283,7 @@ export struct user {
                       .width(24)
                       .objectFit(ImageFit.Contain)
 
-                    Text('API文档')
+                    Text('API文档说明')
                       .fontSize(16)
                       .margin({ left: 12 })
                   }
@@ -311,7 +311,7 @@ export struct user {
                       .width(24)
                       .objectFit(ImageFit.Contain)
 
-                    Text('联系我们')
+                    Text('问题反馈 & 联系我们')
                       .fontSize(16)
                       .margin({ left: 12 })
                   }
@@ -339,7 +339,7 @@ export struct user {
                       .width(24)
                       .objectFit(ImageFit.Contain)
 
-                    Text('使用教程')
+                    Text('帮助信息 & 使用教程')
                       .fontSize(16)
                       .margin({ left: 12 })
                   }
