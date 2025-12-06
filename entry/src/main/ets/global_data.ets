@@ -6,7 +6,7 @@ export const APP_UA: string = (() => {
   return `top.rayawa.dashboard ${APP_VERSION} ${deviceInfo.osFullName} ${deviceInfo.productModel} ${deviceInfo.sdkApiVersion}`
 })();
 export function SUBMIT_USERNAME(): string {
-  return AppStorage.get('userName') || '';
+  return AppStorage.get<string>('userName') || '';
 };
 export const SUBMIT_PLATFORM: string = `ray_dashboard ${APP_VERSION}`
 

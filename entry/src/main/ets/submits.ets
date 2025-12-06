@@ -3,6 +3,7 @@ import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
 import { SUBMIT_PLATFORM, SUBMIT_USERNAME } from './global_data';
+import { AppStorageV2 } from '@kit.ArkUI';
 
 export class SubmitResult {
   public success: boolean = true;
@@ -103,14 +104,14 @@ export function submit_app_with_user_data(user_data: SubmitBody): SubmitResult |
   let request = http.createHttp();
   // let data: JSON; // TODO: 解析结果
   try {
-    const note = user_data == undefined ? "" : `"note": "${user_data.note}"`;
+    const note = user_data == null ? "" : `"note": "${user_data.note}"`;
     const fmt_json = `{"pkg_name": "${user_data.app_query}",
       "comment": {
         "platform": "${SUBMIT_PLATFORM}",
         "username": "${SUBMIT_USERNAME()}",
         ${note}
       }}`;
-    console.log("submitting");
+    console.log(`submitting  ${AppStorage.get('userName')}`);
     request.request("http://shenjack.top:10003/api/v0/submit", {
       method: http.RequestMethod.POST,
       expectDataType: http.HttpDataType.OBJECT,
