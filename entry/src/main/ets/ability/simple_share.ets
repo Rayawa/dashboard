@@ -30,15 +30,16 @@ export class ShareAbility extends ShareExtensionAbility {
           console.info(`dashboard_share_raw ${content}`);
 
           const submit_body = new SubmitBody(null, app_query, undefined);
-          submit_app_with_user_data(submit_body);
+          submit_app_with_user_data(submit_body).then(() => {
+            session.terminateSelfWithResult({
+              resultCode: systemShare.ShareAbilityResultCode.CLOSE
+            })
+          });
         });
       })
       .catch((error: BusinessError) => {
         console.error(`Failed to getSharedData. Code: ${error.code}, message: ${error.message}`);
         session.terminateSelf();
       });
-    session.terminateSelfWithResult({
-      resultCode: systemShare.ShareAbilityResultCode.CLOSE
-    })
   }
 }
