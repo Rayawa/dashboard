@@ -29,7 +29,7 @@ export class ShareAbility extends ShareExtensionAbility {
           console.info(`dashboard_share_parse ${app_query}`);
           console.info(`dashboard_share_raw ${content}`);
 
-          const submit_body = new SubmitBody(null, app_query, null);
+          const submit_body = new SubmitBody(null, app_query, undefined);
           submit_app_with_user_data(submit_body);
         });
       })

@@ -26,13 +26,17 @@ export class SubmitResult {
 export class SubmitBody {
   public username: string = SUBMIT_USERNAME();
   public app_query: string = "";
-  public note: string | null;
+  public note?: string;
 
   constructor(username: string | null = null,
     app_query: string,
-    note: string | null = null
+    note?: string
   ) {
-    this.username = username || SUBMIT_USERNAME();
+    if (username == null) {
+      this.username = SUBMIT_USERNAME();
+    } else {
+      this.username = username
+    }
     this.app_query = app_query;
     this.note = note
   }
@@ -97,29 +101,42 @@ export function parse_app_id_from_url(url: string): string | null {
 
 export function submit_app_with_user_data(user_data: SubmitBody): SubmitResult | null {
   let request = http.createHttp();
-  let data: JSON;
+  // let data: JSON; // TODO: 解析结果
   try {
-    request.request("http://shenjack.top:10003/api/v0/", {
+    const note = user_data == undefined ? "" : `"note": "${user_data.note}"`;
+    const fmt_json = `{"pkg_name": "${user_data.app_query}",
+      "comment": {
+        "platform": "${SUBMIT_PLATFORM}",
+        "username": "${SUBMIT_USERNAME()}",
+        ${note}
+      }}`;
+    console.log("submitting");
+    request.request("http://shenjack.top:10003/api/v0/submit", {
       method: http.RequestMethod.POST,
       expectDataType: http.HttpDataType.OBJECT,
       usingCache: false, // 提交可不能用 cache
-      extraData: {
-        pkg_name: user_data.app_query,
-        comment: {
-          platform: SUBMIT_PLATFORM,
-          username: SUBMIT_USERNAME(),
-          note: user_data.note,
-        }
-      }
+      header: {
+        "Content-Type": "application/json"
+      },
+      extraData: fmt_json
     }, (err: BusinessError, data: http.HttpResponse) => {
       if (!err) {
+        // data.result为HTTP响应内容，可根据业务需要进行解析。
+        console.info('Result:' + JSON.stringify(data.result));
+        console.info('code:' + JSON.stringify(data.responseCode));
+        // data.header为HTTP响应头，可根据业务需要进行解析。
+        console.info('header:' + JSON.stringify(data.header));
+        console.info('cookies:' + JSON.stringify(data.cookies)); // 8+
+        // 当该请求使用完毕时，调用destroy方法主动销毁。
+        // httpRequest.destroy();
         console.info(`dashboard_share ${data}`)
       } else {
         console.warn(`dashboard_share faild to send http e: ${err}`)
       }
+      request.destroy();
     })
   } finally {
-    request.destroy();
   }
+  console.info("?????")
   return null;
 }
