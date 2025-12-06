@@ -49,9 +49,7 @@ export struct WebView {
     context.eventHub.on('onBackGround', () => {
       this.onBackGround();
     });
-    // harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
-    //   sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
-    // });//错误处理
+
   }
   aboutToDisappear() {
     this.shareDisablingListening();//关闭监听
@@ -59,9 +57,16 @@ export struct WebView {
     const context: Context = uiContext.getHostContext() as Context;
     context.eventHub.off('onFocus');
     context.eventHub.off('onBackGround');
+    this.shareDisablingListening();
+    harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
   }
   private onBackGround() {
     this.shareDisablingListening();
+    harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
   }
 
   //回到顶部方法
