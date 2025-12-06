@@ -26,8 +26,8 @@ export class ShareAbility extends ShareExtensionAbility {
             return;
           }
           const app_query = pared_url!.toString();
-          console.info(`dashboard_parse ${app_query}`);
-          console.info(`dashboard_get_share ${content}`);
+          console.info(`dashboard_share_parse ${app_query}`);
+          console.info(`dashboard_share_raw ${content}`);
 
           const submit_body = new SubmitBody(null, app_query, null);
           submit_app_with_user_data(submit_body);

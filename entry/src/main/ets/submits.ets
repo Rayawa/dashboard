@@ -112,7 +112,11 @@ export function submit_app_with_user_data(user_data: SubmitBody): SubmitResult |
         }
       }
     }, (err: BusinessError, data: http.HttpResponse) => {
-
+      if (!err) {
+        console.info(`dashboard_share ${data}`)
+      } else {
+        console.warn(`dashboard_share faild to send http e: ${err}`)
+      }
     })
   } finally {
     request.destroy();
