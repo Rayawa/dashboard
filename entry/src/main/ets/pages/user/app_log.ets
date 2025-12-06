@@ -17,6 +17,7 @@ struct app_log {
       isRelease: false,
       type:'beta',
       items: ['完成按已有信息投稿到看板',
+        '在user页面用户名边增加弹窗信息',
         '修复V2底部与web_log底部存在文字遮挡问题',
         '制作教程界面',
       ]
