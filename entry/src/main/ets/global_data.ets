@@ -1,7 +1,7 @@
 //shenjack
 import { deviceInfo } from '@kit.BasicServicesKit';
 
-export const APP_VERSION: string = "1.1.0-alpha.6";
+export const APP_VERSION: string = "1.1.0-beta.1";
 export const userName: string = AppStorage.Get('userName') || '';
 
 

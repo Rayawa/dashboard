@@ -21,7 +21,7 @@ struct IssueView {
       Scroll() {
         Column({ space: 20 }) {
           // 问题类型选择
-          Text("问题类型")
+          Text("开发中页面")
             .fontSize(20)
             .fontWeight(FontWeight.Bold);
 
