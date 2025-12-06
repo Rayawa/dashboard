@@ -8,6 +8,8 @@ import { deviceInfo } from '@kit.BasicServicesKit';
 @Entry
 @Component
 export struct user {
+  @State handlePopup: boolean = false;
+  @State customPopup: boolean = false;
   @StorageLink('userName') userName: string = ''
   @State deviceName: string = ''
   async getPreference(): Promise<preferences.Preferences> {
@@ -156,6 +158,30 @@ export struct user {
                     .onSubmit(() => {
                       this.saveUserName();
                     })
+
+                  Image($r('app.media.issue'))
+                    .margin({ left: 12 })
+                    .height(24)
+                    .width(24)
+                    .objectFit(ImageFit.Contain)
+                    .onClick(() => {
+                      this.handlePopup = !this.handlePopup;
+                    })
+                    .bindPopup(this.handlePopup, {
+                      message: '用于您投稿时提交给应用看板的用户名\n详情见使用教程-投稿功能',
+                      placement: Placement.Top,
+                      showInSubWindow: false,
+                      onStateChange: (e) => {
+                        if (!e.isVisible) {
+                          this.handlePopup = false;
+                        }
+                      },
+                      transition:TransitionEffect.asymmetric(
+                        TransitionEffect.OPACITY.animation({ duration: 500, curve: Curve.Ease }).combine(
+                          TransitionEffect.translate({ x: 50, y: 50 })),
+                        TransitionEffect.IDENTITY)
+                    })
+
                 }
                 .height(56)
                 .width('100%')
