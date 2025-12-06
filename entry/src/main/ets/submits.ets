@@ -104,16 +104,17 @@ export async function submit_app_with_user_data(user_data: SubmitBody): Promise<
   let request = http.createHttp();
   // let data: JSON; // TODO: 解析结果
   try {
-    const note = user_data == null ? "" : `"note": "${user_data.note}"`;
-    const username = "没招了的shenjack"
+    const note = user_data.note == null ? "" : `,"note": "${user_data.note}"`;
+    // const username = "没招了的shenjack"
+    const username = SUBMIT_USERNAME();
     const fmt_json = `{"pkg_name": "${user_data.app_query}",
       "comment": {
         "platform": "${SUBMIT_PLATFORM}",
-        "username": "${username}",
+        "username": "${username}"
         ${note}
       }}`;
     console.log(`submitting  ${AppStorage.get('userName')}`);
-    await request.request("http://shenjack.top:10003/api/v0/submit", {
+    const response = await request.request("http://shenjack.top:10003/api/v0/submit", {
       method: http.RequestMethod.POST,
       expectDataType: http.HttpDataType.OBJECT,
       usingCache: false, // 提交可不能用 cache
@@ -121,23 +122,14 @@ export async function submit_app_with_user_data(user_data: SubmitBody): Promise<
         "Content-Type": "application/json"
       },
       extraData: fmt_json
-    },
-      // (err: BusinessError, data: http.HttpResponse) => {
-      // if (!err) {
-      //   // data.result为HTTP响应内容，可根据业务需要进行解析。
-      //   console.info('Result:' + JSON.stringify(data.result));
-      //   console.info('code:' + JSON.stringify(data.responseCode));
-      //   // data.header为HTTP响应头，可根据业务需要进行解析。
-      //   console.info('header:' + JSON.stringify(data.header));
-      //   console.info('cookies:' + JSON.stringify(data.cookies)); // 8+
-      //   // 当该请求使用完毕时，调用destroy方法主动销毁。
-      //   // httpRequest.destroy();
-      //   console.info(`dashboard_share ${data}`)
-      // } else {
-      //   console.warn(`dashboard_share faild to send http e: ${err}`)
-      // }
-      // }
+    }
     )
+    console.info(`request response code: ${response.responseCode}`);
+    // if (response.responseCode == 200) {
+    //   console.info(JSON.stringify(response.result));
+    // }
+  } catch (e) {
+    console.warn(`error ${e}`)
   } finally {
     request.destroy();
   }
