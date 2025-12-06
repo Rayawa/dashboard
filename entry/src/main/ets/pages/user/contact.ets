@@ -121,13 +121,13 @@ struct contact {
 
               Text('感谢您的支持！')
                 .fontSize(12)
-                .margin({ bottom: 60 })
+                .margin({ bottom: 10 })
             }
             .width('100%')
             .alignItems(HorizontalAlign.Center)
           }
+         // .margin({ top: 100, bottom: 20 })
           .width('100%')
-          .alignItems(HorizontalAlign.Center)
         }
         .width('100%')
         .height('100%')
