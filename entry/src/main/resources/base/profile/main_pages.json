@@ -5,7 +5,7 @@
     "pages/user",
     "pages/user/web_log",
     "pages/user/web_api",
-    "pages/user/web_contact",
+    "pages/user/contact",
     "pages/user/feedback",
     "pages/user/app_log",
     "pages/user/tutorial"

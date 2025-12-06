@@ -115,7 +115,6 @@ export struct user {
 
               Column(){
                 Row() {
-                  // 左侧固定部分
                   Row() {
                     Image($r('app.media.user'))
                       .height(24)
@@ -128,17 +127,16 @@ export struct user {
                       .fontWeight(FontWeight.Medium)
                   }
                   .constraintSize({
-                    minWidth: 50 // 设置最小宽度
+                    minWidth: 50
                   })
 
-                  // 右侧自适应输入框
                   TextInput({
                     text: this.userName,
                     placeholder: '设置用户名'
                   })
-                    .layoutWeight(1) // 使用layoutWeight而不是flexGrow
+                    .layoutWeight(1)
                     .constraintSize({
-                      maxWidth: '80%' // 限制最大宽度
+                      maxWidth: '80%'
                     })
                     .height(40)
                     .margin({ left: 12 })
@@ -298,7 +296,7 @@ export struct user {
                     .width(16)
                     .objectFit(ImageFit.Contain)
                 }
-                .onClick(() => router.pushUrl({ url: 'pages/user/web_contact' }))
+                .onClick(() => router.pushUrl({ url: 'pages/user/contact' }))
                 .height(56)
                 .width('100%')
                 .justifyContent(FlexAlign.SpaceBetween)
@@ -337,28 +335,28 @@ export struct user {
                   .strokeWidth(0.5)
                   .margin({ left: 16, right: 16 })
 
-                Row() {
-                  Row() {
-                    Image($r('app.media.issue'))
-                      .height(24)
-                      .width(24)
-                      .objectFit(ImageFit.Contain)
-
-                    Text('问题与反馈')
-                      .fontSize(16)
-                      .margin({ left: 12 })
-                  }
-
-                  Image($r('app.media.right'))
-                    .height(16)
-                    .width(16)
-                    .objectFit(ImageFit.Contain)
-                }
-                .onClick(() => router.pushUrl({ url: 'pages/user/feedback' }))
-                .height(56)
-                .width('100%')
-                .justifyContent(FlexAlign.SpaceBetween)
-                .padding({ left: 16, right: 16 })
+                // Row() {
+                //   Row() {
+                //     Image($r('app.media.issue'))
+                //       .height(24)
+                //       .width(24)
+                //       .objectFit(ImageFit.Contain)
+                //
+                //     Text('问题与反馈')
+                //       .fontSize(16)
+                //       .margin({ left: 12 })
+                //   }
+                //
+                //   Image($r('app.media.right'))
+                //     .height(16)
+                //     .width(16)
+                //     .objectFit(ImageFit.Contain)
+                // }
+                // .onClick(() => router.pushUrl({ url: 'pages/user/feedback' }))
+                // .height(56)
+                // .width('100%')
+                // .justifyContent(FlexAlign.SpaceBetween)
+                // .padding({ left: 16, right: 16 })
 
               }
               .borderWidth(0.5)
