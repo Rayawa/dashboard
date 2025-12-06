@@ -49,9 +49,9 @@ export struct WebView {
     context.eventHub.on('onBackGround', () => {
       this.onBackGround();
     });
-    harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
-      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
-    });//错误处理
+    // harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
+    //   sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    // });//错误处理
   }
   aboutToDisappear() {
     this.shareDisablingListening();//关闭监听
@@ -86,11 +86,11 @@ export struct WebView {
   }
 
   //切换V1V2方法
-  @State isV2: boolean = true;
+  @State isT: boolean = true;
   private switchWebVersion(): void {
-    const switchVersion = this.isV2 ? 'V1' : 'V2';
-    this.url = this.isV2 ? 'http://shenjack.top:10003/dashboard' : 'https://hmos.txit.top/dashboard';
-    this.isV2 = !this.isV2;
+    const switchVersion = this.isT ? 'S站' : ' T站';
+    this.url = this.isT ? 'http://shenjack.top:10003/dashboard' : 'https://hmos.txit.top/dashboard';
+    this.isT = !this.isT;
     this.web_controller.loadUrl(this.url);
     prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
   }
@@ -220,7 +220,7 @@ export struct WebView {
         });
       MenuItem({ startIcon: $r('app.media.arrow_up'), content: "回到顶部" })
         .onClick(() => { prompt.showToast({ message: '回到顶部', duration: 500 }); this.scrollToTop(); });
-      MenuItem({ startIcon: $r('app.media.switch'), content: this.isV2 ? "切换到V1" : "切换到V2" })
+      MenuItem({ startIcon: $r('app.media.switch'), content: this.isT ? "切换到S版本" : "切换到T版本" })
         .onClick(() => { this.switchWebVersion(); });
     }
   }
@@ -248,7 +248,7 @@ export struct WebView {
         Column() {
           Text('\n').fontSize(14);
           Row() {
-            Text(this.isV2 ? "应用看板V2" : "应用看板V1").fontSize(23).fontWeight(FontWeight.Bold).margin({ left: 20 });
+            Text(this.isT ? "应用看板 - T站" : "应用看板 - S站").fontSize(23).fontWeight(FontWeight.Bold).margin({ left: 20 });
             Row() {
               Image($r('app.media.share')).height(28).width(28).margin({ right: 30 }).onClick(() => { this.shareUrl(); });
               Image($r('app.media.menu')).height(28).width(28).margin({ right: 30 }).bindMenu(this.Menu);
