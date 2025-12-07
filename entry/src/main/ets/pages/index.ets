@@ -24,6 +24,10 @@ struct Dashboard {
       Stack(){
         Scroll(){
           Column() {
+            Text('施工中页面')
+              .fontSize(30)
+              .fontWeight(900)
+              .margin({bottom:50})
             HeaderComponent()
             StatsCardsComponent()
             TopDownloadChartComponent()

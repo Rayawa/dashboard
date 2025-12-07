@@ -6,12 +6,21 @@ import { APP_UA } from "../global_data";
 import { Logger } from '../utils/Logger';
 import { common } from "@kit.AbilityKit";
 import { harmonyShare, systemShare } from '@kit.ShareKit';
+import KnockShareGuideCard, { CardRes } from '../common/KnockShareGuideCard';
 import { uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
 
 @Entry
 @Component
 export struct WebView {
+  private readonly cardSwiperResourcesPhone: CardRes[] = [
+    {
+      text: '对方手机需HarmonyOS 5及以上版本。',
+      rawfilePrefix: 'knock_share_guide/knock_share_guide_phone_',
+      framesCount: 128,
+      startDelay: 50,
+      stopDelay: 500,
+    }]
   @State showTutorial: boolean = false;
   private effect: TransitionEffect =
     TransitionEffect.OPACITY
@@ -233,8 +242,8 @@ export struct WebView {
         .onClick(() => { this.scrollToTop(); prompt.showToast({ message: '回到顶部', duration: 500 }); });
       MenuItem({ startIcon: $r('app.media.switch'), content: this.isT ? "切换到S版本" : "切换到T版本" })
         .onClick(() => { this.switchWebVersion(); });
-      MenuItem({ startIcon: $r('app.media.info'), content: "重新播放教程" })
-        .onClick(() => {  this.showTutorial = !this.showTutorial; prompt.showToast({ message: '播放教程', duration: 500 }); });
+      MenuItem({ startIcon: $r('app.media.info'), content: "教程页面" })
+        .onClick(() => {  this.showTutorial = !this.showTutorial;});
     }
   }
 
@@ -249,55 +258,16 @@ export struct WebView {
           Swiper() {
             // 欢迎页面
             Column() {
-              Column() {
-                // 主标题
-                Text('欢迎来到应用看板')
-                  .fontSize(24)
-                  .fontWeight(FontWeight.Bold)
-                  .margin({ bottom: 16 })
-                Scroll(){Column(){
-                  // 副标题
-                  Text('这个App能帮你做什么？')
-                    .fontSize(18)
-                    .fontWeight(FontWeight.Medium)
-                    .margin({ bottom: 12 })
-
-                  // 主要用途列表
-                  Text('本应用收集华为应用市场的公开数据，并将其转化为直观的图表和数据展示给用户。简单来说，您能在这个应用里看到几乎所有鸿蒙应用等情况。\n' +
-                    '\n' +
-                    '查看应用表现：轻松跟踪任何应用的下载量、评分与日活跃度。通过清晰的折线图、饼图，直观把握数据的变化趋势与生命周期。\n' +
-                    '\n' +
-                    '分析市场格局：通过总下载榜、评分分布等榜单，快速了解哪些应用最受欢迎，以及用户口碑的整体情况，把握市场风向。\n' +
-                    '\n' +
-                    '深入研究详情：点击任一应用，即可进入详情页，深度查看其更新记录、开发商信息，并独立分析该应用的下载趋势图。\n' +
-                    '\n' +
-                    '高效查找与筛选：通过智能搜索，并支持按名称、评分、下载量等多种条件灵活排序，帮助您从海量应用中瞬间定位目标。\n' +
-                    '\n' +
-                    '获取最新数据：我们的数据后台每30分钟自动更新，确保您看到的下载量、评分等关键指标始终为市场最新状态。\n' +
-                    '\n' +
-                    '交互与分享：所有图表支持点击交互，便于数据对比。您还可以通过链接、或鸿蒙独特的“碰一碰”功能，轻松将应用页面分享给伙伴。')
-                    .fontSize(14)
-                    .margin({ bottom: 8 })
-                    .textAlign(TextAlign.Start)
-
-
-                  // 重要提示标题
-                  Text('重要提示：')
-                    .fontSize(18)
-                    .fontWeight(FontWeight.Medium)
-                    .margin({ bottom: 12 })
-
-                  // 重要提示内容
-                  Text('本应用的所有数据均来源于华为应用市场的公开信息。我们致力于提供准确、及时的数据呈现，但无法对数据的原始准确性、完整性和真实性做出绝对保证。所有信息仅供参考，不构成任何决策的唯一依据。')
-                    .fontSize(14)
-                    .fontColor('#666666')
-                    .margin({ bottom: 20 })
-                    .textAlign(TextAlign.Start)
-                }}
-              }
-              .width('100%')
+              Text('欢迎来到应用看板').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
+              Text('本应用收集华为应用市场的公开数据，转化为直观的图表与报告。简单来说，您能在这里查看几乎所有鸿蒙应用的动态。\n\n' +
+                ' 1. 数据总览与图表分析：\n   通过榜单、饼图与折线图，直观查看应用下载量、评分趋势与市场分布。\n\n' +
+                ' 2. 搜索应用与查看详情：\n   支持按名称、评分等条件搜索排序，点击可查看应用详情与独立趋势图。\n\n' +
+                ' 3. 数据定时自动更新：\n    后台每30分钟同步一次应用市场，确保您始终获取最新数据。\n\n' +
+                ' 4. 交互式操作与分享：\n    点击图表可进行数据筛选，点击应用可进入详情页；您也可通过链接、隔空抓取或鸿蒙碰一碰便捷分享应用页面。\n\n' +
+                ' 5. 投稿更新应用信息：\n    您可通过应用市场分享与“我的”页面向应用看板投稿，协助投稿新应用或更新应用信息。\n\n').fontSize(14).margin({ bottom: 20 }).textAlign(TextAlign.Start)
+              Text('重要提示：\n本应用的所有数据均来源于华为应用市场的公开信息，数据仅供参考，不保证来源的准确性、完整性和真实性。').fontSize(16).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Medium).textAlign(TextAlign.Start)
             }
-            .height('70%')
+            .height('80%')
             .width('95%')
             .borderRadius(16)
             .padding(20)
@@ -324,58 +294,11 @@ export struct WebView {
               Text('• 应用列表 - 详细应用信息表格，支持搜索、排序、筛选')
                 .fontSize(15)
             }
-            .height('70%')
+            .height('80%')
             .width('95%')
             .borderRadius(16)
             .padding(20)
 
-            // 应用详情页
-            Column() {
-              Text('应用详情页')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .margin({ bottom: 6 })
-
-              Text('• 刷新数据 - 点击“刷新数据”按钮获取最新数据')
-                .fontSize(15).margin({ bottom: 4 })
-              Text('• 搜索应用 - 支持按名称、包名、开发者等搜索')
-                .fontSize(15).margin({ bottom: 4 })
-              Text('• 快速筛选 - 点击开发者名称可快速查看其全部应用')
-                .fontSize(15).margin({ bottom: 4 })
-              Text('• 排序功能 - 按多列（评分、下载量、大小等）排序')
-                .fontSize(15).margin({ bottom: 4 })
-              Text('• 查看详情 - 点击应用行查看详细信息')
-                .fontSize(15).margin({ bottom: 4 })
-              Text('• 过滤选项 - 可排除华为/元服务应用')
-                .fontSize(15).margin({ bottom: 4 })
-              Text('• 分页浏览 - 使用底部分页控件查看更多应用')
-                .fontSize(15)
-            }
-            .height('70%')
-            .width('95%')
-            .borderRadius(16)
-            .padding(20)
-
-            // 应用列表与搜索功能
-            Column() {
-              Text('应用列表与搜索功能')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .margin({ bottom: 6 })
-
-              Text('• 部分功能仍在开发中，可能出现数据不完整或bug')
-                .fontSize(15).margin({ bottom: 4 })
-              Text('• 数据更新可能延迟，请以官方数据为准')
-                .fontSize(15).margin({ bottom: 4 })
-              Text('• 应用详情页面仍在开发，部分数据可能错误')
-                .fontSize(15).margin({ bottom: 4 })
-              Text('• 按 ESC 可快速关闭弹窗')
-                .fontSize(15)
-            }
-            .height('70%')
-            .width('95%')
-            .borderRadius(16)
-            .padding(20)
 
             // 菜单栏
             Column() {
@@ -389,24 +312,24 @@ export struct WebView {
                 .fontColor($r('app.color.diff_content'))
                 .lineHeight(22)
             }
-            .height('70%')
+            .height('80%')
             .width('95%')
             .borderRadius(16)
             .padding(20)
 
             // 分享功能
             Column() {
-              Text('分享功能')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .margin({ bottom: 6 })
-
-              Text('如遇到问题或需要技术支持，请联系相关开发人员。')
-                .fontSize(15)
-                .fontColor($r('app.color.diff_content'))
-                .lineHeight(22)
+              Text('分享功能').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
+              Text('目前分享功能仅支持手机设备').fontSize(14).margin({ bottom: 20 }).textAlign(TextAlign.Start)
+              Text('  1. 在主界面或任意应用详情页点击分享按钮分享当前页面链接\n').fontSize(14).textAlign(TextAlign.Start)
+              Image($r('app.media.share')).width(24).height(24).margin({bottom:30}).onClick(() => { this.shareUrl(); });
+              Text('  2. 在任意界面使用碰一碰分享将当前页面链接分享给其他HarmonyOS设备。\n').fontSize(14).textAlign(TextAlign.Start)
+              KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone }).margin({bottom:30})
+              Text('  3. 在任意界面隔空传送将当前页面链接分享给其他HarmonyOS设备。\n' +
+                '   使用前，请确保两台设备均在设置中开启“隔空传送”功能。\n    当前版本仅支持从手机抓取内容并分享至其他手机、平板、PC或二合一设备，暂不支持从平板、PC或二合一设备发起抓取。\n').fontSize(14).textAlign(TextAlign.Start)
+              KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone }).margin({bottom:30})
             }
-            .height('70%')
+            .height('80%')
             .width('95%')
             .borderRadius(16)
             .padding(20)
@@ -423,7 +346,7 @@ export struct WebView {
                 .fontColor($r('app.color.diff_content'))
                 .lineHeight(22)
             }
-            .height('70%')
+            .height('80%')
             .width('95%')
             .borderRadius(16)
             .padding(20)
@@ -431,6 +354,7 @@ export struct WebView {
           }
           .loop(false)
           .effectMode(EdgeEffect.Spring)
+          .margin({top:30})
           .width('90%')
           .borderRadius(20)
           .backgroundColor($r('app.color.backcolor'))

@@ -9,6 +9,10 @@ struct tutorial {
       Stack() {
         Scroll() {
           Column({ space: 20 }) {
+            Text('施工中页面')
+              .fontSize(30)
+              .fontWeight(900)
+              .margin({bottom:50})
 
             // 数据来源
             Column() {
@@ -22,6 +26,7 @@ struct tutorial {
                 .fontColor($r('app.color.diff_content'))
                 .lineHeight(22)
             }
+            .justifyContent(FlexAlign.Start)
             .width('95%')
             .borderRadius(16)
             .padding({ top: 12, bottom: 12, left: 12, right: 12 })
@@ -49,6 +54,7 @@ struct tutorial {
               Text('• 应用列表 - 详细应用信息表格，支持搜索、排序、筛选')
                 .fontSize(15)
             }
+            .justifyContent(FlexAlign.Start)
             .width('95%')
             .borderRadius(16)
             .padding({ top: 12, bottom: 12, left: 12, right: 12 })
@@ -76,6 +82,7 @@ struct tutorial {
               Text('• 分页浏览 - 使用底部分页控件查看更多应用')
                 .fontSize(15)
             }
+            .justifyContent(FlexAlign.Start)
             .width('95%')
             .borderRadius(16)
             .padding({ top: 12, bottom: 12, left: 12, right: 12 })
@@ -97,6 +104,7 @@ struct tutorial {
               Text('• 按 ESC 可快速关闭弹窗')
                 .fontSize(15)
             }
+            .justifyContent(FlexAlign.Start)
             .width('95%')
             .borderRadius(16)
             .padding({ top: 12, bottom: 12, left: 12, right: 12 })
@@ -114,6 +122,7 @@ struct tutorial {
                 .fontColor($r('app.color.diff_content'))
                 .lineHeight(22)
             }
+            .justifyContent(FlexAlign.Start)
             .width('95%')
             .borderRadius(16)
             .padding({ top: 12, bottom: 12, left: 12, right: 12 })
