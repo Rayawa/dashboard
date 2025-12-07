@@ -211,7 +211,7 @@ export struct WebView {
         .onClick(() => { router.pushUrl({ url: 'pages/index' }); prompt.showToast({ message: '原生版本', duration: 500 }); });
       MenuItem({ startIcon: $r('app.media.arrow_back'), content: "返回上级" })
         .onClick(() => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); });
-      MenuItem({ startIcon: this.isLoading ? $r('app.media.close') : $r('app.media.refresh'), content: this.isLoading ? "停止刷新" : "刷新页面" })
+      MenuItem({ startIcon: this.isLoading ? $r('app.media.stop') : $r('app.media.refresh'), content: this.isLoading ? "停止刷新" : "刷新页面" })
         .onClick(() => {
           if (this.isLoading) {
             this.web_controller.stop();
@@ -224,9 +224,11 @@ export struct WebView {
           }
         });
       MenuItem({ startIcon: $r('app.media.arrow_up'), content: "回到顶部" })
-        .onClick(() => { prompt.showToast({ message: '回到顶部', duration: 500 }); this.scrollToTop(); });
+        .onClick(() => { this.scrollToTop(); prompt.showToast({ message: '回到顶部', duration: 500 }); });
       MenuItem({ startIcon: $r('app.media.switch'), content: this.isT ? "切换到S版本" : "切换到T版本" })
         .onClick(() => { this.switchWebVersion(); });
+      MenuItem({ startIcon: $r('app.media.info'), content: "重新播放教程" })
+        .onClick(() => {  prompt.showToast({ message: '播放教程', duration: 500 }); });
     }
   }
 

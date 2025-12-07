@@ -88,7 +88,7 @@ struct api {
           Row() {
             Text("API文档说明").fontSize(23).fontWeight(FontWeight.Bold).margin({ left: 20 });
             Row() {
-              Image(this.isLoading ? $r('app.media.close') : $r('app.media.refresh')).height(28).width(28).margin({ right: 30 })
+              Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh')).height(28).width(28).margin({ right: 30 })
                 .onClick(() => {
                   if (this.isLoading) {
                     this.web_controller.stop();

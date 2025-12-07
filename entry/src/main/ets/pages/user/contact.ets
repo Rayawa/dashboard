@@ -1,5 +1,6 @@
 import { prompt, router } from '@kit.ArkUI'
 import { pasteboard, BusinessError } from '@kit.BasicServicesKit'
+import { common, Want } from '@kit.AbilityKit'
 
 @Entry
 @Component
@@ -105,6 +106,27 @@ struct contact {
               .onClick(async () => {
                 await this.copyToClipboard('757273833', 'QQ群号：757273833')
               })
+              //赞助
+              Column() {
+                Text('赞助我们')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .margin({ bottom: 6 })
+                Text('支持项目发展')
+                  .fontSize(15)
+                  .margin({ bottom: 8 })
+                Text('点击跳转到爱发电赞助页面')
+                  .fontSize(16)
+                  .fontColor($r('app.color.diff_content'))
+                  .fontWeight(FontWeight.Medium)
+              }
+              .width('95%')
+              .borderRadius(16)
+              .padding({ top: 12, bottom: 12, left: 12, right: 12 })
+              .backgroundColor($r('app.color.diff_background'))
+              .onClick(() => {
+                this.openLink()
+              })
             }
             .padding({ left: 12, right: 12 })
 
@@ -126,7 +148,7 @@ struct contact {
             .width('100%')
             .alignItems(HorizontalAlign.Center)
           }
-         // .margin({ top: 100, bottom: 20 })
+          .margin({ top: 100, bottom: 20 })
           .width('100%')
         }
         .width('100%')
@@ -165,7 +187,40 @@ struct contact {
     .width('100%')
     .height('100%')
   }
-
+  async openLink() {
+    const url = 'https://afdian.com/a/shenjack';
+    const ui_content = this.getUIContext();
+    const prompt_action = ui_content.getPromptAction();
+    ui_content.showAlertDialog({
+      title: '是否跳转到浏览器',
+      message: '即将访问爱发电',
+      primaryButton: {
+        value: '取消',
+        fontColor:Color.Red,
+        action: () => {
+          console.log('点击了取消按钮');
+        },
+      },
+      secondaryButton: {
+        value: '确定',
+        fontColor:Color.Blue,
+        action: async (): Promise<void> => {
+          try {
+            prompt_action.showToast({ message: '正在跳转...', duration: 500 });
+            let context = ui_content.getHostContext() as common.UIAbilityContext;
+            await context.startAbility({
+              action: "ohos.want.action.viewData",
+              entities: ["entity.system.browsable"],
+              uri: url
+            } as Want);
+          } catch (error) {
+            console.error('打开链接失败:', (error as BusinessError).message);
+            prompt_action.showToast({ message: '打开链接失败', duration: 1000 });
+          }
+        }
+      },
+    })
+  }
   async copyToClipboard(text: string, message: string): Promise<void> {
     try {
 
