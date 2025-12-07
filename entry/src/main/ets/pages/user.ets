@@ -19,7 +19,7 @@ export struct user {
     TransitionEffect.OPACITY
       .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
       .combine(TransitionEffect.scale({ x: 0, y: 1 }))
-      .animation({ curve: curves.springMotion(0.7, 0.7), duration:1000})
+      .animation({ curve: curves.springMotion(0.7, 0.8), duration:1000})
   @State handlePopup: boolean = false;
   @State customPopup: boolean = false;
   @StorageLink('userName') userName: string = ''
@@ -183,7 +183,10 @@ export struct user {
       Stack() {
         if (this.isPresent) {
           Stack(){
-            Column().backgroundColor(Color.Transparent).height('100%').width('100%').onClick(() => { this.isPresent = !this.isPresent; })
+            Column().backgroundColor(Color.Transparent).height('200%').width('200%')
+              .onClick(() => { this.isPresent = !this.isPresent; })
+              .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+              .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
             Column({ space: 20 }) {
               Row() {
                 Row({ space: 8 }) {
@@ -374,6 +377,7 @@ export struct user {
               offsetY: 4
             })
           }
+          .transition(this.effect)
           .gesture(
             SwipeGesture({ direction: SwipeDirection.Vertical })
               .onAction((move: GestureEvent|undefined) => {
@@ -382,8 +386,8 @@ export struct user {
                 }
               })
           )
-          .transition(this.effect)
-          .zIndex(999)
+          .zIndex(2)
+
           .height('100%')
           .width('100%')
 
@@ -767,6 +771,7 @@ export struct user {
 
         }
         .backgroundBlurStyle(BlurStyle.Thin)
+        .zIndex(3)
         .position({ x: 0, y: 0 })
         .width('100%')
       }
