@@ -6,21 +6,13 @@ import { APP_UA } from "../global_data";
 import { Logger } from '../utils/Logger';
 import { common } from "@kit.AbilityKit";
 import { harmonyShare, systemShare } from '@kit.ShareKit';
-import KnockShareGuideCard, { CardRes } from '../common/KnockShareGuideCard';
 import { uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
+import { tutorial } from '../component/common/tutorial'
 
 @Entry
 @Component
 export struct WebView {
-  private readonly cardSwiperResourcesPhone: CardRes[] = [
-    {
-      text: '对方手机需HarmonyOS 5及以上版本。',
-      rawfilePrefix: 'knock_share_guide/knock_share_guide_phone_',
-      framesCount: 128,
-      startDelay: 50,
-      stopDelay: 500,
-    }]
   @State showTutorial: boolean = false;
   private effect: TransitionEffect =
     TransitionEffect.OPACITY
@@ -255,133 +247,18 @@ export struct WebView {
             .onClick(() => { this.showTutorial = !this.showTutorial; })
             .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
             .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
-          Swiper() {
-            // 欢迎页面
-            Column() {
-              Text('欢迎来到应用看板').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
-              Text('本应用收集华为应用市场的公开数据，转化为直观的图表与报告。简单来说，您能在这里查看几乎所有鸿蒙应用的动态。\n\n' +
-                ' 1. 数据总览与图表分析：\n   通过榜单、饼图与折线图，直观查看应用下载量、评分趋势与市场分布。\n\n' +
-                ' 2. 搜索应用与查看详情：\n   支持按名称、评分等条件搜索排序，点击可查看应用详情与独立趋势图。\n\n' +
-                ' 3. 数据定时自动更新：\n    后台每30分钟同步一次应用市场，确保您始终获取最新数据。\n\n' +
-                ' 4. 交互式操作与分享：\n    点击图表可进行数据筛选，点击应用可进入详情页；您也可通过链接、隔空抓取或鸿蒙碰一碰便捷分享应用页面。\n\n' +
-                ' 5. 投稿更新应用信息：\n    您可通过应用市场分享与“我的”页面向应用看板投稿，协助投稿新应用或更新应用信息。\n\n').fontSize(14).margin({ bottom: 20 }).textAlign(TextAlign.Start)
-              Text('重要提示：\n本应用的所有数据均来源于华为应用市场的公开信息，数据仅供参考，不保证来源的准确性、完整性和真实性。').fontSize(16).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Medium).textAlign(TextAlign.Start)
-            }
-            .height('80%')
-            .width('95%')
-            .borderRadius(16)
-            .padding(20)
-
-            // 主界面部分
-            Column() {
-              Text('主界面部分')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .margin({ bottom: 6 })
-
-              Text('• 数据概览 - 显示已爬取总数、应用总数、元服务总数、开发者总数')
-                .fontSize(15)
-                .margin({ bottom: 4 })
-              Text('• 总下载榜 - 展示应用下载量排行榜')
-                .fontSize(15)
-                .margin({ bottom: 4 })
-              Text('• 评分分布 - 显示应用评分的分布情况')
-                .fontSize(15)
-                .margin({ bottom: 4 })
-              Text('• 非华为应用下载榜 - 展示非华为应用和内置应用的下载排行')
-                .fontSize(15)
-                .margin({ bottom: 4 })
-              Text('• 应用列表 - 详细应用信息表格，支持搜索、排序、筛选')
-                .fontSize(15)
-            }
-            .height('80%')
-            .width('95%')
-            .borderRadius(16)
-            .padding(20)
-
-
-            // 菜单栏
-            Column() {
-              Text('菜单栏')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .margin({ bottom: 6 })
-
-              Text('如遇到问题或需要技术支持，请联系相关开发人员。')
-                .fontSize(15)
-                .fontColor($r('app.color.diff_content'))
-                .lineHeight(22)
-            }
-            .height('80%')
-            .width('95%')
-            .borderRadius(16)
-            .padding(20)
-
-            // 分享功能
-            Column() {
-              Text('分享功能').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
-              Text('目前分享功能仅支持手机设备').fontSize(14).margin({ bottom: 20 }).textAlign(TextAlign.Start)
-              Text('  1. 在主界面或任意应用详情页点击分享按钮分享当前页面链接\n').fontSize(14).textAlign(TextAlign.Start)
-              Image($r('app.media.share')).width(24).height(24).margin({bottom:30}).onClick(() => { this.shareUrl(); });
-              Text('  2. 在任意界面使用碰一碰分享将当前页面链接分享给其他HarmonyOS设备。\n').fontSize(14).textAlign(TextAlign.Start)
-              KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone }).margin({bottom:30})
-              Text('  3. 在任意界面隔空传送将当前页面链接分享给其他HarmonyOS设备。\n' +
-                '   使用前，请确保两台设备均在设置中开启“隔空传送”功能。\n    当前版本仅支持从手机抓取内容并分享至其他手机、平板、PC或二合一设备，暂不支持从平板、PC或二合一设备发起抓取。\n').fontSize(14).textAlign(TextAlign.Start)
-              KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone }).margin({bottom:30})
-            }
-            .height('80%')
-            .width('95%')
-            .borderRadius(16)
-            .padding(20)
-
-            // 投稿功能
-            Column() {
-              Text('投稿功能')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .margin({ bottom: 6 })
-
-              Text('如遇到问题或需要技术支持，请联系相关开发人员。')
-                .fontSize(15)
-                .fontColor($r('app.color.diff_content'))
-                .lineHeight(22)
-            }
-            .height('80%')
-            .width('95%')
-            .borderRadius(16)
-            .padding(20)
-
-          }
-          .loop(false)
-          .effectMode(EdgeEffect.Spring)
-          .margin({top:30})
-          .width('90%')
-          .borderRadius(20)
-          .backgroundColor($r('app.color.backcolor'))
-          .indicator(new DotIndicator()
-            .itemWidth(6)
-            .itemHeight(6)
-            .selectedItemWidth(12)
-            .selectedItemHeight(6)
-            .color($r('sys.color.comp_background_secondary'))
-            .selectedColor($r('sys.color.comp_background_emphasize')))
-          .shadow({
-            radius: 20,
-            color: Color.Gray,
-            offsetX: 0,
-            offsetY: 4
-          })
+          tutorial()
         }
+        .gesture(
+          SwipeGesture({ direction: SwipeDirection.Vertical })
+            .onAction((move: GestureEvent | undefined) => {
+              if (move) {
+                this.showTutorial = !this.showTutorial
+              }
+            })
+        )
         .transition(this.effect)
-        // .gesture(
-        //   SwipeGesture({ direction: SwipeDirection.Vertical })
-        //     .onAction((move: GestureEvent|undefined) => {
-        //       if(move){
-        //         this.showTutorial = !this.showTutorial
-        //       }
-        //     })
-        // )
-        .zIndex(2)
+        .zIndex(4)
         .height('100%')
         .width('100%')
 

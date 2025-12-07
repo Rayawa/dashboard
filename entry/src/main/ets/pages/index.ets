@@ -1,8 +1,8 @@
-import { AppsTableComponent } from '../component/AppsTableComponent'
-import { TopDownloadChartComponent, NonHuaweiDownloadChartComponent, ChartsAreaComponent } from '../component/ChartsAreaComponent'
-import { HeaderComponent } from '../component/HeaderComponent'
-import { HelpModal, HelpSection } from '../component/ModalComponents'
-import { StatsCardsComponent } from '../component/StatsCardsComponent'
+import { AppsTableComponent } from '../component/index/AppsTableComponent'
+import { TopDownloadChartComponent, NonHuaweiDownloadChartComponent, ChartsAreaComponent } from '../component/index/ChartsAreaComponent'
+import { HeaderComponent } from '../component/index/HeaderComponent'
+import { HelpModal, HelpSection } from '../component/index/ModalComponents'
+import { StatsCardsComponent } from '../component/index/StatsCardsComponent'
 import { router } from '@kit.ArkUI'
 
 @Entry
