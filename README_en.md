@@ -1,6 +1,6 @@
 # Application Dashboard (Gallery Dashboard)
 
-### [中文README](README.md)
+### [中文README](README.md) | [French README](README_fr.md)
 
 This project implements a mobile embedded dashboard page with navigation bar, menu controls, page loading status, and back-to-top animations based on ArkTS and ArkWeb WebView.
 
@@ -18,7 +18,7 @@ Acknowledgments: [shenjack](https://github.com/shenjackyuanjie), [2b2ttianxiu](h
 
 ## Project Structure Summary
 
-Main page file: `entry/src/main/ets/pages/index_t.ets`
+Main page file: `entry/src/main/ets/pages/Index.ets`
 
 Resource files: `AppScope/resources/base/media` | `AppScope/resources/dark/media` (dark mode)
 
