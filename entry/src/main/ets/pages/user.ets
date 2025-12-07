@@ -392,6 +392,7 @@ export struct user {
           .width('100%')
 
         }
+
         Scroll(){
           Column() {
             Column() {
@@ -463,7 +464,7 @@ export struct user {
                       this.handlePopup = !this.handlePopup;
                     })
                     .bindPopup(this.handlePopup, {
-                      message: '用于您投稿应用时的默认用户名\n详情见请“使用教程-投稿功能”',
+                      message: '用于您投稿应用时的默认用户名\n详情见请"使用教程-投稿功能"',
                       placement: Placement.Top,
                       showInSubWindow: false,
                       onStateChange: (e) => {
@@ -471,10 +472,15 @@ export struct user {
                           this.handlePopup = false;
                         }
                       },
-                      transition:TransitionEffect.asymmetric(
-                        TransitionEffect.OPACITY.animation({ duration: 500, curve: Curve.Ease }).combine(
-                          TransitionEffect.translate({ x: 50, y: 50 })),
-                        TransitionEffect.IDENTITY)
+                      transition: TransitionEffect.asymmetric(
+                        TransitionEffect.OPACITY
+                          .animation({ duration: 500, curve: Curve.Ease })
+                          .combine(TransitionEffect.translate({ x: 0, y: 12 })),
+
+                        TransitionEffect.OPACITY
+                          .animation({ duration: 300, curve: Curve.EaseOut })
+                          .combine(TransitionEffect.translate({ x: 0, y: 12 }))
+                      )
                     })
 
                 }
