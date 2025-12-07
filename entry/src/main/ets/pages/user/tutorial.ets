@@ -129,7 +129,7 @@ struct tutorial {
         Column() {
           Column() { Text('\n').fontSize(14) }
           Row() {
-            Text('使用说明')
+            Text('帮助信息 & 使用教程')
               .fontSize(23)
               .fontWeight(FontWeight.Bold)
               .margin({ left: 20 })

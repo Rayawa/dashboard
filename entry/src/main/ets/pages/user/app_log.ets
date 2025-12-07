@@ -12,8 +12,21 @@ class UpdateLog {
 struct app_log {
   @State updateLogs: UpdateLog[] = [
     {
-      version: 'V1.1.0-beta.1',
-      date: '2025-12-?',
+      version: 'V1.1.0-beta.3',
+      date: '2025-12-7',
+      isRelease: false,
+      type:'beta',
+      items: ['完成按已有信息投稿到看板',
+        '在user页面用户名边增加弹窗信息',
+        '修复文本错误与更新图表',
+        '删除问题反馈界面并与重写的联系我们合并',
+        '修复V2底部与web_log底部存在文字遮挡问题',
+        '制作帮助信息&使用教程界面',
+      ]
+    },
+    {
+      version: 'V1.1.0-beta.2',
+      date: '2025-12-7',
       isRelease: false,
       type:'beta',
       items: ['增加shareAbility接口，现在可以通过应用市场投稿app添加信息',

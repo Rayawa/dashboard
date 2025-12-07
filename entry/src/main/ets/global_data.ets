@@ -1,7 +1,7 @@
 // shenjack
 import { deviceInfo } from '@kit.BasicServicesKit';
 
-export const APP_VERSION: string = "1.1.0-beta.2";
+export const APP_VERSION: string = "1.1.0-beta.3";
 export const APP_UA: string = (() => {
   return `top.rayawa.dashboard ${APP_VERSION} ${deviceInfo.osFullName} ${deviceInfo.productModel} ${deviceInfo.sdkApiVersion}`
 })();
