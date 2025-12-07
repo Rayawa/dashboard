@@ -2,7 +2,7 @@
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { parse_app_id_from_url, submit_app_with_user_data } from '../submits';
+import { parseInputSplitLinksPkgsAndAppIds, parse_app_id_from_url, submit_app_with_user_data } from '../submits';
 import UserStorage from '../common/user';
 
 /**
@@ -21,22 +21,23 @@ export class ShareAbility extends ShareExtensionAbility {
                         return;
                     }
                     const content: string = record.content!.toString();
-                    const pared_url = parse_app_id_from_url(content);
-                    if (pared_url == null) {
-                        console.warn(`dashboard share get unparseable url ${content}`);
-                        return;
-                    }
-                    const app_query = pared_url!.toString();
-                    console.info(`dashboard_share_parse ${app_query}`);
+                    const res = parseInputSplitLinksPkgsAndAppIds(content);
+                    const pkgs = res.pkgs;
+                    const app_ids = res.app_ids;
+                    const pkg: string | undefined = pkgs.length != 0 ? pkgs[pkgs.length - 1] : undefined;
+                    const app_id: string | undefined = app_ids.length != 0 ? app_ids[app_ids.length - 1] : undefined;
+                    console.info(`dashboard_share_parse ${pkg || app_id}`);
                     console.info(`dashboard_share_raw ${content}`);
 
                     userStorage.getUsername().then((username) => {
                         submit_app_with_user_data({
-                            pkg_name: app_query,
+                            pkg_name: pkg,
+                            app_id,
                             comment: {
                                 user: username
                             }
                         }).then(() => {
+                            console.log(`dashboard_shared ${content}`)
                             session.terminateSelfWithResult({
                                 resultCode: systemShare.ShareAbilityResultCode.CLOSE
                             })
