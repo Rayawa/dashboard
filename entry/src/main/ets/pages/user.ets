@@ -2,6 +2,7 @@ import { prompt, router } from "@kit.ArkUI"
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
 import { APP_VERSION } from "../global_data";
+import preferences from '@ohos.data.preferences';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import UserStorage from '../common/user'
 import { curves } from '@kit.ArkUI';
@@ -400,385 +401,346 @@ export struct user {
 
                             Divider().margin({ top: 20, bottom: 20 }).color($r('app.color.border'))
 
-                            Column() {
-                                Row() {
-                                    Row() {
-                                        Image($r('app.media.user'))
-                                            .height(24)
-                                            .width(24)
-                                            .objectFit(ImageFit.Contain)
+              Column(){
+                Row() {
+                  Row() {
+                    Image($r('app.media.user'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
 
-                                        Text('用户名')
-                                            .fontSize(16)
-                                            .margin({ left: 12 })
-                                            .fontWeight(FontWeight.Medium)
-                                    }
-                                    .constraintSize({
-                                        minWidth: 50
-                                    })
+                    Text('用户名')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                      .fontWeight(FontWeight.Medium)
+                  }
+                  .constraintSize({
+                    minWidth: 50
+                  })
 
-                                    TextInput({
-                                        text: this.userName,
-                                        placeholder: '设置用户名'
-                                    })
-                                        .layoutWeight(1)
-                                        .constraintSize({
-                                            maxWidth: '80%'
-                                        })
-                                        .height(40)
-                                        .margin({ left: 12 })
-                                        .borderRadius(16)
-                                        .padding({ left: 12, right: 12 })
-                                        .borderWidth(0.5)
-                                        .borderColor($r('app.color.border'))
-                                        .backgroundColor($r('app.color.diff_background'))
-                                        .border({
-                                            width: 1,
-                                            color: this.userName ? '#007DFF' : '#E5E5E5',
-                                            radius: 16
-                                        })
-                                        .onChange((value: string) => {
-                                            this.userName = value;
-                                            this.saveUserName();
-                                        })
-                                        .onSubmit(() => {
-                                            this.saveUserName();
-                                        })
+                  TextInput({
+                    text: this.userName,
+                    placeholder: '设置用户名'
+                  })
+                    .layoutWeight(1)
+                    .constraintSize({
+                      maxWidth: '80%'
+                    })
+                    .height(40)
+                    .margin({ left: 12 })
+                    .borderRadius(16)
+                    .padding({ left: 12, right: 12 })
+                    .borderWidth(0.5)
+                    .borderColor($r('app.color.border'))
+                    .backgroundColor($r('app.color.diff_background'))
+                    .border({
+                      width: 1,
+                      color: this.userName ? '#007DFF' : '#E5E5E5',
+                      radius: 16
+                    })
+                    .onChange((value: string) => {
+                      this.userName = value;
+                      this.saveUserName();
+                    })
+                    .onSubmit(() => {
+                      this.saveUserName();
+                    })
 
-                                    Image($r('app.media.question'))
-                                        .margin({ left: 12 })
-                                        .height(24)
-                                        .width(24)
-                                        .objectFit(ImageFit.Contain)
-                                        .onClick(() => {
-                                            this.handlePopup = !this.handlePopup;
-                                        })
-                                        .bindPopup(this.handlePopup, {
-                                            message: '用于您投稿应用时的默认用户名\n详情见请"使用教程-投稿功能"',
-                                            placement: Placement.Top,
-                                            showInSubWindow: false,
-                                            onStateChange: (e) => {
-                                                if (!e.isVisible) {
-                                                    this.handlePopup = false;
-                                                }
-                                            },
-                                            transition: TransitionEffect.asymmetric(
-                                                TransitionEffect.OPACITY
-                                                    .animation({ duration: 500, curve: Curve.Ease })
-                                                    .combine(TransitionEffect.translate({ x: 0, y: 12 })),
-
-                                                TransitionEffect.OPACITY
-                                                    .animation({ duration: 300, curve: Curve.EaseOut })
-                                                    .combine(TransitionEffect.translate({ x: 0, y: 12 }))
-                                            )
-                                        })
-
-                                }
-                                .height(56)
-                                .width('100%')
-                                .justifyContent(FlexAlign.SpaceBetween)
-                                .alignItems(VerticalAlign.Center)
-                                .padding({ top: 2, left: 16, right: 16 })
-
-                                Row() {
-                                    if (this.userName === this.deviceName) {
-                                        Text(`当前使用设备名称: ${deviceInfo.productModel}`)
-                                            .fontSize(12)
-                                            .fontColor('#666')
-                                            .margin({ right: 5 })
-                                    }
-                                    Text('已自动保存')
-                                        .fontSize(12)
-                                        .fontColor('#52C41A')
-                                        .opacity(this.userName ? 1 : 0)
-                                        .margin({ left: 3 })
-                                }
-                                .justifyContent(FlexAlign.Center)
-                                .margin({ bottom: 8 })
-
-                                Divider()
-                                    .color($r('app.color.border'))
-                                    .strokeWidth(0.5)
-                                    .margin({ left: 16, right: 16 })
-
-                                Row() {
-                                    Row() {
-                                        Image($r('app.media.submit'))
-                                            .height(24)
-                                            .width(24)
-                                            .objectFit(ImageFit.Contain)
-
-                                        Text('投稿应用')
-                                            .fontSize(16)
-                                            .margin({ left: 12 })
-                                    }
-
-                                    Image($r('app.media.right'))
-                                        .height(16)
-                                        .width(16)
-                                        .objectFit(ImageFit.Contain)
-                                }
-                                .onClick(() => {
-                                    this.isPresent = !this.isPresent;
-                                })
-                                .height(56)
-                                .width('100%')
-                                .justifyContent(FlexAlign.SpaceBetween)
-                                .padding({ left: 16, right: 16 })
-                            }
-                            .borderWidth(0.5)
-                            .borderColor($r('app.color.border'))
-                            .backgroundColor($r('app.color.background'))
-                            .borderRadius(16)
-                            .shadow({
-                                radius: 8,
-                                color: '#1a000000',
-                                offsetX: 0,
-                                offsetY: 2
-                            })
-                            .width('90%')
-
-                            Divider().margin({ top: 20, bottom: 20 }).color($r('app.color.border'))
-
-                            Column() {
-                                Row() {
-                                    Row() {
-                                        Image($r('app.media.log'))
-                                            .height(24)
-                                            .width(24)
-                                            .objectFit(ImageFit.Contain)
-
-                                        Text('Web更新日志')
-                                            .fontSize(16)
-                                            .margin({ left: 12 })
-                                    }
-
-                                    Image($r('app.media.right'))
-                                        .height(16)
-                                        .width(16)
-                                        .objectFit(ImageFit.Contain)
-                                }
-                                .onClick(() => router.pushUrl({ url: 'pages/user/web_log' }))
-                                .height(56)
-                                .width('100%')
-                                .justifyContent(FlexAlign.SpaceBetween)
-                                .padding({ left: 16, right: 16 })
-
-                                Divider()
-                                    .color($r('app.color.border'))
-                                    .strokeWidth(0.5)
-                                    .margin({ left: 16, right: 16 })
-
-                                Row() {
-                                    Row() {
-                                        Image($r('app.media.app_log'))
-                                            .height(24)
-                                            .width(24)
-                                            .objectFit(ImageFit.Contain)
-
-                                        Text('App更新日志')
-                                            .fontSize(16)
-                                            .margin({ left: 12 })
-                                    }
-
-                                    Image($r('app.media.right'))
-                                        .height(16)
-                                        .width(16)
-                                        .objectFit(ImageFit.Contain)
-                                }
-                                .onClick(() => router.pushUrl({ url: 'pages/user/app_log' }))
-                                .height(56)
-                                .width('100%')
-                                .justifyContent(FlexAlign.SpaceBetween)
-                                .padding({ left: 16, right: 16 })
-
-                                Divider()
-                                    .strokeWidth(0.5)
-                                    .color($r('app.color.border'))
-                                    .margin({ left: 16, right: 16 })
-
-                                Row() {
-                                    Row() {
-                                        Image($r('app.media.api'))
-                                            .height(24)
-                                            .width(24)
-                                            .objectFit(ImageFit.Contain)
-
-                                        Text('API文档说明')
-                                            .fontSize(16)
-                                            .margin({ left: 12 })
-                                    }
-
-                                    Image($r('app.media.right'))
-                                        .height(16)
-                                        .width(16)
-                                        .objectFit(ImageFit.Contain)
-                                }
-                                .onClick(() => router.pushUrl({ url: 'pages/user/web_api' }))
-                                .height(56)
-                                .width('100%')
-                                .justifyContent(FlexAlign.SpaceBetween)
-                                .padding({ left: 16, right: 16 })
-
-                                Divider()
-                                    .strokeWidth(0.5)
-                                    .color($r('app.color.border'))
-                                    .margin({ left: 16, right: 16 })
-
-                                Row() {
-                                    Row() {
-                                        Image($r('app.media.contact'))
-                                            .height(24)
-                                            .width(24)
-                                            .objectFit(ImageFit.Contain)
-
-                                        Text('问题反馈 & 联系我们')
-                                            .fontSize(16)
-                                            .margin({ left: 12 })
-                                    }
-
-                                    Image($r('app.media.right'))
-                                        .height(16)
-                                        .width(16)
-                                        .objectFit(ImageFit.Contain)
-                                }
-                                .onClick(() => router.pushUrl({ url: 'pages/user/contact' }))
-                                .height(56)
-                                .width('100%')
-                                .justifyContent(FlexAlign.SpaceBetween)
-                                .padding({ left: 16, right: 16 })
-
-                                Divider()
-                                    .color($r('app.color.border'))
-                                    .strokeWidth(0.5)
-                                    .margin({ left: 16, right: 16 })
-
-                                Row() {
-                                    Row() {
-                                        Image($r('app.media.info'))
-                                            .height(24)
-                                            .width(24)
-                                            .objectFit(ImageFit.Contain)
-
-                                        Text('帮助信息 & 使用教程')
-                                            .fontSize(16)
-                                            .margin({ left: 12 })
-                                    }
-
-                                    Image($r('app.media.right'))
-                                        .height(16)
-                                        .width(16)
-                                        .objectFit(ImageFit.Contain)
-                                }
-                                .onClick(() => router.pushUrl({ url: 'pages/user/tutorial' }))
-                                .height(56)
-                                .width('100%')
-                                .justifyContent(FlexAlign.SpaceBetween)
-                                .padding({ left: 16, right: 16 })
-
-                                Divider()
-                                    .color($r('app.color.border'))
-                                    .strokeWidth(0.5)
-                                    .margin({ left: 16, right: 16 })
-
-                                // Row() {
-                                //   Row() {
-                                //     Image($r('app.media.issue'))
-                                //       .height(24)
-                                //       .width(24)
-                                //       .objectFit(ImageFit.Contain)
-                                //
-                                //     Text('问题与反馈')
-                                //       .fontSize(16)
-                                //       .margin({ left: 12 })
-                                //   }
-                                //
-                                //   Image($r('app.media.right'))
-                                //     .height(16)
-                                //     .width(16)
-                                //     .objectFit(ImageFit.Contain)
-                                // }
-                                // .onClick(() => router.pushUrl({ url: 'pages/user/feedback' }))
-                                // .height(56)
-                                // .width('100%')
-                                // .justifyContent(FlexAlign.SpaceBetween)
-                                // .padding({ left: 16, right: 16 })
-
-                            }
-                            .borderWidth(0.5)
-                            .borderColor($r('app.color.border'))
-                            .backgroundColor($r('app.color.background'))
-                            .borderRadius(16)
-                            .shadow({
-                                radius: 8,
-                                color: '#1a000000',
-                                offsetX: 0,
-                                offsetY: 2
-                            })
-                            .width('90%')
-
-                            Divider().margin({ top: 20, bottom: 20 }).color($r('app.color.border'))
-
-                            Text(`Version ${APP_VERSION}`)
-                                .fontColor('#888')
-                                .fontSize(12)
-                                .margin(5)
-                            Text('本应用备案域名：rayawa.top').fontSize(12).fontColor('#888').margin(5)
-                            Column() {
-                                Text('京ICP备2025153453号')
-                                    .fontSize(12)
-                                    .fontColor($r('app.color.diff_content'))
-                                    .onClick(() => {
-                                        this.openLink();
-                                    })
-                            }
-                            .margin(5)
+                  Image($r('app.media.issue'))
+                    .margin({ left: 12 })
+                    .height(24)
+                    .width(24)
+                    .objectFit(ImageFit.Contain)
+                    .onClick(() => {
+                      this.handlePopup = !this.handlePopup;
+                    })
+                    .bindPopup(this.handlePopup, {
+                      message: '用于您投稿时提交给应用看板的用户名\n详情见使用教程-投稿功能',
+                      placement: Placement.Top,
+                      showInSubWindow: false,
+                      onStateChange: (e) => {
+                        if (!e.isVisible) {
+                          this.handlePopup = false;
                         }
-                        .width('100%')
-                        .alignItems(HorizontalAlign.Center)
-                    }
-                    .margin({ top: 100, bottom: 20 })
-                    .width('100%')
-                }
-                .width('100%')
-                .height('100%')
-
-                Column() {
-                    Column() {
-                        Text('\n').fontSize(14)
-                    }
-
-                    Row() {
-                        Text('我的')
-                            .fontSize(23)
-                            .fontWeight(FontWeight.Bold)
-                            .margin({ left: 20 })
-
-                        Image($r('app.media.arrow_back'))
-                            .height(28)
-                            .width(28)
-                            .margin({ right: 25 })
-                            .onClick(() => router.back())
-                    }
-                    .width('100%')
-                    .justifyContent(FlexAlign.SpaceBetween)
-                    .height(55)
-
-                    Rect()
-                        .width('100%')
-                        .height(0.5)
-                        .fill($r('app.color.border'))
-                        .position({ x: 0, y: 87 })
+                      },
+                      transition:TransitionEffect.asymmetric(
+                        TransitionEffect.OPACITY.animation({ duration: 500, curve: Curve.Ease }).combine(
+                          TransitionEffect.translate({ x: 50, y: 50 })),
+                        TransitionEffect.IDENTITY)
+                    })
 
                 }
-                .backgroundBlurStyle(BlurStyle.Thin)
-                .zIndex(3)
-                .position({ x: 0, y: 0 })
+                .height(56)
                 .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .alignItems(VerticalAlign.Center)
+                .padding({ top: 2, left: 16, right: 16 })
+
+                Row(){
+                  if (this.userName === this.deviceName) {
+                    Text(`当前使用设备名称: ${deviceInfo.productModel}`)
+                      .fontSize(12)
+                      .fontColor('#666')
+                      .margin({right:5})
+                  }
+                  Text('已自动保存')
+                    .fontSize(12)
+                    .fontColor('#52C41A')
+                    .opacity(this.userName ? 1 : 0)
+                    .margin({left:3})
+                }
+                .justifyContent(FlexAlign.Center)
+                .margin({bottom:8})
+              }
+              .borderWidth(0.5)
+              .borderColor($r('app.color.border'))
+              .backgroundColor($r('app.color.background'))
+              .borderRadius(16)
+              .shadow({
+                radius: 8,
+                color: '#1a000000',
+                offsetX: 0,
+                offsetY: 2
+              })
+              .width('90%')
+
+              Divider().margin({ top: 20, bottom: 20 }).color($r('app.color.border'))
+
+              Column() {
+                Row() {
+                  Row() {
+                    Image($r('app.media.log'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('Web更新日志')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/web_log' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+                Divider()
+                  .color($r('app.color.border'))
+                  .strokeWidth(0.5)
+                  .margin({ left: 16, right: 16 })
+
+                Row() {
+                  Row() {
+                    Image($r('app.media.app_log'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('App更新日志')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/app_log' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+                Divider()
+                  .strokeWidth(0.5)
+                  .color($r('app.color.border'))
+                  .margin({ left: 16, right: 16 })
+
+                Row() {
+                  Row() {
+                    Image($r('app.media.api'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('API文档')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/web_api' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+                Divider()
+                  .strokeWidth(0.5)
+                  .color($r('app.color.border'))
+                  .margin({ left: 16, right: 16 })
+
+                Row() {
+                  Row() {
+                    Image($r('app.media.contact'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('联系我们')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/contact' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+                Divider()
+                  .color($r('app.color.border'))
+                  .strokeWidth(0.5)
+                  .margin({ left: 16, right: 16 })
+
+                Row() {
+                  Row() {
+                    Image($r('app.media.tutorial'))
+                      .height(24)
+                      .width(24)
+                      .objectFit(ImageFit.Contain)
+
+                    Text('使用教程')
+                      .fontSize(16)
+                      .margin({ left: 12 })
+                  }
+
+                  Image($r('app.media.right'))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+                }
+                .onClick(() => router.pushUrl({ url: 'pages/user/tutorial' }))
+                .height(56)
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
+                .padding({ left: 16, right: 16 })
+
+                Divider()
+                  .color($r('app.color.border'))
+                  .strokeWidth(0.5)
+                  .margin({ left: 16, right: 16 })
+
+                // Row() {
+                //   Row() {
+                //     Image($r('app.media.issue'))
+                //       .height(24)
+                //       .width(24)
+                //       .objectFit(ImageFit.Contain)
+                //
+                //     Text('问题与反馈')
+                //       .fontSize(16)
+                //       .margin({ left: 12 })
+                //   }
+                //
+                //   Image($r('app.media.right'))
+                //     .height(16)
+                //     .width(16)
+                //     .objectFit(ImageFit.Contain)
+                // }
+                // .onClick(() => router.pushUrl({ url: 'pages/user/feedback' }))
+                // .height(56)
+                // .width('100%')
+                // .justifyContent(FlexAlign.SpaceBetween)
+                // .padding({ left: 16, right: 16 })
+
+              }
+              .borderWidth(0.5)
+              .borderColor($r('app.color.border'))
+              .backgroundColor($r('app.color.background'))
+              .borderRadius(16)
+              .shadow({
+                radius: 8,
+                color: '#1a000000',
+                offsetX: 0,
+                offsetY: 2
+              })
+              .width('90%')
+
+              Divider().margin({ top: 20, bottom: 20 }).color($r('app.color.border'))
+
+              Text(`Version ${APP_VERSION}`)
+                .fontColor('#888')
+                .fontSize(12)
+                .margin(5)
+              Text('本应用备案域名：rayawa.top').fontSize(12).fontColor('#888').margin(5)
+              Column() {
+                Text('京ICP备2025153453号')
+                  .fontSize(12)
+                  .fontColor($r('app.color.diff_content'))
+                  .onClick(() => {
+                    this.openLink();
+                  })
+              }
+              .margin(5)
             }
-            .backgroundColor($r('app.color.backcolor'))
+            .width('100%')
+            .alignItems(HorizontalAlign.Center)
+          }
+          .margin({ top: 100, bottom: 20 })
+          .width('100%')
         }
         .width('100%')
         .height('100%')
+
+        Column() {
+          Column() { Text('\n').fontSize(14) }
+          Row() {
+            Text('我的')
+              .fontSize(23)
+              .fontWeight(FontWeight.Bold)
+              .margin({ left: 20 })
+
+            Image($r('app.media.arrow_back'))
+              .height(28)
+              .width(28)
+              .margin({ right: 25 })
+              .onClick(() => router.back())
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.SpaceBetween)
+          .height(55)
+
+          Rect()
+            .width('100%')
+            .height(0.5)
+            .fill($r('app.color.border'))
+            .position({ x: 0, y: 87 })
+
+        }
+        .backgroundBlurStyle(BlurStyle.Thin)
+        .position({ x: 0, y: 0 })
+        .width('100%')
+      }
+      .backgroundColor($r('app.color.backcolor'))
     }
+    .width('100%')
+    .height('100%')
+  }
 }
