@@ -459,14 +459,16 @@ export struct user {
                       placement: Placement.Top,
                       showInSubWindow: false,
                       onStateChange: (e) => {
-                        if (!e.isVisible) {
-                          this.handlePopup = false;
-                        }
+                        if (!e.isVisible) { this.handlePopup = false;}
                       },
-                      transition:TransitionEffect.asymmetric(
-                        TransitionEffect.OPACITY.animation({ duration: 500, curve: Curve.Ease }).combine(
-                          TransitionEffect.translate({ x: 50, y: 50 })),
-                        TransitionEffect.IDENTITY)
+                      transition: TransitionEffect.asymmetric(
+                        TransitionEffect.OPACITY
+                          .animation({ duration: 500, curve: Curve.Ease })
+                          .combine(TransitionEffect.translate({ x: 0, y: 12 })),
+                        TransitionEffect.OPACITY
+                          .animation({ duration: 300, curve: Curve.EaseOut })
+                          .combine(TransitionEffect.translate({ x: 0, y: 12 }))
+                      )
                     })
 
                 }
