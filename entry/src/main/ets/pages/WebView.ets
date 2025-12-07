@@ -16,7 +16,7 @@ export struct WebView {
   @State showTutorial: boolean = false;
   private effect: TransitionEffect =
     TransitionEffect.OPACITY
-      .combine(TransitionEffect.move(TransitionEdge.TOP))
+      .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
       .combine(TransitionEffect.scale({ x: 0, y: 1 }))
       .animation({ curve: curves.springMotion(0.7, 0.8), duration:1000})
   @State url: string = 'https://hmos.txit.top/dashboard';//entry
@@ -234,7 +234,7 @@ export struct WebView {
         .onClick(() => { this.scrollToTop(); prompt.showToast({ message: '回到顶部', duration: 500 }); });
       MenuItem({ startIcon: $r('app.media.switch'), content: this.isT ? "切换到S版本" : "切换到T版本" })
         .onClick(() => { this.switchWebVersion(); });
-      MenuItem({ startIcon: $r('app.media.info'), content: "教程页面" })
+      MenuItem({ startIcon: $r('app.media.info'), content: "查看教程" })
         .onClick(() => {  this.showTutorial = !this.showTutorial;});
     }
   }
@@ -243,7 +243,9 @@ export struct WebView {
     Stack() {
       if (this.showTutorial) {
         Stack(){
-          Column().backgroundColor(Color.Transparent).height('200%').width('200%')
+          Column(){
+            Text('* 点击外部区域或向上滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
+          }.backgroundColor(Color.Transparent).height('300%').width('300%')
             .onClick(() => { this.showTutorial = !this.showTutorial; })
             .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
             .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
