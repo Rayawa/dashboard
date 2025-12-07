@@ -19,7 +19,7 @@ export struct user {
     TransitionEffect.OPACITY
       .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
       .combine(TransitionEffect.scale({ x: 0, y: 1 }))
-      .animation({ curve: curves.springMotion(0.7, 0.8), duration:1000})
+      .animation({ curve: curves.springMotion(0.7, 0.7), duration:1000})
   @State handlePopup: boolean = false;
   @State customPopup: boolean = false;
   @StorageLink('userName') userName: string = ''
