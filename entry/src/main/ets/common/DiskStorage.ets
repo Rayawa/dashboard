@@ -232,3 +232,5 @@ export async function clearAll(instance_name: string, context: common.Context): 
         console.error('DiskStorage: Failed to clear all data:', error);
     }
 }
+
+export type DiskStorageInstance = DiskStorage;

@@ -3,7 +3,7 @@ import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.Abi
 import { systemShare } from '@kit.ShareKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { parseInputSplitLinksPkgsAndAppIds, parse_app_id_from_url, submit_app_with_user_data } from '../submits';
-import UserStorage from '../common/user';
+import { getUsername, initialize as initializeUserStorage } from '../common/profile';
 
 /**
  * 这个 ability 是用来直接接受并投稿链接的
@@ -12,7 +12,7 @@ import UserStorage from '../common/user';
  */
 export class ShareAbility extends ShareExtensionAbility {
     onSessionCreate(want: Want, session: UIExtensionContentSession): void {
-        const userStorage = UserStorage.getInstance(this.context);
+        initializeUserStorage(this.context)
         systemShare.getSharedData(want)
             .then((data: systemShare.SharedData) => {
                 data.getRecords().forEach((record: systemShare.SharedRecord) => {
@@ -29,7 +29,7 @@ export class ShareAbility extends ShareExtensionAbility {
                     console.info(`dashboard_share_parse ${pkg || app_id}`);
                     console.info(`dashboard_share_raw ${content}`);
 
-                    userStorage.getUsername().then((username) => {
+                    getUsername().then((username) => {
                         submit_app_with_user_data({
                             pkg_name: pkg,
                             app_id,

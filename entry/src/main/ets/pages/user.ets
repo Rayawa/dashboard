@@ -4,7 +4,7 @@ import { BusinessError } from '@ohos.base';
 import { APP_VERSION } from "../global_data";
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { curves } from '@kit.ArkUI';
-import UserStorage from '../common/user';
+import { getUsername, initialize as initializeUserStorage, setUsername as setUsername } from '../common/profile';
 import { tutorial } from '../component/common/tutorial'
 import { contact } from '../component/common/contact'
 
@@ -38,15 +38,16 @@ export struct user {
     };
 
     async loadUserName() {
-        this.userName = await UserStorage.getInstance().getUsername();
+        initializeUserStorage()
+        this.userName = await getUsername();
     }
 
     async saveUserName() {
-        await UserStorage.getInstance().setUsername(this.userName);
+        await setUsername(this.userName);
     }
 
     async resetToDeviceName() {
-        await UserStorage.getInstance().setUsername(undefined);
+        await setUsername(undefined);
         await this.loadUserName()
     }
 
