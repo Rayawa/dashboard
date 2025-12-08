@@ -137,18 +137,19 @@ export struct user {
         // ->提交逻辑，如调用API等
         console.log('提交数据:', this.formData);
         prompt.showToast({
-            message: '提交成功，感谢您的反馈！',
+            // message: '提交成功，感谢您的反馈！',
+            message: '功能开发中',
             duration: 3000
         });
 
         // 清空表单并关闭弹窗
-        this.formData = {
-            appLink: '',
-            packageName: '',
-            appId: '',
-            remark: ''
-        };
-        this.showSubmit = !this.showSubmit;
+        // this.formData = {
+        //     appLink: '',
+        //     packageName: '',
+        //     appId: '',
+        //     remark: ''
+        // };
+        // this.showSubmit = !this.showSubmit;
     }
 
     aboutToAppear() {
@@ -161,7 +162,7 @@ export struct user {
                 if (this.showSubmit) {
                     Stack() {
                         Column(){
-                            Text('* 点击外部区域或向上滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'62%'}).fontColor(Color.Grey)
+                            Text('* 点击外部区域或向下滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'62%'}).fontColor(Color.Grey)
                         }.backgroundColor(Color.Transparent).height('300%').width('300%')
                         .onClick(() => { this.showSubmit = !this.showSubmit; })
                         .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
@@ -173,7 +174,7 @@ export struct user {
                                         .height(25)
                                         .width(25)
 
-                                    Text('投稿应用')
+                                    Text('投稿应用（敬请期待）')
                                         .fontSize(21)
                                         .fontWeight(FontWeight.Bold)
                                 }
@@ -332,11 +333,11 @@ export struct user {
                                     })
 
                                 // 提交按钮
-                                Button('提交投稿', { type: ButtonType.Capsule })
+                                Button('功能开发中', { type: ButtonType.Capsule })
                                     .margin(2)
                                     .width('40%')
                                     .height(44)
-                                    .backgroundColor(Color.Red)
+                                    .backgroundColor(Color.Grey)
                                     .fontColor(Color.White)
                                     .fontSize(16)
                                     .fontWeight(FontWeight.Medium)
@@ -382,7 +383,7 @@ export struct user {
                 if (this.showTutorial) {
                     Stack(){
                         Column(){
-                            Text('* 点击外部区域或向上滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
+                            Text('* 点击外部区域或向下滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
                         }.backgroundColor(Color.Transparent).height('300%').width('300%')
                         .onClick(() => { this.showTutorial = !this.showTutorial; })
                         .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
@@ -406,7 +407,7 @@ export struct user {
                 if (this.showContact) {
                     Stack(){
                         Column(){
-                            Text('* 点击外部区域或向上滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
+                            Text('* 点击外部区域或向下滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
                         }.backgroundColor(Color.Transparent).height('300%').width('300%')
                         .onClick(() => { this.showContact = !this.showContact; })
                         .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
@@ -552,8 +553,9 @@ export struct user {
                                             .width(24)
                                             .objectFit(ImageFit.Contain)
 
-                                        Text('投稿应用')
+                                        Text('投稿应用（开发中）')
                                             .fontSize(16)
+                                            .fontColor(Color.Grey)
                                             .margin({ left: 12 })
                                     }
 

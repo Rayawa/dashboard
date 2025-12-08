@@ -48,11 +48,11 @@ export struct tutorial{
         Text('主界面部分').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
         Text('🚀 主要功能\n').fontSize(18).fontWeight(FontWeight.Bold)
         Column(){
-          Text('• 数据概览 - 显示已爬取总数、应用总数、元服务总数、开发者总数\n').fontSize(14)
-          Text('• 总下载榜 - 展示应用下载量排行榜\n').fontSize(14)
-          Text('• 评分分布 - 显示应用评分的分布情况\n').fontSize(14)
-          Text('• 非华为应用下载榜 - 展示非华为应用和内置应用的下载排行\n').fontSize(14)
-          Text('• 应用列表 - 详细应用信息表格，支持搜索、排序、筛选\n').fontSize(14)
+          Text('• 数据统计 - 展示应用总数、元服务总数、开发者总数等关键指标的统计数据。\n').fontSize(14)
+          Text('• 下载榜 - 提供下载量排名前20的应用列表，以及排除华为系应用后的下载量排名。\n').fontSize(14)
+          Text('• 应用详情 - 点击任意应用相关图标查看应用的详细信息，包括下载量、评分、支持设备、版本信息等。\n').fontSize(14)
+          Text('• 趋势分析 - 展示应用下载量的变化趋势和增量趋势图表。\n').fontSize(14)
+          Text('• 应用列表 - 详细应用信息表格，支持搜索、排序、筛选功能。\n').fontSize(14)
         }.alignItems(HorizontalAlign.Start)
         Text('📝 使用说明\n').fontSize(18).fontWeight(FontWeight.Bold)
         Column(){
@@ -62,7 +62,6 @@ export struct tutorial{
           Text('• 排序功能 - 按评分、下载量、大小等排序\n').fontSize(14)
           Text('• 查看详情 - 点击应用行查看详细信息\n').fontSize(14)
           Text('• 过滤选项 - 可排除华为/元服务应用\n').fontSize(14)
-          Text('• 分页浏览 - 使用底部分页控件查看更多应用\n').fontSize(14)
         }.alignItems(HorizontalAlign.Start)
 
       }.height('80%').width('95%').borderRadius(16).padding(20)
@@ -71,10 +70,10 @@ export struct tutorial{
         Text('菜单栏').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
         Text('* 点击图标以显示详情').fontSize(14).margin({ bottom: 10 }).fontColor(Color.Grey)
         Text('  1. 分享链接：在主页面或任意应用详情页点击分享按钮分享当前页面链接。\n').fontSize(14)
-        Image($r('app.media.share')).width(24).height(24).margin({ bottom: 20 })
+        Image($r('app.media.share')).width(28).height(28).margin({ bottom: 20 })
           .onClick(() => {this.handlePopupShareMenu = !this.handlePopupShareMenu;})
           .bindPopup(this.handlePopupShareMenu, {
-            message: '在主页面单击以分享当前页面链接',
+            message: '在主页面点击以分享当前页面链接',
             placement: Placement.Top,
             showInSubWindow: true,
             onStateChange: (e) => {
@@ -93,7 +92,7 @@ export struct tutorial{
             )
           })
         Text('  2. 菜单栏：主要用于操作网页内容，如刷新、回到顶部与切换版本等。点按打开列表后选择内容以操作网页。\n').fontSize(14)
-        Image($r('app.media.menu')).width(24).height(24).margin({ bottom: 20 })
+        Image($r('app.media.menu')).width(28).height(28).margin({ bottom: 20 })
           .onClick(() => {this.handlePopupMenu = !this.handlePopupMenu;})
           .bindPopup(this.handlePopupMenu, {
             message: '在主页面点击以打开状态栏',
@@ -115,10 +114,10 @@ export struct tutorial{
             )
           })
         Row(){
-          Image($r('app.media.api')).width(24).height(24)
+          Image($r('app.media.api')).width(28).height(28)
             .onClick(() => {this.handlePopupApi = !this.handlePopupApi;})
             .bindPopup(this.handlePopupApi, {
-              message: '在菜单栏单击以打开原生版本页面',
+              message: '在菜单栏单击以打开原生版本页面\n（页面施工中）',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -136,7 +135,7 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
-          Image($r('app.media.arrow_back')).width(24).height(24)
+          Image($r('app.media.arrow_back')).width(28).height(28)
             .onClick(() => {this.handlePopupBack = !this.handlePopupBack;})
             .bindPopup(this.handlePopupBack, {
               message: '在菜单栏单击以返回上一个网页',
@@ -157,7 +156,7 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
-          Image($r('app.media.refresh')).width(24).height(24)
+          Image($r('app.media.refresh')).width(28).height(28)
             .onClick(() => {this.handlePopupRefresh = !this.handlePopupRefresh;})
             .bindPopup(this.handlePopupRefresh, {
               message: '在菜单栏单击以刷新当前网页',
@@ -178,7 +177,7 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
-          Image($r('app.media.arrow_up')).width(24).height(24)
+          Image($r('app.media.arrow_up')).width(28).height(28)
             .onClick(() => {this.handlePopupTop = !this.handlePopupTop;})
             .bindPopup(this.handlePopupTop, {
               message: '在菜单栏单击以回到顶部',
@@ -199,7 +198,7 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
-          Image($r('app.media.switch')).width(24).height(24)
+          Image($r('app.media.switch')).width(28).height(28)
             .onClick(() => {this.handlePopupSwitch = !this.handlePopupSwitch;})
             .bindPopup(this.handlePopupSwitch, {
               message: '在菜单栏单击以切换不同站点',
@@ -222,12 +221,12 @@ export struct tutorial{
             })
         }.width('80%').justifyContent(FlexAlign.SpaceBetween).margin({ bottom: 20 })
         Text('  3. 我的页面：您的个人中心与一站式门户。\n' +
-          '  您可以设置用户名、进行内容投稿、查看最新的更新日志、阅读详细的文档说明。\n' +
-          '  同时，联系我们和使用教程也在我的页面中，确保您能随时获得所需的帮助与支持。\n').fontSize(14)
-        Image($r('app.media.user')).width(24).height(24).margin({ bottom: 20 })
+          '  您可以设置用户名、进行内容投稿、查看最新的更新日志、阅读API文档说明。\n' +
+          '  同时，联系我们、使用教程和问题反馈也在我的页面中，确保您能随时获得所需的帮助与支持。\n').fontSize(14)
+        Image($r('app.media.user')).width(28).height(28).margin({ bottom: 20 })
           .onClick(() => {this.handlePopupUser = !this.handlePopupUser;})
           .bindPopup(this.handlePopupUser, {
-            message: '在菜单栏点击以打开user界面',
+            message: '在菜单栏点击以打开我的界面',
             placement: Placement.Top,
             showInSubWindow: false,
             onStateChange: (e) => {
@@ -246,7 +245,7 @@ export struct tutorial{
             )
           })
         Text('  4. 页面返回（不位于主页面时显示）：在其他界面点击时返回上一页。\n').fontSize(14)
-        Image($r('app.media.arrow_back')).width(24).height(24)
+        Image($r('app.media.arrow_back')).width(28).height(28)
           .onClick(() => {this.handlePopupBackPage = !this.handlePopupBackPage;})
           .bindPopup(this.handlePopupBackPage, {
             message: '在菜单栏点击以返回上一个页面',
@@ -272,8 +271,8 @@ export struct tutorial{
       Column() {
         Text('分享功能').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
         Text('* 目前分享功能仅支持手机设备').fontSize(14).margin({ bottom: 10 }).fontColor(Color.Grey)
-        Text('  1. 链接分享：在主界面或任意应用详情页点击分享按钮分享当前页面链接\n').fontSize(14)
-        Image($r('app.media.share')).width(24).height(24).margin({ bottom: 20 })
+        Text('  1. 链接分享：在主界面或任意应用详情页点击分享按钮分享当前页面链接。\n').fontSize(14)
+        Image($r('app.media.share')).width(28).height(28).margin({ bottom: 20 })
           .onClick(() => {this.handlePopupShareShare = !this.handlePopupShareShare;})
           .bindPopup(this.handlePopupShareShare, {
             message: '在主页面单击以分享当前页面链接',
@@ -307,6 +306,7 @@ export struct tutorial{
         Text('  通过投稿功能可以实现App的抓取与更新，您可以通过投稿应用至应用看板来帮助我们获取新的App或更新App信息。\n').fontSize(14).margin({ bottom: 10 })
         Text('  您可以在“我的”界面里面设置您的用户名，初始用户名默认为机型型号。\n' +
           '  您的用户名将作为投稿作者标识，帮助我们准确记录并感谢您的每一次分享。\n').fontSize(14).margin({ bottom: 10 })
+        Text('    * 当前版本仅“按已有信息投稿”，“填写信息投稿”与“应用内投稿”将在后续版本开放，敬请期待！。').fontSize(10).fontColor(Color.Grey)
         Row() {
           Column() {
             Text('1. 应用商店投稿：\n' +
@@ -318,10 +318,12 @@ export struct tutorial{
               '  在"我的"界面内投稿。\n\n').fontSize(14).width('100%')
             Image($r('app.media.submit_app')).objectFit(ImageFit.Contain).borderRadius(16).margin({ bottom: 10 }).borderWidth(1).borderColor($r('app.color.border'))
           }.width('50%').padding(10)
+
         }
         .width('100%')
-        .height('43%')
+        .height('42%')
         .justifyContent(FlexAlign.SpaceBetween)
+
       }.height('80%').width('95%').borderRadius(16).padding(20)
     }
     .loop(false)

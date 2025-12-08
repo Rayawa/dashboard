@@ -8,12 +8,14 @@ import { common } from "@kit.AbilityKit";
 import { harmonyShare, systemShare } from '@kit.ShareKit';
 import { uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
+import { preferences } from '@kit.ArkData';
 import { tutorial } from '../component/common/tutorial'
 
 @Entry
 @Component
 export struct WebView {
   @State showTutorial: boolean = false;
+  private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
   private effect: TransitionEffect =
     TransitionEffect.OPACITY
       .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
@@ -57,6 +59,37 @@ export struct WebView {
       this.onBackGround();
     });
 
+  }
+  onPageShow(): void {
+    this.checkFirstLaunch();
+  }
+  private async checkFirstLaunch(): Promise<void> {
+    try {
+      let context = getContext(this) as common.UIAbilityContext;
+      let prefs = await preferences.getPreferences(context, 'myAppSettings');
+      let isFirstLaunchValue: preferences.ValueType = await prefs.get(this.IS_FIRST_LAUNCH_KEY, true);
+      let isFirstLaunch: boolean = false;
+      if (typeof isFirstLaunchValue === 'boolean') {
+        isFirstLaunch = isFirstLaunchValue;
+      } else if (typeof isFirstLaunchValue === 'string') {
+        isFirstLaunch = isFirstLaunchValue === 'true';
+      } else if (typeof isFirstLaunchValue === 'number') {
+        isFirstLaunch = isFirstLaunchValue === 1;
+      }
+      if (isFirstLaunch) {
+        console.info('Index', '首次启动，显示引导页。');
+        this.showTutorial = true;
+        await prefs.put(this.IS_FIRST_LAUNCH_KEY, false);
+        await prefs.flush();
+        console.info('Index', '已更新首次启动标记。');
+      } else {
+        console.info('Index', '非首次启动，不显示引导页。');
+        this.showTutorial = false;
+      }
+    } catch (err) {
+      let error = err as BusinessError;
+      console.error('Index', '检查首选项失败: %{public}s', JSON.stringify(error));
+    }
   }
   aboutToDisappear() {
     this.shareDisablingListening();//关闭监听
@@ -244,11 +277,11 @@ export struct WebView {
       if (this.showTutorial) {
         Stack(){
           Column(){
-            Text('* 点击外部区域或向上滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
+            Text('* 点击外部区域或向下滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
           }.backgroundColor(Color.Transparent).height('300%').width('300%')
-            .onClick(() => { this.showTutorial = !this.showTutorial; })
-            .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-            .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
+          .onClick(() => { this.showTutorial = !this.showTutorial; })
+          .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+          .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
           tutorial()
         }
         .gesture(

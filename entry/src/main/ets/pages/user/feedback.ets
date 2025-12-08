@@ -70,7 +70,6 @@ struct IssueView {
                     .fontSize(12)
                     .padding({ left: 12, right: 12, top: 4, bottom: 4 })
                     .onClick(() => {
-                      // 创建新数组以触发UI更新
                       const newList = [...this.mediaList];
                       newList.splice(index, 1);
                       this.mediaList = newList;
@@ -137,7 +136,6 @@ struct IssueView {
     const randomType = types[Math.floor(Math.random() * types.length)];
     const fakePath = `${randomType}_${this.mediaList.length + 1}.${randomType === '录屏' ? 'mp4' : 'jpg'}`;
 
-    // 使用扩展运算符创建新数组以触发UI更新
     this.mediaList = [...this.mediaList, fakePath];
   }
 
