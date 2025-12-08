@@ -8,6 +8,7 @@
       "name": "background",
       "value": "#1A2B3C"
     },
+
     {
       "name": "diff_background",
       "value": "#FF121E29"
@@ -23,6 +24,10 @@
     {
       "name": "border",
       "value": "#2A3B4C"
+    },
+    {
+      "name": "border_AI",
+      "value": "#623AA2"
     },
     {
       "name": "diff_content",

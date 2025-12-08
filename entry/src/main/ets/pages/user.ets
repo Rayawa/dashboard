@@ -84,12 +84,12 @@ export struct user {
                 if (this.showSubmit) {
                     Stack() {
                         Column(){
-                            Text('* 点击外部区域或向下滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'62%'}).fontColor(Color.Grey)
+                            Text('* 点击外部区域或向下滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'63%'}).fontColor(Color.Grey)
                         }.backgroundColor(Color.Transparent).height('300%').width('300%')
                         .onClick(() => { this.showSubmit = !this.showSubmit; })
                         .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
                         .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
-                        submit().margin({top:30})
+                        submit()
                     }
                     .transition(this.effect)
                     .gesture(
@@ -278,7 +278,7 @@ export struct user {
                                             .width(24)
                                             .objectFit(ImageFit.Contain)
 
-                                        Text('投稿应用（开发中）')
+                                        Text('投稿/查询应用（开发中）')
                                             .fontSize(16)
                                             .fontColor(Color.Grey)
                                             .margin({ left: 12 })
