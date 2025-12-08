@@ -1,10 +1,6 @@
 //shenjack
 import { http } from '@kit.NetworkKit';
-import { BusinessError } from '@kit.BasicServicesKit';
-import { common } from '@kit.AbilityKit';
 import { SUBMIT_PLATFORM, SUBMIT_USERNAME } from './global_data';
-import { AppStorageV2 } from '@kit.ArkUI';
-import UserStorage from './common/user';
 import { JSON } from '@kit.ArkTS';
 
 export class SubmitResult {
