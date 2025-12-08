@@ -25,8 +25,20 @@
       "value": "#B8D0E5"
     },
     {
+      "name": "border_AI",
+      "value": "#F97794"
+    },
+    {
       "name": "diff_content",
       "value": "#1E6FCD"
+    },
+    {
+      "name": "gradient_start_color",
+      "value": "#F97794"
+    },
+    {
+      "name": "gradient_end_color",
+      "value": "#623AA2"
     }
   ]
 }

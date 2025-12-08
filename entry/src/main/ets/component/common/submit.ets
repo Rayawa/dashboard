@@ -94,13 +94,13 @@ export struct submit {
   }
 
   build() {
-    Column({ space: 5 }) {
+    Column() {
       // 标题
       Row({ space: 8 }) {
         Image($r('app.media.submit'))
           .height(25)
           .width(25)
-        Text('投稿应用')
+        Text('投稿/查询应用')
           .fontSize(21)
           .fontWeight(FontWeight.Bold)
       }.width('100%').justifyContent(FlexAlign.Start).alignItems(VerticalAlign.Center).padding({ bottom: 16 })
@@ -109,50 +109,87 @@ export struct submit {
       // 智能提取
       Column({ space: 6 }) {
         Row({ space: 20 }){
-          Text('智能提取')
-            .fontSize(16)
-            .fontWeight(FontWeight.Bold)
-          // .blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)
-          // .linearGradient({
-          //   direction: GradientDirection.Right,
-          //   colors: [[Color.Pink, 0.0], [Color.Yellow, 1]]
-          // })
-          Row() {
+          Row(){
+            Text('智能提取')
+              .fontSize(16)
+              .fontWeight(FontWeight.Bold)
+              .blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)
+          }
+          .linearGradient({
+            direction: GradientDirection.LeftBottom,
+            colors: [[$r('app.color.gradient_start_color'), 0.0], [$r('app.color.gradient_end_color'), 1]]
+          })
+          .blendMode(BlendMode.SRC_OVER, BlendApplyType.OFFSCREEN)
+
+          Row({ space:5 }) {
             if (this.extractedApps.length > 0) {
               LoadingProgress()
                 .width(21)
                 .height(21)
-                .color('#52C41A')
-                .margin({right:5})
+                .color(Color.Green)
             } else {
-              LoadingProgress()
-                .width(21)
-                .height(21)
-                .color($r('app.color.diff_content'))
-                .margin({right:5})
+              Row(){
+                LoadingProgress()
+                  .width(21)
+                  .height(21)
+                  .blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)
+              }
+              .linearGradient({
+                direction: GradientDirection.RightBottom,
+                colors: [[$r('app.color.gradient_start_color'), 0.0], [$r('app.color.gradient_end_color'), 1]]
+              })
+              .blendMode(BlendMode.SRC_OVER, BlendApplyType.OFFSCREEN)
+
             }
             if (this.inputText.trim().length > 0) {
               if (this.isProcessing) {
-                Text('正在分析文本内容...')
-                  .fontSize(14)
-                  .fontColor(Color.Gray)
+                Row(){
+                  Text('正在分析文本内容...')
+                    .fontSize(14)
+                    .blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)
+                }
+                .linearGradient({
+                  direction: GradientDirection.RightBottom,
+                  colors: [[$r('app.color.gradient_start_color'), 0.0], [$r('app.color.gradient_end_color'), 1]]
+                })
+                .blendMode(BlendMode.SRC_OVER, BlendApplyType.OFFSCREEN)
+
               } else if (this.extractedApps.length > 0) {
-                Text('分析完成！信息已填充')
-                  .fontSize(14)
-                  .fontColor('#52C41A')
+                Row(){
+                  Text('分析完成！信息已填充')
+                    .fontSize(14)
+                    .fontColor(Color.Green)
+                }
+
               } else if (!this.isProcessing) {
-                Text('输入完成，等待分析...')
-                  .fontSize(14)
-                  .fontColor($r('app.color.diff_content'))
+                Row(){
+                  Text('输入完成，等待分析...')
+                    .fontSize(14)
+                    .blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)
+                }
+                .linearGradient({
+                  direction: GradientDirection.RightBottom,
+                  colors: [[$r('app.color.gradient_start_color'), 0.0], [$r('app.color.gradient_end_color'), 1]]
+                })
+                .blendMode(BlendMode.SRC_OVER, BlendApplyType.OFFSCREEN)
+
               }
             } else {
-              Text('置入应用信息以自动提取')
-                .fontSize(14)
-                .fontColor($r('app.color.diff_content'))
+              Row(){
+                Text('置入应用信息以自动提取')
+                  .fontSize(14)
+                  .blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)
+              }
+              .linearGradient({
+                direction: GradientDirection.RightBottom,
+                colors: [[$r('app.color.gradient_start_color'), 0.0], [$r('app.color.gradient_end_color'), 1]]
+              })
+              .blendMode(BlendMode.SRC_OVER, BlendApplyType.OFFSCREEN)
+
             }
           }.width('80%').justifyContent(FlexAlign.Start).alignItems(VerticalAlign.Center)
-        }
 
+        }
         TextInput({
           placeholder: '粘贴或输入应用信息',
           text: this.inputText
@@ -167,24 +204,30 @@ export struct submit {
           .backgroundColor($r('app.color.diff_background'))
           .onChange((value: string) => {
             this.inputText = value;
-
-            // 清除之前的定时器
             if (this.debounceTimer !== null) {
               clearTimeout(this.debounceTimer);
             }
-
             if (!value.trim()) {
               this.extractedApps = [];
               return;
             }
-
             this.debounceTimer = setTimeout(() => {
               this.handleAutoExtract();
               this.debounceTimer = null;
             }, this.DEBOUNCE_DELAY);
           })
+      }.width('100%').padding(16).borderWidth(2).borderColor($r('app.color.border_AI')).borderRadius(16)
+      // .borderImage({
+      //   source: {
+      //     angle: 90,
+      //     colors: [[$r('app.color.gradient_end_color'), 0.0], [$r('app.color.gradient_start_color'), 1.0]]
+      //   },
+      //   slice: { top: 10, bottom: 10, left: 10, right: 10 },
+      //   width: { top: "10px", bottom: "10px", left: "10px", right: "10px" },
+      //   repeat: RepeatMode.Stretch,
+      //   fill: false
+      // })
 
-      }.width('100%').padding(16).borderColor(Color.Pink).borderWidth(2).borderRadius(12)
       // 应用详情页链接（可选）
       Column({ space: 6 }) {
         Row({ space: 4 }) {
@@ -246,7 +289,7 @@ export struct submit {
           .width('100%')
 
         TextInput({
-          placeholder: '例如：123456',
+          placeholder: '例如：C123456',
           text: this.formData.appId
         })
           .width('100%')
@@ -311,7 +354,7 @@ export struct submit {
           .margin(2)
           .width('25%')
           .height(44)
-          .backgroundColor(Color.Gray)
+          .backgroundColor(Color.Blue)
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .borderRadius(22)
@@ -324,7 +367,7 @@ export struct submit {
           .margin(2)
           .width('40%')
           .height(44)
-          .backgroundColor(Color.Gray)
+          .backgroundColor(Color.Red)
           .fontSize(16)
           .borderRadius(22)
           .fontWeight(FontWeight.Medium)
