@@ -1,4 +1,4 @@
-import { prompt, router } from "@kit.ArkUI"
+import { router } from "@kit.ArkUI"
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
 import { APP_VERSION } from "../global_data";
@@ -7,13 +7,8 @@ import { curves } from '@kit.ArkUI';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername } from '../common/profile';
 import { tutorial } from '../component/common/tutorial'
 import { contact } from '../component/common/contact'
+import { submit } from '../component/common/submit'
 
-interface SubmitFormData {
-    appLink: string;
-    packageName: string;
-    appId: string;
-    remark: string;
-}
 
 @Entry
 @Component
@@ -30,22 +25,14 @@ export struct user {
     @State customPopup: boolean = false;
     @StorageLink('userName') userName: string = ''
     @State deviceName: string = ''
-    @State formData: SubmitFormData = {
-        appLink: '',
-        packageName: '',
-        appId: '',
-        remark: ''
-    };
 
     async loadUserName() {
         initializeUserStorage()
         this.userName = await getUsername();
     }
-
     async saveUserName() {
         await setUsername(this.userName);
     }
-
     async resetToDeviceName() {
         await setUsername(undefined);
         await this.loadUserName()
@@ -86,72 +73,6 @@ export struct user {
         })
     }
 
-    clearForm(): void {
-        this.formData = {
-            appLink: '',
-            packageName: '',
-            appId: '',
-            remark: ''
-        };
-        prompt.showToast({
-            message: '表单已清空',
-            duration: 1500
-        });
-    }
-
-    queryForm(): void {
-        if (!this.formData.packageName && !this.formData.appId) {
-            prompt.showToast({
-                message: '请输入包名或app_id进行查询',
-                duration: 2000
-            });
-            return;
-        }
-
-        // ->查询逻辑
-        console.log('查询数据:', this.formData);
-
-        // ->查询结果
-        prompt.showToast({
-            message: `查询到应用: ${this.formData.packageName || this.formData.appId}`,
-            duration: 2000
-        });
-    }
-
-    submitForm(): void {
-        if (!this.formData.packageName.trim()) {
-            prompt.showToast({
-                message: '请输入包名',
-                duration: 2000
-            });
-            return;
-        }
-
-        if (!this.formData.appId.trim()) {
-            prompt.showToast({
-                message: '请输入app_id',
-                duration: 2000
-            });
-            return;
-        }
-
-        // ->提交逻辑，如调用API等
-        console.log('提交数据:', this.formData);
-        prompt.showToast({
-            // message: '提交成功，感谢您的反馈！',
-            message: '功能开发中',
-            duration: 3000
-        });
-
-        // 清空表单并关闭弹窗
-        // this.formData = {
-        //     appLink: '',
-        //     packageName: '',
-        //     appId: '',
-        //     remark: ''
-        // };
-        // this.showSubmit = !this.showSubmit;
-    }
 
     aboutToAppear() {
         this.loadUserName();
@@ -168,203 +89,7 @@ export struct user {
                         .onClick(() => { this.showSubmit = !this.showSubmit; })
                         .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
                         .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
-                        Column({ space: 20 }) {
-                            Row() {
-                                Row({ space: 8 }) {
-                                    Image($r('app.media.submit'))
-                                        .height(25)
-                                        .width(25)
-
-                                    Text('投稿应用（敬请期待）')
-                                        .fontSize(21)
-                                        .fontWeight(FontWeight.Bold)
-                                }
-
-                                Blank()
-                                    .layoutWeight(1)
-                                Image($r('app.media.close'))
-                                    .height(26)
-                                    .width(26)
-                                    .onClick(() => {
-                                        this.showSubmit = !this.showSubmit;
-                                    })
-                            }
-                            .width('100%')
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .alignItems(VerticalAlign.Center)
-                            .padding({ bottom: 16 })
-
-                            // 应用详情页链接（可选）
-                            Column({ space: 6 }) {
-                                Row({ space: 4 }) {
-                                    Text('应用详情页链接')
-                                        .fontSize(16)
-                                        .fontWeight(FontWeight.Bold)
-
-                                    Text('(可选)')
-                                        .fontSize(14)
-                                        .fontColor($r('app.color.diff_content'))
-                                }
-                                .width('100%')
-                                .justifyContent(FlexAlign.Start)
-
-                                TextInput({
-                                    placeholder: '请输入应用详情页链接',
-                                    text: this.formData.appLink
-                                })
-                                    .width('100%')
-                                    .height(40)
-                                    .margin({ left: 12 })
-                                    .borderRadius(16)
-                                    .padding({ left: 12, right: 12 })
-                                    .borderWidth(0.5)
-                                    .borderColor($r('app.color.border'))
-                                    .backgroundColor($r('app.color.diff_background'))
-                                    .onChange((value: string) => {
-                                        this.formData.appLink = value
-                                    })
-                            }
-
-                            // 包名
-                            Column({ space: 6 }) {
-                                Text('包名')
-                                    .fontSize(16)
-                                    .fontWeight(FontWeight.Bold)
-                                    .width('100%')
-
-                                TextInput({
-                                    placeholder: '例如：com.example.app',
-                                    text: this.formData.packageName
-                                })
-                                    .width('100%')
-                                    .height(40)
-                                    .margin({ left: 12 })
-                                    .borderRadius(16)
-                                    .padding({ left: 12, right: 12 })
-                                    .borderWidth(0.5)
-                                    .borderColor($r('app.color.border'))
-                                    .backgroundColor($r('app.color.diff_background'))
-                                    .onChange((value: string) => {
-                                        this.formData.packageName = value
-                                    })
-                            }
-
-                            // app_id
-                            Column({ space: 6 }) {
-                                Text('app_id')
-                                    .fontSize(16)
-                                    .fontWeight(FontWeight.Bold)
-                                    .width('100%')
-
-                                TextInput({
-                                    placeholder: '例如：123456',
-                                    text: this.formData.appId
-                                })
-                                    .width('100%')
-                                    .height(40)
-                                    .margin({ left: 12 })
-                                    .borderRadius(16)
-                                    .padding({ left: 12, right: 12 })
-                                    .borderWidth(0.5)
-                                    .borderColor($r('app.color.border'))
-                                    .backgroundColor($r('app.color.diff_background'))
-                                    .onChange((value: string) => {
-                                        this.formData.appId = value
-                                    })
-                            }
-
-
-                            // 备注（可选）
-                            Column({ space: 6 }) {
-                                Row({ space: 4 }) {
-                                    Text('备注')
-                                        .fontSize(16)
-                                        .fontWeight(FontWeight.Bold)
-
-                                    Text('(可选)')
-                                        .fontSize(14)
-                                        .fontColor($r('app.color.diff_content'))
-                                }
-                                .width('100%')
-                                .justifyContent(FlexAlign.Start)
-
-                                TextInput({
-                                    placeholder: '请输入备注信息',
-                                    text: this.formData.remark
-                                })
-                                    .width('100%')
-                                    .height(40)
-                                    .margin({ left: 12 })
-                                    .borderRadius(16)
-                                    .padding({ left: 12, right: 12 })
-                                    .borderWidth(0.5)
-                                    .borderColor($r('app.color.border'))
-                                    .backgroundColor($r('app.color.diff_background'))
-                                    .onChange((value: string) => {
-                                        this.formData.remark = value
-                                    })
-                            }
-
-                            // 按钮区域
-                            Row() {
-                                // 清空按钮
-                                Button('清空', { type: ButtonType.Normal })
-                                    .margin(2)
-                                    .width('25%')
-                                    .height(44)
-                                    .backgroundColor(Color.Green)
-                                    .fontSize(16)
-                                    .fontWeight(FontWeight.Medium)
-                                    .borderRadius(22)
-                                    .onClick(() => {
-                                        this.clearForm()
-                                    })
-
-                                // 查询按钮
-                                Button('查询', { type: ButtonType.Normal })
-                                    .margin(2)
-                                    .width('25%')
-                                    .height(44)
-                                    .backgroundColor(Color.Blue)
-                                    .fontSize(16)
-                                    .fontWeight(FontWeight.Medium)
-                                    .borderRadius(22)
-                                    .onClick(() => {
-                                        this.queryForm()
-                                    })
-
-                                // 提交按钮
-                                Button('功能开发中', { type: ButtonType.Capsule })
-                                    .margin(2)
-                                    .width('40%')
-                                    .height(44)
-                                    .backgroundColor(Color.Grey)
-                                    .fontColor(Color.White)
-                                    .fontSize(16)
-                                    .fontWeight(FontWeight.Medium)
-                                    .onClick(() => {
-                                        this.submitForm()
-                                    })
-                            }
-                            .width('100%')
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .margin({ top: 15 })
-                        }
-                        .width('90%')
-                        .padding({
-                            top: 20,
-                            bottom: 20,
-                            left: 15,
-                            right: 25
-                        })
-                        .borderRadius(20)
-                        .backgroundColor($r('app.color.backcolor'))
-                        .shadow({
-                            radius: 20,
-                            color: Color.Gray,
-                            offsetX: 0,
-                            offsetY: 4
-                        })
+                        submit().margin({top:30})
                     }
                     .transition(this.effect)
                     .gesture(
@@ -376,7 +101,6 @@ export struct user {
                             })
                     )
                     .zIndex(2)
-
                     .height('100%')
                     .width('100%')
 

@@ -44,7 +44,7 @@
     "products": [
       {
         "name": "default",
-        "signingConfig": "release",
+        "signingConfig": "debug",
         "targetSdkVersion": "6.0.0(20)",
         "compatibleSdkVersion": "5.1.1(19)",
         "runtimeOS": "HarmonyOS",
