@@ -2,8 +2,9 @@
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { parseInputSplitLinksPkgsAndAppIds, parse_app_id_from_url, submit_app_with_user_data } from '../submits';
+import { submit_app_with_user_data } from '../submits';
 import { getUsername, initialize as initializeUserStorage } from '../common/profile';
+import { parseInputSplitLinksPkgsAndAppIds } from '../common/utils';
 
 /**
  * 这个 ability 是用来直接接受并投稿链接的
