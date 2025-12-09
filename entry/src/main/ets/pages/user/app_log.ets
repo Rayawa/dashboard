@@ -12,6 +12,16 @@ class UpdateLog {
 struct app_log {
   @State updateLogs: UpdateLog[] = [
     {
+      version: 'V1.1.0-beta.4',
+      date: '2025-12-10',
+      isRelease: false,
+      type:'beta',
+      items: ['为投稿应用功能增加AI识别能力',
+        '完善了应用市场填写信息分享功能',
+        '增加了主界面的按钮，并可以基于左右手判断',
+      ]
+    },
+    {
       version: 'V1.1.0-beta.3',
       date: '2025-12-7',
       isRelease: false,
