@@ -13,12 +13,12 @@
       "value": "鸿蒙应用市场数据看板"
     },
     {
-      "name": "MainAbility_desc",
-      "value": "鸿蒙应用市场数据看板"
+      "name": "shareEntryAbility_desc",
+      "value": "应用市场发起投稿界面"
     },
     {
-      "name": "MainAbility_label",
-      "value": "鸿蒙应用市场数据看板"
+      "name": "shareEntryAbility_lable",
+      "value": "投稿应用至看板"
     },
     {
       "name": "simple_share_label",
