@@ -2,7 +2,10 @@ import { NaturalLanguageExtractor, AppInfo } from '../ability/NaturalLanguageExt
 import { prompt, router } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 
-
+interface ShareParams {
+  shareAppId: string;
+  shareUrl: string;
+}
 interface FormData {
   appLink: string;
   packageName: string;
@@ -21,8 +24,7 @@ struct complex_share {
     appId: '',
     remark: ''
   };
-  @State shareAppId: string = '';
-  @State shareUrl: string = '';
+  @StorageProp('shareParams') shareParams: ShareParams = { shareAppId: '', shareUrl: '' };
 
 
   @State inputText: string = '';
@@ -35,14 +37,12 @@ struct complex_share {
 
 
   aboutToAppear() {
-    const params = router.getParams() as Record<string, string>;
-    console.info(`complex_share接受取到的所有参数: ${JSON.stringify(params)}`);
-    if (params) {
-      this.shareAppId = params['shareAppId'] || '';
-      this.shareUrl = params['shareUrl'] || '';
-    } else {
-      console.warn('complex_share未接收到参数');
-    }
+
+    console.log('complex_share接受取到的所有参数:', JSON.stringify(this.shareParams));
+    this.inputText = this.shareParams.shareUrl;
+    this.formData.appLink = this.shareParams.shareUrl
+      .replace(/&channelId=SHARE&source=appshare$/, '');
+    this.formData.packageName = this.shareParams.shareAppId;
   }
 
 
