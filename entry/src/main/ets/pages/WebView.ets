@@ -1,4 +1,5 @@
 import { webview } from "@kit.ArkWeb";
+import { HdsActionBar, ActionBarButton, ActionBarStyle } from '@kit.UIDesignKit'
 import { curves, prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
 import { BusinessError } from '@ohos.base';
@@ -14,6 +15,9 @@ import { tutorial } from '../component/common/tutorial'
 @Entry
 @Component
 export struct WebView {
+  @State isExpand: boolean = false;
+  @State isPrimaryIconChanged: boolean = false;
+  @State primaryHoverTips: ResourceStr = '开始';
   @State showTutorial: boolean = false;
   private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
   private effect: TransitionEffect =
@@ -130,7 +134,7 @@ export struct WebView {
     }, interval);
   }
 
-  //切换V1V2方法
+  //切换版本方法
   @State isT: boolean = true;
   private switchWebVersion(): void {
     const switchVersion = this.isT ? 'S站' : ' T站';
@@ -243,37 +247,62 @@ export struct WebView {
     sharableTarget.share(shareData);
   }
 
-  //菜单栏
-  @Builder
-  Menu() {
-    MenuItemGroup() {
-      MenuItem({ startIcon: $r('app.media.api'), content: "(dev)API" })
-        .onClick(() => { router.pushUrl({ url: 'pages/index' }); prompt.showToast({ message: '原生版本', duration: 500 }); });
-      MenuItem({ startIcon: $r('app.media.arrow_back'), content: "返回上级" })
-        .onClick(() => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); });
-      MenuItem({ startIcon: this.isLoading ? $r('app.media.stop') : $r('app.media.refresh'), content: this.isLoading ? "停止刷新" : "刷新页面" })
-        .onClick(() => {
-          if (this.isLoading) {
-            this.web_controller.stop();
-            this.isLoading = false;
-            prompt.showToast({ message: '停止刷新', duration: 500 });
-          } else {
-            this.web_controller.refresh();
-            this.isLoading = true;
-            prompt.showToast({ message: '刷新页面', duration: 500 });
-          }
-        });
-      MenuItem({ startIcon: $r('app.media.arrow_up'), content: "回到顶部" })
-        .onClick(() => { this.scrollToTop(); prompt.showToast({ message: '回到顶部', duration: 500 }); });
-      MenuItem({ startIcon: $r('app.media.switch'), content: this.isT ? "切换到S版本" : "切换到T版本" })
-        .onClick(() => { this.switchWebVersion(); });
-      MenuItem({ startIcon: $r('app.media.info'), content: "查看教程" })
-        .onClick(() => {  this.showTutorial = !this.showTutorial;});
-    }
-  }
-
   build() {
     Stack() {
+      Column() {
+        HdsActionBar({
+          startButtons: [
+            new ActionBarButton({ baseIcon: $r('app.media.arrow_back'), hoverTips: '返回上级',
+              onClick: () => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); }
+            }),
+            new ActionBarButton({ baseIcon: this.isLoading ? $r('app.media.stop') : $r('app.media.refresh') , hoverTips: this.isLoading ? "停止刷新" : "刷新页面",
+              onClick: () => {
+                if (this.isLoading) {
+                  this.web_controller.stop();
+                  this.isLoading = false;
+                  prompt.showToast({ message: '停止刷新', duration: 500 });
+                } else {
+                  this.web_controller.refresh();
+                  this.isLoading = true;
+                  prompt.showToast({ message: '刷新页面', duration: 500 });
+                }
+              }
+            })
+          ],
+          endButtons: [
+            new ActionBarButton({ baseIcon: $r('app.media.arrow_up'), hoverTips: '回到顶部',
+              onClick: () => { this.scrollToTop(); prompt.showToast({ message: '回到顶部', duration: 500 }); }
+            }),
+            new ActionBarButton({ baseIcon: $r('app.media.switch'), hoverTips: '切换版本',
+              onClick: () => { this.switchWebVersion(); }
+            })
+          ],
+
+          primaryButton: new ActionBarButton({
+            baseIcon: $r('app.media.menu'),
+            altIcon: $r('app.media.close'),
+            onClick: () => {
+              this.isExpand = !this.isExpand;
+              this.isPrimaryIconChanged = !this.isPrimaryIconChanged;
+              if (this.isPrimaryIconChanged) {
+                this.primaryHoverTips = '展开';
+              } else {
+                this.primaryHoverTips = '折叠';
+              }
+            },
+            hoverTips: this.primaryHoverTips
+          }),
+
+          actionBarStyle: new ActionBarStyle({
+            isPrimaryIconChanged: this.isPrimaryIconChanged
+          }),
+          isExpand: this.isExpand!!
+        })
+      }
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+      .position({x:50,y:100})
+      .zIndex(99)
       if (this.showTutorial) {
         Stack(){
           Column(){
@@ -321,7 +350,6 @@ export struct WebView {
             Text(this.isT ? "应用看板 - T站" : "应用看板 - S站").fontSize(23).fontWeight(FontWeight.Bold).margin({ left: 20 });
             Row() {
               Image($r('app.media.share')).height(28).width(28).margin({ right: 30 }).onClick(() => { this.shareUrl(); });
-              Image($r('app.media.menu')).height(28).width(28).margin({ right: 30 }).bindMenu(this.Menu);
               Image($r('app.media.user')).height(28).width(28).margin({ right: 25 }).onClick(() => router.pushUrl({ url: 'pages/user' }));
             }
           }
