@@ -89,7 +89,7 @@ struct complex_share {
       appId: '',
       remark: ''
     };
-    this.closePage()
+    // this.closePage()
 
   }
   private closePage(){
