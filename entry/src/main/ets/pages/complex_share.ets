@@ -1,6 +1,7 @@
 import { NaturalLanguageExtractor, AppInfo } from '../ability/NaturalLanguageExtract';
-import { prompt, router } from '@kit.ArkUI';
+import { prompt } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
+import { common } from '@kit.AbilityKit';
 
 interface ShareParams {
   shareAppId: string;
@@ -25,7 +26,6 @@ struct complex_share {
     remark: ''
   };
   @StorageProp('shareParams') shareParams: ShareParams = { shareAppId: '', shareUrl: '' };
-
 
   @State inputText: string = '';
   @State extractedApps: AppInfo[] = [];
@@ -91,10 +91,17 @@ struct complex_share {
     };
 
   }
+  private closePage(){
+    let uiAbilityContext = getContext(this) as common.UIAbilityContext;
+    uiAbilityContext.terminateSelf();
+  }
+  onPageHide(): void {
+    this.closePage()
+  }
 
   build() {
     Stack(){
-      Column().width('100%').height('100%').backgroundColor($r('app.color.backcolor')).backgroundBlurStyle(BlurStyle.BACKGROUND_THIN).onClick(()=>{ router.back() })
+      Column().width('100%').height('100%').backgroundColor($r('app.color.backcolor')).backgroundBlurStyle(BlurStyle.BACKGROUND_THIN).onClick(()=>{ this.closePage() })
       Column() {
         // 标题
         Row() {
@@ -114,7 +121,7 @@ struct complex_share {
             .height(26)
             .width(26)
             .margin({right:10})
-            .onClick(() => { router.back() })
+            .onClick(() => { this.closePage() })
         }
         .width('100%')
         .justifyContent(FlexAlign.SpaceBetween)
