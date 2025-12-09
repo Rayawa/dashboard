@@ -306,7 +306,6 @@ export struct tutorial{
         Text('  通过投稿功能可以实现App的抓取与更新，您可以通过投稿应用至应用看板来帮助我们获取新的App或更新App信息。\n').fontSize(14).margin({ bottom: 10 })
         Text('  您可以在“我的”界面里面设置您的用户名，初始用户名默认为机型型号。\n' +
           '  您的用户名将作为投稿作者标识，帮助我们准确记录并感谢您的每一次分享。\n').fontSize(14).margin({ bottom: 10 })
-        Text('    * 当前版本仅“按已有信息投稿”，“填写信息投稿”与“应用内投稿”将在后续版本开放，敬请期待！。').fontSize(10).fontColor(Color.Grey)
         Row() {
           Column() {
             Text('1. 应用商店投稿：\n' +

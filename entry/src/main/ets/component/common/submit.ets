@@ -61,38 +61,36 @@ export struct submit {
     // });
   }
   submitForm(): void {
-    // if (!this.formData.packageName.trim()) {
-    //   prompt.showToast({
-    //     message: '请输入包名',
-    //     duration: 2000
-    //   });
-    //   return;
-    // }
-    //
-    // if (!this.formData.appId.trim()) {
-    //   prompt.showToast({
-    //     message: '请输入app_id',
-    //     duration: 2000
-    //   });
-    //   return;
-    // }
-    //
-    // // ->提交逻辑，如调用API等
-    // console.log('提交数据:', this.formData);
+    if (!this.formData.packageName.trim()) {
+      prompt.showToast({
+        message: '请输入包名',
+        duration: 2000
+      });
+      return;
+    }
+
+    if (!this.formData.appId.trim()) {
+      prompt.showToast({
+        message: '请输入app_id',
+        duration: 2000
+      });
+      return;
+    }
+
+    // ->提交逻辑，如调用API等
+    console.log('提交数据:', this.formData);
     prompt.showToast({
-      // message: '提交成功，感谢您的反馈！',
-      message: '敬请期待！',
+      message: '提交成功，感谢您的投稿！',
       duration: 3000
     });
+    this.inputText=''
+    this.formData = {
+        appLink: '',
+        packageName: '',
+        appId: '',
+        remark: ''
+    };
 
-    // 清空表单并关闭弹窗
-    // this.formData = {
-    //     appLink: '',
-    //     packageName: '',
-    //     appId: '',
-    //     remark: ''
-    // };
-    // this.showSubmit = !this.showSubmit;
   }
 
   build() {
@@ -374,7 +372,7 @@ export struct submit {
           .margin(2)
           .width('25%')
           .height(44)
-          .backgroundColor(Color.Blue)
+          .backgroundColor(Color.Grey)
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .borderRadius(22)
@@ -427,11 +425,8 @@ export struct submit {
       if (this.extractedApps.length > 0) {
         this.autoFillForm();
       }
-
     } catch (error) {
       console.error('自动提取失败:', error);
-      // 这里可以添加错误提示，例如：
-      // this.showError('提取失败，请检查输入内容');
     } finally {
       this.isProcessing = false;
     }

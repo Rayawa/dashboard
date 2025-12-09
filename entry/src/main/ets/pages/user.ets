@@ -278,9 +278,8 @@ export struct user {
                                             .width(24)
                                             .objectFit(ImageFit.Contain)
 
-                                        Text('投稿/查询应用（开发中）')
+                                        Text('投稿/查询应用')
                                             .fontSize(16)
-                                            .fontColor(Color.Grey)
                                             .margin({ left: 12 })
                                     }
 
