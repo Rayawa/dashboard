@@ -10,6 +10,8 @@ import { common } from "@kit.AbilityKit";
 import { harmonyShare, systemShare } from '@kit.ShareKit';
 import { uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
+import { getUsername, initialize as initializeUserStorage, setUsername as setUsername } from '../common/profile';
+
 import { preferences } from '@kit.ArkData';
 import { tutorial } from '../component/common/tutorial'
 import { hdsEffect } from '@kit.UIDesignKit';
@@ -30,6 +32,7 @@ export struct WebView {
       .animation({ curve: curves.springMotion(0.7, 0.8), duration:1000})
 
   @State showTutorial: boolean = false;
+  @StorageLink('userName') userName: string = ''
   private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
 
   @State url: string = 'https://hmos.txit.top/dashboard';//entry
@@ -56,6 +59,7 @@ export struct WebView {
   };
 
   async aboutToAppear() {
+    this.loadUserName();
     //shenjack的UA
     const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
     webview.WebviewController.setAppCustomUserAgent(customUA);
@@ -147,6 +151,19 @@ export struct WebView {
     harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
       sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
     });
+  }
+
+  //用户名初始化(防止小天才模式）
+  async loadUserName() {
+    initializeUserStorage()
+    this.userName = await getUsername();
+  }
+  async saveUserName() {
+    await setUsername(this.userName);
+  }
+  async resetToDeviceName() {
+    await setUsername(undefined);
+    await this.loadUserName()
   }
 
   //回到顶部方法

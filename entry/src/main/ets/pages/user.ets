@@ -37,6 +37,9 @@ export struct user {
         await setUsername(undefined);
         await this.loadUserName()
     }
+    aboutToAppear() {
+        this.loadUserName();
+    }
 
     async openLink() {
         const url = 'https://beian.miit.gov.cn/#/Integrated/index';
@@ -71,11 +74,6 @@ export struct user {
                 }
             },
         })
-    }
-
-
-    aboutToAppear() {
-        this.loadUserName();
     }
 
     build() {
