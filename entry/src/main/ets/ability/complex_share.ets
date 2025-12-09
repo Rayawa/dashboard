@@ -8,7 +8,7 @@ export class ShareAbility extends ShareExtensionAbility {
     systemShare.getSharedData(want)
       .then((data: systemShare.SharedData) => {
         const contents: string[] = [];
-        let rawContent: string = ''; // 保存原始内容
+        let rawContent: string = '';
 
         data.getRecords().forEach((record: systemShare.SharedRecord) => {
           if (record.content == undefined) {
@@ -29,7 +29,6 @@ export class ShareAbility extends ShareExtensionAbility {
           rawContent = content;
         });
 
-        // 打开页面（核心代码）
         if (contents.length > 0) {
           const wantForPage: Want = {
             bundleName: 'top.rayawa.dashboard',
@@ -52,11 +51,10 @@ export class ShareAbility extends ShareExtensionAbility {
         console.error(`获取分享数据失败: Code: ${error.code}, message: ${error.message}`);
       });
 
-    // 延迟关闭分享会话
     setTimeout(() => {
       session.terminateSelfWithResult({
         resultCode: systemShare.ShareAbilityResultCode.CLOSE
       });
-    }, 300); // 适当延长延迟时间
+    }, 300);
   }
 }

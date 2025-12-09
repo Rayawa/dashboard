@@ -23,14 +23,15 @@ export struct WebView {
   @State actionBarIlluminatedType: hdsEffect.PointLightIlluminatedType = hdsEffect.PointLightIlluminatedType.BORDER;
   @State buttonPressShadow: hdsEffect.PressShadowType = hdsEffect.PressShadowType.NONE;
   @State lightIntensity: number = 8;
-
-  @State showTutorial: boolean = false;
-  private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
   private effect: TransitionEffect =
     TransitionEffect.OPACITY
       .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
       .combine(TransitionEffect.scale({ x: 0, y: 1 }))
       .animation({ curve: curves.springMotion(0.7, 0.8), duration:1000})
+
+  @State showTutorial: boolean = false;
+  private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
+
   @State url: string = 'https://hmos.txit.top/dashboard';//entry
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
@@ -40,7 +41,6 @@ export struct WebView {
   private win: window.Window | null = null;
 
   @State offsetX: string = '84%';
-
   holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
     switch (data) {
       case 1: // 左手握持
@@ -202,9 +202,9 @@ export struct WebView {
   }
 
   //监听状态控制
-  @State ShareStatus: boolean = false;//监听状态控制
-  @State rejectStatus: boolean = false;//监听状态控制
-  @State updateStatus: boolean = false;//监听状态控制
+  @State ShareStatus: boolean = false;
+  @State rejectStatus: boolean = false;
+  @State updateStatus: boolean = false;
   private isNoListening() {
     return !this.ShareStatus && !this.rejectStatus && !this.updateStatus;
   }
@@ -301,6 +301,7 @@ export struct WebView {
           .onControllerAttached(() => { try { this.web_controller.setCustomUserAgent(APP_UA); } catch {} });//shenjack的UA
         Column().width('100%').backgroundColor($r('app.color.backcolor')).height(200);
       }
+
       Column({space:10}) {
         Button() {
           Image($r('app.media.arrow_back'))
@@ -508,6 +509,7 @@ export struct WebView {
         //     .pressShadow(this.buttonPressShadow)
         //     .buildEffect())
       }.position({x:`${this.offsetX}`,y:'35%'}).animation({curve :curves.springMotion(0.7,0.8), duration:500})
+
       Column() {
         Column() {
           Text('\n').fontSize(14);
@@ -527,6 +529,7 @@ export struct WebView {
           Progress({ value: this.progress, total: 100 }).width('100%').height(3).position({ x: 0, y: 87 });
         }
       }.position({ x: 0, y: 0 }).width('100%');
+
       if (this.showTutorial) {
         Stack(){
           Column(){
