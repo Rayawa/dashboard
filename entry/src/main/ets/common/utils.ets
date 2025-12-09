@@ -1,3 +1,5 @@
+import URL from "./url";
+
 export interface LinksPkgsAppIds {
     links: string[];
     pkgs: string[];
@@ -48,7 +50,8 @@ export function parseInputSplitLinksPkgsAndAppIds(inputStr: string): LinksPkgsAp
     const pkgs: string[] = [];
     const app_ids: string[] = [];
 
-    for (const part of parts) {
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
         let start = 0;
 
         // 处理每个part，像Python代码一样扫描
@@ -77,26 +80,42 @@ export function parseInputSplitLinksPkgsAndAppIds(inputStr: string): LinksPkgsAp
                 const matchedUrl = urlMatch[0];
                 links.push(matchedUrl);
 
-                // 从url内容中提取包名和app_id
-                const content = matchedUrl;
-                let ls = 0;
-                while (ls < content.length) {
-                    // 提取包名
-                    const pkgExtractMatch = content.slice(ls).match(extractPkgRegex);
-                    if (pkgExtractMatch) {
-                        pkgs.push(pkgExtractMatch[0]);
-                        ls += pkgExtractMatch.index! + pkgExtractMatch[0].length;
-                        continue;
+                // 从URL的path部分提取包名和app_id
+                try {
+                    // 解析URL获取path部分
+                    const urlObj = new URL(matchedUrl);
+                    const pathname = urlObj.pathname;
+
+                    // 如果pathname以/开头，去掉开头的/
+                    let content = matchedUrl.slice(matchedUrl.indexOf(pathname));
+                    if (content.startsWith('/')) {
+                        content = content.substring(1);
                     }
 
-                    // 提取app_id
-                    const appIdExtractMatch = content.slice(ls).match(extractAppIdRegex);
-                    if (appIdExtractMatch) {
-                        app_ids.push(appIdExtractMatch[0]);
-                        ls += appIdExtractMatch.index! + appIdExtractMatch[0].length;
-                        continue;
+                    if (content) {
+                        // 从path内容中提取包名和app_id
+                        let ls = 0;
+                        while (ls < content.length) {
+                            // 提取包名
+                            const pkgExtractMatch = content.slice(ls).match(extractPkgRegex);
+                            if (pkgExtractMatch && pkgExtractMatch.index != undefined) {
+                                pkgs.push(pkgExtractMatch[0]);
+                                ls += pkgExtractMatch.index + pkgExtractMatch[0].length;
+                                continue;
+                            }
+
+                            // 提取app_id
+                            const appIdExtractMatch = content.slice(ls).match(extractAppIdRegex);
+                            if (appIdExtractMatch && appIdExtractMatch.index != undefined) {
+                                app_ids.push(appIdExtractMatch[0]);
+                                ls += appIdExtractMatch.index + appIdExtractMatch[0].length;
+                                continue;
+                            }
+                            ls++;
+                        }
                     }
-                    ls++;
+                } catch (e) {
+                    // URL解析失败，跳过这个URL的解析
                 }
 
                 start += matchedUrl.length;
@@ -105,17 +124,17 @@ export function parseInputSplitLinksPkgsAndAppIds(inputStr: string): LinksPkgsAp
 
             // 匹配其他包名
             const otherPkgMatch = part.slice(start).match(extractPkgRegex);
-            if (otherPkgMatch) {
+            if (otherPkgMatch && otherPkgMatch.index != undefined) {
                 pkgs.push(otherPkgMatch[0]);
-                start += otherPkgMatch.index! + otherPkgMatch[0].length;
+                start += otherPkgMatch.index + otherPkgMatch[0].length;
                 continue;
             }
 
             // 匹配其他 app_id
             const otherAppIdMatch = part.slice(start).match(extractAppIdRegex);
-            if (otherAppIdMatch) {
+            if (otherAppIdMatch && otherAppIdMatch.index != undefined) {
                 app_ids.push(otherAppIdMatch[0]);
-                start += otherAppIdMatch.index! + otherAppIdMatch[0].length;
+                start += otherAppIdMatch.index + otherAppIdMatch[0].length;
                 continue;
             }
 
@@ -129,19 +148,22 @@ export function parseInputSplitLinksPkgsAndAppIds(inputStr: string): LinksPkgsAp
     const finalPkgs: string[] = [];
     const finalAppIds: string[] = [];
 
-    for (const item of links) {
+    for (let i = 0; i < links.length; i++) {
+        const item = links[i];
         if (!finalLinks.includes(item)) {
             finalLinks.push(item);
         }
     }
 
-    for (const item of pkgs) {
+    for (let i = 0; i < pkgs.length; i++) {
+        const item = pkgs[i];
         if (!finalPkgs.includes(item)) {
             finalPkgs.push(item);
         }
     }
 
-    for (const item of app_ids) {
+    for (let i = 0; i < app_ids.length; i++) {
+        const item = app_ids[i];
         if (!finalAppIds.includes(item)) {
             finalAppIds.push(item);
         }

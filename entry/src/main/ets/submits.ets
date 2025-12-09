@@ -2,6 +2,8 @@
 import { http } from '@kit.NetworkKit';
 import { SUBMIT_PLATFORM, SUBMIT_USERNAME } from './global_data';
 import { JSON } from '@kit.ArkTS';
+import { submit_app } from './common/api';
+import { CommentInfo } from './common/types';
 
 export class SubmitResult {
     public success: boolean = true;
@@ -22,23 +24,14 @@ export class SubmitResult {
     }
 }
 
-export interface SubmitCommentInfo {
-    user?: string;
-    note?: string;
-}
-
-interface SubmitCommentInfoWithPlatform extends SubmitCommentInfo {
-    platform: string;
-}
-
 export interface AppSubmitBody {
     app_id?: string;
     pkg_name?: string;
-    comment?: SubmitCommentInfo
+    comment?: CommentInfo
 }
 
 interface AppSubmitBodyWithCommentInfoPlatform extends AppSubmitBody {
-    comment?: SubmitCommentInfoWithPlatform
+    comment?: CommentInfo
 }
 
 export function parse_app_id_from_url(url: string): string | null {
@@ -96,40 +89,47 @@ export function parse_app_id_from_url(url: string): string | null {
 
 
 export async function submit_app_with_user_data(data: AppSubmitBody): Promise<SubmitResult | null> {
-    let request = http.createHttp();
-    // let data: JSON; // TODO: 解析结果
-    try {
-        const final_comment: SubmitCommentInfoWithPlatform = {
-            platform: SUBMIT_PLATFORM,
-            user: data.comment?.user,
-            note: data.comment?.note
-        };
-        const final_data: AppSubmitBodyWithCommentInfoPlatform = {
-            app_id: data.app_id,
-            pkg_name: data.pkg_name,
-            comment: final_comment
-        }
-        console.log("submit data: ", JSON.stringify(final_data))
-        console.log(`submitting ${final_comment.user}`);
-        const response = await request.request("http://shenjack.top:10003/api/v0/submit", {
-            method: http.RequestMethod.POST,
-            expectDataType: http.HttpDataType.OBJECT,
-            usingCache: false, // 提交可不能用 cache
-            header: {
-                "Content-Type": "application/json"
-            },
-            extraData: final_data,
-            // extraData: final_data
-        }
-        )
-        console.info(`request response code: ${response.responseCode}`);
-        if (response.responseCode == 200) {
-            console.info(JSON.stringify(response.result));
-        }
-    } catch (e) {
-        console.warn(`error ${e}`)
-    } finally {
-        request.destroy();
-    }
+    // debug
+    // redirect to this code, because it works
+    await submit_app({
+        app_id: data.app_id,
+        pkg_name: data.pkg_name,
+        comment: data.comment
+    })
+    // let request = http.createHttp();
+    // // let data: JSON; // TODO: 解析结果
+    // try {
+    //     const final_comment: CommentInfo = {
+    //         platform: SUBMIT_PLATFORM,
+    //         user: data.comment?.user,
+    //         note: data.comment?.note
+    //     };
+    //     const final_data: AppSubmitBodyWithCommentInfoPlatform = {
+    //         app_id: data.app_id,
+    //         pkg_name: data.pkg_name,
+    //         comment: final_comment
+    //     }
+    //     console.log("submit data: ", JSON.stringify(final_data))
+    //     console.log(`submitting ${final_comment.user}`);
+    //     const response = await request.request("http://shenjack.top:10003/api/v0/submit", {
+    //         method: http.RequestMethod.POST,
+    //         expectDataType: http.HttpDataType.OBJECT,
+    //         usingCache: false, // 提交可不能用 cache
+    //         header: {
+    //             "Content-Type": "application/json"
+    //         },
+    //         extraData: final_data,
+    //         // extraData: final_data
+    //     }
+    //     )
+    //     console.info(`request response code: ${response.responseCode}`);
+    //     if (response.responseCode == 200) {
+    //         console.info(JSON.stringify(response.result));
+    //     }
+    // } catch (e) {
+    //     console.warn(`error ${e}`)
+    // } finally {
+    //     request.destroy();
+    // }
     return null;
 }
