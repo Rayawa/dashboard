@@ -11,6 +11,7 @@ import { uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
 import { preferences } from '@kit.ArkData';
 import { tutorial } from '../component/common/tutorial'
+import { hdsEffect } from '@kit.UIDesignKit';
 
 @Entry
 @Component
@@ -18,6 +19,10 @@ export struct WebView {
   @State isExpand: boolean = false;
   @State isPrimaryIconChanged: boolean = false;
   @State primaryHoverTips: ResourceStr = '开始';
+  @State actionBarIlluminatedType: hdsEffect.PointLightIlluminatedType = hdsEffect.PointLightIlluminatedType.BORDER;
+  @State buttonPressShadow: hdsEffect.PressShadowType = hdsEffect.PressShadowType.NONE;
+  @State lightIntensity: number = 8;
+
   @State showTutorial: boolean = false;
   private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
   private effect: TransitionEffect =
@@ -252,10 +257,22 @@ export struct WebView {
       Column() {
         HdsActionBar({
           startButtons: [
-            new ActionBarButton({ baseIcon: $r('app.media.arrow_back'), hoverTips: '返回上级',
-              onClick: () => { this.web_controller.backward(); prompt.showToast({ message: '返回上级', duration: 500 }); }
+            new ActionBarButton({
+              baseIcon: $r('app.media.arrow_back'),
+              hoverTips: '返回上级',
+              onClick: () => {
+                this.web_controller.backward();
+                prompt.showToast({ message: '返回上级', duration: 500 });
+                // 添加按钮点击效果
+                this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+                setTimeout(() => {
+                  this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+                }, 300);
+              }
             }),
-            new ActionBarButton({ baseIcon: this.isLoading ? $r('app.media.stop') : $r('app.media.refresh') , hoverTips: this.isLoading ? "停止刷新" : "刷新页面",
+            new ActionBarButton({
+              baseIcon: this.isLoading ? $r('app.media.stop') : $r('app.media.refresh'),
+              hoverTips: this.isLoading ? "停止刷新" : "刷新页面",
               onClick: () => {
                 if (this.isLoading) {
                   this.web_controller.stop();
@@ -266,18 +283,38 @@ export struct WebView {
                   this.isLoading = true;
                   prompt.showToast({ message: '刷新页面', duration: 500 });
                 }
+                this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+                setTimeout(() => {
+                  this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+                }, 300);
               }
             })
           ],
           endButtons: [
-            new ActionBarButton({ baseIcon: $r('app.media.arrow_up'), hoverTips: '回到顶部',
-              onClick: () => { this.scrollToTop(); prompt.showToast({ message: '回到顶部', duration: 500 }); }
+            new ActionBarButton({
+              baseIcon: $r('app.media.arrow_up'),
+              hoverTips: '回到顶部',
+              onClick: () => {
+                this.scrollToTop();
+                prompt.showToast({ message: '回到顶部', duration: 500 });
+                this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+                setTimeout(() => {
+                  this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+                }, 300);
+              }
             }),
-            new ActionBarButton({ baseIcon: $r('app.media.switch'), hoverTips: '切换版本',
-              onClick: () => { this.switchWebVersion(); }
+            new ActionBarButton({
+              baseIcon: $r('app.media.switch'),
+              hoverTips: '切换版本',
+              onClick: () => {
+                this.switchWebVersion();
+                this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+                setTimeout(() => {
+                  this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+                }, 300);
+              }
             })
           ],
-
           primaryButton: new ActionBarButton({
             baseIcon: $r('app.media.menu'),
             altIcon: $r('app.media.close'),
@@ -289,16 +326,31 @@ export struct WebView {
               } else {
                 this.primaryHoverTips = '折叠';
               }
+              this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+              setTimeout(() => {
+                this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+              }, 300);
             },
             hoverTips: this.primaryHoverTips
           }),
-
           actionBarStyle: new ActionBarStyle({
             isPrimaryIconChanged: this.isPrimaryIconChanged
           }),
           isExpand: this.isExpand!!
         })
+          .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+              illuminatedType: this.actionBarIlluminatedType,
+              options: {
+                color: Color.White,
+                intensity: this.lightIntensity,
+                height: 100
+              }
+            })
+            .pressShadow(this.buttonPressShadow)
+            .buildEffect())
       }
+
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
       .position({x:50,y:100})
