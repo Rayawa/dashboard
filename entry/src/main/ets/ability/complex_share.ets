@@ -9,7 +9,7 @@ export class ShareAbility extends ShareExtensionAbility {
     systemShare.getSharedData(want)
       .then((data: systemShare.SharedData) => {
         const contents: string[] = [];
-        let parsedAppId: string = ''
+        let parsedPackageName: string = ''
         let rawContent: string = '';
 
         data.getRecords().forEach((record: systemShare.SharedRecord) => {
@@ -28,7 +28,7 @@ export class ShareAbility extends ShareExtensionAbility {
           console.info(`dashboard_share_raw ${content}`);
 
           contents.push(app_query);
-          parsedAppId = app_query
+          parsedPackageName = app_query
           rawContent = content;
         });
 
@@ -37,7 +37,7 @@ export class ShareAbility extends ShareExtensionAbility {
             bundleName: 'top.rayawa.dashboard',
             abilityName: 'shareEntry',
             parameters: {
-              shareAppId: parsedAppId,
+              sharePackageName: parsedPackageName,
               shareUrl: rawContent,
             }
           };
