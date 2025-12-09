@@ -91,54 +91,14 @@ export struct tutorial{
                 .combine(TransitionEffect.translate({ x: 0, y: 12 }))
             )
           })
-        Text('  2. 菜单栏：主要用于操作网页内容，如刷新、回到顶部与切换版本等。点按打开列表后选择内容以操作网页。\n').fontSize(14)
-        Image($r('app.media.menu')).width(28).height(28).margin({ bottom: 20 })
-          .onClick(() => {this.handlePopupMenu = !this.handlePopupMenu;})
-          .bindPopup(this.handlePopupMenu, {
-            message: '在主页面点击以打开状态栏',
-            placement: Placement.Top,
-            showInSubWindow: false,
-            onStateChange: (e) => {
-              if (!e.isVisible) {
-                this.handlePopupMenu = false;
-              }
-            },
-            transition: TransitionEffect.asymmetric(
-              TransitionEffect.OPACITY
-                .animation({ duration: 500, curve: Curve.Ease })
-                .combine(TransitionEffect.translate({ x: 0, y: 12 })),
-
-              TransitionEffect.OPACITY
-                .animation({ duration: 300, curve: Curve.EaseOut })
-                .combine(TransitionEffect.translate({ x: 0, y: 12 }))
-            )
-          })
+        Text('  2. 主界面按钮：主要用于操作网页内容，如返回上级、回到顶部、刷新与切换版本。\n' +
+          '   按钮支持智感握姿功能，可根据您的握持姿势改变位置。').fontSize(14).margin({bottom:1})
+        Text('    * 此功能当前仅支持部分机型。若设置菜单中存在“智感握姿”开关（可在“设置-系统”中查看），则表明该设备支持此功能。\n').fontSize(10).fontColor(Color.Grey)
         Row(){
-          Image($r('app.media.api')).width(28).height(28)
-            .onClick(() => {this.handlePopupApi = !this.handlePopupApi;})
-            .bindPopup(this.handlePopupApi, {
-              message: '在菜单栏单击以打开原生版本页面\n（页面施工中）',
-              placement: Placement.Top,
-              showInSubWindow: false,
-              onStateChange: (e) => {
-                if (!e.isVisible) {
-                  this.handlePopupApi = false;
-                }
-              },
-              transition: TransitionEffect.asymmetric(
-                TransitionEffect.OPACITY
-                  .animation({ duration: 500, curve: Curve.Ease })
-                  .combine(TransitionEffect.translate({ x: 0, y: 12 })),
-
-                TransitionEffect.OPACITY
-                  .animation({ duration: 300, curve: Curve.EaseOut })
-                  .combine(TransitionEffect.translate({ x: 0, y: 12 }))
-              )
-            })
           Image($r('app.media.arrow_back')).width(28).height(28)
             .onClick(() => {this.handlePopupBack = !this.handlePopupBack;})
             .bindPopup(this.handlePopupBack, {
-              message: '在菜单栏单击以返回上一个网页',
+              message: '单击按钮以返回上一个网页',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -156,31 +116,10 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
-          Image($r('app.media.refresh')).width(28).height(28)
-            .onClick(() => {this.handlePopupRefresh = !this.handlePopupRefresh;})
-            .bindPopup(this.handlePopupRefresh, {
-              message: '在菜单栏单击以刷新当前网页',
-              placement: Placement.Top,
-              showInSubWindow: false,
-              onStateChange: (e) => {
-                if (!e.isVisible) {
-                  this.handlePopupRefresh = false;
-                }
-              },
-              transition: TransitionEffect.asymmetric(
-                TransitionEffect.OPACITY
-                  .animation({ duration: 500, curve: Curve.Ease })
-                  .combine(TransitionEffect.translate({ x: 0, y: 12 })),
-
-                TransitionEffect.OPACITY
-                  .animation({ duration: 300, curve: Curve.EaseOut })
-                  .combine(TransitionEffect.translate({ x: 0, y: 12 }))
-              )
-            })
           Image($r('app.media.arrow_up')).width(28).height(28)
             .onClick(() => {this.handlePopupTop = !this.handlePopupTop;})
             .bindPopup(this.handlePopupTop, {
-              message: '在菜单栏单击以回到顶部',
+              message: '单击按钮以回到顶部',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -198,10 +137,31 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
+          Image($r('app.media.refresh')).width(28).height(28)
+            .onClick(() => {this.handlePopupRefresh = !this.handlePopupRefresh;})
+            .bindPopup(this.handlePopupRefresh, {
+              message: '单击按钮以刷新当前网页',
+              placement: Placement.Top,
+              showInSubWindow: false,
+              onStateChange: (e) => {
+                if (!e.isVisible) {
+                  this.handlePopupRefresh = false;
+                }
+              },
+              transition: TransitionEffect.asymmetric(
+                TransitionEffect.OPACITY
+                  .animation({ duration: 500, curve: Curve.Ease })
+                  .combine(TransitionEffect.translate({ x: 0, y: 12 })),
+
+                TransitionEffect.OPACITY
+                  .animation({ duration: 300, curve: Curve.EaseOut })
+                  .combine(TransitionEffect.translate({ x: 0, y: 12 }))
+              )
+            })
           Image($r('app.media.switch')).width(28).height(28)
             .onClick(() => {this.handlePopupSwitch = !this.handlePopupSwitch;})
             .bindPopup(this.handlePopupSwitch, {
-              message: '在菜单栏单击以切换不同站点',
+              message: '单击按钮以切换不同站点',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -305,7 +265,13 @@ export struct tutorial{
         Text('投稿功能').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
         Text('  通过投稿功能可以实现App的抓取与更新，您可以通过投稿应用至应用看板来帮助我们获取新的App或更新App信息。\n').fontSize(14).margin({ bottom: 10 })
         Text('  您可以在“我的”界面里面设置您的用户名，初始用户名默认为机型型号。\n' +
-          '  您的用户名将作为投稿作者标识，帮助我们准确记录并感谢您的每一次分享。\n').fontSize(14).margin({ bottom: 10 })
+          '  您的用户名将作为投稿作者标识，帮助我们准确记录并感谢您的每一次分享。\n').fontSize(14)
+        Row(){Text('  投稿功能支持AI智能提取，将应用信息输入或粘贴进文本框即可自动提取！\n').fontSize(14).blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)}
+        .linearGradient({
+          direction: GradientDirection.LeftBottom,
+          colors: [[$r('app.color.gradient_start_color'), 0.0], [$r('app.color.gradient_end_color'), 1]]
+        })
+        .blendMode(BlendMode.SRC_OVER, BlendApplyType.OFFSCREEN)
         Row() {
           Column() {
             Text('1. 应用商店投稿：\n' +
@@ -320,7 +286,7 @@ export struct tutorial{
 
         }
         .width('100%')
-        .height('42%')
+        .height('44%')
         .justifyContent(FlexAlign.SpaceBetween)
 
       }.height('80%').width('95%').borderRadius(16).padding(20)

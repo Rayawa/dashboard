@@ -71,7 +71,7 @@ export struct submit {
 
     if (!this.formData.appId.trim()) {
       prompt.showToast({
-        message: '请输入app_id',
+        message: '请输入AppID',
         duration: 2000
       });
       return;
@@ -301,7 +301,7 @@ export struct submit {
       }.width('100%').padding(12)
       // app_id
       Column({ space: 6 }) {
-        Text('app_id')
+        Text('AppID')
           .fontSize(16)
           .fontWeight(FontWeight.Bold)
           .width('100%')
@@ -372,7 +372,7 @@ export struct submit {
           .margin(2)
           .width('25%')
           .height(44)
-          .backgroundColor(Color.Grey)
+          .backgroundColor(Color.Blue)
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .borderRadius(22)
