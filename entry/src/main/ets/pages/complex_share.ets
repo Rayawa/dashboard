@@ -60,10 +60,36 @@ struct complex_share {
     });
   }
   submitForm(): void {
+    if (!this.formData.packageName.trim()) {
+      prompt.showToast({
+        message: '请输入包名',
+        duration: 2000
+      });
+      return;
+    }
+
+    if (!this.formData.appId.trim()) {
+      prompt.showToast({
+        message: '请输入app_id',
+        duration: 2000
+      });
+      return;
+    }
+
+    // ->提交逻辑，如调用API等
+    console.log('提交数据:', this.formData);
     prompt.showToast({
-      message: '敬请期待！',
+      message: '提交成功，感谢您的投稿！',
       duration: 3000
     });
+    this.inputText=''
+    this.formData = {
+      appLink: '',
+      packageName: '',
+      appId: '',
+      remark: ''
+    };
+
   }
 
   build() {
