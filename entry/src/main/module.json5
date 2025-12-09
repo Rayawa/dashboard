@@ -36,9 +36,9 @@
       {
         "name": "shareEntry",
         "srcEntry": "./ets/ability/shareEntry.ets",
-        "description": "$string:MainAbility_desc",
+        "description": "$string:shareEntryAbility_desc",
         "icon": "$media:layered_image",
-        "label": "$string:MainAbility_label",
+        "label": "$string:shareEntryAbility_lable",
         "startWindowIcon": "$media:startIcon",
         "startWindowBackground": "$color:start_window_background"
       }

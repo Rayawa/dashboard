@@ -68,7 +68,7 @@ struct complex_share {
 
   build() {
     Stack(){
-      Column().width('100%').height('100%').backgroundColor(Color.Transparent).backgroundBlurStyle(BlurStyle.BACKGROUND_THIN).onClick(()=>{ router.back() })
+      Column().width('100%').height('100%').backgroundColor($r('app.color.backcolor')).backgroundBlurStyle(BlurStyle.BACKGROUND_THIN).onClick(()=>{ router.back() })
       Column() {
         // 标题
         Row() {
