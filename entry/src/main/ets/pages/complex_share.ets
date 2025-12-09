@@ -70,7 +70,7 @@ struct complex_share {
 
     if (!this.formData.appId.trim()) {
       prompt.showToast({
-        message: '请输入app_id',
+        message: '请输入AppId',
         duration: 2000
       });
       return;
@@ -316,7 +316,7 @@ struct complex_share {
         }.width('100%').padding(12)
         // AppID
         Column({ space: 6 }) {
-          Text('app_id')
+          Text('AppId')
             .fontSize(16)
             .fontWeight(FontWeight.Bold)
             .width('100%')
