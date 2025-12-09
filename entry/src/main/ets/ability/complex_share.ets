@@ -5,9 +5,11 @@ import { parse_app_id_from_url } from '../submits';
 
 export class ShareAbility extends ShareExtensionAbility {
   onSessionCreate(want: Want, session: UIExtensionContentSession): void {
+    console.info("session created!")
     systemShare.getSharedData(want)
       .then((data: systemShare.SharedData) => {
         const contents: string[] = [];
+        let parsedAppId: string = ''
         let rawContent: string = '';
 
         data.getRecords().forEach((record: systemShare.SharedRecord) => {
@@ -26,6 +28,7 @@ export class ShareAbility extends ShareExtensionAbility {
           console.info(`dashboard_share_raw ${content}`);
 
           contents.push(app_query);
+          parsedAppId = app_query
           rawContent = content;
         });
 
@@ -34,9 +37,8 @@ export class ShareAbility extends ShareExtensionAbility {
             bundleName: 'top.rayawa.dashboard',
             abilityName: 'shareEntry',
             parameters: {
-              shareAppId: contents[0],
-              shareRawUrl: rawContent,
-              targetPage: 'pages/complex_share'
+              shareAppId: parsedAppId,
+              shareUrl: rawContent,
             }
           };
 
