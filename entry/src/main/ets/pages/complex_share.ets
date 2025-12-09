@@ -62,13 +62,10 @@ struct complex_share{
       duration: 3000
     });
   }
-  private closePage(){
-
-  }
 
   build() {
     Stack(){
-      Column().width('100%').height('100%').backgroundColor(Color.Transparent).backgroundBlurStyle(BlurStyle.BACKGROUND_THIN).onClick(()=>{this.closePage()})
+      Column().width('100%').height('100%').backgroundColor(Color.Transparent).backgroundBlurStyle(BlurStyle.BACKGROUND_THIN).onClick(()=>{ router.back() })
       Column() {
         // 标题
         Row() {
@@ -88,9 +85,7 @@ struct complex_share{
             .height(26)
             .width(26)
             .margin({right:10})
-            .onClick(() => {
-              this.closePage()
-            })
+            .onClick(() => { router.back() })
         }
         .width('100%')
         .justifyContent(FlexAlign.SpaceBetween)
