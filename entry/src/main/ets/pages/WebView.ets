@@ -2,6 +2,7 @@ import { webview } from "@kit.ArkWeb";
 import { HdsActionBar, ActionBarButton, ActionBarStyle } from '@kit.UIDesignKit'
 import { curves, prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
+import { motion } from '@kit.MultimodalAwarenessKit';
 import { BusinessError } from '@ohos.base';
 import { APP_UA } from "../global_data";
 import { Logger } from '../utils/Logger';
@@ -38,13 +39,36 @@ export struct WebView {
   private web_controller: webview.WebviewController = new webview.WebviewController();
   private win: window.Window | null = null;
 
+  @State offsetX: string = '';
+
+  holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
+    switch (data) {
+      case 1: // 左手握持
+        this.offsetX = '1%';
+        break;
+      case 2: // 右手握持
+        this.offsetX = '80%';
+        break;
+      default: // 其他状态
+        this.offsetX = '80%';
+        break;
+    }
+  };
+
   async aboutToAppear() {
     //shenjack的UA
     const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
     webview.WebviewController.setAppCustomUserAgent(customUA);
     this.win = await window.getLastWindow(getContext());
     //UA结束
-
+    //Rayawa的握持监听
+    try {
+      motion.on('holdingHandChanged', this.holdingHandCallback);
+    } catch (err) {
+      const error = err as BusinessError;
+      console.error("订阅失败，错误码: " + error.code);
+    }
+    //Rayawa的握持监听结束
     //Rayawa的状态栏颜色
     const isDark = this.mode === WebDarkMode.On;
     this.win.setWindowSystemBarProperties({
@@ -110,6 +134,13 @@ export struct WebView {
     harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
       sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
     });
+    //握持监听
+    try {
+      motion.off('holdingHandChanged', this.holdingHandCallback);
+    } catch (err) {
+      const error = err as BusinessError;
+      console.error("取消订阅失败，错误码: " + error.code);
+    }
   }
   private onBackGround() {
     this.shareDisablingListening();
@@ -255,10 +286,26 @@ export struct WebView {
   build() {
     Stack() {
       Column() {
+        Column().width('100%').backgroundColor($r('app.color.navcolor')).height(Math.max(this.NAV_HEIGHT - this.scrollY, 0));
+        Web({ src: this.url, controller: this.web_controller })
+          .domStorageAccess(true)
+          .darkMode(this.mode)
+          .forceDarkAccess(true)
+          .width('100%')
+          .backgroundColor($r('app.color.backcolor'))
+          .height('100%')
+          .onPageBegin(() => this.isLoading = true)
+          .onProgressChange((p) => this.progress = p.newProgress)
+          .onPageEnd(() => this.isLoading = false)
+          .onScroll((e) => this.scrollY = e.yOffset)
+          .onControllerAttached(() => { try { this.web_controller.setCustomUserAgent(APP_UA); } catch {} });//shenjack的UA
+        Column().width('100%').backgroundColor($r('app.color.backcolor')).height(200);
+      }
+      Column() {
         HdsActionBar({
           startButtons: [
             new ActionBarButton({
-              baseIcon: $r('app.media.arrow_back'),
+              baseIcon: $r('app.media.arrow_back_r'),
               hoverTips: '返回上级',
               onClick: () => {
                 this.web_controller.backward();
@@ -271,7 +318,7 @@ export struct WebView {
               }
             }),
             new ActionBarButton({
-              baseIcon: this.isLoading ? $r('app.media.stop') : $r('app.media.refresh'),
+              baseIcon: this.isLoading ? $r('app.media.stop_r') : $r('app.media.refresh_r'),
               hoverTips: this.isLoading ? "停止刷新" : "刷新页面",
               onClick: () => {
                 if (this.isLoading) {
@@ -292,7 +339,7 @@ export struct WebView {
           ],
           endButtons: [
             new ActionBarButton({
-              baseIcon: $r('app.media.arrow_up'),
+              baseIcon: $r('app.media.arrow_up_r'),
               hoverTips: '回到顶部',
               onClick: () => {
                 this.scrollToTop();
@@ -304,7 +351,7 @@ export struct WebView {
               }
             }),
             new ActionBarButton({
-              baseIcon: $r('app.media.switch'),
+              baseIcon: $r('app.media.switch_r'),
               hoverTips: '切换版本',
               onClick: () => {
                 this.switchWebVersion();
@@ -316,8 +363,8 @@ export struct WebView {
             })
           ],
           primaryButton: new ActionBarButton({
-            baseIcon: $r('app.media.menu'),
-            altIcon: $r('app.media.close'),
+            baseIcon: $r('app.media.menu_r'),
+            altIcon: $r('app.media.close_r'),
             onClick: () => {
               this.isExpand = !this.isExpand;
               this.isPrimaryIconChanged = !this.isPrimaryIconChanged;
@@ -349,52 +396,7 @@ export struct WebView {
             })
             .pressShadow(this.buttonPressShadow)
             .buildEffect())
-      }
-
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-      .position({x:50,y:100})
-      .zIndex(99)
-      if (this.showTutorial) {
-        Stack(){
-          Column(){
-            Text('* 点击外部区域或向下滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
-          }.backgroundColor(Color.Transparent).height('300%').width('300%')
-          .onClick(() => { this.showTutorial = !this.showTutorial; })
-          .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-          .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
-          tutorial()
-        }
-        .gesture(
-          SwipeGesture({ direction: SwipeDirection.Vertical })
-            .onAction((move: GestureEvent | undefined) => {
-              if (move) {
-                this.showTutorial = !this.showTutorial
-              }
-            })
-        )
-        .transition(this.effect)
-        .zIndex(4)
-        .height('100%')
-        .width('100%')
-
-      }
-      Column() {
-        Column().width('100%').backgroundColor($r('app.color.navcolor')).height(Math.max(this.NAV_HEIGHT - this.scrollY, 0));
-        Web({ src: this.url, controller: this.web_controller })
-          .domStorageAccess(true)
-          .darkMode(this.mode)
-          .forceDarkAccess(true)
-          .width('100%')
-          .backgroundColor($r('app.color.backcolor'))
-          .height('100%')
-          .onPageBegin(() => this.isLoading = true)
-          .onProgressChange((p) => this.progress = p.newProgress)
-          .onPageEnd(() => this.isLoading = false)
-          .onScroll((e) => this.scrollY = e.yOffset)
-          .onControllerAttached(() => { try { this.web_controller.setCustomUserAgent(APP_UA); } catch {} });//shenjack的UA
-        Column().width('100%').backgroundColor($r('app.color.backcolor')).height(200);
-      }
+      }.position({x:`${this.offsetX}`,y:'70%'}).animation({curve :curves.springMotion(0.7,0.8), duration:500}).rotate({angle:90})
       Column() {
         Column() {
           Text('\n').fontSize(14);
@@ -413,8 +415,26 @@ export struct WebView {
         if (this.isLoading) {
           Progress({ value: this.progress, total: 100 }).width('100%').height(3).position({ x: 0, y: 87 });
         }
+      }.position({ x: 0, y: 0 }).width('100%');
+      if (this.showTutorial) {
+        Stack(){
+          Column(){
+            Text('* 点击外部区域或向下滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
+          }.backgroundColor(Color.Transparent).height('300%').width('300%')
+          .onClick(() => { this.showTutorial = !this.showTutorial; })
+          .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+          .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
+          tutorial()
+        }
+        .gesture(
+          SwipeGesture({ direction: SwipeDirection.Vertical })
+            .onAction((move: GestureEvent | undefined) => {
+              if (move) {
+                this.showTutorial = !this.showTutorial
+              }
+            })
+        ).transition(this.effect)
       }
-      .position({ x: 0, y: 0 }).zIndex(3).width('100%');
     }
   }
 }

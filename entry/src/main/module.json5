@@ -106,11 +106,21 @@
         "name": "ohos.permission.INTERNET"
       },
       {
-        "name": "ohos.permission.DISTRIBUTED_DATASYNC",
-        "reason": "$string:distributed_permission_reason",
+        "name": "ohos.permission.DETECT_GESTURE",
+        "reason": "$string:GENSTURE_distributed_permission_reason",
         "usedScene": {
           "abilities": [
             "EntryAbility"
+          ],
+          "when": "always"
+        }
+      },
+      {
+        "name": "ohos.permission.DISTRIBUTED_DATASYNC",
+        "reason": "$string:STORAGE_distributed_permission_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility","shareEntryAbility"
           ],
           "when": "always"
         }

@@ -29,7 +29,11 @@
       "value": "填写信息投稿到看板"
     },
     {
-      "name": "distributed_permission_reason",
+      "name": "STORAGE_distributed_permission_reason",
+      "value": "分享时读取保存在本地的设置"
+    },
+    {
+      "name": "GENSTURE_distributed_permission_reason",
       "value": "分享时读取保存在本地的设置"
     }
   ]
