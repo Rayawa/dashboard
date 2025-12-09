@@ -11,7 +11,7 @@ interface FormData {
 
 @Entry
 @Component
-export struct submit {
+export struct app_share {
   @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
   @State formData: FormData = {
     appLink: '',
