@@ -1,5 +1,6 @@
 import { NaturalLanguageExtractor, AppInfo } from '../../ability/NaturalLanguageExtract';
 import { prompt } from '@kit.ArkUI';
+import { hdsEffect } from '@kit.UIDesignKit';
 
 interface FormData {
   appLink: string;
@@ -11,6 +12,7 @@ interface FormData {
 @Entry
 @Component
 export struct submit {
+  @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
   @State formData: FormData = {
     appLink: '',
     packageName: '',
@@ -216,17 +218,35 @@ export struct submit {
               this.debounceTimer = null;
             }, this.DEBOUNCE_DELAY);
           })
-      }.width('100%').padding(16).borderWidth(2).borderColor($r('app.color.border_AI')).borderRadius(16)
-      // .borderImage({
-      //   source: {
-      //     angle: 90,
-      //     colors: [[$r('app.color.gradient_end_color'), 0.0], [$r('app.color.gradient_start_color'), 1.0]]
-      //   },
-      //   slice: { top: 10, bottom: 10, left: 10, right: 10 },
-      //   width: { top: "10px", bottom: "10px", left: "10px", right: "10px" },
-      //   repeat: RepeatMode.Stretch,
-      //   fill: false
-      // })
+      }.width('100%').height(100).padding(16).borderRadius(16)
+      .visualEffect(new hdsEffect.HdsEffectBuilder()
+        .shaderEffect({
+          effectType: hdsEffect.EffectType.DUAL_EDGE_FLOW_LIGHT,
+          animation: {
+            duration: 9000,
+            iterations: -1,
+            autoPlay: true,
+            onFinish: () => {
+              console.info('Succeeded in finishing');
+            }
+          },
+          controller: this.controller,
+          params: {
+            firstEdgeFlowLight: {
+              startPos: 0,
+              endPos: 1.0,
+              color: '#1AD0F1',
+            },
+            secondEdgeFlowLight: {
+              startPos: 0.5,
+              endPos: 1.5,
+              color: '#FFA4E5',
+            }
+          }
+        })
+        .buildEffect())
+
+
 
       // 应用详情页链接（可选）
       Column({ space: 6 }) {
