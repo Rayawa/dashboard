@@ -3,6 +3,7 @@
     "pages/WebView",
     "pages/index",
     "pages/user",
+    "pages/complex_share",
     "pages/user/web_log",
     "pages/user/web_api",
     "pages/user/feedback",

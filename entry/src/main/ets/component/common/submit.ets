@@ -110,7 +110,7 @@ export struct submit {
       Column({ space: 6 }) {
         Row({ space: 20 }){
           Row(){
-            Text('智能提取')
+            Text('AI智能提取')
               .fontSize(16)
               .fontWeight(FontWeight.Bold)
               .blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)
@@ -417,34 +417,45 @@ export struct submit {
     }
   }
   // 自动填充表单（提取到信息后自动调用）
+
+  // 修改 autoFillForm 方法
   private autoFillForm() {
     if (this.extractedApps.length === 0) {
       return;
     }
 
-    // 获取第一个应用信息
     const app = this.extractedApps[0];
 
-    // 填充链接
-    if (app.link && !this.formData.appLink) {
+    // 如果有新提取的值，就覆盖（无论之前是否有值）
+    if (app.link !== undefined && app.link !== null) {
       this.formData.appLink = app.link;
     }
 
-    // 填充包名
-    if (app.packageName && !this.formData.packageName) {
+    if (app.packageName !== undefined && app.packageName !== null) {
       this.formData.packageName = app.packageName;
     }
 
-    // 填充AppID
-    if (app.appID && !this.formData.appId) {
+    if (app.appID !== undefined && app.appID !== null) {
       this.formData.appId = app.appID;
     }
 
-    // 填充备注（如果有日期信息）
-    if (app.date && !this.formData.remark.includes(app.date)) {
-      if (this.formData.remark) {
-        this.formData.remark = `提取日期: ${app.date}\n${this.formData.remark}`;
+    // 智能处理备注
+    if (app.date) {
+      // 移除旧的提取日期（如果有的话）
+      const oldRemark = this.formData.remark;
+      const datePattern = /提取日期:\s*\d{4}-\d{2}-\d{2}[\r\n]*/;
+
+      if (oldRemark && datePattern.test(oldRemark)) {
+        // 移除旧日期，保留其他备注
+        const otherRemark = oldRemark.replace(datePattern, '').trim();
+        this.formData.remark = otherRemark ?
+          `提取日期: ${app.date}\n${otherRemark}` :
+          `提取日期: ${app.date}`;
+      } else if (oldRemark) {
+        // 保留原有备注并添加新日期
+        this.formData.remark = `提取日期: ${app.date}\n${oldRemark}`;
       } else {
+        // 只有提取日期
         this.formData.remark = `提取日期: ${app.date}`;
       }
     }

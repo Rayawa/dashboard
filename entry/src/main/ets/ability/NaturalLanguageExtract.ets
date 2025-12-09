@@ -4,7 +4,10 @@ import { textProcessing, EntityType } from '@kit.NaturalLanguageKit';
 export interface HuaweiLinkParseResult {
   packageName: string;
 }
-
+interface PatternItem {
+  name: string;
+  pattern: RegExp;
+}
 export interface HuaweiLinkInfo {
   url: string;
   packageName: string;
@@ -130,10 +133,68 @@ export class NaturalLanguageExtractor {
 
   // 提取AppID - C开头 + 数字
   private static extractAppIDs(text: string): string[] {
-    // 匹配C开头，后面跟着8-12位数字
-    const appIDPattern = /C\d{8,12}/g;
-    const matches = text.match(appIDPattern);
-    return matches ? Array.from(new Set(matches)) : [];
+    // 1. 首先，打印前200个字符，确认输入正确
+    const sampleText = text.substring(0, Math.min(200, text.length));
+    console.log('[提取调试] 输入文本样本:', sampleText);
+    console.log('[提取调试] 文本总长度:', text.length);
+
+    // 2. 尝试一组逐步放宽的规则
+    const patterns: PatternItem[] = [
+      { name: '严格模式 (C+10-25数字)', pattern: /\bC\d{10,25}\b/g },
+      { name: '忽略大小写 (C/c)', pattern: /\b[Cc]\d{10,25}\b/g },
+      { name: '允许下划线或短横线', pattern: /\b[Cc][-_]?\d{10,25}\b/g },
+      { name: '允许任意分隔符（宽松）', pattern: /\b[Cc][\s\-_:.]?\d{10,25}\b/g },
+      // 终极宽松：只要以C/c开头，后面有足够数字，忽略边界
+      { name: '无边界宽松匹配', pattern: /[Cc]\d{10,25}/g }
+    ];
+
+    let allMatches: string[] = [];
+
+    for (const item of patterns) {
+      // 分别从item对象中获取属性
+      const name = item.name;
+      const pattern = item.pattern;
+
+      pattern.lastIndex = 0;
+      const matches = text.match(pattern);
+      if (matches && matches.length > 0) {
+        console.log(`[提取调试] "${name}" 匹配到:`, matches);
+        // 去重后加入总结果
+        const uniqueNew = matches.filter(m => !allMatches.includes(m));
+        allMatches.push(...uniqueNew);
+        // 如果严格模式就能匹配到，可以提前结束，避免宽松模式引入噪声
+        if (name.startsWith('严格模式') || name.startsWith('忽略大小写')) {
+          break;
+        }
+      } else {
+        console.log(`[提取调试] "${name}" 未匹配到结果。`);
+      }
+    }
+
+    // 3. 如果以上规则都未匹配到，尝试“暴力”查找所有长数字串
+    if (allMatches.length === 0) {
+      console.log('[提取调试] 常规模式均未匹配，尝试查找所有长数字序列...');
+      const allNumberGroups = text.match(/\d{10,25}/g);
+      if (allNumberGroups) {
+        console.log('[提取调试] 文本中找到的长数字序列:', allNumberGroups);
+        // 进一步检查这些数字前面是否有'C'或'c'
+        for (const numStr of allNumberGroups) {
+          const index = text.indexOf(numStr);
+          if (index > 0) {
+            const precedingChar = text.substring(index - 1, index);
+            if (precedingChar === 'C' || precedingChar === 'c') {
+              const candidate = precedingChar + numStr;
+              allMatches.push(candidate);
+            }
+          }
+        }
+      }
+    }
+
+    // 4. 最终结果处理与日志
+    const finalResults = Array.from(new Set(allMatches)); // 去重
+    console.log('[提取调试] === 最终提取结果 ===:', finalResults);
+    return finalResults;
   }
 
   // 匹配应用信息

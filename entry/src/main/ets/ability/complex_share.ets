@@ -1,18 +1,15 @@
-//shenjack
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { parse_app_id_from_url } from '../submits';
 
-/**
- * 这个 ability 是用来接受分享信息, 然后填信息
- * 所以得开一个填信息用的 page
- */
 export class ShareAbility extends ShareExtensionAbility {
   onSessionCreate(want: Want, session: UIExtensionContentSession): void {
-
     systemShare.getSharedData(want)
       .then((data: systemShare.SharedData) => {
+        const contents: string[] = [];
+        let rawContent: string = ''; // 保存原始内容
+
         data.getRecords().forEach((record: systemShare.SharedRecord) => {
           if (record.content == undefined) {
             console.warn("dashboard share get undefined content!");
@@ -27,15 +24,39 @@ export class ShareAbility extends ShareExtensionAbility {
           const app_query = pared_url!.toString();
           console.info(`dashboard_share_parse ${app_query}`);
           console.info(`dashboard_share_raw ${content}`);
+
+          contents.push(app_query);
+          rawContent = content;
         });
+
+        // 打开页面（核心代码）
+        if (contents.length > 0) {
+          const wantForPage: Want = {
+            bundleName: 'top.rayawa.dashboard',
+            abilityName: 'shareEntry',
+            parameters: {
+              shareAppId: contents[0],
+              shareRawUrl: rawContent,
+              targetPage: 'pages/complex_share'
+            }
+          };
+
+          this.context.startAbility(wantForPage).then(() => {
+            console.info('启动目标页面成功');
+          }).catch((startError: BusinessError) => {
+            console.error(`启动页面失败: Code: ${startError.code}, message: ${startError.message}`);
+          });
+        }
       })
       .catch((error: BusinessError) => {
-        console.error(`Failed to getSharedData. Code: ${error.code}, message: ${error.message}`);
-        session.terminateSelf();
+        console.error(`获取分享数据失败: Code: ${error.code}, message: ${error.message}`);
       });
 
-    session.terminateSelfWithResult({
-      resultCode: systemShare.ShareAbilityResultCode.CLOSE
-    })
+    // 延迟关闭分享会话
+    setTimeout(() => {
+      session.terminateSelfWithResult({
+        resultCode: systemShare.ShareAbilityResultCode.CLOSE
+      });
+    }, 300); // 适当延长延迟时间
   }
 }
