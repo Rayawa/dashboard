@@ -39,18 +39,18 @@ export struct WebView {
   private web_controller: webview.WebviewController = new webview.WebviewController();
   private win: window.Window | null = null;
 
-  @State offsetX: string = '';
+  @State offsetX: string = '84%';
 
   holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
     switch (data) {
       case 1: // 左手握持
-        this.offsetX = '1%';
+        this.offsetX = '3%';
         break;
       case 2: // 右手握持
-        this.offsetX = '80%';
+        this.offsetX = '84%';
         break;
       default: // 其他状态
-        this.offsetX = '80%';
+        this.offsetX = '84%';
         break;
     }
   };
@@ -301,102 +301,213 @@ export struct WebView {
           .onControllerAttached(() => { try { this.web_controller.setCustomUserAgent(APP_UA); } catch {} });//shenjack的UA
         Column().width('100%').backgroundColor($r('app.color.backcolor')).height(200);
       }
-      Column() {
-        HdsActionBar({
-          startButtons: [
-            new ActionBarButton({
-              baseIcon: $r('app.media.arrow_back_r'),
-              hoverTips: '返回上级',
-              onClick: () => {
-                this.web_controller.backward();
-                prompt.showToast({ message: '返回上级', duration: 500 });
-                // 添加按钮点击效果
-                this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-                setTimeout(() => {
-                  this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-                }, 300);
-              }
-            }),
-            new ActionBarButton({
-              baseIcon: this.isLoading ? $r('app.media.stop_r') : $r('app.media.refresh_r'),
-              hoverTips: this.isLoading ? "停止刷新" : "刷新页面",
-              onClick: () => {
-                if (this.isLoading) {
-                  this.web_controller.stop();
-                  this.isLoading = false;
-                  prompt.showToast({ message: '停止刷新', duration: 500 });
-                } else {
-                  this.web_controller.refresh();
-                  this.isLoading = true;
-                  prompt.showToast({ message: '刷新页面', duration: 500 });
-                }
-                this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-                setTimeout(() => {
-                  this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-                }, 300);
-              }
-            })
-          ],
-          endButtons: [
-            new ActionBarButton({
-              baseIcon: $r('app.media.arrow_up_r'),
-              hoverTips: '回到顶部',
-              onClick: () => {
-                this.scrollToTop();
-                prompt.showToast({ message: '回到顶部', duration: 500 });
-                this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-                setTimeout(() => {
-                  this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-                }, 300);
-              }
-            }),
-            new ActionBarButton({
-              baseIcon: $r('app.media.switch_r'),
-              hoverTips: '切换版本',
-              onClick: () => {
-                this.switchWebVersion();
-                this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-                setTimeout(() => {
-                  this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-                }, 300);
-              }
-            })
-          ],
-          primaryButton: new ActionBarButton({
-            baseIcon: $r('app.media.menu_r'),
-            altIcon: $r('app.media.close_r'),
-            onClick: () => {
-              this.isExpand = !this.isExpand;
-              this.isPrimaryIconChanged = !this.isPrimaryIconChanged;
-              if (this.isPrimaryIconChanged) {
-                this.primaryHoverTips = '展开';
-              } else {
-                this.primaryHoverTips = '折叠';
-              }
-              this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-              setTimeout(() => {
-                this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-              }, 300);
-            },
-            hoverTips: this.primaryHoverTips
-          }),
-          actionBarStyle: new ActionBarStyle({
-            isPrimaryIconChanged: this.isPrimaryIconChanged
-          }),
-          isExpand: this.isExpand!!
+      Column({space:10}) {
+        Button() {
+          Image($r('app.media.arrow_back'))
+            .width(24)
+            .height(24)
+            .fillColor(Color.White)
+        }
+        .onClick(() => {
+          this.web_controller.backward();
+          prompt.showToast({
+            message: '返回上一页',
+            duration: 500
+          });
         })
-          .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-              illuminatedType: this.actionBarIlluminatedType,
-              options: {
-                color: Color.White,
-                intensity: this.lightIntensity,
-                height: 100
+        .type(ButtonType.Circle)
+        .backgroundColor($r('app.color.background'))
+        .width(45)
+        .height(45)
+        .shadow({
+          radius: 4,
+          color: '#182431',
+          offsetX: 2,
+          offsetY: 4
+        })
+        .stateEffect(true)
+
+        Button() {
+          Image($r('app.media.arrow_up'))
+            .width(24)
+            .height(24)
+            .fillColor(Color.White)
+        }
+        .onClick(() => {
+          this.scrollToTop();
+          prompt.showToast({
+            message: '回到顶部',
+            duration: 500
+          });
+        })
+        .type(ButtonType.Circle)
+        .backgroundColor($r('app.color.background'))
+        .width(45)
+        .height(45)
+        .shadow({
+          radius: 4,
+          color: '#182431',
+          offsetX: 2,
+          offsetY: 4
+        })
+        .stateEffect(true)
+
+        Button() {
+          Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh'))
+            .width(24)
+            .height(24)
+            .fillColor(this.isLoading ? '#ff3b30' : Color.White)
+        }
+        .onClick(() => {
+          if (this.isLoading) {
+            this.web_controller.stop();
+            this.isLoading = false;
+            prompt.showToast({
+              message: '已停止加载',
+              duration: 1000
+            });
+          } else {
+            this.web_controller.refresh();
+            this.isLoading = true;
+            prompt.showToast({
+              message: '刷新中...',
+              duration: 1000
+            });
+
+            setTimeout(() => {
+              if (this.isLoading) {
+                this.isLoading = false;
               }
-            })
-            .pressShadow(this.buttonPressShadow)
-            .buildEffect())
-      }.position({x:`${this.offsetX}`,y:'70%'}).animation({curve :curves.springMotion(0.7,0.8), duration:500}).rotate({angle:90})
+            }, 3000);
+          }
+        })
+        .type(ButtonType.Circle)
+        .backgroundColor($r('app.color.background'))
+        .width(45)
+        .height(45)
+        .shadow({
+          radius: 4,
+          color: '#182431',
+          offsetX: 2,
+          offsetY: 4
+        })
+        .stateEffect(true)
+
+        Button() {
+          Image($r('app.media.switch'))
+            .width(24)
+            .height(24)
+            .fillColor(Color.White)
+        }
+        .onClick(() => {
+          this.switchWebVersion();
+        })
+        .type(ButtonType.Circle)
+        .backgroundColor($r('app.color.background'))
+        .width(45)
+        .height(45)
+        .shadow({
+          radius: 4,
+          color: '#182431',
+          offsetX: 2,
+          offsetY: 4
+        })
+        .stateEffect(true)
+        // HdsActionBar({
+        //   startButtons: [
+        //     new ActionBarButton({
+        //       baseIcon: $r('app.media.arrow_back_r'),
+        //       hoverTips: '返回上级',
+        //       onClick: () => {
+        //         this.web_controller.backward();
+        //         prompt.showToast({ message: '返回上级', duration: 500 });
+        //         // 添加按钮点击效果
+        //         this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+        //         setTimeout(() => {
+        //           this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+        //         }, 300);
+        //       }
+        //     }),
+        //     new ActionBarButton({
+        //       baseIcon: this.isLoading ? $r('app.media.stop_r') : $r('app.media.refresh_r'),
+        //       hoverTips: this.isLoading ? "停止刷新" : "刷新页面",
+        //       onClick: () => {
+        //         if (this.isLoading) {
+        //           this.web_controller.stop();
+        //           this.isLoading = false;
+        //           prompt.showToast({ message: '停止刷新', duration: 500 });
+        //         } else {
+        //           this.web_controller.refresh();
+        //           this.isLoading = true;
+        //           prompt.showToast({ message: '刷新页面', duration: 500 });
+        //         }
+        //         this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+        //         setTimeout(() => {
+        //           this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+        //         }, 300);
+        //       }
+        //     })
+        //   ],
+        //   endButtons: [
+        //     new ActionBarButton({
+        //       baseIcon: $r('app.media.arrow_up_r'),
+        //       hoverTips: '回到顶部',
+        //       onClick: () => {
+        //         this.scrollToTop();
+        //         prompt.showToast({ message: '回到顶部', duration: 500 });
+        //         this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+        //         setTimeout(() => {
+        //           this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+        //         }, 300);
+        //       }
+        //     }),
+        //     new ActionBarButton({
+        //       baseIcon: $r('app.media.switch_r'),
+        //       hoverTips: '切换版本',
+        //       onClick: () => {
+        //         this.switchWebVersion();
+        //         this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+        //         setTimeout(() => {
+        //           this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+        //         }, 300);
+        //       }
+        //     })
+        //   ],
+        //   primaryButton: new ActionBarButton({
+        //     baseIcon: $r('app.media.menu_r'),
+        //     altIcon: $r('app.media.close_r'),
+        //     onClick: () => {
+        //       this.isExpand = !this.isExpand;
+        //       this.isPrimaryIconChanged = !this.isPrimaryIconChanged;
+        //       if (this.isPrimaryIconChanged) {
+        //         this.primaryHoverTips = '展开';
+        //       } else {
+        //         this.primaryHoverTips = '折叠';
+        //       }
+        //       this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
+        //       setTimeout(() => {
+        //         this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
+        //       }, 300);
+        //     },
+        //     hoverTips: this.primaryHoverTips
+        //   }),
+        //   actionBarStyle: new ActionBarStyle({
+        //     isPrimaryIconChanged: this.isPrimaryIconChanged
+        //   }),
+        //   isExpand: this.isExpand!!
+        // })
+        //   .visualEffect(new hdsEffect.HdsEffectBuilder()
+        //     .pointLight({
+        //       illuminatedType: this.actionBarIlluminatedType,
+        //       options: {
+        //         color: Color.White,
+        //         intensity: this.lightIntensity,
+        //         height: 100
+        //       }
+        //     })
+        //     .pressShadow(this.buttonPressShadow)
+        //     .buildEffect())
+      }.position({x:`${this.offsetX}`,y:'35%'}).animation({curve :curves.springMotion(0.7,0.8), duration:500})
       Column() {
         Column() {
           Text('\n').fontSize(14);
