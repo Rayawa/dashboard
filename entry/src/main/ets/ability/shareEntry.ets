@@ -1,21 +1,32 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { window } from '@kit.ArkUI';
+import { window, router } from '@kit.ArkUI';
 
+interface  WantParams {
+  shareAppId: string;
+  shareUrl: string;
+};
 const DOMAIN = 0x0000;
 
 export default class shareEntryAbility extends UIAbility {
+
+  private shareWantParams: WantParams = { shareAppId: '', shareUrl: '' };
   onWindowStageCreate(windowStage: window.WindowStage): void {
-    hilog.info(DOMAIN, 'dashboard', '%{public}s', 'dashboard Ability onWindowStageCreate');
+    hilog.info(DOMAIN, 'dashboard', 'onWindowStageCreate');
     this.setGlobalImmersive(windowStage);
-    windowStage.loadContent('pages/complex_share', (err) => {
-      if (err.code) {
-        hilog.error(DOMAIN, 'dashboard', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err));
-        return;
-      }
-      hilog.info(DOMAIN, 'window', 'Succeeded in loading the content.');
-    });
+
+    windowStage.loadContent('pages/complex_share', () => {
+      hilog.info(DOMAIN, 'dashboard', '基础容器页加载完成');
+      router.replaceUrl({
+        url: 'pages/complex_share',
+        params: this.shareWantParams
+      }).then(() => {
+        hilog.info(DOMAIN, 'dashboard', '参数已经分享至complex_share');
+      })
+    })
+
   }
+
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     try {
@@ -24,6 +35,13 @@ export default class shareEntryAbility extends UIAbility {
       hilog.error(DOMAIN, 'dashboard', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
     hilog.info(DOMAIN, 'dashboard', '%{public}s', 'dashboard Ability onCreate');
+
+    const shareAppId = want.parameters?.shareAppId as string;
+    const shareUrl = want.parameters?.shareUrl as string;
+
+    if (shareAppId && shareUrl) {
+      this.shareWantParams = { shareAppId, shareUrl } as WantParams;
+    }
   }
 
   async setGlobalImmersive(windowStage: window.WindowStage) {

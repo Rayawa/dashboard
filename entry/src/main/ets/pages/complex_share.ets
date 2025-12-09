@@ -2,6 +2,7 @@ import { NaturalLanguageExtractor, AppInfo } from '../ability/NaturalLanguageExt
 import { prompt, router } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 
+
 interface FormData {
   appLink: string;
   packageName: string;
@@ -20,6 +21,10 @@ struct complex_share {
     appId: '',
     remark: ''
   };
+  @State shareAppId: string = '';
+  @State shareUrl: string = '';
+
+
   @State inputText: string = '';
   @State extractedApps: AppInfo[] = [];
   @State isProcessing: boolean = false;
@@ -28,23 +33,18 @@ struct complex_share {
   private debounceTimer: number | null = null;
   private readonly DEBOUNCE_DELAY: number = 800;
 
+
   aboutToAppear() {
     const params = router.getParams() as Record<string, string>;
+    console.info(`complex_share接受取到的所有参数: ${JSON.stringify(params)}`);
     if (params) {
-      this.formData.appId = params['shareAppId'] || '';
-      const rawText = params['shareRawUrl'] || '';
-      if (rawText) {
-        this.inputText = rawText;
-        setTimeout(() => {
-          if (this.debounceTimer !== null) {
-            clearTimeout(this.debounceTimer);
-            this.debounceTimer = null;
-          }
-          this.handleAutoExtract();
-        }, 100);
-      }
+      this.shareAppId = params['shareAppId'] || '';
+      this.shareUrl = params['shareUrl'] || '';
+    } else {
+      console.warn('complex_share未接收到参数');
     }
   }
+
 
   clearForm(): void {
     this.formData = {
