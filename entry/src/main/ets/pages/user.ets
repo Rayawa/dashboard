@@ -7,7 +7,7 @@ import { curves } from '@kit.ArkUI';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername } from '../common/profile';
 import { tutorial } from '../component/common/tutorial'
 import { contact } from '../component/common/contact'
-import { submit } from '../component/common/submit'
+import { app_share } from '../component/common/app_share'
 
 
 @Entry
@@ -89,7 +89,7 @@ export struct user {
                         .onClick(() => { this.showSubmit = !this.showSubmit; })
                         .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
                         .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
-                        submit()
+                        app_share()
                     }
                     .transition(this.effect)
                     .gesture(
