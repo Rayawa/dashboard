@@ -5,11 +5,11 @@ export interface CommentInfo {
 }
 
 export interface appIdOrPkgName {
-    app_id?: undefined;
-    pkg_name?: undefined;
+    app_id?: string;
+    pkg_name?: string;
 }
-export interface SubmitAppBody extends appIdOrPkgName, CommentInfo {
-
+export interface SubmitAppBody extends appIdOrPkgName {
+    comment?: CommentInfo
 }
 
 export function checkAppIdOrPkgName(value: appIdOrPkgName, raise_error: boolean = false): boolean {

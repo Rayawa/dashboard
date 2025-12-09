@@ -27,6 +27,7 @@ export class ShareAbility extends ShareExtensionAbility {
                     const app_ids = res.app_ids;
                     const pkg: string | undefined = pkgs.length != 0 ? pkgs[pkgs.length - 1] : undefined;
                     const app_id: string | undefined = app_ids.length != 0 ? app_ids[app_ids.length - 1] : undefined;
+                    console.info("content", res.links, res.pkgs, res.app_ids)
                     console.info(`dashboard_share_parse ${pkg || app_id}`);
                     console.info(`dashboard_share_raw ${content}`);
 
