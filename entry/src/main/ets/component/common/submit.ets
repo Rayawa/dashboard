@@ -104,8 +104,6 @@ export struct submit {
           .fontSize(21)
           .fontWeight(FontWeight.Bold)
       }.width('100%').justifyContent(FlexAlign.Start).alignItems(VerticalAlign.Center).padding({ bottom: 16 })
-
-
       // 智能提取
       Column({ space: 6 }) {
         Row({ space: 20 }){
@@ -243,8 +241,6 @@ export struct submit {
           }
         })
         .buildEffect())
-
-
 
       // 应用详情页链接（可选）
       Column({ space: 6 }) {
