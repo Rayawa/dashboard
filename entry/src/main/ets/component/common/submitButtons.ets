@@ -52,7 +52,7 @@ export struct submitButtons {
   private readonly BUTTON_CLICK_SCALE: number = 0.8;
   private readonly ANIMATION_DURATION: number = 1300;
   private readonly BORDER_RADIUS: number = 22;
-  private readonly CLICK_INTERVAL = 1000;
+  private readonly CLICK_INTERVAL = 800;
 
   @Styles
   ripplesStyleClean() {
