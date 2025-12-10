@@ -7,7 +7,7 @@ import { router } from '@kit.ArkUI'
 
 @Entry
 @Component
-struct Dashboard {
+struct Index {
   @State currentPage: number = 1
   @State searchKeyword: string = ''
   @State searchKey: string = 'name'

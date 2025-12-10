@@ -20,7 +20,7 @@ import { hdsEffect } from '@kit.UIDesignKit';
 
 @Entry
 @Component
-struct WebView {
+struct Dashboard {
 //==========================状态声明部分==========================
   //控制相关
   @State showButton: boolean = true;

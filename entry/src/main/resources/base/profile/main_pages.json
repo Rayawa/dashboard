@@ -1,6 +1,6 @@
 {
   "src": [
-    "pages/WebView",
+    "pages/Dashboard",
     "pages/index",
     "pages/user",
     "pages/complex_share",
