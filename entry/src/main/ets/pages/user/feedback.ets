@@ -1,4 +1,5 @@
 import { router } from '@kit.ArkUI';
+import { vibrator } from '@kit.SensorServiceKit';
 
 interface GeneratedObjectLiteralInterface_1 {
   type: string;

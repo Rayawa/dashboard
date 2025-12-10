@@ -1,6 +1,6 @@
 import { webview } from "@kit.ArkWeb";
-import { prompt, router } from "@kit.ArkUI";
-import window from '@ohos.window';
+import { prompt, router, window } from "@kit.ArkUI";
+import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { APP_UA } from "../../global_data";
 
@@ -91,17 +91,95 @@ struct api {
               Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh')).height(28).width(28).margin({ right: 30 })
                 .onClick(() => {
                   if (this.isLoading) {
+                    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                      if (err) {
+                        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                        return;
+                      }
+                      console.info('Succeed in querying effect');
+                      if (state) {
+                        try {
+                          vibrator.startVibration({
+                            type: 'preset',
+                            effectId: 'haptic.effect.hard',
+                            count: 1,
+                            intensity: 50,
+                          }, { usage: 'touch' }, (error: BusinessError) => {
+                            if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                            else { console.info('Succeed in starting vibration'); }
+                          });
+                        } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                      }
+                    });
                     this.web_controller.stop();
                     this.isLoading = false;
                     prompt.showToast({ message: '停止刷新', duration: 500 });
                   } else {
+                    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                      if (err) {
+                        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                        return;
+                      }
+                      console.info('Succeed in querying effect');
+                      if (state) {
+                        try {
+                          vibrator.startVibration({
+                            type: 'preset',
+                            effectId: 'haptic.effect.hard',
+                            count: 1,
+                            intensity: 50,
+                          }, { usage: 'touch' }, (error: BusinessError) => {
+                            if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                            else { console.info('Succeed in starting vibration'); }
+                          });
+                        } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                      }
+                    });
                     this.web_controller.refresh();
                     this.isLoading = true;
                     prompt.showToast({ message: '刷新页面', duration: 500 });
                   }
                 })
-              Image($r('app.media.arrow_up')).height(28).width(28).margin({ right: 30 }).onClick(() => { prompt.showToast({ message: '回到顶部', duration: 500 }); this.scrollToTop(); });
-              Image($r('app.media.arrow_back')).height(28).width(28).margin({ right: 25 }).onClick(() => router.back());
+              Image($r('app.media.arrow_up')).height(28).width(28).margin({ right: 30 }).onClick(() => { vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                  return;
+                }
+                console.info('Succeed in querying effect');
+                if (state) {
+                  try {
+                    vibrator.startVibration({
+                      type: 'preset',
+                      effectId: 'haptic.effect.hard',
+                      count: 1,
+                      intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                      else { console.info('Succeed in starting vibration'); }
+                    });
+                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                }
+              });prompt.showToast({ message: '回到顶部', duration: 500 }); this.scrollToTop(); });
+              Image($r('app.media.arrow_back')).height(28).width(28).margin({ right: 25 }).onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                  return;
+                }
+                console.info('Succeed in querying effect');
+                if (state) {
+                  try {
+                    vibrator.startVibration({
+                      type: 'preset',
+                      effectId: 'haptic.effect.hard',
+                      count: 1,
+                      intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                      else { console.info('Succeed in starting vibration'); }
+                    });
+                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                }
+              });router.back()});
             }
           }
           .width('100%').justifyContent(FlexAlign.SpaceBetween).height(55);
