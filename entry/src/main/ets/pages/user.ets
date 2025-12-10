@@ -720,6 +720,7 @@ export struct user {
             }
             .backgroundColor($r('app.color.backcolor'))
         }
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         .width('100%')
         .height('100%')
     }

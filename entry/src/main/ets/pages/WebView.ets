@@ -1,5 +1,5 @@
 import { webview } from "@kit.ArkWeb";
-import { HdsActionBar, ActionBarButton, ActionBarStyle, ExtendBarMode } from '@kit.UIDesignKit'
+import { HdsActionBar, ActionBarButton, ActionBarStyle, ExtendBarMode, HdsNavigationTitleMode } from '@kit.UIDesignKit'
 import { curves, prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
 import { motion } from '@kit.MultimodalAwarenessKit';
@@ -12,7 +12,8 @@ import { harmonyShare, systemShare } from '@kit.ShareKit';
 import { uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername } from '../common/profile';
-
+import { HdsNavigation, HdsNavigationAttribute, ScrollEffectType } from '@kit.UIDesignKit';
+import { LengthMetrics } from '@kit.ArkUI';
 import { preferences } from '@kit.ArkData';
 import { tutorial } from '../component/common/tutorial'
 import { hdsEffect } from '@kit.UIDesignKit';
@@ -20,6 +21,8 @@ import { hdsEffect } from '@kit.UIDesignKit';
 @Entry
 @Component
 export struct WebView {
+  scroller: Scroller = new Scroller();
+  @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State isExpand: boolean = false;
   @State isPrimaryIconChanged: boolean = false;
   @State primaryHoverTips: ResourceStr = '开始';
@@ -30,21 +33,16 @@ export struct WebView {
     TransitionEffect.OPACITY
       .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
       .combine(TransitionEffect.scale({ x: 0, y: 1 }))
-      .animation({ curve: curves.springMotion(0.7, 0.8), duration:1000})
-
+      .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 })
   @State showButton: boolean = true;
   @State showTutorial: boolean = false;
   @StorageLink('userName') userName: string = ''
   private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
-
-  @State url: string = 'https://hmos.txit.top/dashboard';//entry
+  @State url: string = 'https://hmos.txit.top/dashboard'; //entry
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
-  @State progress: number = 0;
-  private readonly NAV_HEIGHT: number = 82;
   private web_controller: webview.WebviewController = new webview.WebviewController();
   private win: window.Window | null = null;
-
   @State y: number = 300;
   @State buttonShowOffsetX: string = '84%';
   @State buttonHideOffsetX: string = '101%'
@@ -89,7 +87,7 @@ export struct WebView {
     const context: Context = uiContext.getHostContext() as Context;
     context.eventHub.on('onFocus', () => {
       if (this.isNoListening()) {
-        this.shareListening();//启用两种监听
+        this.shareListening(); //启用两种监听
       }
     });
     context.eventHub.on('onBackGround', () => {
@@ -97,6 +95,7 @@ export struct WebView {
     });
 
   }
+
   async onPageShow(): Promise<void> {
     this.checkFirstLaunch();
     //Rayawa的状态栏颜色
@@ -108,6 +107,7 @@ export struct WebView {
     });
     //状态栏颜色结束
   }
+
   private async checkFirstLaunch(): Promise<void> {
     try {
       let context = getContext(this) as common.UIAbilityContext;
@@ -136,8 +136,9 @@ export struct WebView {
       console.error('Index', '检查首选项失败: %{public}s', JSON.stringify(error));
     }
   }
+
   aboutToDisappear() {
-    this.shareDisablingListening();//关闭监听
+    this.shareDisablingListening(); //关闭监听
     const uiContext: UIContext = this.getUIContext();
     const context: Context = uiContext.getHostContext() as Context;
     context.eventHub.off('onFocus');
@@ -154,6 +155,7 @@ export struct WebView {
       console.error("取消订阅失败，错误码: " + error.code);
     }
   }
+
   private onBackGround() {
     this.shareDisablingListening();
     harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
@@ -174,26 +176,6 @@ export struct WebView {
     await this.loadUserName()
   }
 
-  //回到顶部方法
-  @State scrollY: number = 0;
-  private scrollToTop() {
-    const duration = 500;
-    const frames = 60;
-    const interval = duration / frames;
-    const startY = this.scrollY;
-    let frame = 0;
-    const timer = setInterval(() => {
-      frame++;
-      const progress = frame / frames;
-      const easing = 1 - Math.pow(1 - progress, 3);
-      const newY = startY * (1 - easing);
-      this.web_controller.scrollTo(0, newY);
-      if (frame >= frames) {
-        clearInterval(timer);
-        this.web_controller.scrollTo(0, 0);
-      }
-    }, interval);
-  }
 
   //切换版本方法
   @State isT: boolean = true;
@@ -230,12 +212,13 @@ export struct WebView {
   @State ShareStatus: boolean = false;
   @State rejectStatus: boolean = false;
   @State updateStatus: boolean = false;
+
   private isNoListening() {
     return !this.ShareStatus && !this.rejectStatus && !this.updateStatus;
   }
 
   //获得页面URL
-  @State currentUrl: string = '';//分享URL注册
+  @State currentUrl: string = ''; //分享URL注册
   public async getCurrentWebUrl(): Promise<string> {
     try {
       return this.web_controller.getUrl();
@@ -275,6 +258,7 @@ export struct WebView {
       Logger.error(`ShareController show error. code: ${error?.code}, message: ${error?.message}`);
     });
   }
+
   //碰一碰分享方法
   private purityCallback = async (sharableTarget: harmonyShare.SharableTarget) => {
     this.currentUrl = await this.getCurrentWebUrl();
@@ -309,24 +293,35 @@ export struct WebView {
   }
 
   build() {
-    Stack() {
-      Column() {
-        Column().width('100%').backgroundColor($r('app.color.navcolor')).height(Math.max(this.NAV_HEIGHT - this.scrollY, 0));
-        Web({ src: this.url, controller: this.web_controller })
-          .domStorageAccess(true)
-          .darkMode(this.mode)
-          .forceDarkAccess(true)
-          .width('100%')
-          .backgroundColor($r('app.color.backcolor'))
-          .height('100%')
-          .onPageBegin(() => this.isLoading = true)
-          .onProgressChange((p) => this.progress = p.newProgress)
-          .onPageEnd(() => this.isLoading = false)
-          .onScroll((e) => this.scrollY = e.yOffset)
-          .onControllerAttached(() => { try { this.web_controller.setCustomUserAgent(APP_UA); } catch {} });//shenjack的UA
-        Column().width('100%').backgroundColor($r('app.color.backcolor')).height(200);
-      }
-        Column({space:10}) {
+    HdsNavigation() {
+      Stack() {
+        Scroll(this.scroller) {
+          Column() {
+            Blank().height(70).width('100%').expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+            Web({ src: this.url, controller: this.web_controller, renderMode: RenderMode.SYNC_RENDER })
+              .layoutMode(WebLayoutMode.FIT_CONTENT)
+              .nestedScroll({
+                scrollForward: NestedScrollMode.SELF_FIRST,
+                scrollBackward: NestedScrollMode.SELF_FIRST
+              })
+              .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+              .domStorageAccess(true)
+              .darkMode(this.mode)
+              .forceDarkAccess(true)
+              .width('100%')
+              .backgroundColor($r('app.color.backcolor'))
+              .onPageBegin(() => this.isLoading = true)
+              .onPageEnd(() => this.isLoading = false)
+              .onControllerAttached(() => {
+                try {
+                  this.web_controller.setCustomUserAgent(APP_UA);
+                } catch {}
+              }); //shenjack的UA
+
+          }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+        }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+
+        Column({ space: 10 }) {
           Button() {
             Image($r('app.media.arrow_back'))
               .width(24)
@@ -349,10 +344,15 @@ export struct WebView {
                     count: 1,
                     intensity: 50,
                   }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
+                    if (error) {
+                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                    } else {
+                      console.info('Succeed in starting vibration');
+                    }
                   });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                } catch (tryError) {
+                  console.error(`An unexpected error occurred in try block: ${tryError}`);
+                }
               }
             });
             prompt.showToast({
@@ -379,7 +379,11 @@ export struct WebView {
               .fillColor(Color.White)
           }
           .onClick(() => {
-            this.scrollToTop();
+            this.scroller.scrollTo({
+              xOffset: 0,
+              yOffset: 0,
+              animation: { duration: 300, curve: Curve.Ease }
+            })
             vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
               if (err) {
                 console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
@@ -394,10 +398,15 @@ export struct WebView {
                     count: 1,
                     intensity: 50,
                   }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
+                    if (error) {
+                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                    } else {
+                      console.info('Succeed in starting vibration');
+                    }
                   });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                } catch (tryError) {
+                  console.error(`An unexpected error occurred in try block: ${tryError}`);
+                }
               }
             });
             prompt.showToast({
@@ -441,10 +450,15 @@ export struct WebView {
                       count: 1,
                       intensity: 50,
                     }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                      else { console.info('Succeed in starting vibration'); }
+                      if (error) {
+                        console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                      } else {
+                        console.info('Succeed in starting vibration');
+                      }
                     });
-                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                  } catch (tryError) {
+                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+                  }
                 }
               });
               prompt.showToast({
@@ -468,10 +482,15 @@ export struct WebView {
                       count: 1,
                       intensity: 50,
                     }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                      else { console.info('Succeed in starting vibration'); }
+                      if (error) {
+                        console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                      } else {
+                        console.info('Succeed in starting vibration');
+                      }
                     });
-                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                  } catch (tryError) {
+                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+                  }
                 }
               });
               prompt.showToast({
@@ -519,10 +538,15 @@ export struct WebView {
                     count: 1,
                     intensity: 50,
                   }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
+                    if (error) {
+                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                    } else {
+                      console.info('Succeed in starting vibration');
+                    }
                   });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                } catch (tryError) {
+                  console.error(`An unexpected error occurred in try block: ${tryError}`);
+                }
               }
             });
             this.switchWebVersion();
@@ -538,6 +562,7 @@ export struct WebView {
             offsetY: 4
           })
           .stateEffect(true)
+
           // HdsActionBar({
           //   startButtons: [
           //     new ActionBarButton({
@@ -633,12 +658,12 @@ export struct WebView {
           //     .pressShadow(this.buttonPressShadow)
           //     .buildEffect())
         }
-        .position({x:this.showButton? `${this.buttonShowOffsetX}`:`${this.buttonHideOffsetX}`, y: this.y})
-        .animation(this.showButtonAnimation? {curve :curves.springMotion(0.7,0.8), duration:500} : {duration:0})
+        .position({ x: this.showButton ? `${this.buttonShowOffsetX}` : `${this.buttonHideOffsetX}`, y: this.y })
+        .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.7, 0.8), duration: 500 } : { duration: 0 })
         .gesture(
           SwipeGesture({ direction: SwipeDirection.Horizontal })
             .onAction((move: GestureEvent | undefined) => {
-              if(move) {
+              if (move) {
                 this.showButton = false;
                 setTimeout(() => {
                   this.showButtonAnimation = false;
@@ -649,68 +674,31 @@ export struct WebView {
         .gesture(
           GestureGroup(
             GestureMode.Sequence,
-            PanGesture({direction:PanDirection.Vertical})
+            PanGesture({ direction: PanDirection.Vertical })
               .onActionEnd((event: GestureEvent) => {
                 this.y = this.y + event.offsetY
-                if(this.y > 590){
-                  this.y = 590;
-                  prompt.showToast({message:'超出屏幕啦', duration:1000})
-                } else if(this.y < 90){
-                  this.y = 90;
-                  prompt.showToast({message:'超出屏幕啦', duration:1000}) }
+                if (this.y > 550) {
+                  this.y = 550;
+                  prompt.showToast({ message: '不能再往下啦', duration: 500 })
+                } else if (this.y < 60) {
+                  this.y = 60;
+                  prompt.showToast({ message: '不能再往上啦', duration: 500 })
+                }
                 console.log('平移中，垂直偏移量 y 为:', this.y);
               })
           )
         )
-      if(!this.showButton){
-        Column().backgroundColor(Color.Transparent).height('100%').width(15).zIndex(5).position({x:'0%'}).onClick(() => { this.showButtonAnimation = true; this.showButton = true; vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-          if (err) {
-            console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-            return;
-          }
-          console.info('Succeed in querying effect');
-          if (state) {
-            try {
-              vibrator.startVibration({
-                type: 'preset',
-                effectId: 'haptic.effect.hard',
-                count: 1,
-                intensity: 50,
-              }, { usage: 'touch' }, (error: BusinessError) => {
-                if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                else { console.info('Succeed in starting vibration'); }
-              });
-            } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-          }
-        });})
-        Column().backgroundColor(Color.Transparent).height('100%').width(15).zIndex(5).position({x:'96%'}).onClick(() => { this.showButtonAnimation = true; this.showButton = true; vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-          if (err) {
-            console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-            return;
-          }
-          console.info('Succeed in querying effect');
-          if (state) {
-            try {
-              vibrator.startVibration({
-                type: 'preset',
-                effectId: 'haptic.effect.hard',
-                count: 1,
-                intensity: 50,
-              }, { usage: 'touch' }, (error: BusinessError) => {
-                if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                else { console.info('Succeed in starting vibration'); }
-              });
-            } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-          }
-        });})
-      }
-      Column() {
-        Column() {
-          Text('\n').fontSize(14);
-          Row() {
-            Text(this.isT ? "应用看板 - T站" : "应用看板 - S站").fontSize(23).fontWeight(FontWeight.Bold).margin({ left: 20 });
-            Row() {
-              Image($r('app.media.share')).height(28).width(28).margin({ right: 30 }).onClick(() => { this.shareUrl(); vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+        if (!this.showButton) {
+          Column()
+            .backgroundColor(Color.Transparent)
+            .height('100%')
+            .width(15)
+            .zIndex(5)
+            .position({ x: '0%' })
+            .onClick(() => {
+              this.showButtonAnimation = true;
+              this.showButton = true;
+              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
                 if (err) {
                   console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
                   return;
@@ -724,13 +712,28 @@ export struct WebView {
                       count: 1,
                       intensity: 50,
                     }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                      else { console.info('Succeed in starting vibration'); }
+                      if (error) {
+                        console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                      } else {
+                        console.info('Succeed in starting vibration');
+                      }
                     });
-                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                  } catch (tryError) {
+                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+                  }
                 }
-              });});
-              Image($r('app.media.user')).height(28).width(28).margin({ right: 25 }).onClick(() => {router.pushUrl({ url: 'pages/user' }); vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              });
+            })
+          Column()
+            .backgroundColor(Color.Transparent)
+            .height('100%')
+            .width(15)
+            .zIndex(5)
+            .position({ x: '96%' })
+            .onClick(() => {
+              this.showButtonAnimation = true;
+              this.showButton = true;
+              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
                 if (err) {
                   console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
                   return;
@@ -744,43 +747,187 @@ export struct WebView {
                       count: 1,
                       intensity: 50,
                     }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                      else { console.info('Succeed in starting vibration'); }
+                      if (error) {
+                        console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                      } else {
+                        console.info('Succeed in starting vibration');
+                      }
                     });
-                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                  } catch (tryError) {
+                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+                  }
                 }
-              });})
+              });
+            })
+        }
+
+        if (this.showTutorial) {
+          Stack() {
+            Column() {
+              Text('* 点击外部区域或向下滑动关闭页面')
+                .fontSize(14)
+                .margin({ bottom: 10 })
+                .position({ x: '40%', y: '65%' })
+                .fontColor(Color.Grey)
+            }
+            .backgroundColor(Color.Transparent)
+            .height('300%')
+            .width('300%')
+            .onClick(() => {
+              this.showTutorial = !this.showTutorial;
+            })
+            .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+            .transition(TransitionEffect.OPACITY.animation({ curve: curves.springMotion(0, 1), duration: 1000 }))
+
+            tutorial()
+          }
+          .zIndex(999)
+          .gesture(
+            SwipeGesture({ direction: SwipeDirection.Vertical })
+              .onAction((move: GestureEvent | undefined) => {
+                if (move) {
+                  this.showTutorial = !this.showTutorial
+                }
+              })
+          ).transition(this.effect)
+        }
+      }.backgroundColor($r('app.color.backcolor')).expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+    }
+    .titleMode(HdsNavigationTitleMode.MODAL)
+    .titleBar({
+      style: {
+        // 设置导航组件标题栏样式
+        // 标题栏动态模糊样式，包括是否使能滚动动态模糊，动态模糊类型，动态模糊生效的滚动距离等
+        scrollEffectOpts: {
+          enableScrollEffect: true,
+          scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
+          blurEffectiveStartOffset: LengthMetrics.vp(0),
+          blurEffectiveEndOffset: LengthMetrics.vp(20)
+        },
+        originalStyle: {
+          // 内容区滚动前初始样式设置
+          backgroundStyle: {
+            // 标题栏背板样式设置
+            backgroundColor: $r('sys.color.ohos_id_color_background'),
+          },
+          contentStyle: {
+            // 标题栏内容区样式设置，包括标题区域，菜单区域，返回按钮区域
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+              subTitleColor: $r('sys.color.font_secondary')
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
             }
           }
-          .width('100%').justifyContent(FlexAlign.SpaceBetween).height(55);
-          Rect().width('100%').height(0.5).fill($r('app.color.border')).position({ x: 0, y: 87 });
+        },
+        scrollEffectStyle: {
+          // 内容区滚动超过blurEffectiveEndOffset后样式设置
+          backgroundStyle: {
+            backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+              subTitleColor: $r('sys.color.font_secondary')
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
         }
-        .backgroundBlurStyle(BlurStyle.Thin).position({ x: 0, y: 0 }).width('100%');
+      },
+      content: {
+        title: {
+          mainTitle: this.isT? '应用看板 - T站':'应用看板 - S站',
+        },
 
-        if (this.isLoading) {
-          Progress({ value: this.progress, total: 100 }).width('100%').height(3).position({ x: 0, y: 87 });
-        }
-      }.position({ x: 0, y: 0 }).width('100%');
-
-      if (this.showTutorial) {
-        Stack(){
-          Column(){
-            Text('* 点击外部区域或向下滑动关闭页面').fontSize(14).margin({ bottom: 10 }).position({x:'40%',y:'64%'}).fontColor(Color.Grey)
-          }.backgroundColor(Color.Transparent).height('300%').width('300%')
-          .onClick(() => { this.showTutorial = !this.showTutorial; })
-          .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-          .transition(TransitionEffect.OPACITY.animation({curve :curves.springMotion(0,1), duration:1000}))
-          tutorial()
-        }
-        .gesture(
-          SwipeGesture({ direction: SwipeDirection.Vertical })
-            .onAction((move: GestureEvent | undefined) => {
-              if (move) {
-                this.showTutorial = !this.showTutorial
+        menu: {
+          value: [
+            {
+              content: {
+                label: 'share',
+                icon: $r('sys.symbol.arrow_right_up_and_square'),
+                isEnabled: true,
+                action: () => {
+                  vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                    if (err) {
+                      console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                      return;
+                    }
+                    console.info('Succeed in querying effect');
+                    if (state) {
+                      try {
+                        vibrator.startVibration({
+                          type: 'preset',
+                          effectId: 'haptic.effect.hard',
+                          count: 1,
+                          intensity: 50,
+                        }, { usage: 'touch' }, (error: BusinessError) => {
+                          if (error) {
+                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                          } else {
+                            console.info('Succeed in starting vibration');
+                          }
+                        });
+                      } catch (tryError) {
+                        console.error(`An unexpected error occurred in try block: ${tryError}`);
+                      }
+                    }
+                  });
+                  this.shareUrl();
+                },
               }
-            })
-        ).transition(this.effect)
+            },
+            {
+              content: {
+                label: 'user',
+                icon: $r('sys.symbol.person'),
+                isEnabled: true,
+                action: () => {
+                  vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                    if (err) {
+                      console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                      return;
+                    }
+                    console.info('Succeed in querying effect');
+                    if (state) {
+                      try {
+                        vibrator.startVibration({
+                          type: 'preset',
+                          effectId: 'haptic.effect.hard',
+                          count: 1,
+                          intensity: 50,
+                        }, { usage: 'touch' }, (error: BusinessError) => {
+                          if (error) {
+                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                          } else {
+                            console.info('Succeed in starting vibration');
+                          }
+                        });
+                      } catch (tryError) {
+                        console.error(`An unexpected error occurred in try block: ${tryError}`);
+                      }
+                    }
+                  });
+                  router.pushUrl({url:'pages/user'})
+                },
+              }
+            },
+          ]
+        },
+
       }
-    }
+    })
   }
 }
