@@ -14,8 +14,19 @@ class UpdateLog {
 struct app_log {
   @State updateLogs: UpdateLog[] = [
     {
+      version: 'V1.1.0-rc.1',
+      date: '2025-12-11',
+      isRelease: false,
+      type:'beta',
+      items: ['为主界面按钮添加了显示/隐藏和拖动改变位置功能',
+        '为所有页面的交互添加了震动',
+        '修复了应用商店“填写信息投稿”自动填充识别功能的异常',
+        '为“填写信息投稿”增加了自动关闭的功能'
+      ]
+    },
+    {
       version: 'V1.1.0-beta.4',
-      date: '2025-12-10',
+      date: '2025-12-9',
       isRelease: false,
       type:'beta',
       items: ['为投稿应用功能增加AI识别能力',

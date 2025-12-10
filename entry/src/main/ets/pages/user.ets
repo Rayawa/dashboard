@@ -221,7 +221,26 @@ export struct user {
                                         .height(24)
                                         .width(24)
                                         .objectFit(ImageFit.Contain)
-                                        .onClick(() => { this.handlePopup = !this.handlePopup; })
+                                        .onClick(() => { vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                                            if (err) {
+                                                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                                                return;
+                                            }
+                                            console.info('Succeed in querying effect');
+                                            if (state) {
+                                                try {
+                                                    vibrator.startVibration({
+                                                        type: 'preset',
+                                                        effectId: 'haptic.effect.hard',
+                                                        count: 1,
+                                                        intensity: 50,
+                                                    }, { usage: 'touch' }, (error: BusinessError) => {
+                                                        if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                                                        else { console.info('Succeed in starting vibration'); }
+                                                    });
+                                                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                                            }
+                                        });this.handlePopup = !this.handlePopup; })
                                         .bindPopup(this.handlePopup, {
                                             message: '用于您投稿应用时的默认用户名\n详情见请"使用教程-投稿功能"',
                                             placement: Placement.Top,
