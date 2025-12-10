@@ -12,7 +12,6 @@ import { app_share } from '../component/common/app_share'
 import { HdsNavigation, HdsNavigationAttribute, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { LengthMetrics } from '@kit.ArkUI';
 
-
 @Entry
 @Component
 export struct user {
@@ -730,7 +729,7 @@ export struct user {
                     value: [
                         {
                             content: {
-                                label: 'user',
+                                label: 'settings',
                                 icon: $r('sys.symbol.gearshape'),
                                 isEnabled: true,
                                 action: () => {
