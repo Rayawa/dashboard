@@ -1,6 +1,7 @@
 import { prompt } from '@kit.ArkUI'
 import { pasteboard, BusinessError } from '@kit.BasicServicesKit'
 import { common, Want } from '@kit.AbilityKit'
+import { vibrator } from '@kit.SensorServiceKit';
 
 @Component
 export struct contact {
@@ -13,6 +14,26 @@ export struct contact {
           Text('shenjack').fontSize(14)
           Text('  邮箱：3695888@qq.com').fontSize(14).fontColor($r('app.color.diff_content'))
         }.width('95%').backgroundColor($r('app.color.background')).margin({bottom:10}).padding(12).borderRadius(16).onClick(async () => {
+          vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+              console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+              return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+              try {
+                vibrator.startVibration({
+                  type: 'preset',
+                  effectId: 'haptic.effect.hard',
+                  count: 1,
+                  intensity: 50,
+                }, { usage: 'touch' }, (error: BusinessError) => {
+                  if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                  else { console.info('Succeed in starting vibration'); }
+                });
+              } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+            }
+          });
           await this.copyToClipboard('3695888@qq.com', '邮箱：3695888@qq.com')
         })
         Column({space:5}){
@@ -20,6 +41,26 @@ export struct contact {
           Text('tianxiu2b2t').fontSize(14)
           Text('  邮箱：administrator@ttb-network.top').fontSize(14).fontColor($r('app.color.diff_content'))
         }.width('95%').backgroundColor($r('app.color.background')).margin({bottom:10}).padding(12).borderRadius(16).onClick(async () => {
+          vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+              console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+              return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+              try {
+                vibrator.startVibration({
+                  type: 'preset',
+                  effectId: 'haptic.effect.hard',
+                  count: 1,
+                  intensity: 50,
+                }, { usage: 'touch' }, (error: BusinessError) => {
+                  if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                  else { console.info('Succeed in starting vibration'); }
+                });
+              } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+            }
+          });
           await this.copyToClipboard('administrator@ttb-network.top', '邮箱：administrator@ttb-network.top')
         })
         Column({space:5}){
@@ -27,6 +68,26 @@ export struct contact {
           Text('Rayawa').fontSize(14)
           Text('  邮箱：rayawa.work@outlook.com').fontSize(14).fontColor($r('app.color.diff_content'))
         }.width('95%').backgroundColor($r('app.color.background')).margin({bottom:10}).padding(12).borderRadius(16).onClick(async () => {
+          vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+              console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+              return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+              try {
+                vibrator.startVibration({
+                  type: 'preset',
+                  effectId: 'haptic.effect.hard',
+                  count: 1,
+                  intensity: 50,
+                }, { usage: 'touch' }, (error: BusinessError) => {
+                  if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                  else { console.info('Succeed in starting vibration'); }
+                });
+              } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+            }
+          });
           await this.copyToClipboard('rayawa.work@outlook.com', '邮箱：rayawa.work@outlook.com')
         })
         Column({space:5}){
@@ -34,13 +95,52 @@ export struct contact {
           Text('Harmony Gallery 官方交流群').fontSize(14)
           Text('  群号：757273833').fontSize(14).fontColor($r('app.color.diff_content'))
         }.width('95%').backgroundColor($r('app.color.background')).margin({bottom:10}).padding(12).borderRadius(16).onClick(async () => {
+          vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+              console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+              return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+              try {
+                vibrator.startVibration({
+                  type: 'preset',
+                  effectId: 'haptic.effect.hard',
+                  count: 1,
+                  intensity: 50,
+                }, { usage: 'touch' }, (error: BusinessError) => {
+                  if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                  else { console.info('Succeed in starting vibration'); }
+                });
+              } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+            }
+          });
           await this.copyToClipboard('757273833', 'QQ群号：757273833')
         })
         Column({space:5}){
           Text('❤️ 赞助我们').fontSize(18).fontWeight(FontWeight.Bold)
           Text('支持项目发展').fontSize(14)
           Text('  点击跳转到爱发电赞助页面').fontSize(14).fontColor($r('app.color.diff_content'))
-        }.width('95%').backgroundColor($r('app.color.background')).margin({bottom:5}).padding(12).borderRadius(16).onClick(() => { this.openLink() })
+        }.width('95%').backgroundColor($r('app.color.background')).margin({bottom:5}).padding(12).borderRadius(16).onClick(() => { vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+          if (err) {
+            console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+            return;
+          }
+          console.info('Succeed in querying effect');
+          if (state) {
+            try {
+              vibrator.startVibration({
+                type: 'preset',
+                effectId: 'haptic.effect.hard',
+                count: 1,
+                intensity: 50,
+              }, { usage: 'touch' }, (error: BusinessError) => {
+                if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                else { console.info('Succeed in starting vibration'); }
+              });
+            } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+          }
+        });this.openLink() })
 
       }.padding(12)
 

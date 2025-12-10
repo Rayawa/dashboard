@@ -33,6 +33,10 @@
       "value": "分享时读取保存在本地的设置"
     },
     {
+      "name": "vibrate_permission_reason",
+      "value": "用户操作界面时的震动反馈"
+    },
+    {
       "name": "GENSTURE_distributed_permission_reason",
       "value": "分享时读取保存在本地的设置"
     }

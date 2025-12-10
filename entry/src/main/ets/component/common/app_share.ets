@@ -1,6 +1,8 @@
 import { NaturalLanguageExtractor, AppInfo } from '../../ability/NaturalLanguageExtract';
 import { prompt } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 interface FormData {
   appLink: string;
@@ -360,6 +362,26 @@ export struct app_share {
           .fontWeight(FontWeight.Medium)
           .borderRadius(22)
           .onClick(() => {
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });
             this.clearForm()
           })
 
@@ -373,6 +395,26 @@ export struct app_share {
           .fontWeight(FontWeight.Medium)
           .borderRadius(22)
           .onClick(() => {
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });
             this.queryForm()
           })
 
@@ -386,6 +428,26 @@ export struct app_share {
           .borderRadius(22)
           .fontWeight(FontWeight.Medium)
           .onClick(() => {
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });
             this.submitForm()
           })
       }.width('100%').justifyContent(FlexAlign.SpaceBetween).margin({ top: 15 })
@@ -419,6 +481,26 @@ export struct app_share {
 
       // 自动填充到表单
       if (this.extractedApps.length > 0) {
+        vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+          if (err) {
+            console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+            return;
+          }
+          console.info('Succeed in querying effect');
+          if (state) {
+            try {
+              vibrator.startVibration({
+                type: 'preset',
+                effectId: 'haptic.effect.hard',
+                count: 5,
+                intensity: 100,
+              }, { usage: 'touch' }, (error: BusinessError) => {
+                if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                else { console.info('Succeed in starting vibration'); }
+              });
+            } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+          }
+        });
         this.autoFillForm();
       }
     } catch (error) {

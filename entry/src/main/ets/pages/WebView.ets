@@ -3,7 +3,8 @@ import { HdsActionBar, ActionBarButton, ActionBarStyle, ExtendBarMode } from '@k
 import { curves, prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
 import { motion } from '@kit.MultimodalAwarenessKit';
-import { BusinessError } from '@ohos.base';
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { APP_UA } from "../global_data";
 import { Logger } from '../utils/Logger';
 import { common } from "@kit.AbilityKit";
@@ -334,6 +335,26 @@ export struct WebView {
           }
           .onClick(() => {
             this.web_controller.backward();
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });
             prompt.showToast({
               message: '返回上一页',
               duration: 500
@@ -359,6 +380,26 @@ export struct WebView {
           }
           .onClick(() => {
             this.scrollToTop();
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });
             prompt.showToast({
               message: '回到顶部',
               duration: 500
@@ -386,6 +427,26 @@ export struct WebView {
             if (this.isLoading) {
               this.web_controller.stop();
               this.isLoading = false;
+              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                  return;
+                }
+                console.info('Succeed in querying effect');
+                if (state) {
+                  try {
+                    vibrator.startVibration({
+                      type: 'preset',
+                      effectId: 'haptic.effect.hard',
+                      count: 1,
+                      intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                      else { console.info('Succeed in starting vibration'); }
+                    });
+                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                }
+              });
               prompt.showToast({
                 message: '已停止加载',
                 duration: 1000
@@ -393,6 +454,26 @@ export struct WebView {
             } else {
               this.web_controller.refresh();
               this.isLoading = true;
+              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                  return;
+                }
+                console.info('Succeed in querying effect');
+                if (state) {
+                  try {
+                    vibrator.startVibration({
+                      type: 'preset',
+                      effectId: 'haptic.effect.hard',
+                      count: 1,
+                      intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                      else { console.info('Succeed in starting vibration'); }
+                    });
+                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                }
+              });
               prompt.showToast({
                 message: '刷新中...',
                 duration: 1000
@@ -424,6 +505,26 @@ export struct WebView {
               .fillColor(Color.White)
           }
           .onClick(() => {
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });
             this.switchWebVersion();
           })
           .type(ButtonType.Circle)
@@ -562,8 +663,46 @@ export struct WebView {
           )
         )
       if(!this.showButton){
-        Column().backgroundColor(Color.Transparent).height('100%').width(15).zIndex(5).position({x:'0%'}).onClick(() => { this.showButtonAnimation = true; this.showButton = true })
-        Column().backgroundColor(Color.Transparent).height('100%').width(15).zIndex(5).position({x:'96%'}).onClick(() => { this.showButtonAnimation = true; this.showButton = true })
+        Column().backgroundColor(Color.Transparent).height('100%').width(15).zIndex(5).position({x:'0%'}).onClick(() => { this.showButtonAnimation = true; this.showButton = true; vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+          if (err) {
+            console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+            return;
+          }
+          console.info('Succeed in querying effect');
+          if (state) {
+            try {
+              vibrator.startVibration({
+                type: 'preset',
+                effectId: 'haptic.effect.hard',
+                count: 1,
+                intensity: 50,
+              }, { usage: 'touch' }, (error: BusinessError) => {
+                if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                else { console.info('Succeed in starting vibration'); }
+              });
+            } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+          }
+        });})
+        Column().backgroundColor(Color.Transparent).height('100%').width(15).zIndex(5).position({x:'96%'}).onClick(() => { this.showButtonAnimation = true; this.showButton = true; vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+          if (err) {
+            console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+            return;
+          }
+          console.info('Succeed in querying effect');
+          if (state) {
+            try {
+              vibrator.startVibration({
+                type: 'preset',
+                effectId: 'haptic.effect.hard',
+                count: 1,
+                intensity: 50,
+              }, { usage: 'touch' }, (error: BusinessError) => {
+                if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                else { console.info('Succeed in starting vibration'); }
+              });
+            } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+          }
+        });})
       }
       Column() {
         Column() {
@@ -571,8 +710,46 @@ export struct WebView {
           Row() {
             Text(this.isT ? "应用看板 - T站" : "应用看板 - S站").fontSize(23).fontWeight(FontWeight.Bold).margin({ left: 20 });
             Row() {
-              Image($r('app.media.share')).height(28).width(28).margin({ right: 30 }).onClick(() => { this.shareUrl(); });
-              Image($r('app.media.user')).height(28).width(28).margin({ right: 25 }).onClick(() => router.pushUrl({ url: 'pages/user' }));
+              Image($r('app.media.share')).height(28).width(28).margin({ right: 30 }).onClick(() => { this.shareUrl(); vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                  return;
+                }
+                console.info('Succeed in querying effect');
+                if (state) {
+                  try {
+                    vibrator.startVibration({
+                      type: 'preset',
+                      effectId: 'haptic.effect.hard',
+                      count: 1,
+                      intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                      else { console.info('Succeed in starting vibration'); }
+                    });
+                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                }
+              });});
+              Image($r('app.media.user')).height(28).width(28).margin({ right: 25 }).onClick(() => {router.pushUrl({ url: 'pages/user' }); vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                  return;
+                }
+                console.info('Succeed in querying effect');
+                if (state) {
+                  try {
+                    vibrator.startVibration({
+                      type: 'preset',
+                      effectId: 'haptic.effect.hard',
+                      count: 1,
+                      intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                      else { console.info('Succeed in starting vibration'); }
+                    });
+                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                }
+              });})
             }
           }
           .width('100%').justifyContent(FlexAlign.SpaceBetween).height(55);

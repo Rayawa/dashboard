@@ -1,4 +1,7 @@
 import KnockShareGuideCard, { CardRes } from '../../common/KnockShareGuideCard';
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+
 @Component
 export struct tutorial{
   @State handlePopupMenu: boolean = false;
@@ -71,7 +74,26 @@ export struct tutorial{
         Text('* 点击图标以显示详情').fontSize(14).margin({ bottom: 10 }).fontColor(Color.Grey)
         Text('  1. 分享链接：在主页面或任意应用详情页点击分享按钮分享当前页面链接。\n').fontSize(14)
         Image($r('app.media.share')).width(28).height(28).margin({ bottom: 20 })
-          .onClick(() => {this.handlePopupShareMenu = !this.handlePopupShareMenu;})
+          .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+              console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+              return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+              try {
+                vibrator.startVibration({
+                  type: 'preset',
+                  effectId: 'haptic.effect.hard',
+                  count: 1,
+                  intensity: 50,
+                }, { usage: 'touch' }, (error: BusinessError) => {
+                  if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                  else { console.info('Succeed in starting vibration'); }
+                });
+              } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+            }
+          });this.handlePopupShareMenu = !this.handlePopupShareMenu;})
           .bindPopup(this.handlePopupShareMenu, {
             message: '在主页面点击以分享当前页面链接',
             placement: Placement.Top,
@@ -96,7 +118,26 @@ export struct tutorial{
         Text('    * 此功能当前仅支持部分机型。若设置菜单中存在“智感握姿”开关（可在“设置-系统”中查看），则表明该设备支持此功能。\n').fontSize(10).fontColor(Color.Grey)
         Row(){
           Image($r('app.media.arrow_back')).width(28).height(28)
-            .onClick(() => {this.handlePopupBack = !this.handlePopupBack;})
+            .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });this.handlePopupBack = !this.handlePopupBack;})
             .bindPopup(this.handlePopupBack, {
               message: '单击按钮以返回上一个网页',
               placement: Placement.Top,
@@ -117,7 +158,26 @@ export struct tutorial{
               )
             })
           Image($r('app.media.arrow_up')).width(28).height(28)
-            .onClick(() => {this.handlePopupTop = !this.handlePopupTop;})
+            .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });this.handlePopupTop = !this.handlePopupTop;})
             .bindPopup(this.handlePopupTop, {
               message: '单击按钮以回到顶部',
               placement: Placement.Top,
@@ -138,7 +198,26 @@ export struct tutorial{
               )
             })
           Image($r('app.media.refresh')).width(28).height(28)
-            .onClick(() => {this.handlePopupRefresh = !this.handlePopupRefresh;})
+            .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });this.handlePopupRefresh = !this.handlePopupRefresh;})
             .bindPopup(this.handlePopupRefresh, {
               message: '单击按钮以刷新当前网页',
               placement: Placement.Top,
@@ -159,7 +238,26 @@ export struct tutorial{
               )
             })
           Image($r('app.media.switch')).width(28).height(28)
-            .onClick(() => {this.handlePopupSwitch = !this.handlePopupSwitch;})
+            .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                    else { console.info('Succeed in starting vibration'); }
+                  });
+                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+              }
+            });this.handlePopupSwitch = !this.handlePopupSwitch;})
             .bindPopup(this.handlePopupSwitch, {
               message: '单击按钮以切换不同站点',
               placement: Placement.Top,
@@ -184,7 +282,26 @@ export struct tutorial{
           '  您可以设置用户名、进行内容投稿、查看最新的更新日志、阅读API文档说明。\n' +
           '  同时，联系我们、使用教程和问题反馈也在我的页面中，确保您能随时获得所需的帮助与支持。\n').fontSize(14)
         Image($r('app.media.user')).width(28).height(28).margin({ bottom: 20 })
-          .onClick(() => {this.handlePopupUser = !this.handlePopupUser;})
+          .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+              console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+              return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+              try {
+                vibrator.startVibration({
+                  type: 'preset',
+                  effectId: 'haptic.effect.hard',
+                  count: 1,
+                  intensity: 50,
+                }, { usage: 'touch' }, (error: BusinessError) => {
+                  if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                  else { console.info('Succeed in starting vibration'); }
+                });
+              } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+            }
+          });this.handlePopupUser = !this.handlePopupUser;})
           .bindPopup(this.handlePopupUser, {
             message: '在菜单栏点击以打开我的界面',
             placement: Placement.Top,
@@ -206,7 +323,26 @@ export struct tutorial{
           })
         Text('  4. 页面返回（不位于主页面时显示）：在其他界面点击时返回上一页。\n').fontSize(14)
         Image($r('app.media.arrow_back')).width(28).height(28)
-          .onClick(() => {this.handlePopupBackPage = !this.handlePopupBackPage;})
+          .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+              console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+              return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+              try {
+                vibrator.startVibration({
+                  type: 'preset',
+                  effectId: 'haptic.effect.hard',
+                  count: 1,
+                  intensity: 50,
+                }, { usage: 'touch' }, (error: BusinessError) => {
+                  if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                  else { console.info('Succeed in starting vibration'); }
+                });
+              } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+            }
+          });this.handlePopupBackPage = !this.handlePopupBackPage;})
           .bindPopup(this.handlePopupBackPage, {
             message: '在菜单栏点击以返回上一个页面',
             placement: Placement.Top,
@@ -233,7 +369,26 @@ export struct tutorial{
         Text('* 目前分享功能仅支持手机设备').fontSize(14).margin({ bottom: 10 }).fontColor(Color.Grey)
         Text('  1. 链接分享：在主界面或任意应用详情页点击分享按钮分享当前页面链接。\n').fontSize(14)
         Image($r('app.media.share')).width(28).height(28).margin({ bottom: 20 })
-          .onClick(() => {this.handlePopupShareShare = !this.handlePopupShareShare;})
+          .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+              console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+              return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+              try {
+                vibrator.startVibration({
+                  type: 'preset',
+                  effectId: 'haptic.effect.hard',
+                  count: 1,
+                  intensity: 50,
+                }, { usage: 'touch' }, (error: BusinessError) => {
+                  if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                  else { console.info('Succeed in starting vibration'); }
+                });
+              } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+            }
+          });this.handlePopupShareShare = !this.handlePopupShareShare;})
           .bindPopup(this.handlePopupShareShare, {
             message: '在主页面单击以分享当前页面链接',
             placement: Placement.Top,

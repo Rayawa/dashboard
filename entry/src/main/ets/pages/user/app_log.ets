@@ -1,4 +1,6 @@
 import { router } from '@kit.ArkUI'
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 class UpdateLog {
   version: string = '';
   date: string = '';
@@ -163,7 +165,26 @@ struct app_log {
               .height(28)
               .width(28)
               .margin({ right: 25 })
-              .onClick(() => router.back())
+              .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                  return;
+                }
+                console.info('Succeed in querying effect');
+                if (state) {
+                  try {
+                    vibrator.startVibration({
+                      type: 'preset',
+                      effectId: 'haptic.effect.hard',
+                      count: 1,
+                      intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
+                      else { console.info('Succeed in starting vibration'); }
+                    });
+                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
+                }
+              });router.back()})
           }
           .width('100%')
           .justifyContent(FlexAlign.SpaceBetween)
