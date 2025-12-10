@@ -1,6 +1,9 @@
 import { router } from '@kit.ArkUI'
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { HdsNavigation, HdsNavigationAttribute, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { LengthMetrics } from '@kit.ArkUI';
+
 class UpdateLog {
   version: string = '';
   date: string = '';
@@ -97,8 +100,7 @@ struct app_log {
   ];
 
   build() {
-    Column() {
-      Stack() {
+    HdsNavigation() {
         Scroll(){
           Column() {
             ForEach(this.updateLogs, (log: UpdateLog) => {
@@ -158,64 +160,99 @@ struct app_log {
               .margin({ bottom: 16 })
             })
           }
-          .margin({top:100,bottom:20})
+          .margin({top:60,bottom:20})
           .width('100%')
           .alignItems(HorizontalAlign.Center)
         }
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         .width('100%')
         .height('100%')
-
-        Column() {
-          Column() { Text('\n').fontSize(14) }
-          Row() {
-            Text('App更新日志')
-              .fontSize(23)
-              .fontWeight(FontWeight.Bold)
-              .margin({ left: 20 })
-
-            Image($r('app.media.arrow_back'))
-              .height(28)
-              .width(28)
-              .margin({ right: 25 })
-              .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                if (err) {
-                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                  return;
-                }
-                console.info('Succeed in querying effect');
-                if (state) {
-                  try {
-                    vibrator.startVibration({
-                      type: 'preset',
-                      effectId: 'haptic.effect.hard',
-                      count: 1,
-                      intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                      else { console.info('Succeed in starting vibration'); }
-                    });
-                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-                }
-              });router.back()})
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween)
-          .height(55)
-
-          Rect()
-            .width('100%')
-            .height(0.5)
-            .fill($r('app.color.border'))
-            .position({ x: 0, y: 87 })
-
-        }
-        .backgroundBlurStyle(BlurStyle.Thin)
-        .position({ x: 0, y: 0 })
-        .width('100%')
-      }
-      .backgroundColor($r('app.color.backcolor'))
+        .backgroundColor($r('app.color.backcolor'))
     }
-    .width('100%')
-    .height('100%')
+    .titleMode(HdsNavigationTitleMode.MINI)
+    .titleBar({
+      style: {
+        scrollEffectOpts: {
+          enableScrollEffect: true,
+          scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
+          blurEffectiveStartOffset: LengthMetrics.vp(0),
+          blurEffectiveEndOffset: LengthMetrics.vp(20)
+        },
+        originalStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('sys.color.ohos_id_color_background'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+              subTitleColor: $r('sys.color.font_secondary')
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+              subTitleColor: $r('sys.color.font_secondary')
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        }
+      },
+      content: {
+        title: {
+          mainTitle: 'App更新日志',
+        },
+        backIcon:{
+          action:() => {
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) {
+                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                    } else {
+                      console.info('Succeed in starting vibration');
+                    }
+                  });
+                } catch (tryError) {
+                  console.error(`An unexpected error occurred in try block: ${tryError}`);
+                }
+              }
+            });
+            router.back();
+          }
+        }
+      }
+    })
+
   }
 }

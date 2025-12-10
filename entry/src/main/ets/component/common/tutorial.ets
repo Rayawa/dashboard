@@ -567,6 +567,12 @@ export struct tutorial{
 
       }.height('87%').width('95%').borderRadius(16).padding(20)
     }
+    .shadow({
+      radius: 20,
+      color: Color.Gray,
+      offsetX: 0,
+      offsetY: 4
+    })
     .loop(false)
     .effectMode(EdgeEffect.Spring)
     .margin({ top: 30, bottom: 10 })
