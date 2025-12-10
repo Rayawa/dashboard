@@ -68,9 +68,9 @@ export struct tutorial{
         }.alignItems(HorizontalAlign.Start)
 
       }.height('80%').width('95%').borderRadius(16).padding(20)
-      // 菜单栏
+      // 导航功能
       Column() {
-        Text('菜单栏').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
+        Text('导航功能').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
         Text('* 点击图标以显示详情').fontSize(14).margin({ bottom: 10 }).fontColor(Color.Grey)
         Text('  1. 分享链接：在主页面或任意应用详情页点击分享按钮分享当前页面链接。\n').fontSize(14)
         Image($r('app.media.share')).width(28).height(28).margin({ bottom: 20 })
@@ -114,6 +114,7 @@ export struct tutorial{
             )
           })
         Text('  2. 主界面按钮：主要用于操作网页内容，如返回上级、回到顶部、刷新与切换版本。\n' +
+          '   横向滑动按钮可以隐藏按钮、点击屏幕侧边可以显示按钮；上下滑动可以改变按钮位置。\n' +
           '   按钮支持智感握姿功能，可根据您的握持姿势改变位置。').fontSize(14).margin({bottom:1})
         Text('    * 此功能当前仅支持部分机型。若设置菜单中存在“智感握姿”开关（可在“设置-系统”中查看），则表明该设备支持此功能。\n').fontSize(10).fontColor(Color.Grey)
         Row(){
@@ -278,9 +279,8 @@ export struct tutorial{
               )
             })
         }.width('80%').justifyContent(FlexAlign.SpaceBetween).margin({ bottom: 20 })
-        Text('  3. 我的页面：您的个人中心与一站式门户。\n' +
-          '  您可以设置用户名、进行内容投稿、查看最新的更新日志、阅读API文档说明。\n' +
-          '  同时，联系我们、使用教程和问题反馈也在我的页面中，确保您能随时获得所需的帮助与支持。\n').fontSize(14)
+        Text('  3. 我的页面：您在此可以设置用户名、投稿应用、查看最新的更新日志、阅读API文档说明。\n' +
+          '   联系我们、使用教程和问题反馈也在我的页面中，确保您能随时获得所需的帮助与支持。\n').fontSize(14)
         Image($r('app.media.user')).width(28).height(28).margin({ bottom: 20 })
           .onClick(() => {vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
             if (err) {
