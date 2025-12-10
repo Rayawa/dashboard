@@ -20,7 +20,7 @@ import { hdsEffect } from '@kit.UIDesignKit';
 
 @Entry
 @Component
-export struct WebView {
+struct WebView {
   scroller: Scroller = new Scroller();
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State isExpand: boolean = false;
