@@ -40,7 +40,6 @@ struct complex_share {
 
 
   aboutToAppear() {
-
     console.log('complex_share接受取到的所有参数:', JSON.stringify(this.shareParams));
     this.inputText = this.shareParams.shareUrl;
     this.formData.appLink = this.shareParams.shareUrl
@@ -48,53 +47,6 @@ struct complex_share {
     this.formData.packageName = this.shareParams.shareAppId;
   }
 
-
-  clearForm(): void {
-    this.formData = {
-      appLink: '',
-      packageName: '',
-      appId: '',
-      remark: ''
-    };
-    this.inputText = ''
-    prompt.showToast({
-      message: '表单已清空',
-      duration: 1500
-    });
-  }
-  submitForm(): void {
-    if (!this.formData.packageName.trim()) {
-      prompt.showToast({
-        message: '请输入包名',
-        duration: 2000
-      });
-      return;
-    }
-
-    if (!this.formData.appId.trim()) {
-      prompt.showToast({
-        message: '请输入AppId',
-        duration: 2000
-      });
-      return;
-    }
-
-    // ->提交逻辑，如调用API等
-    console.log('提交数据:', this.formData);
-    prompt.showToast({
-      message: '提交成功，感谢您的投稿！',
-      duration: 3000
-    });
-    this.inputText=''
-    this.formData = {
-      appLink: '',
-      packageName: '',
-      appId: '',
-      remark: ''
-    };
-    // this.closePage()
-
-  }
   private closePage(){
     let uiAbilityContext = getContext(this) as common.UIAbilityContext;
     uiAbilityContext.terminateSelf();
@@ -365,7 +317,7 @@ struct complex_share {
         }.width('100%').padding(12)
         // AppID
         Column({ space: 6 }) {
-          Text('AppId')
+          Text('AppID')
             .fontSize(16)
             .fontWeight(FontWeight.Bold)
             .width('100%')
