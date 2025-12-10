@@ -1,5 +1,5 @@
 import { webview } from "@kit.ArkWeb";
-import { HdsActionBar, ActionBarButton, ActionBarStyle } from '@kit.UIDesignKit'
+import { HdsActionBar, ActionBarButton, ActionBarStyle, ExtendBarMode } from '@kit.UIDesignKit'
 import { curves, prompt, router } from "@kit.ArkUI";
 import window from '@ohos.window';
 import { motion } from '@kit.MultimodalAwarenessKit';
@@ -44,8 +44,9 @@ export struct WebView {
   private web_controller: webview.WebviewController = new webview.WebviewController();
   private win: window.Window | null = null;
 
+  @State y: number = 300;
   @State buttonShowOffsetX: string = '84%';
-  @State buttonHideOffsetX: string = '-20%'
+  @State buttonHideOffsetX: string = '101%'
   @State showButtonAnimation: boolean = true;
   holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
     switch (data) {
@@ -530,9 +531,11 @@ export struct WebView {
           //     })
           //     .pressShadow(this.buttonPressShadow)
           //     .buildEffect())
-        }.position({x:this.showButton? `${this.buttonShowOffsetX}`:`${this.buttonHideOffsetX}`, y:'35%'}).animation(this.showButtonAnimation? {curve :curves.springMotion(0.7,0.8), duration:500} : {duration:0})
+        }
+        .position({x:this.showButton? `${this.buttonShowOffsetX}`:`${this.buttonHideOffsetX}`, y: this.y})
+        .animation(this.showButtonAnimation? {curve :curves.springMotion(0.7,0.8), duration:500} : {duration:0})
         .gesture(
-          SwipeGesture({ direction: SwipeDirection.All })
+          SwipeGesture({ direction: SwipeDirection.Horizontal })
             .onAction((move: GestureEvent | undefined) => {
               if(move) {
                 this.showButton = false;
@@ -541,6 +544,22 @@ export struct WebView {
                 }, 300);
               }
             })
+        )
+        .gesture(
+          GestureGroup(
+            GestureMode.Sequence,
+            PanGesture({direction:PanDirection.Vertical})
+              .onActionEnd((event: GestureEvent) => {
+                this.y = this.y + event.offsetY
+                if(this.y > 590){
+                  this.y = 590;
+                  prompt.showToast({message:'超出屏幕啦', duration:1000})
+                } else if(this.y < 90){
+                  this.y = 90;
+                  prompt.showToast({message:'超出屏幕啦', duration:1000}) }
+                console.log('平移中，垂直偏移量 y 为:', this.y);
+              })
+          )
         )
       if(!this.showButton){
         Column().backgroundColor(Color.Transparent).height('100%').width(15).zIndex(5).position({x:'0%'}).onClick(() => { this.showButtonAnimation = true; this.showButton = true })
