@@ -149,7 +149,7 @@ export struct contact {
         Divider()
           .strokeWidth(1)
           .color($r('app.color.border'))
-          .margin({ bottom: 20 })
+          .margin({ bottom: 10 })
           .width('100%')
 
         Text('我们将尽快回复您的消息')
@@ -163,8 +163,8 @@ export struct contact {
       .alignItems(HorizontalAlign.Center)
       .margin({ top: 8 })
     }
-    .height('80%')
-    .margin({ top: 10, bottom: 10 })
+    .height('85%')
+    .margin({ top: 20, bottom: 10 })
     .width('90%')
     .borderRadius(20)
     .backgroundColor($r('app.color.backcolor'))

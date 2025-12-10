@@ -21,28 +21,37 @@ import { hdsEffect } from '@kit.UIDesignKit';
 @Entry
 @Component
 struct WebView {
-  scroller: Scroller = new Scroller();
-  @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
-  @State isExpand: boolean = false;
-  @State isPrimaryIconChanged: boolean = false;
-  @State primaryHoverTips: ResourceStr = '开始';
-  @State actionBarIlluminatedType: hdsEffect.PointLightIlluminatedType = hdsEffect.PointLightIlluminatedType.BORDER;
-  @State buttonPressShadow: hdsEffect.PressShadowType = hdsEffect.PressShadowType.NONE;
-  @State lightIntensity: number = 8;
-  private effect: TransitionEffect =
-    TransitionEffect.OPACITY
-      .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
-      .combine(TransitionEffect.scale({ x: 0, y: 1 }))
-      .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 })
+//==========================状态声明部分==========================
+  //控制相关
   @State showButton: boolean = true;
   @State showTutorial: boolean = false;
-  @StorageLink('userName') userName: string = ''
-  private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
-  @State url: string = 'https://hmos.txit.top/dashboard'; //entry
-  @State mode: WebDarkMode = WebDarkMode.Auto;
-  @State isLoading: boolean = false;
-  private web_controller: webview.WebviewController = new webview.WebviewController();
-  private win: window.Window | null = null;
+  // @State isExpand: boolean = false;
+  // @State isPrimaryIconChanged: boolean = false;
+  // @State primaryHoverTips: ResourceStr = '开始';
+
+  //用户名初始化(防止小天才模式）
+  async loadUserName() {
+    initializeUserStorage()
+    this.userName = await getUsername();
+  }
+  async saveUserName() {
+    await setUsername(this.userName);
+  }
+  async resetToDeviceName() {
+    await setUsername(undefined);
+    await this.loadUserName()
+  }
+  //切换版本方法
+  @State isT: boolean = true;
+  private switchWebVersion(): void {
+    const switchVersion = this.isT ? 'S站' : ' T站';
+    this.url = this.isT ? 'http://shenjack.top:10003/dashboard' : 'https://hmos.txit.top/dashboard';
+    this.isT = !this.isT;
+    this.web_controller.loadUrl(this.url);
+    prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
+  }
+
+  //智感握持
   @State y: number = 300;
   @State buttonShowOffsetX: string = '84%';
   @State buttonHideOffsetX: string = '101%'
@@ -64,6 +73,58 @@ struct WebView {
     }
   };
 
+  //动画相关
+  private effect: TransitionEffect =
+    TransitionEffect.OPACITY
+      .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
+      .combine(TransitionEffect.scale({ x: 0, y: 1 }))
+      .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 })
+
+  //entry
+  @State url: string = 'https://hmos.txit.top/dashboard';
+  private win: window.Window | null = null;
+  @StorageLink('userName') userName: string = ''
+  private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
+  private async checkFirstLaunch(): Promise<void> {
+    try {
+      let context = getContext(this) as common.UIAbilityContext;
+      let prefs = await preferences.getPreferences(context, 'myAppSettings');
+      let isFirstLaunchValue: preferences.ValueType = await prefs.get(this.IS_FIRST_LAUNCH_KEY, true);
+      let isFirstLaunch: boolean = false;
+      if (typeof isFirstLaunchValue === 'boolean') {
+        isFirstLaunch = isFirstLaunchValue;
+      } else if (typeof isFirstLaunchValue === 'string') {
+        isFirstLaunch = isFirstLaunchValue === 'true';
+      } else if (typeof isFirstLaunchValue === 'number') {
+        isFirstLaunch = isFirstLaunchValue === 1;
+      }
+      if (isFirstLaunch) {
+        console.info('Index', '首次启动，显示引导页。');
+        this.showTutorial = true;
+        await prefs.put(this.IS_FIRST_LAUNCH_KEY, false);
+        await prefs.flush();
+        console.info('Index', '已更新首次启动标记。');
+      } else {
+        console.info('Index', '非首次启动，不显示引导页。');
+        this.showTutorial = false;
+      }
+    } catch (err) {
+      let error = err as BusinessError;
+      console.error('Index', '检查首选项失败: %{public}s', JSON.stringify(error));
+    }
+  }
+
+  //Web控制
+  scroller: Scroller = new Scroller();
+  private web_controller: webview.WebviewController = new webview.WebviewController();
+
+  @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
+  @State mode: WebDarkMode = WebDarkMode.Auto;
+  @State isLoading: boolean = false;
+
+
+
+//==========================页面生命周期部分==========================
   async aboutToAppear() {
     this.loadUserName();
     //shenjack的UA
@@ -95,7 +156,6 @@ struct WebView {
     });
 
   }
-
   async onPageShow(): Promise<void> {
     this.checkFirstLaunch();
     //Rayawa的状态栏颜色
@@ -107,36 +167,6 @@ struct WebView {
     });
     //状态栏颜色结束
   }
-
-  private async checkFirstLaunch(): Promise<void> {
-    try {
-      let context = getContext(this) as common.UIAbilityContext;
-      let prefs = await preferences.getPreferences(context, 'myAppSettings');
-      let isFirstLaunchValue: preferences.ValueType = await prefs.get(this.IS_FIRST_LAUNCH_KEY, true);
-      let isFirstLaunch: boolean = false;
-      if (typeof isFirstLaunchValue === 'boolean') {
-        isFirstLaunch = isFirstLaunchValue;
-      } else if (typeof isFirstLaunchValue === 'string') {
-        isFirstLaunch = isFirstLaunchValue === 'true';
-      } else if (typeof isFirstLaunchValue === 'number') {
-        isFirstLaunch = isFirstLaunchValue === 1;
-      }
-      if (isFirstLaunch) {
-        console.info('Index', '首次启动，显示引导页。');
-        this.showTutorial = true;
-        await prefs.put(this.IS_FIRST_LAUNCH_KEY, false);
-        await prefs.flush();
-        console.info('Index', '已更新首次启动标记。');
-      } else {
-        console.info('Index', '非首次启动，不显示引导页。');
-        this.showTutorial = false;
-      }
-    } catch (err) {
-      let error = err as BusinessError;
-      console.error('Index', '检查首选项失败: %{public}s', JSON.stringify(error));
-    }
-  }
-
   aboutToDisappear() {
     this.shareDisablingListening(); //关闭监听
     const uiContext: UIContext = this.getUIContext();
@@ -155,7 +185,6 @@ struct WebView {
       console.error("取消订阅失败，错误码: " + error.code);
     }
   }
-
   private onBackGround() {
     this.shareDisablingListening();
     harmonyShare.on('knockShare', (sharableTarget: harmonyShare.SharableTarget) => {
@@ -163,30 +192,8 @@ struct WebView {
     });
   }
 
-  //用户名初始化(防止小天才模式）
-  async loadUserName() {
-    initializeUserStorage()
-    this.userName = await getUsername();
-  }
-  async saveUserName() {
-    await setUsername(this.userName);
-  }
-  async resetToDeviceName() {
-    await setUsername(undefined);
-    await this.loadUserName()
-  }
 
-
-  //切换版本方法
-  @State isT: boolean = true;
-  private switchWebVersion(): void {
-    const switchVersion = this.isT ? 'S站' : ' T站';
-    this.url = this.isT ? 'http://shenjack.top:10003/dashboard' : 'https://hmos.txit.top/dashboard';
-    this.isT = !this.isT;
-    this.web_controller.loadUrl(this.url);
-    prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
-  }
-
+//==========================分享部分==========================
   //开启关闭监听方法
   private shareListening() {
     if (this.isNoListening()) {
@@ -212,11 +219,9 @@ struct WebView {
   @State ShareStatus: boolean = false;
   @State rejectStatus: boolean = false;
   @State updateStatus: boolean = false;
-
   private isNoListening() {
     return !this.ShareStatus && !this.rejectStatus && !this.updateStatus;
   }
-
   //获得页面URL
   @State currentUrl: string = ''; //分享URL注册
   public async getCurrentWebUrl(): Promise<string> {
@@ -227,7 +232,6 @@ struct WebView {
       return '';
     }
   }
-
   //按钮分享URL方法
   private async shareUrl() {
     const uiContext: UIContext = this.getUIContext();
@@ -258,7 +262,6 @@ struct WebView {
       Logger.error(`ShareController show error. code: ${error?.code}, message: ${error?.message}`);
     });
   }
-
   //碰一碰分享方法
   private purityCallback = async (sharableTarget: harmonyShare.SharableTarget) => {
     this.currentUrl = await this.getCurrentWebUrl();
@@ -292,9 +295,12 @@ struct WebView {
     sharableTarget.share(shareData);
   }
 
+
+//==========================主程序部分==========================
   build() {
     HdsNavigation() {
       Stack() {
+        //==========================网页潜嵌套滚动==========================
         Scroll(this.scroller) {
           Column() {
             Blank().height(70).width('100%').expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
@@ -321,6 +327,7 @@ struct WebView {
           }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
+        //==========================悬浮按钮==========================
         Column({ space: 10 }) {
           Button() {
             Image($r('app.media.arrow_back'))
@@ -761,6 +768,7 @@ struct WebView {
             })
         }
 
+        //==========================教程==========================
         if (this.showTutorial) {
           Stack() {
             Column() {
@@ -796,8 +804,6 @@ struct WebView {
     .titleMode(HdsNavigationTitleMode.MODAL)
     .titleBar({
       style: {
-        // 设置导航组件标题栏样式
-        // 标题栏动态模糊样式，包括是否使能滚动动态模糊，动态模糊类型，动态模糊生效的滚动距离等
         scrollEffectOpts: {
           enableScrollEffect: true,
           scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
@@ -805,13 +811,10 @@ struct WebView {
           blurEffectiveEndOffset: LengthMetrics.vp(20)
         },
         originalStyle: {
-          // 内容区滚动前初始样式设置
           backgroundStyle: {
-            // 标题栏背板样式设置
             backgroundColor: $r('sys.color.ohos_id_color_background'),
           },
           contentStyle: {
-            // 标题栏内容区样式设置，包括标题区域，菜单区域，返回按钮区域
             titleStyle: {
               mainTitleColor: $r('sys.color.font_primary'),
               subTitleColor: $r('sys.color.font_secondary')
@@ -827,7 +830,6 @@ struct WebView {
           }
         },
         scrollEffectStyle: {
-          // 内容区滚动超过blurEffectiveEndOffset后样式设置
           backgroundStyle: {
             backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
           },
@@ -851,7 +853,6 @@ struct WebView {
         title: {
           mainTitle: this.isT? '应用看板 - T站':'应用看板 - S站',
         },
-
         menu: {
           value: [
             {
@@ -926,7 +927,6 @@ struct WebView {
             },
           ]
         },
-
       }
     })
   }
