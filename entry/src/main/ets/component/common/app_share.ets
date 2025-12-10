@@ -1,8 +1,8 @@
 import { NaturalLanguageExtractor, AppInfo } from '../../ability/NaturalLanguageExtract';
-import { prompt } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { submitButtons } from './submitButtons'
 
 interface FormData {
   appLink: string;
@@ -11,9 +11,11 @@ interface FormData {
   remark: string;
 }
 
+
 @Entry
 @Component
 export struct app_share {
+
   @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
   @State formData: FormData = {
     appLink: '',
@@ -25,75 +27,10 @@ export struct app_share {
   @State extractedApps: AppInfo[] = [];
   @State isProcessing: boolean = false;
 
+
   private debounceTimer: number | null = null;
   private readonly DEBOUNCE_DELAY: number = 800;
 
-  clearForm(): void {
-    this.formData = {
-      appLink: '',
-      packageName: '',
-      appId: '',
-      remark: ''
-    };
-    this.inputText = ''
-    prompt.showToast({
-      message: '表单已清空',
-      duration: 1500
-    });
-  }
-  queryForm(): void {
-    prompt.showToast({
-      message: '敬请期待！',
-      duration: 1500
-    });
-    // if (!this.formData.packageName && !this.formData.appId) {
-    //   prompt.showToast({
-    //     message: '请输入包名或app_id进行查询',
-    //     duration: 2000
-    //   });
-    //   return;
-    // }
-    // ->查询逻辑
-    // console.log('查询数据:', this.formData);
-    //
-    // // ->查询结果
-    // prompt.showToast({
-    //   message: `查询到应用: ${this.formData.packageName || this.formData.appId}`,
-    //   duration: 2000
-    // });
-  }
-  submitForm(): void {
-    if (!this.formData.packageName.trim()) {
-      prompt.showToast({
-        message: '请输入包名',
-        duration: 2000
-      });
-      return;
-    }
-
-    if (!this.formData.appId.trim()) {
-      prompt.showToast({
-        message: '请输入AppID',
-        duration: 2000
-      });
-      return;
-    }
-
-    // ->提交逻辑，如调用API等
-    console.log('提交数据:', this.formData);
-    prompt.showToast({
-      message: '提交成功，感谢您的投稿！',
-      duration: 3000
-    });
-    this.inputText=''
-    this.formData = {
-        appLink: '',
-        packageName: '',
-        appId: '',
-        remark: ''
-    };
-
-  }
 
   build() {
     Column() {
@@ -351,106 +288,8 @@ export struct app_share {
           })
       }.width('100%').padding(12)
       // 按钮区域
-      Row() {
-        // 清空按钮
-        Button('清空', { type: ButtonType.Normal })
-          .margin(2)
-          .width('25%')
-          .height(44)
-          .backgroundColor(Color.Green)
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .borderRadius(22)
-          .onClick(() => {
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
-                  });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-              }
-            });
-            this.clearForm()
-          })
+      submitButtons()
 
-        // 查询按钮
-        Button('查询', { type: ButtonType.Normal })
-          .margin(2)
-          .width('25%')
-          .height(44)
-          .backgroundColor(Color.Blue)
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .borderRadius(22)
-          .onClick(() => {
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
-                  });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-              }
-            });
-            this.queryForm()
-          })
-
-        // 提交按钮
-        Button('提交投稿', { type: ButtonType.Capsule })
-          .margin(2)
-          .width('40%')
-          .height(44)
-          .backgroundColor(Color.Red)
-          .fontSize(16)
-          .borderRadius(22)
-          .fontWeight(FontWeight.Medium)
-          .onClick(() => {
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
-                  });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-              }
-            });
-            this.submitForm()
-          })
-      }.width('100%').justifyContent(FlexAlign.SpaceBetween).margin({ top: 15 })
     }
     .width('90%')
     .padding({top:20,bottom:20,left:10,right:10})

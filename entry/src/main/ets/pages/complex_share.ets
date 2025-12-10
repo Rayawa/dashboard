@@ -4,6 +4,7 @@ import { hdsEffect } from '@kit.UIDesignKit';
 import { common } from '@kit.AbilityKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { submitButtons } from '../component/common/submitButtons';
 
 interface ShareParams {
   shareAppId: string;
@@ -439,75 +440,7 @@ struct complex_share {
             })
         }.width('100%').padding(12)
         // 按钮区域
-        Row() {
-          // 清空按钮
-          Button('清空', { type: ButtonType.Normal })
-            .margin(2)
-            .margin({left:25})
-            .width('30%')
-            .height(44)
-            .backgroundColor(Color.Green)
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .borderRadius(22)
-            .onClick(() => {
-              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                if (err) {
-                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                  return;
-                }
-                console.info('Succeed in querying effect');
-                if (state) {
-                  try {
-                    vibrator.startVibration({
-                      type: 'preset',
-                      effectId: 'haptic.effect.hard',
-                      count: 1,
-                      intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                      else { console.info('Succeed in starting vibration'); }
-                    });
-                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-                }
-              });
-              this.clearForm()
-            })
-
-          // 提交按钮
-          Button('提交投稿', { type: ButtonType.Capsule })
-            .margin(2)
-            .margin({right:25})
-            .width('40%')
-            .height(44)
-            .backgroundColor(Color.Red)
-            .fontSize(16)
-            .borderRadius(22)
-            .fontWeight(FontWeight.Medium)
-            .onClick(() => {
-              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                if (err) {
-                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                  return;
-                }
-                console.info('Succeed in querying effect');
-                if (state) {
-                  try {
-                    vibrator.startVibration({
-                      type: 'preset',
-                      effectId: 'haptic.effect.hard',
-                      count: 1,
-                      intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                      else { console.info('Succeed in starting vibration'); }
-                    });
-                  } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-                }
-              });
-              this.submitForm()
-            })
-        }.width('100%').justifyContent(FlexAlign.SpaceBetween).margin({ top: 15 })
+        submitButtons()
       }
       .width('90%')
       .padding({top:20,bottom:20,left:10,right:10})
