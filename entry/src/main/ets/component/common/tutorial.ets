@@ -66,12 +66,12 @@ export struct tutorial{
 
         Text('📝 使用说明\n').fontSize(18).fontWeight(FontWeight.Bold)
         Column() {
-          Text('• 刷新数据 - 点击“刷新数据”按钮获取最新数据\n').fontSize(14)
-          Text('• 搜索应用 - 支持按名称、包名、开发者等搜索\n').fontSize(14)
-          Text('• 快速筛选 - 点击组件可快速查看对应应用\n').fontSize(14)
-          Text('• 排序功能 - 按评分、下载量、大小等排序\n').fontSize(14)
-          Text('• 查看详情 - 点击应用行查看详细信息\n').fontSize(14)
-          Text('• 过滤选项 - 可排除华为/元服务应用\n').fontSize(14)
+          Text('• 刷新数据 - 点击“刷新数据”按钮获取最新数据').fontSize(14)
+          Text('• 搜索应用 - 支持按名称、包名、开发者等搜索').fontSize(14)
+          Text('• 快速筛选 - 点击组件可快速查看对应应用').fontSize(14)
+          Text('• 排序功能 - 按评分、下载量、大小等排序').fontSize(14)
+          Text('• 查看详情 - 点击应用行查看详细信息').fontSize(14)
+          Text('• 过滤选项 - 可排除华为/元服务应用').fontSize(14)
         }.alignItems(HorizontalAlign.Start)
 
       }.height('87%').width('95%').borderRadius(16).padding(20)
@@ -135,8 +135,8 @@ export struct tutorial{
                 .combine(TransitionEffect.translate({ x: 0, y: 12 }))
             )
           })
-        Text('  2. 主界面按钮：主要用于操作网页内容，如返回上级、回到顶部、刷新与切换版本。\n' +
-          '   横向滑动按钮可以隐藏按钮、点击屏幕侧边可以显示按钮；上下滑动可以改变按钮位置。\n' +
+        Text('  2. 主界面按钮：主要用于操作网页内容，如返回上级、回到顶部、刷新与切换版本。\n\n' +
+          '   横向滑动按钮可以隐藏按钮、点击屏幕侧边可以显示按钮；上下滑动可以改变按钮位置。\n\n' +
           '   按钮支持智感握姿功能，可根据您的握持姿势改变位置。').fontSize(14).margin({ bottom: 1 })
         Text('    * 此功能当前仅支持部分机型。若设置菜单中存在“智感握姿”开关（可在“设置-系统”中查看），则表明该设备支持此功能。\n')
           .fontSize(10)
@@ -389,55 +389,6 @@ export struct tutorial{
                 .combine(TransitionEffect.translate({ x: 0, y: 12 }))
             )
           })
-        Text('  4. 页面返回（不位于主页面时显示）：在其他界面点击时返回上一页。\n').fontSize(14)
-        Image($r('app.media.arrow_back')).width(28).height(28)
-          .onClick(() => {
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) {
-                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                    } else {
-                      console.info('Succeed in starting vibration');
-                    }
-                  });
-                } catch (tryError) {
-                  console.error(`An unexpected error occurred in try block: ${tryError}`);
-                }
-              }
-            });
-            this.handlePopupBackPage = !this.handlePopupBackPage;
-          })
-          .bindPopup(this.handlePopupBackPage, {
-            message: '在菜单栏点击以返回上一个页面',
-            placement: Placement.Top,
-            showInSubWindow: false,
-            onStateChange: (e) => {
-              if (!e.isVisible) {
-                this.handlePopupBackPage = false;
-              }
-            },
-            transition: TransitionEffect.asymmetric(
-              TransitionEffect.OPACITY
-                .animation({ duration: 500, curve: Curve.Ease })
-                .combine(TransitionEffect.translate({ x: 0, y: 12 })),
-
-              TransitionEffect.OPACITY
-                .animation({ duration: 300, curve: Curve.EaseOut })
-                .combine(TransitionEffect.translate({ x: 0, y: 12 }))
-            )
-          })
       }.height('87%').width('95%').borderRadius(16).padding(20)
       // 分享功能
       Column() {
@@ -558,7 +509,7 @@ export struct tutorial{
               .margin({ bottom: 10 })
               .borderWidth(1)
               .borderColor($r('app.color.border'))
-          }.width('50%').padding(10)
+          }.width('48%').padding(10)
 
         }
         .width('100%')

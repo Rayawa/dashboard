@@ -21,10 +21,10 @@ struct web_api {
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
 
-  async aboutToAppear() {
-    const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
-    webview.WebviewController.setAppCustomUserAgent(customUA);
-  }
+  // async aboutToAppear() {
+  //   const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
+  //   webview.WebviewController.setAppCustomUserAgent(customUA);
+  // }
   async onPageShow(): Promise<void> {
     this.win = await window.getLastWindow(getContext());
     const isDark = this.mode === WebDarkMode.On;
@@ -54,11 +54,11 @@ struct web_api {
               .backgroundColor($r('app.color.backcolor'))
               .onPageBegin(() => this.isLoading = true)
               .onPageEnd(() => this.isLoading = false)
-              .onControllerAttached(() => {
-                try {
-                  this.web_controller.setCustomUserAgent(APP_UA);
-                } catch {}
-              }); //shenjack的UA
+              // .onControllerAttached(() => {
+              //   try {
+              //     this.web_controller.setCustomUserAgent(APP_UA);
+              //   } catch {}
+              // });
 
           }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
@@ -115,7 +115,7 @@ struct web_api {
       },
       content: {
         title: {
-          mainTitle: 'Web更新日志',
+          mainTitle: 'API文档说明',
         },
         menu: {
           value: [
