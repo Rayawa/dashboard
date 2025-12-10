@@ -46,7 +46,7 @@ export struct tutorial{
           .fontColor($r('app.color.diff_content'))
           .fontWeight(FontWeight.Medium)
 
-      }.height('80%').width('95%').borderRadius(16).padding(20)
+      }.height('87%').width('95%').borderRadius(16).padding(20)
       // 主界面部分
       Column() {
         Text('主界面部分')
@@ -74,7 +74,7 @@ export struct tutorial{
           Text('• 过滤选项 - 可排除华为/元服务应用\n').fontSize(14)
         }.alignItems(HorizontalAlign.Start)
 
-      }.height('80%').width('95%').borderRadius(16).padding(20)
+      }.height('87%').width('95%').borderRadius(16).padding(20)
       // 导航功能
       Column() {
         Text('导航功能')
@@ -438,7 +438,7 @@ export struct tutorial{
                 .combine(TransitionEffect.translate({ x: 0, y: 12 }))
             )
           })
-      }.height('80%').width('95%').borderRadius(16).padding(20)
+      }.height('87%').width('95%').borderRadius(16).padding(20)
       // 分享功能
       Column() {
         Text('分享功能')
@@ -513,7 +513,7 @@ export struct tutorial{
           '    * 当前版本仅支持从手机抓取内容并分享至其他手机、平板、PC或二合一设备，暂不支持从平板、PC或二合一设备发起抓取。')
           .fontSize(10)
           .fontColor(Color.Grey)
-      }.height('80%').width('95%').borderRadius(16).padding(20)
+      }.height('87%').width('95%').borderRadius(16).padding(20)
       // 投稿功能
       Column() {
         Text('投稿功能')
@@ -565,11 +565,11 @@ export struct tutorial{
         .height('44%')
         .justifyContent(FlexAlign.SpaceBetween)
 
-      }.height('80%').width('95%').borderRadius(16).padding(20)
+      }.height('87%').width('95%').borderRadius(16).padding(20)
     }
     .loop(false)
     .effectMode(EdgeEffect.Spring)
-    .margin({ top: 10, bottom: 10 })
+    .margin({ top: 30, bottom: 10 })
     .width('90%')
     .borderRadius(20)
     .backgroundColor($r('app.color.backcolor'))
