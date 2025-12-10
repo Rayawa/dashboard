@@ -1,7 +1,6 @@
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { prompt } from '@kit.ArkUI';
-
 interface Scale {
   x: number;
   y: number;
@@ -25,7 +24,6 @@ export struct submitButtons {
     //   this.isCleaning = false;
     // },500)
   }
-
   queryForm(): void {
     // prompt.showToast({
     //   message: '敬请期待！',
@@ -35,7 +33,6 @@ export struct submitButtons {
     //   this.isSearching = false;
     // },500)
   }
-
   submitForm(): void {
     // setTimeout(()=>{
     //   this.isSubmitting = false;
@@ -46,36 +43,16 @@ export struct submitButtons {
     // });
   }
 
-  @State cleanAnimation: ButtonAnimationState = {
-    immediatelyOpacity: 0.8,
-    immediatelyScale: { x: 1, y: 1 },
-    delayOpacity: 0.4,
-    delayScale: { x: 1, y: 1 }
-  };
-
-  @State searchAnimation: ButtonAnimationState = {
-    immediatelyOpacity: 0.8,
-    immediatelyScale: { x: 1, y: 1 },
-    delayOpacity: 0.4,
-    delayScale: { x: 1, y: 1 }
-  };
-
-  @State submitAnimation: ButtonAnimationState = {
-    immediatelyOpacity: 0.8,
-    immediatelyScale: { x: 1, y: 1 },
-    delayOpacity: 0.4,
-    delayScale: { x: 1, y: 1 }
-  };
+  @State isCleaning: boolean = false;
+  @State isSearching: boolean = false;
+  @State isSubmitting: boolean = false;
 
   private readonly BUTTON_WIDTH: string = '30%';
   private readonly BUTTON_HEIGHT: number = 44;
   private readonly BUTTON_CLICK_SCALE: number = 0.8;
   private readonly ANIMATION_DURATION: number = 1300;
   private readonly BORDER_RADIUS: number = 22;
-
-  @State isCleaning: boolean = false;
-  @State isSearching: boolean = false;
-  @State isSubmitting: boolean = false;
+  private readonly CLICK_INTERVAL = 1000;
 
   @Styles
   ripplesStyleClean() {
@@ -84,7 +61,6 @@ export struct submitButtons {
     .borderRadius(this.BORDER_RADIUS)
     .backgroundColor(Color.Green)
   }
-
   @Styles
   ripplesStyleSearch() {
     .width(this.BUTTON_WIDTH)
@@ -92,7 +68,6 @@ export struct submitButtons {
     .borderRadius(this.BORDER_RADIUS)
     .backgroundColor(Color.Blue)
   }
-
   @Styles
   ripplesStyleSubmit() {
     .width(this.BUTTON_WIDTH)
@@ -100,6 +75,185 @@ export struct submitButtons {
     .borderRadius(this.BORDER_RADIUS)
     .backgroundColor(Color.Red)
   }
+
+  @State cleanAnimation: ButtonAnimationState = {
+    immediatelyOpacity: 0.8,
+    immediatelyScale: { x: 1, y: 1 },
+    delayOpacity: 0.4,
+    delayScale: { x: 1, y: 1 }
+  };
+  @State searchAnimation: ButtonAnimationState = {
+    immediatelyOpacity: 0.8,
+    immediatelyScale: { x: 1, y: 1 },
+    delayOpacity: 0.4,
+    delayScale: { x: 1, y: 1 }
+  };
+  @State submitAnimation: ButtonAnimationState = {
+    immediatelyOpacity: 0.8,
+    immediatelyScale: { x: 1, y: 1 },
+    delayOpacity: 0.4,
+    delayScale: { x: 1, y: 1 }
+  };
+
+  private _cleanLoopRunning: boolean = false;
+  private _searchLoopRunning: boolean = false;
+  private _submitLoopRunning: boolean = false;
+
+  private _cleanLastClick: number = 0;
+  private _searchLastClick: number = 0;
+  private _submitLastClick: number = 0;
+
+  private startCleanRippleLoop() {
+    if (this._cleanLoopRunning) return;
+    this._cleanLoopRunning = true;
+
+    const loop = () => {
+      if (!this._cleanLoopRunning) return;
+
+      this.getUIContext().animateTo({
+        duration: this.ANIMATION_DURATION,
+        curve: Curve.EaseInOut
+      }, () => {
+        this.cleanAnimation.immediatelyOpacity = 0;
+        this.cleanAnimation.immediatelyScale = { x: 4, y: 4 };
+      });
+
+      this.getUIContext().animateTo({
+        duration: this.ANIMATION_DURATION,
+        delay: 200,
+        curve: Curve.EaseInOut
+      }, () => {
+        this.cleanAnimation.delayOpacity = 0;
+        this.cleanAnimation.delayScale = { x: 4, y: 4 };
+      });
+
+      const total = this.ANIMATION_DURATION + 200 + 40;
+
+      setTimeout(() => {
+        if (!this._cleanLoopRunning) {
+          this.cleanAnimation.immediatelyOpacity = 0.8;
+          this.cleanAnimation.delayOpacity = 0.8;
+          this.cleanAnimation.immediatelyScale = { x: 1, y: 1 };
+          this.cleanAnimation.delayScale = { x: 1, y: 1 };
+          return;
+        }
+
+        this.cleanAnimation.immediatelyOpacity = 0.8;
+        this.cleanAnimation.delayOpacity = 0.8;
+        this.cleanAnimation.immediatelyScale = { x: 1, y: 1 };
+        this.cleanAnimation.delayScale = { x: 1, y: 1 };
+
+        loop();
+      }, total);
+    };
+
+    loop();
+  }
+  private stopCleanRippleLoop() {
+    this._cleanLoopRunning = false;
+  }
+  private startSearchRippleLoop() {
+    if (this._searchLoopRunning) return;
+    this._searchLoopRunning = true;
+
+    const loop = () => {
+      if (!this._searchLoopRunning) return;
+
+      this.getUIContext().animateTo({
+        duration: this.ANIMATION_DURATION,
+        curve: Curve.EaseInOut
+      }, () => {
+        this.searchAnimation.immediatelyOpacity = 0;
+        this.searchAnimation.immediatelyScale = { x: 4, y: 4 };
+      });
+
+      this.getUIContext().animateTo({
+        duration: this.ANIMATION_DURATION,
+        delay: 200,
+        curve: Curve.EaseInOut
+      }, () => {
+        this.searchAnimation.delayOpacity = 0;
+        this.searchAnimation.delayScale = { x: 4, y: 4 };
+      });
+
+      const total = this.ANIMATION_DURATION + 200 + 40;
+
+      setTimeout(() => {
+        if (!this._searchLoopRunning) {
+          this.searchAnimation.immediatelyOpacity = 0.8;
+          this.searchAnimation.delayOpacity = 0.8;
+          this.searchAnimation.immediatelyScale = { x: 1, y: 1 };
+          this.searchAnimation.delayScale = { x: 1, y: 1 };
+          return;
+        }
+
+        this.searchAnimation.immediatelyOpacity = 0.8;
+        this.searchAnimation.delayOpacity = 0.8;
+        this.searchAnimation.immediatelyScale = { x: 1, y: 1 };
+        this.searchAnimation.delayScale = { x: 1, y: 1 };
+
+        loop();
+      }, total);
+    };
+
+    loop();
+  }
+  private stopSearchRippleLoop() {
+    this._searchLoopRunning = false;
+  }
+  private startSubmitRippleLoop() {
+    if (this._submitLoopRunning) return;
+    this._submitLoopRunning = true;
+
+    const loop = () => {
+      if (!this._submitLoopRunning) return;
+
+      this.getUIContext().animateTo({
+        duration: this.ANIMATION_DURATION,
+        curve: Curve.EaseInOut
+      }, () => {
+        this.submitAnimation.immediatelyOpacity = 0;
+        this.submitAnimation.immediatelyScale = { x: 4, y: 4 };
+      });
+
+      this.getUIContext().animateTo({
+        duration: this.ANIMATION_DURATION,
+        delay: 200,
+        curve: Curve.EaseInOut
+      }, () => {
+        this.submitAnimation.delayOpacity = 0;
+        this.submitAnimation.delayScale = { x: 4, y: 4 };
+      });
+
+      const total = this.ANIMATION_DURATION + 200 + 40;
+
+      setTimeout(() => {
+        if (!this._submitLoopRunning) {
+          this.submitAnimation.immediatelyOpacity = 0.8;
+          this.submitAnimation.delayOpacity = 0.8;
+          this.submitAnimation.immediatelyScale = { x: 1, y: 1 };
+          this.submitAnimation.delayScale = { x: 1, y: 1 };
+          return;
+        }
+
+        this.submitAnimation.immediatelyOpacity = 0.8;
+        this.submitAnimation.delayOpacity = 0.8;
+        this.submitAnimation.immediatelyScale = { x: 1, y: 1 };
+        this.submitAnimation.delayScale = { x: 1, y: 1 };
+
+        loop();
+      }, total);
+    };
+
+    loop();
+  }
+  private stopSubmitRippleLoop() {
+    this._submitLoopRunning = false;
+  }
+
+
+
+
 
   build() {
     Row(){
@@ -121,6 +275,12 @@ export struct submitButtons {
           .borderRadius(this.BORDER_RADIUS)
           .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
           .onClick(() => {
+            const now = Date.now();
+            if (now - this._cleanLastClick < this.CLICK_INTERVAL) {
+              return;
+            }
+            this._cleanLastClick = now;
+
             vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
               if (err) {
                 console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
@@ -141,47 +301,17 @@ export struct submitButtons {
                 } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
               }
             });
+
             this.clearForm();
             this.isCleaning = !this.isCleaning;
+
             if (this.isCleaning) {
-              this.getUIContext().animateTo({
-                duration: this.ANIMATION_DURATION,
-                iterations: -1,
-                curve: Curve.EaseInOut
-              }, () => {
-                this.cleanAnimation.immediatelyOpacity = 0;
-                this.cleanAnimation.immediatelyScale = {
-                  x: 4,
-                  y: 4
-                };
-              })
-              this.getUIContext().animateTo({
-                duration: this.ANIMATION_DURATION,
-                iterations: -1,
-                curve: Curve.EaseInOut,
-                delay: 200
-              }, () => {
-                this.cleanAnimation.delayOpacity = 0;
-                this.cleanAnimation.delayScale = {
-                  x: 4,
-                  y: 4
-                };
-              })
+              this.startCleanRippleLoop();
             } else {
-              this.getUIContext().animateTo({ duration: 0 }, () => {
-                this.cleanAnimation.immediatelyOpacity = 0.8;
-                this.cleanAnimation.delayOpacity = 0.8;
-                this.cleanAnimation.immediatelyScale = {
-                  x: 1,
-                  y: 1
-                };
-                this.cleanAnimation.delayScale = {
-                  x: 1,
-                  y: 1
-                };
-              })
+              this.stopCleanRippleLoop();
             }
           })
+
       }
 
       // 查询按钮
@@ -202,6 +332,12 @@ export struct submitButtons {
           .borderRadius(this.BORDER_RADIUS)
           .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
           .onClick(() => {
+            const now = Date.now();
+            if (now - this._searchLastClick < this.CLICK_INTERVAL) {
+              return;
+            }
+            this._searchLastClick = now;
+
             vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
               if (err) {
                 console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
@@ -222,47 +358,17 @@ export struct submitButtons {
                 } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
               }
             });
+
             this.queryForm();
             this.isSearching = !this.isSearching;
+
             if (this.isSearching) {
-              this.getUIContext().animateTo({
-                duration: this.ANIMATION_DURATION,
-                iterations: -1,
-                curve: Curve.EaseInOut
-              }, () => {
-                this.searchAnimation.immediatelyOpacity = 0;
-                this.searchAnimation.immediatelyScale = {
-                  x: 4,
-                  y: 4
-                };
-              })
-              this.getUIContext().animateTo({
-                duration: this.ANIMATION_DURATION,
-                iterations: -1,
-                curve: Curve.EaseInOut,
-                delay: 200
-              }, () => {
-                this.searchAnimation.delayOpacity = 0;
-                this.searchAnimation.delayScale = {
-                  x: 4,
-                  y: 4
-                };
-              })
+              this.startSearchRippleLoop();
             } else {
-              this.getUIContext().animateTo({ duration: 0 }, () => {
-                this.searchAnimation.immediatelyOpacity = 0.8;
-                this.searchAnimation.delayOpacity = 0.8;
-                this.searchAnimation.immediatelyScale = {
-                  x: 1,
-                  y: 1
-                };
-                this.searchAnimation.delayScale = {
-                  x: 1,
-                  y: 1
-                };
-              })
+              this.stopSearchRippleLoop();
             }
           })
+
       }
 
       // 提交按钮
@@ -275,7 +381,7 @@ export struct submitButtons {
           .ripplesStyleSubmit()
           .opacity(this.submitAnimation.delayOpacity)
           .scale(this.submitAnimation.delayScale)
-        Button(this.isSubmitting? '提交中...':'提交投稿', { type: ButtonType.Normal }) // 这里修正了文字显示
+        Button(this.isSubmitting? '提交中...':'提交投稿', { type: ButtonType.Normal })
           .margin(2)
           .width(this.BUTTON_WIDTH)
           .height(this.BUTTON_HEIGHT)
@@ -283,6 +389,12 @@ export struct submitButtons {
           .borderRadius(this.BORDER_RADIUS)
           .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
           .onClick(() => {
+            const now = Date.now();
+            if (now - this._submitLastClick < this.CLICK_INTERVAL) {
+              return;
+            }
+            this._submitLastClick = now;
+
             vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
               if (err) {
                 console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
@@ -303,47 +415,17 @@ export struct submitButtons {
                 } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
               }
             });
-            this.submitForm()
-            this.isSubmitting = !this.isSubmitting; // 这里修正了状态变量
+
+            this.submitForm();
+            this.isSubmitting = !this.isSubmitting;
+
             if (this.isSubmitting) {
-              this.getUIContext().animateTo({
-                duration: this.ANIMATION_DURATION,
-                iterations: -1,
-                curve: Curve.EaseInOut
-              }, () => {
-                this.submitAnimation.immediatelyOpacity = 0;
-                this.submitAnimation.immediatelyScale = {
-                  x: 4,
-                  y: 4
-                };
-              })
-              this.getUIContext().animateTo({
-                duration: this.ANIMATION_DURATION,
-                iterations: -1,
-                curve: Curve.EaseInOut,
-                delay: 200
-              }, () => {
-                this.submitAnimation.delayOpacity = 0;
-                this.submitAnimation.delayScale = {
-                  x: 4,
-                  y: 4
-                };
-              })
+              this.startSubmitRippleLoop();
             } else {
-              this.getUIContext().animateTo({ duration: 0 }, () => {
-                this.submitAnimation.immediatelyOpacity = 0.8;
-                this.submitAnimation.delayOpacity = 0.8;
-                this.submitAnimation.immediatelyScale = {
-                  x: 1,
-                  y: 1
-                };
-                this.submitAnimation.delayScale = {
-                  x: 1,
-                  y: 1
-                };
-              })
+              this.stopSubmitRippleLoop();
             }
           })
+
       }
     }.width('100%').justifyContent(FlexAlign.SpaceBetween).margin({ top: 15 })
   }
