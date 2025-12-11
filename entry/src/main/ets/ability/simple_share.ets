@@ -2,9 +2,9 @@
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { submit_app_with_user_data } from '../submits';
 import { getUsername, initialize as initializeUserStorage } from '../common/profile';
 import { parseInputSplitLinksPkgsAndAppIds } from '../common/utils';
+import { submit_app } from '../common/api';
 
 /**
  * 这个 ability 是用来直接接受并投稿链接的
@@ -32,7 +32,7 @@ export class ShareAbility extends ShareExtensionAbility {
                     console.info(`dashboard_share_raw ${content}`);
 
                     getUsername().then((username) => {
-                        submit_app_with_user_data({
+                        submit_app({
                             pkg_name: pkg,
                             app_id,
                             comment: {

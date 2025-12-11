@@ -1,5 +1,5 @@
-import type { CommentInfo, SubmitAppBody } from './types';
-import { SUBMIT_PLATFORM } from '../global_data';
+import type { appIdOrPkgName, CommentInfo, SubmitAppBody } from './types';
+import { SUBMIT_PLATFORM } from '../common/constants';
 import { SAPIBaseURL, submitURL } from './constants';
 import URL from './url';
 import { http } from '@kit.NetworkKit';
@@ -23,7 +23,7 @@ export async function submit_app(
         pkg_name: data.pkg_name,
         comment: final_comment
     }
-    // console.log("submit data:", JSON.stringify(final_data));
+    console.log("submit data:", JSON.stringify(final_data));
     const path = new URL(submitURL, BASEURL);
     const request = http.createHttp();
     // console.log("path:", path.toString())
@@ -47,5 +47,11 @@ export async function submit_app(
     } finally {
         request.destroy();
     }
+    return null;
+}
+
+export async function query_app(
+    data: appIdOrPkgName
+) {
     return null;
 }
