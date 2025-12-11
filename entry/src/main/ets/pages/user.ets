@@ -773,6 +773,7 @@ export struct user {
             .width('100%')
             .height('100%')
         }
+        .navBarWidth('100%')
         .titleMode(HdsNavigationTitleMode.MINI)
         .titleBar({
             style: {

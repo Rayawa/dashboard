@@ -41,9 +41,35 @@ struct Dashboard {
         await setUsername(this.userName);
     }
 
+<<<<<<< HEAD
     async resetToDeviceName() {
         await setUsername(undefined);
         await this.loadUserName()
+=======
+  //Web控制
+  scroller: Scroller = new Scroller();
+  private web_controller: webview.WebviewController = new webview.WebviewController();
+
+  @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
+  @State mode: WebDarkMode = WebDarkMode.Auto;
+  @State isLoading: boolean = false;
+
+
+
+//==========================页面生命周期部分==========================
+  async aboutToAppear() {
+    this.loadUserName();
+    //shenjack的UA
+    const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
+    webview.WebviewController.setAppCustomUserAgent(customUA);
+    //UA结束
+    //Rayawa的握持监听
+    try {
+      motion.on('holdingHandChanged', this.holdingHandCallback);
+    } catch (err) {
+      const error = err as BusinessError;
+      console.error("订阅失败，错误码: " + error.code);
+>>>>>>> 28d58760ef0b821517c817a056edefed93faa3b0
     }
 
     //切换版本方法
@@ -91,6 +117,7 @@ struct Dashboard {
     @StorageLink('userName') userName: string = ''
     private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
 
+<<<<<<< HEAD
     private async checkFirstLaunch(): Promise<void> {
         try {
             let context = getContext(this) as common.UIAbilityContext;
@@ -110,6 +137,288 @@ struct Dashboard {
                 await prefs.put(this.IS_FIRST_LAUNCH_KEY, false);
                 await prefs.flush();
                 console.info('Index', '已更新首次启动标记。');
+=======
+
+//==========================分享部分==========================
+  //开启关闭监听方法
+  private shareListening() {
+    if (this.isNoListening()) {
+      harmonyShare.on('knockShare', this.purityCallback);
+      harmonyShare.on('gesturesShare', this.immersiveCallback);
+      this.ShareStatus = true;
+    } else {
+      try {
+        const uiContext: UIContext = this.getUIContext();
+        uiContext.getPromptAction().showToast({ message: 'Disable other knock events.' });
+      } catch (error) {
+        Logger.error(`showToast error. Code: ${error?.code}, message: ${error?.message}`);
+      }
+    }
+  }
+  private shareDisablingListening() {
+    harmonyShare.off('knockShare', this.purityCallback);
+    harmonyShare.off('gesturesShare', this.immersiveCallback);
+    this.ShareStatus = false;
+  }
+
+  //监听状态控制
+  @State ShareStatus: boolean = false;
+  @State rejectStatus: boolean = false;
+  @State updateStatus: boolean = false;
+  private isNoListening() {
+    return !this.ShareStatus && !this.rejectStatus && !this.updateStatus;
+  }
+  //获得页面URL
+  @State currentUrl: string = ''; //分享URL注册
+  public async getCurrentWebUrl(): Promise<string> {
+    try {
+      return this.web_controller.getUrl();
+    } catch (err) {
+      Logger.error('WebView', '获取 WebView URL 失败: ' + (err as BusinessError).message);
+      return '';
+    }
+  }
+  //按钮分享URL方法
+  private async shareUrl() {
+    const uiContext: UIContext = this.getUIContext();
+    const contextFaker: Context = uiContext.getHostContext() as Context;
+    const resourceMgr: resourceManager.ResourceManager = contextFaker.resourceManager;
+    this.currentUrl = await this.getCurrentWebUrl();
+    let fileData: Uint8Array | undefined = undefined;
+    try {
+      fileData = await resourceMgr.getMediaContent($r('app.media.app_icon').id);
+    } catch (error) {
+      Logger.error(`getMediaContent error. Code: ${error?.code}, message: ${error?.message}`);
+    }
+    let shareData: systemShare.SharedData = new systemShare.SharedData({
+      utd: utd.UniformDataType.HYPERLINK,
+      content: `${this.currentUrl}`,
+      title: '应用看板链接分享',
+      description: `${this.currentUrl}`,
+      thumbnail: fileData,
+    });
+    let controller: systemShare.ShareController = new systemShare.ShareController(shareData);
+    const context: common.UIAbilityContext = uiContext.getHostContext() as common.UIAbilityContext;
+    controller.show(context, {
+      previewMode: systemShare.SharePreviewMode.DEFAULT,
+      selectionMode: systemShare.SelectionMode.SINGLE
+    }).then(() => {
+      Logger.info('ShareController show success.');
+    }).catch((error: BusinessError) => {
+      Logger.error(`ShareController show error. code: ${error?.code}, message: ${error?.message}`);
+    });
+  }
+  //碰一碰分享方法
+  private purityCallback = async (sharableTarget: harmonyShare.SharableTarget) => {
+    this.currentUrl = await this.getCurrentWebUrl();
+    let shareData: systemShare.SharedData = new systemShare.SharedData({
+      utd: utd.UniformDataType.HYPERLINK,
+      content: `${this.currentUrl}`,
+      title: '应用看板链接分享',
+      description: this.currentUrl,
+    });
+    sharableTarget.share(shareData);
+  }
+  //隔空抓取方法
+  private immersiveCallback = async (sharableTarget: harmonyShare.SharableTarget) => {
+    const uiContext: UIContext = this.getUIContext();
+    const contextFaker: Context = uiContext.getHostContext() as Context;
+    const resourceMgr: resourceManager.ResourceManager = contextFaker.resourceManager;
+    this.currentUrl = await this.getCurrentWebUrl();
+    let fileData: Uint8Array | undefined = undefined;
+    try {
+      fileData = await resourceMgr.getMediaContent($r('app.media.app_icon').id);
+    } catch (error) {
+      Logger.error(`getMediaContent error. Code: ${error?.code}, message: ${error?.message}`);
+    }
+    let shareData: systemShare.SharedData = new systemShare.SharedData({
+      utd: utd.UniformDataType.HYPERLINK,
+      content: `${this.currentUrl}`,
+      title: '应用看板链接分享',
+      description: this.currentUrl,
+      thumbnail: fileData,
+    });
+    sharableTarget.share(shareData);
+  }
+
+
+//==========================主程序部分==========================
+  build() {
+    HdsNavigation() {
+      Stack() {
+        //==========================网页潜嵌套滚动==========================
+        Scroll(this.scroller) {
+          Column() {
+            Blank().height(70).width('100%').expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+            Web({ src: this.url, controller: this.web_controller, renderMode: RenderMode.SYNC_RENDER })
+              .layoutMode(WebLayoutMode.FIT_CONTENT)
+              .nestedScroll({
+                scrollForward: NestedScrollMode.SELF_FIRST,
+                scrollBackward: NestedScrollMode.SELF_FIRST
+              })
+              .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+              .domStorageAccess(true)
+              .darkMode(this.mode)
+              .forceDarkAccess(true)
+              .width('100%')
+              .backgroundColor($r('app.color.backcolor'))
+              .onPageBegin(() => this.isLoading = true)
+              .onPageEnd(() => this.isLoading = false)
+              .onControllerAttached(() => {
+                try {
+                  this.web_controller.setCustomUserAgent(APP_UA);
+                } catch {}
+              });
+
+          }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+        }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+
+        //==========================悬浮按钮==========================
+        Column({ space: 10 }) {
+          Button() {
+            Image($r('app.media.arrow_back'))
+              .width(24)
+              .height(24)
+              .fillColor(Color.White)
+          }
+          .onClick(() => {
+            this.web_controller.backward();
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) {
+                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                    } else {
+                      console.info('Succeed in starting vibration');
+                    }
+                  });
+                } catch (tryError) {
+                  console.error(`An unexpected error occurred in try block: ${tryError}`);
+                }
+              }
+            });
+            prompt.showToast({
+              message: '返回上一页',
+              duration: 500
+            });
+          })
+          .type(ButtonType.Circle)
+          .backgroundColor($r('app.color.background'))
+          .width(45)
+          .height(45)
+          .shadow({
+            radius: 4,
+            color: '#182431',
+            offsetX: 2,
+            offsetY: 4
+          })
+          .stateEffect(true)
+
+          Button() {
+            Image($r('app.media.arrow_up'))
+              .width(24)
+              .height(24)
+              .fillColor(Color.White)
+          }
+          .onClick(() => {
+            this.scroller.scrollTo({
+              xOffset: 0,
+              yOffset: 0,
+              animation: { duration: 300, curve: Curve.Ease }
+            })
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+              if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+              }
+              console.info('Succeed in querying effect');
+              if (state) {
+                try {
+                  vibrator.startVibration({
+                    type: 'preset',
+                    effectId: 'haptic.effect.hard',
+                    count: 1,
+                    intensity: 50,
+                  }, { usage: 'touch' }, (error: BusinessError) => {
+                    if (error) {
+                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                    } else {
+                      console.info('Succeed in starting vibration');
+                    }
+                  });
+                } catch (tryError) {
+                  console.error(`An unexpected error occurred in try block: ${tryError}`);
+                }
+              }
+            });
+            prompt.showToast({
+              message: '回到顶部',
+              duration: 500
+            });
+          })
+          .type(ButtonType.Circle)
+          .backgroundColor($r('app.color.background'))
+          .width(45)
+          .height(45)
+          .shadow({
+            radius: 4,
+            color: '#182431',
+            offsetX: 2,
+            offsetY: 4
+          })
+          .stateEffect(true)
+
+          Button() {
+            Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh'))
+              .width(24)
+              .height(24)
+              .fillColor(this.isLoading ? '#ff3b30' : Color.White)
+          }
+          .onClick(() => {
+            if (this.isLoading) {
+              this.web_controller.stop();
+              this.isLoading = false;
+              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                  return;
+                }
+                console.info('Succeed in querying effect');
+                if (state) {
+                  try {
+                    vibrator.startVibration({
+                      type: 'preset',
+                      effectId: 'haptic.effect.hard',
+                      count: 1,
+                      intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                      if (error) {
+                        console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                      } else {
+                        console.info('Succeed in starting vibration');
+                      }
+                    });
+                  } catch (tryError) {
+                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+                  }
+                }
+              });
+              prompt.showToast({
+                message: '已停止加载',
+                duration: 1000
+              });
+>>>>>>> 28d58760ef0b821517c817a056edefed93faa3b0
             } else {
                 console.info('Index', '非首次启动，不显示引导页。');
                 this.showTutorial = false;
@@ -119,6 +428,7 @@ struct Dashboard {
             console.error('Index', '检查首选项失败: %{public}s', JSON.stringify(error));
         }
     }
+<<<<<<< HEAD
 
     //Web控制
     scroller: Scroller = new Scroller();
@@ -140,6 +450,55 @@ struct Dashboard {
         } catch (err) {
             const error = err as BusinessError;
             console.error("订阅失败，错误码: " + error.code);
+=======
+    .navBarWidth('100%')
+    .titleMode(HdsNavigationTitleMode.MODAL)
+    .titleBar({
+      style: {
+        scrollEffectOpts: {
+          enableScrollEffect: true,
+          scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
+          blurEffectiveStartOffset: LengthMetrics.vp(0),
+          blurEffectiveEndOffset: LengthMetrics.vp(20)
+        },
+        originalStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('sys.color.ohos_id_color_background'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+              subTitleColor: $r('sys.color.font_secondary')
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+              subTitleColor: $r('sys.color.font_secondary')
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+>>>>>>> 28d58760ef0b821517c817a056edefed93faa3b0
         }
         //Rayawa的握持监听结束
 
