@@ -128,8 +128,8 @@ struct Dashboard {
   async aboutToAppear() {
     this.loadUserName();
     //shenjack的UA
-    // const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
-    // webview.WebviewController.setAppCustomUserAgent(customUA);
+    const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
+    webview.WebviewController.setAppCustomUserAgent(customUA);
     //UA结束
     //Rayawa的握持监听
     try {
@@ -318,11 +318,11 @@ struct Dashboard {
               .backgroundColor($r('app.color.backcolor'))
               .onPageBegin(() => this.isLoading = true)
               .onPageEnd(() => this.isLoading = false)
-              // .onControllerAttached(() => {
-              //   try {
-              //     this.web_controller.setCustomUserAgent(APP_UA);
-              //   } catch {}
-              // });
+              .onControllerAttached(() => {
+                try {
+                  this.web_controller.setCustomUserAgent(APP_UA);
+                } catch {}
+              });
 
           }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
@@ -801,6 +801,7 @@ struct Dashboard {
         }
       }.backgroundColor($r('app.color.backcolor')).expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
+    .navBarWidth('100%')
     .titleMode(HdsNavigationTitleMode.MODAL)
     .titleBar({
       style: {

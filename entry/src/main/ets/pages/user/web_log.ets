@@ -21,10 +21,10 @@ struct web_log {
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
 
-  // async aboutToAppear() {
-  //   const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
-  //   webview.WebviewController.setAppCustomUserAgent(customUA);
-  // }
+  async aboutToAppear() {
+    const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
+    webview.WebviewController.setAppCustomUserAgent(customUA);
+  }
   async onPageShow(): Promise<void> {
     this.win = await window.getLastWindow(getContext());
     const isDark = this.mode === WebDarkMode.On;
@@ -53,17 +53,18 @@ struct web_log {
               .backgroundColor($r('app.color.backcolor'))
               .onPageBegin(() => this.isLoading = true)
               .onPageEnd(() => this.isLoading = false)
-              // .onControllerAttached(() => {
-              //   try {
-              //     this.web_controller.setCustomUserAgent(APP_UA);
-              //   } catch {}
-              // });
+              .onControllerAttached(() => {
+                try {
+                  this.web_controller.setCustomUserAgent(APP_UA);
+                } catch {}
+              });
 
           }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
       }.backgroundColor($r('app.color.backcolor')).expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
+    .navBarWidth('100%')
     .titleMode(HdsNavigationTitleMode.MINI)
     .titleBar({
       style: {
