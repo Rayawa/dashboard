@@ -20,10 +20,10 @@ struct web_api {
     @State mode: WebDarkMode = WebDarkMode.Auto;
     @State isLoading: boolean = false;
 
-    // async aboutToAppear() {
-    //   const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
-    //   webview.WebviewController.setAppCustomUserAgent(customUA);
-    // }
+    async aboutToAppear() {
+      const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
+      webview.WebviewController.setAppCustomUserAgent(customUA);
+    }
     async onPageShow(): Promise<void> {
         this.win = await window.getLastWindow(getContext());
         const isDark = this.mode === WebDarkMode.On;
