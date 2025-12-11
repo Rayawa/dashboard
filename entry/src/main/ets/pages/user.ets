@@ -1,10 +1,9 @@
-import { router } from "@kit.ArkUI"
+import { router, curves } from "@kit.ArkUI"
 import { vibrator } from '@kit.SensorServiceKit';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
 import { APP_VERSION } from "../common/constants";
 import { deviceInfo } from '@kit.BasicServicesKit';
-import { curves } from '@kit.ArkUI';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername } from '../common/profile';
 import { tutorial } from '../component/common/tutorial'
 import { contact } from '../component/common/contact'
@@ -27,7 +26,6 @@ export struct user {
     @State customPopup: boolean = false;
     @StorageLink('userName') userName: string = ''
     @State deviceName: string = ''
-
     async loadUserName() {
         initializeUserStorage()
         this.userName = await getUsername();

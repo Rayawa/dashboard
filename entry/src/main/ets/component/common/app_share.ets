@@ -305,20 +305,17 @@ export struct app_share {
 
   // 处理提取信息
   private async handleAutoExtract() {
-    // 如果正在处理中或输入为空，则不执行
     if (this.isProcessing || !this.inputText.trim()) {
       return;
     }
 
     this.isProcessing = true;
-    this.extractedApps = []; // 清空之前的提取结果
+    this.extractedApps = [];
 
     try {
-      // 调用自然语言提取器
       const apps = await NaturalLanguageExtractor.extractAppInfoFromText(this.inputText);
       this.extractedApps = apps;
 
-      // 自动填充到表单
       if (this.extractedApps.length > 0) {
         vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
           if (err) {
@@ -348,9 +345,7 @@ export struct app_share {
       this.isProcessing = false;
     }
   }
-  // 自动填充表单（提取到信息后自动调用）
 
-  // 修改 autoFillForm 方法
   private autoFillForm() {
     if (this.extractedApps.length === 0) {
       return;
@@ -358,7 +353,6 @@ export struct app_share {
 
     const app = this.extractedApps[0];
 
-    // 如果有新提取的值，就覆盖（无论之前是否有值）
     if (app.link !== undefined && app.link !== null) {
       this.formData.appLink = app.link;
     }
@@ -371,23 +365,18 @@ export struct app_share {
       this.formData.appId = app.appID;
     }
 
-    // 智能处理备注
     if (app.date) {
-      // 移除旧的提取日期（如果有的话）
       const oldRemark = this.formData.remark;
       const datePattern = /提取日期:\s*\d{4}-\d{2}-\d{2}[\r\n]*/;
 
       if (oldRemark && datePattern.test(oldRemark)) {
-        // 移除旧日期，保留其他备注
         const otherRemark = oldRemark.replace(datePattern, '').trim();
         this.formData.remark = otherRemark ?
           `提取日期: ${app.date}\n${otherRemark}` :
           `提取日期: ${app.date}`;
       } else if (oldRemark) {
-        // 保留原有备注并添加新日期
         this.formData.remark = `提取日期: ${app.date}\n${oldRemark}`;
       } else {
-        // 只有提取日期
         this.formData.remark = `提取日期: ${app.date}`;
       }
     }
