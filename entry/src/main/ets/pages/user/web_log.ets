@@ -71,6 +71,7 @@ struct web_log {
             .backgroundColor($r('app.color.backcolor'))
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         }
+        .navBarWidth('100%')
         .titleMode(HdsNavigationTitleMode.MINI)
         .titleBar({
             style: {

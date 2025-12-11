@@ -169,6 +169,7 @@ struct app_log {
         .height('100%')
         .backgroundColor($r('app.color.backcolor'))
     }
+    .navBarWidth('100%')
     .titleMode(HdsNavigationTitleMode.MINI)
     .titleBar({
       style: {
