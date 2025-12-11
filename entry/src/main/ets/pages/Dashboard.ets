@@ -26,29 +26,12 @@ struct Dashboard {
     //控制相关
     @State showButton: boolean = true;
     @State showTutorial: boolean = false;
-
-    // @State isExpand: boolean = false;
-    // @State isPrimaryIconChanged: boolean = false;
-    // @State primaryHoverTips: ResourceStr = '开始';
-
-    //用户名初始化(防止小天才模式）
-    async loadUserName() {
-        initializeUserStorage()
-        this.userName = await getUsername();
-    }
-
-    async saveUserName() {
-        await setUsername(this.userName);
-    }
-
-    async resetToDeviceName() {
-        await setUsername(undefined);
-        await this.loadUserName()
-    }
+    @State isExpand: boolean = false;
+    @State isPrimaryIconChanged: boolean = false;
+    @State primaryHoverTips: string = '展开';
 
     //切换版本方法
     @State isT: boolean = true;
-
     private switchWebVersion(): void {
         this.isT = !this.isT;
         const switchVersion = this.isT ? 'T站' : ' S站';
@@ -59,26 +42,68 @@ struct Dashboard {
     }
 
     //智感握持
-    @State y: number = 300;
-    @State buttonShowOffsetX: string = '84%';
-    @State buttonHideOffsetX: string = '101%'
+    @State offsetX: number = 0
+    @State offsetY: number = 0
+    @State startX: number = 0
+    @State startY: number = 0
+    private uiAbilityContext: Context | undefined = undefined;
+    @State y: number = 200;
+    @State buttonShowOffsetX: number = 0;
+    @State buttonHideOffsetX: number = 0;
+    @State screenWidth: number = 0;
     @State showButtonAnimation: boolean = true;
     holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
         switch (data) {
-            case 1: // 左手握持
-                this.buttonShowOffsetX = '3%';
-                this.buttonHideOffsetX = '-20%';
+            case 1:
+                this.setButtonToLeft();
                 break;
-            case 2: // 右手握持
-                this.buttonShowOffsetX = '84%';
-                this.buttonHideOffsetX = '101%';
+            case 2:
+                this.setButtonToRight();
                 break;
-            default: // 其他状态
-                this.buttonShowOffsetX = '84%';
-                this.buttonHideOffsetX = '101%';
+            default:
                 break;
         }
     };
+    async getWindowSizeInVp() {
+        try {
+            // 获取当前窗口
+            let context = getContext(this) as common.UIAbilityContext;
+            let windowClass = await window.getLastWindow(context);
+
+            // 获取窗口属性 - 这个返回的可能是VP单位
+            let windowProperties = await windowClass.getWindowProperties();
+            const width = windowProperties.windowRect.width;
+
+            // 获取窗口的视觉区域（Viewport） - 通常返回的是VP
+            const windowRect = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
+
+            console.log(`窗口宽度: ${width}`);
+            console.log(`视觉区域: ${windowRect}`);
+
+            // 通常这个值就是VP单位的宽度
+            this.screenWidth = width;
+            return width;
+        } catch (error) {
+            console.error('获取窗口尺寸失败:', error);
+            return 0;
+        }
+    }
+
+    // 设置到左边
+    setButtonToLeft() {
+        const buttonWidth = 60; // 假设按钮宽度为60px
+        this.buttonShowOffsetX = 10; // 左边留10px边距
+        this.buttonHideOffsetX = -buttonWidth - 10; // 隐藏在左边
+    }
+
+    // 设置到右边
+    setButtonToRight() {
+        const buttonWidth = 60; // 假设按钮宽度为60px
+        if (this.screenWidth > 0) {
+            this.buttonShowOffsetX = this.screenWidth - buttonWidth - 10; // 右边留10px边距
+            this.buttonHideOffsetX = this.screenWidth + 10; // 隐藏在右边
+        }
+    }
     //动画相关
     private effect: TransitionEffect =
         TransitionEffect.OPACITY
@@ -88,9 +113,22 @@ struct Dashboard {
     //entry
     @State url: string = (new URL(dashboardURL, TBaseURL)).toString();
     private win: window.Window | null = null;
-    @StorageLink('userName') userName: string = ''
-    private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
 
+    @StorageLink('userName') userName: string = ''
+    //用户名初始化(防止小天才模式）
+    async loadUserName() {
+        initializeUserStorage()
+        this.userName = await getUsername();
+    }
+    async saveUserName() {
+        await setUsername(this.userName);
+    }
+    async resetToDeviceName() {
+        await setUsername(undefined);
+        await this.loadUserName()
+    }
+
+    private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
     private async checkFirstLaunch(): Promise<void> {
         try {
             let context = getContext(this) as common.UIAbilityContext;
@@ -129,10 +167,11 @@ struct Dashboard {
 
     //==========================页面生命周期部分==========================
     async aboutToAppear() {
+        await this.getWindowSizeInVp();
         this.loadUserName();
-        //shenjack的UA
-        // const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
-        // webview.WebviewController.setAppCustomUserAgent(customUA);
+        //UA
+        const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
+        webview.WebviewController.setAppCustomUserAgent(customUA);
         //UA结束
         //Rayawa的握持监听
         try {
@@ -225,14 +264,12 @@ struct Dashboard {
     @State ShareStatus: boolean = false;
     @State rejectStatus: boolean = false;
     @State updateStatus: boolean = false;
-
     private isNoListening() {
         return !this.ShareStatus && !this.rejectStatus && !this.updateStatus;
     }
 
     //获得页面URL
     @State currentUrl: string = ''; //分享URL注册
-
     public async getCurrentWebUrl(): Promise<string> {
         try {
             return this.web_controller.getUrl();
@@ -241,7 +278,6 @@ struct Dashboard {
             return '';
         }
     }
-
     //按钮分享URL方法
     private async shareUrl() {
         const uiContext: UIContext = this.getUIContext();
@@ -310,7 +346,7 @@ struct Dashboard {
     build() {
         HdsNavigation() {
             Stack() {
-                //==========================网页潜嵌套滚动==========================
+                //==========================网页嵌套滚动==========================
                 Scroll(this.scroller) {
                     Column() {
                         Blank()
@@ -339,11 +375,17 @@ struct Dashboard {
                             .backgroundColor($r('app.color.backcolor'))
                             .onPageBegin(() => this.isLoading = true)
                             .onPageEnd(() => this.isLoading = false)
+                            .onControllerAttached(() => {
+                                try {
+                                    this.web_controller.setCustomUserAgent(APP_UA);
+                                } catch {
+                                }
+                            });
 
                     }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                 }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
-                //==========================悬浮按钮==========================
+                // ==========================悬浮按钮==========================
                 Column({ space: 10 }) {
                     Button() {
                         Image($r('app.media.arrow_back'))
@@ -586,132 +628,264 @@ struct Dashboard {
                     })
                     .stateEffect(true)
 
-                    // HdsActionBar({
-                    //   startButtons: [
-                    //     new ActionBarButton({
-                    //       baseIcon: $r('app.media.arrow_back_r'),
-                    //       hoverTips: '返回上级',
-                    //       onClick: () => {
-                    //         this.web_controller.backward();
-                    //         prompt.showToast({ message: '返回上级', duration: 500 });
-                    //         // 添加按钮点击效果
-                    //         this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-                    //         setTimeout(() => {
-                    //           this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-                    //         }, 300);
-                    //       }
-                    //     }),
-                    //     new ActionBarButton({
-                    //       baseIcon: this.isLoading ? $r('app.media.stop_r') : $r('app.media.refresh_r'),
-                    //       hoverTips: this.isLoading ? "停止刷新" : "刷新页面",
-                    //       onClick: () => {
-                    //         if (this.isLoading) {
-                    //           this.web_controller.stop();
-                    //           this.isLoading = false;
-                    //           prompt.showToast({ message: '停止刷新', duration: 500 });
-                    //         } else {
-                    //           this.web_controller.refresh();
-                    //           this.isLoading = true;
-                    //           prompt.showToast({ message: '刷新页面', duration: 500 });
-                    //         }
-                    //         this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-                    //         setTimeout(() => {
-                    //           this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-                    //         }, 300);
-                    //       }
-                    //     })
-                    //   ],
-                    //   endButtons: [
-                    //     new ActionBarButton({
-                    //       baseIcon: $r('app.media.arrow_up_r'),
-                    //       hoverTips: '回到顶部',
-                    //       onClick: () => {
-                    //         this.scrollToTop();
-                    //         prompt.showToast({ message: '回到顶部', duration: 500 });
-                    //         this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-                    //         setTimeout(() => {
-                    //           this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-                    //         }, 300);
-                    //       }
-                    //     }),
-                    //     new ActionBarButton({
-                    //       baseIcon: $r('app.media.switch_r'),
-                    //       hoverTips: '切换版本',
-                    //       onClick: () => {
-                    //         this.switchWebVersion();
-                    //         this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-                    //         setTimeout(() => {
-                    //           this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-                    //         }, 300);
-                    //       }
-                    //     })
-                    //   ],
-                    //   primaryButton: new ActionBarButton({
-                    //     baseIcon: $r('app.media.menu_r'),
-                    //     altIcon: $r('app.media.close_r'),
-                    //     onClick: () => {
-                    //       this.isExpand = !this.isExpand;
-                    //       this.isPrimaryIconChanged = !this.isPrimaryIconChanged;
-                    //       if (this.isPrimaryIconChanged) {
-                    //         this.primaryHoverTips = '展开';
-                    //       } else {
-                    //         this.primaryHoverTips = '折叠';
-                    //       }
-                    //       this.buttonPressShadow = hdsEffect.PressShadowType.BLEND_GRADIENT;
-                    //       setTimeout(() => {
-                    //         this.buttonPressShadow = hdsEffect.PressShadowType.NONE;
-                    //       }, 300);
-                    //     },
-                    //     hoverTips: this.primaryHoverTips
-                    //   }),
-                    //   actionBarStyle: new ActionBarStyle({
-                    //     isPrimaryIconChanged: this.isPrimaryIconChanged
-                    //   }),
-                    //   isExpand: this.isExpand!!
-                    // })
-                    //   .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    //     .pointLight({
-                    //       illuminatedType: this.actionBarIlluminatedType,
-                    //       options: {
-                    //         color: Color.White,
-                    //         intensity: this.lightIntensity,
-                    //         height: 100
-                    //       }
-                    //     })
-                    //     .pressShadow(this.buttonPressShadow)
-                    //     .buildEffect())
+
                 }
-                .position({ x: this.showButton ? `${this.buttonShowOffsetX}` : `${this.buttonHideOffsetX}`, y: this.y })
-                .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.7, 0.8), duration: 500 } :
-                    { duration: 0 })
+                // HdsActionBar({
+                //     primaryButton: new ActionBarButton({
+                //         baseIcon: $r('app.media.menu'),
+                //         altIcon: $r('app.media.close'),
+                //         shadowStyle: ShadowStyle.OUTER_FLOATING_SM,
+                //         onClick: () => {
+                //             this.isExpand = !this.isExpand;
+                //             this.isPrimaryIconChanged = !this.isPrimaryIconChanged;
+                //             if (this.isPrimaryIconChanged) {
+                //                 this.primaryHoverTips = '暂停';
+                //             } else {
+                //                 this.primaryHoverTips = '开始';
+                //             }
+                //         },
+                //         hoverTips: this.primaryHoverTips
+                //     }),
+                //     startButtons: [
+                //         new ActionBarButton({
+                //             baseIcon: $r('app.media.arrow_back'),
+                //             hoverTips: '返回上级',
+                //             onClick: () => {
+                //                 this.web_controller.backward();
+                //                 vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                //                     if (err) {
+                //                         console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                //                         return;
+                //                     }
+                //                     console.info('Succeed in querying effect');
+                //                     if (state) {
+                //                         try {
+                //                             vibrator.startVibration({
+                //                                 type: 'preset',
+                //                                 effectId: 'haptic.effect.hard',
+                //                                 count: 1,
+                //                                 intensity: 50,
+                //                             }, { usage: 'touch' }, (error: BusinessError) => {
+                //                                 if (error) {
+                //                                     console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                //                                 } else {
+                //                                     console.info('Succeed in starting vibration');
+                //                                 }
+                //                             });
+                //                         } catch (tryError) {
+                //                             console.error(`An unexpected error occurred in try block: ${tryError}`);
+                //                         }
+                //                     }
+                //                 });
+                //                 prompt.showToast({
+                //                     message: '返回上一页',
+                //                     duration: 500
+                //                 });
+                //             }
+                //         }),
+                //         new ActionBarButton({
+                //             baseIcon: this.isLoading ? $r('app.media.stop') : $r('app.media.refresh'),
+                //             hoverTips: this.isLoading ? "停止刷新" : "刷新页面",
+                //             onClick:() => {
+                //                 if (this.isLoading) {
+                //                     this.web_controller.stop();
+                //                     this.isLoading = false;
+                //                     vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                //                         if (err) {
+                //                             console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                //                             return;
+                //                         }
+                //                         console.info('Succeed in querying effect');
+                //                         if (state) {
+                //                             try {
+                //                                 vibrator.startVibration({
+                //                                     type: 'preset',
+                //                                     effectId: 'haptic.effect.hard',
+                //                                     count: 1,
+                //                                     intensity: 50,
+                //                                 }, { usage: 'touch' }, (error: BusinessError) => {
+                //                                     if (error) {
+                //                                         console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                //                                     } else {
+                //                                         console.info('Succeed in starting vibration');
+                //                                     }
+                //                                 });
+                //                             } catch (tryError) {
+                //                                 console.error(`An unexpected error occurred in try block: ${tryError}`);
+                //                             }
+                //                         }
+                //                     });
+                //                     prompt.showToast({
+                //                         message: '已停止加载',
+                //                         duration: 1000
+                //                     });
+                //                 } else {
+                //                     this.web_controller.refresh();
+                //                     this.isLoading = true;
+                //                     vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                //                         if (err) {
+                //                             console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                //                             return;
+                //                         }
+                //                         console.info('Succeed in querying effect');
+                //                         if (state) {
+                //                             try {
+                //                                 vibrator.startVibration({
+                //                                     type: 'preset',
+                //                                     effectId: 'haptic.effect.hard',
+                //                                     count: 1,
+                //                                     intensity: 50,
+                //                                 }, { usage: 'touch' }, (error: BusinessError) => {
+                //                                     if (error) {
+                //                                         console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                //                                     } else {
+                //                                         console.info('Succeed in starting vibration');
+                //                                     }
+                //                                 });
+                //                             } catch (tryError) {
+                //                                 console.error(`An unexpected error occurred in try block: ${tryError}`);
+                //                             }
+                //                         }
+                //                     });
+                //                     prompt.showToast({
+                //                         message: '刷新中...',
+                //                         duration: 1000
+                //                     });
+                //
+                //                     setTimeout(() => {
+                //                         if (this.isLoading) {
+                //                             this.isLoading = false;
+                //                         }
+                //                     }, 3000);
+                //                 }
+                //             }
+                //         })
+                //     ],
+                //     endButtons: [
+                //         new ActionBarButton({
+                //             baseIcon: $r('app.media.arrow_up_r'),
+                //             hoverTips: '回到顶部',
+                //             onClick:() => {
+                //                 this.scroller.scrollTo({
+                //                     xOffset: 0,
+                //                     yOffset: 0,
+                //                     animation: { duration: 300, curve: Curve.Ease }
+                //                 })
+                //                 vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                //                     if (err) {
+                //                         console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                //                         return;
+                //                     }
+                //                     console.info('Succeed in querying effect');
+                //                     if (state) {
+                //                         try {
+                //                             vibrator.startVibration({
+                //                                 type: 'preset',
+                //                                 effectId: 'haptic.effect.hard',
+                //                                 count: 1,
+                //                                 intensity: 50,
+                //                             }, { usage: 'touch' }, (error: BusinessError) => {
+                //                                 if (error) {
+                //                                     console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                //                                 } else {
+                //                                     console.info('Succeed in starting vibration');
+                //                                 }
+                //                             });
+                //                         } catch (tryError) {
+                //                             console.error(`An unexpected error occurred in try block: ${tryError}`);
+                //                         }
+                //                     }
+                //                 });
+                //                 prompt.showToast({
+                //                     message: '回到顶部',
+                //                     duration: 500
+                //                 });
+                //             }
+                //         }),
+                //         new ActionBarButton({
+                //             baseIcon: $r('app.media.switch_r'),
+                //             hoverTips: '切换版本',
+                //             onClick: () => {
+                //                 vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                //                     if (err) {
+                //                         console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                //                         return;
+                //                     }
+                //                     console.info('Succeed in querying effect');
+                //                     if (state) {
+                //                         try {
+                //                             vibrator.startVibration({
+                //                                 type: 'preset',
+                //                                 effectId: 'haptic.effect.hard',
+                //                                 count: 1,
+                //                                 intensity: 50,
+                //                             }, { usage: 'touch' }, (error: BusinessError) => {
+                //                                 if (error) {
+                //                                     console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                //                                 } else {
+                //                                     console.info('Succeed in starting vibration');
+                //                                 }
+                //                             });
+                //                         } catch (tryError) {
+                //                             console.error(`An unexpected error occurred in try block: ${tryError}`);
+                //                         }
+                //                     }
+                //                 });
+                //                 this.switchWebVersion();
+                //             }
+                //         })
+                //     ],
+                //     actionBarStyle: new ActionBarStyle({
+                //         backgroundBlurStyle: BlurStyle.Thin,
+                //         isHorizontal: false,
+                //         isPrimaryIconChanged: this.isPrimaryIconChanged
+                //     }),
+                //     isExpand: this.isExpand!!
+                // })
+                //     .position({
+                //         x: this.showButton ? this.buttonShowOffsetX : this.buttonHideOffsetX,
+                //         y: this.y
+                //     })
+                // .animation(this.showButton ? { curve: curves.springMotion(0.7, 0.8), duration: 500 } :
+                //     { duration: 0 })
+                // .gesture(
+                //     SwipeGesture({ direction: SwipeDirection.Horizontal })
+                //         .onAction((move: GestureEvent | undefined) => {
+                //             if (move) {
+                //                 this.showButton = false;
+                //                 setTimeout(() => {
+                //                     this.showButtonAnimation = false;
+                //                 }, 300);
+                //             }
+                //         })
+                // )
+                .translate({ x: this.offsetX, y: this.offsetY })
                 .gesture(
-                    SwipeGesture({ direction: SwipeDirection.Horizontal })
-                        .onAction((move: GestureEvent | undefined) => {
-                            if (move) {
-                                this.showButton = false;
-                                setTimeout(() => {
-                                    this.showButtonAnimation = false;
-                                }, 300);
-                            }
+                    PanGesture({ fingers:1, direction: PanDirection.All })
+                        .onActionStart(() => {
+                            this.startX = this.offsetX
+                            this.startY = this.offsetY
+                        })
+                        .onActionUpdate((event: GestureEvent) => {
+                            // 更新位置
+                            this.offsetX = this.startX + event.offsetX
+                            this.offsetY = this.startY + event.offsetY
                         })
                 )
-                .gesture(
-                    GestureGroup(
-                        GestureMode.Sequence,
-                        PanGesture({ direction: PanDirection.Vertical })
-                            .onActionEnd((event: GestureEvent) => {
-                                this.y = this.y + event.offsetY
-                                if (this.y > 550) {
-                                    this.y = 550;
-                                    prompt.showToast({ message: '不能再往下啦', duration: 500 })
-                                } else if (this.y < 60) {
-                                    this.y = 60;
-                                    prompt.showToast({ message: '不能再往上啦', duration: 500 })
-                                }
-                                console.log('平移中，垂直偏移量 y 为:', this.y);
-                            })
-                    )
-                )
+                // .gesture(
+                //     PanGesture({ direction: PanDirection.Vertical })
+                //         .onActionEnd((event: GestureEvent) => {
+                //             this.y = this.y + event.offsetY
+                //             if (this.y > 550) {
+                //                 this.y = 550;
+                //                 prompt.showToast({ message: '不能再往下啦', duration: 500 })
+                //             } else if (this.y < 60) {
+                //                 this.y = 60;
+                //                 prompt.showToast({ message: '不能再往上啦', duration: 500 })
+                //             }
+                //             console.log('平移中，垂直偏移量 y 为:', this.y);
+                //         })
+                // )
 
                 if (!this.showButton) {
                     Column()
@@ -821,9 +995,11 @@ struct Dashboard {
                     ).transition(this.effect)
                 }
             }
+            .width('100%')
             .backgroundColor($r('app.color.backcolor'))
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         }
+        .width('100%')
         .navBarWidth('100%')
         .titleMode(HdsNavigationTitleMode.MODAL)
         .titleBar({

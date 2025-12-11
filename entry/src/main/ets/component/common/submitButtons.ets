@@ -251,10 +251,6 @@ export struct submitButtons {
     this._submitLoopRunning = false;
   }
 
-
-
-
-
   build() {
     Row(){
       // 清空按钮
