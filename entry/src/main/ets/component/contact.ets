@@ -1,6 +1,6 @@
-import { prompt } from '@kit.ArkUI'
-import { pasteboard, BusinessError } from '@kit.BasicServicesKit'
-import { common, Want } from '@kit.AbilityKit'
+import { prompt } from '@kit.ArkUI';
+import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
+import { common, Want } from '@kit.AbilityKit';
 import { vibrator } from '@kit.SensorServiceKit';
 
 @Component

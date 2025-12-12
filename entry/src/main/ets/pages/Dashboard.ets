@@ -1,23 +1,19 @@
-import { webview } from "@kit.ArkWeb";
-import { HdsActionBar, ActionBarButton, ActionBarStyle, ExtendBarMode, HdsNavigationTitleMode } from '@kit.UIDesignKit'
-import { curves, prompt, router } from "@kit.ArkUI";
+import { webview } from '@kit.ArkWeb';
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { curves, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import window from '@ohos.window';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { APP_UA, TBaseURL, SBaseURL, dashboardURL } from "../common/constants";
+import { APP_UA, dashboardURL, SBaseURL, TBaseURL } from '../common/constants';
 import { Logger } from '../utils/Logger';
-import { common } from "@kit.AbilityKit";
+import { common } from '@kit.AbilityKit';
 import { harmonyShare, systemShare } from '@kit.ShareKit';
-import { uniformTypeDescriptor as utd } from '@kit.ArkData';
+import { preferences, uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername } from '../common/profile';
-import { HdsNavigation, HdsNavigationAttribute, ScrollEffectType } from '@kit.UIDesignKit';
-import { LengthMetrics } from '@kit.ArkUI';
-import { preferences } from '@kit.ArkData';
-import { tutorial } from '../component/common/tutorial'
-import { hdsEffect } from '@kit.UIDesignKit';
-import URL from "../common/url";
+import { tutorial } from '../component/tutorial';
+import URL from '../common/url';
 
 @Entry
 @Component
@@ -461,9 +457,9 @@ struct Dashboard {
 
                 }
                 .position({
-                        x: this.showButton ? this.buttonShowOffsetX : this.buttonHideOffsetX,
-                        y: this.y
-                    })
+                    x: this.showButton ? this.buttonShowOffsetX : this.buttonHideOffsetX,
+                    y: this.y
+                })
                 .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.7, 0.8), duration: 500 } : { duration: 0 })
                 .gesture(
                     SwipeGesture({ direction: SwipeDirection.Horizontal })

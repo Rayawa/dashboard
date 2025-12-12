@@ -1,8 +1,7 @@
-import { router } from '@kit.ArkUI'
+import { LengthMetrics, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { HdsNavigation, HdsNavigationAttribute, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
-import { LengthMetrics } from '@kit.ArkUI';
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 
 class UpdateLog {
   version: string = '';
@@ -129,73 +128,73 @@ struct app_log {
   }
   build() {
     HdsNavigation() {
-        Scroll(){
-          Column() {
-            ForEach(this.updateLogs, (log: UpdateLog) => {
-              Column() {
-                Row() {
-                  Column() {
-                    Row() {
-                      Text(log.version)
-                        .fontSize(18)
-                        .fontWeight(FontWeight.Medium)
-                      if (log.isRelease) {
-                        Text('正式版')
-                          .fontSize(12)
-                          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-                          .backgroundColor('#FF6A39')
-                          .fontColor('#fff')
-                          .borderRadius(6)
-                          .margin({ left: 8 })
-                      }
+      Scroll(){
+        Column() {
+          ForEach(this.updateLogs, (log: UpdateLog) => {
+            Column() {
+              Row() {
+                Column() {
+                  Row() {
+                    Text(log.version)
+                      .fontSize(18)
+                      .fontWeight(FontWeight.Medium)
+                    if (log.isRelease) {
+                      Text('正式版')
+                        .fontSize(12)
+                        .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                        .backgroundColor('#FF6A39')
+                        .fontColor('#fff')
+                        .borderRadius(6)
+                        .margin({ left: 8 })
                     }
-                    Text(log.date)
-                      .fontSize(13)
-                      .fontColor('#999')
-                      .margin({ top: 4 })
                   }
+                  Text(log.date)
+                    .fontSize(13)
+                    .fontColor('#999')
+                    .margin({ top: 4 })
                 }
-                Column({ space: 5 }) {
-                  ForEach(log.items, (item: string) => {
-                    Row() {
-                      Text('•')
-                        .fontSize(16)
-                        .fontWeight(600)
-                        .fontColor('#666')
-                      Text(item)
-                        .margin({ left: 5 })
-                        .fontSize(15)
-                        .lineHeight(20)
-                        .flexShrink(1)
-                    }
-                    .justifyContent(FlexAlign.Start)
-                    .width('100%')
-                    .padding({right:5})
-                  })
-                }
-                .margin({ top: 10 })
               }
-              .padding(16)
-              .borderRadius(16)
-              .backgroundColor($r('app.color.background'))
-              .shadow({
-                radius: 8,
-                color: '#1a000000',
-                offsetX: 0,
-                offsetY: 2
-              })
-              .width('90%')
-              .margin({ bottom: 16 })
+              Column({ space: 5 }) {
+                ForEach(log.items, (item: string) => {
+                  Row() {
+                    Text('•')
+                      .fontSize(16)
+                      .fontWeight(600)
+                      .fontColor('#666')
+                    Text(item)
+                      .margin({ left: 5 })
+                      .fontSize(15)
+                      .lineHeight(20)
+                      .flexShrink(1)
+                  }
+                  .justifyContent(FlexAlign.Start)
+                  .width('100%')
+                  .padding({right:5})
+                })
+              }
+              .margin({ top: 10 })
+            }
+            .padding(16)
+            .borderRadius(16)
+            .backgroundColor($r('app.color.background'))
+            .shadow({
+              radius: 8,
+              color: '#1a000000',
+              offsetX: 0,
+              offsetY: 2
             })
-          }
-          .margin({top:60,bottom:20})
-          .width('100%')
-          .alignItems(HorizontalAlign.Center)
+            .width('90%')
+            .margin({ bottom: 16 })
+          })
         }
-        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+        .margin({top:60,bottom:20})
         .width('100%')
-        .height('100%')
-        .backgroundColor($r('app.color.backcolor'))
+        .alignItems(HorizontalAlign.Center)
+      }
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      .width('100%')
+      .height('100%')
+      .backgroundColor($r('app.color.backcolor'))
     }
     .navBarWidth('100%')
     .titleMode(HdsNavigationTitleMode.MINI)

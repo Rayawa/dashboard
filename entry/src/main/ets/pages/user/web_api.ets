@@ -1,13 +1,9 @@
-import { webview } from "@kit.ArkWeb";
-import { HdsActionBar, ActionBarButton, ActionBarStyle, ExtendBarMode, HdsNavigationTitleMode } from '@kit.UIDesignKit'
-import { curves, prompt, router } from "@kit.ArkUI";
-import { APP_UA } from "../../common/constants";
+import { webview } from '@kit.ArkWeb';
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { LengthMetrics, prompt, router } from '@kit.ArkUI';
 import window from '@ohos.window';
-import { motion } from '@kit.MultimodalAwarenessKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { HdsNavigation, HdsNavigationAttribute, ScrollEffectType } from '@kit.UIDesignKit';
-import { LengthMetrics } from '@kit.ArkUI';
 
 @Entry
 @Component
@@ -48,8 +44,8 @@ struct web_api {
     }
 
     async aboutToAppear() {
-      const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
-      webview.WebviewController.setAppCustomUserAgent(customUA);
+        const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
+        webview.WebviewController.setAppCustomUserAgent(customUA);
     }
     async onPageShow(): Promise<void> {
         this.win = await window.getLastWindow(getContext());

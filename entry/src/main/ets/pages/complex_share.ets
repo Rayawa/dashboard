@@ -1,10 +1,9 @@
-import { NaturalLanguageExtractor, AppInfo } from '../ability/NaturalLanguageExtract';
-import { prompt } from '@kit.ArkUI';
+import { AppInfo, NaturalLanguageExtractor } from '../ability/NaturalLanguageExtract';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { common } from '@kit.AbilityKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { submitButtons } from '../component/common/submitButtons';
+import { submitButtons } from '../component/submitButtons';
 import { FormData } from '../common/types';
 
 interface ShareParams {
