@@ -13,11 +13,13 @@ import { resourceManager } from '@kit.LocalizationKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername } from '../common/profile';
 import { tutorial } from '../component/tutorial';
 import URL from '../common/url';
+import componentUtils from '@ohos.arkui.componentUtils';
 
 
 @Entry
 @Component
 struct Dashboard {
+    @State DashboardHeight: number = 2100;
     //==========================状态声明部分==========================
     //控制相关
     @State showButton: boolean = true;
@@ -145,6 +147,7 @@ struct Dashboard {
 
     //==========================页面生命周期部分==========================
     async aboutToAppear() {
+        //获取屏幕右边位置
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
         this.Vp = screenWidthVp;
@@ -154,17 +157,14 @@ struct Dashboard {
         //UA
         const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
         webview.WebviewController.setAppCustomUserAgent(customUA);
-        //UA结束
-        //Rayawa的握持监听
+        //握持监听
         try {
             motion.on('holdingHandChanged', this.holdingHandCallback);
         } catch (err) {
             const error = err as BusinessError;
             console.error("订阅失败，错误码: " + error.code);
         }
-        //Rayawa的握持监听结束
-
-        //Rayawa的分享
+        //分享
         if (this.isNoListening()) {
             this.shareListening();
         }
@@ -182,15 +182,20 @@ struct Dashboard {
     }
 
     async onPageShow(): Promise<void> {
+        await this.isLoading
+        const rect = componentUtils.getRectangleById('Dashboard');
+        const vpHeight = px2vp(rect.size.height);
+        console.log(`px高度: ${rect.size.height}`);
+        console.log(`vp高度: ${vpHeight}`);
+        //教程页面检测
         this.checkFirstLaunch();
-        //Rayawa的状态栏颜色
+        //状态栏颜色
         this.win = await window.getLastWindow(getContext());
         const isDark = this.mode === WebDarkMode.On;
         this.win.setWindowSystemBarProperties({
             statusBarColor: '#00000000',
             statusBarContentColor: isDark ? '#FFFFFF' : '#000000'
         });
-        //状态栏颜色结束
     }
 
     aboutToDisappear() {
@@ -261,7 +266,6 @@ struct Dashboard {
             }
         }
     }
-
     private shareDisablingListening() {
         harmonyShare.off('knockShare', this.purityCallback);
         harmonyShare.off('gesturesShare', this.immersiveCallback);
@@ -362,6 +366,7 @@ struct Dashboard {
                             .width('100%')
                             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                         Web({ src: this.url, controller: this.web_controller, renderMode: RenderMode.SYNC_RENDER })
+                            .id('Dashboard')
                             .onControllerAttached(() => {
                                 try {
                                     console.warn("before useragent:", this.web_controller.getUserAgent())
@@ -391,7 +396,9 @@ struct Dashboard {
                             });
 
                     }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                    // .height(2090)
                 }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+
 
                 // ==========================悬浮按钮==========================
                 Column({ space: 10 }) {
