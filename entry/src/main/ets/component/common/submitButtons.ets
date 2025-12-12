@@ -31,7 +31,6 @@ export struct submitButtons {
     if (this.isCleaning) {
       return;
     }
-
     this.isCleaning = true;
     this.startCleanRippleLoop();
 
@@ -43,18 +42,16 @@ export struct submitButtons {
     };
     this.inputText = '';
 
-    prompt.showToast({
-      message: '表单已清空',
-      duration: 1500
-    });
-
     setTimeout(() => {
       this.isCleaning = false;
       this.stopCleanRippleLoop();
-    }, this.ANIMATION_DURATION + 200);
+      prompt.showToast({
+        message: '表单已清空',
+        duration: 1500
+      });
+    }, 700);
   }
-
-  queryForm(): void {
+  async queryForm(): Promise<void> {
     if (this.isSearching) {
       return;
     }
@@ -69,9 +66,8 @@ export struct submitButtons {
         message: '敬请期待！',
         duration: 1500
       });
-    }, this.ANIMATION_DURATION + 200);
+    }, 700);
   }
-
   async submitForm(): Promise<void> {
     if (this.isSubmitting) {
       return;
@@ -124,7 +120,7 @@ export struct submitButtons {
       setTimeout(() => {
         this.isSubmitting = false;
         this.stopSubmitRippleLoop();
-      }, this.ANIMATION_DURATION + 200);
+      }, 700);
     }
   }
 
@@ -178,7 +174,6 @@ export struct submitButtons {
     .borderRadius(this.BORDER_RADIUS)
     .backgroundColor(Color.Green)
   }
-
   @Styles
   ripplesStyleSearch() {
     .width(this.BUTTON_WIDTH)
@@ -186,7 +181,6 @@ export struct submitButtons {
     .borderRadius(this.BORDER_RADIUS)
     .backgroundColor(Color.Blue)
   }
-
   @Styles
   ripplesStyleSubmit() {
     .width(this.BUTTON_WIDTH)
@@ -201,14 +195,12 @@ export struct submitButtons {
     delayOpacity: 0.4,
     delayScale: { x: 1, y: 1 }
   };
-
   @State searchAnimation: ButtonAnimationState = {
     immediatelyOpacity: 0.8,
     immediatelyScale: { x: 1, y: 1 },
     delayOpacity: 0.4,
     delayScale: { x: 1, y: 1 }
   };
-
   @State submitAnimation: ButtonAnimationState = {
     immediatelyOpacity: 0.8,
     immediatelyScale: { x: 1, y: 1 },
@@ -273,7 +265,6 @@ export struct submitButtons {
 
     loop();
   }
-
   private stopCleanRippleLoop() {
     if (!this._cleanAnimationCompleted) {
       setTimeout(() => {
@@ -282,7 +273,7 @@ export struct submitButtons {
         this.cleanAnimation.delayOpacity = 0.8;
         this.cleanAnimation.immediatelyScale = { x: 1, y: 1 };
         this.cleanAnimation.delayScale = { x: 1, y: 1 };
-      }, this.ANIMATION_DURATION + 200);
+      }, 700);
     } else {
       this._cleanLoopRunning = false;
       this.cleanAnimation.immediatelyOpacity = 0.8;
@@ -341,7 +332,6 @@ export struct submitButtons {
 
     loop();
   }
-
   private stopSearchRippleLoop() {
     if (!this._searchAnimationCompleted) {
       setTimeout(() => {
@@ -350,7 +340,7 @@ export struct submitButtons {
         this.searchAnimation.delayOpacity = 0.8;
         this.searchAnimation.immediatelyScale = { x: 1, y: 1 };
         this.searchAnimation.delayScale = { x: 1, y: 1 };
-      }, this.ANIMATION_DURATION + 200);
+      }, 700);
     } else {
       this._searchLoopRunning = false;
       this.searchAnimation.immediatelyOpacity = 0.8;
@@ -409,7 +399,6 @@ export struct submitButtons {
 
     loop();
   }
-
   private stopSubmitRippleLoop() {
     if (!this._submitAnimationCompleted) {
       setTimeout(() => {
@@ -418,7 +407,7 @@ export struct submitButtons {
         this.submitAnimation.delayOpacity = 0.8;
         this.submitAnimation.immediatelyScale = { x: 1, y: 1 };
         this.submitAnimation.delayScale = { x: 1, y: 1 };
-      }, this.ANIMATION_DURATION + 200);
+      }, 700);
     } else {
       this._submitLoopRunning = false;
       this.submitAnimation.immediatelyOpacity = 0.8;
@@ -457,7 +446,6 @@ export struct submitButtons {
             this.clearForm();
           })
       }
-
       // 查询按钮
       Stack() {
         Stack()
@@ -485,7 +473,6 @@ export struct submitButtons {
             this.queryForm();
           })
       }
-
       // 提交按钮
       Stack() {
         Stack()
