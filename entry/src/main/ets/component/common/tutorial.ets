@@ -195,7 +195,7 @@ export struct tutorial{
               this.handlePopupTop = !this.handlePopupTop;
             })
             .bindPopup(this.handlePopupTop, {
-              message: '点击按钮以回到顶部',
+              message: '点击按钮回到顶部',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -287,7 +287,7 @@ export struct tutorial{
           .borderWidth(1)
           .borderColor($r('app.color.border'))
         Text('    * 使用前，请确保两台设备均在设置中开启“隔空传送”功能。\n' +
-          '    * 当前版本仅支持从手机抓取内容并分享至其他手机、平板、PC或二合一设备，暂不支持从平板、PC或二合一设备发起抓取。')
+          '    * 当前版本仅支持从手机抓取内容并分享至其他手机、平板、PC/2in1设备，暂不支持从平板、PC/2in1设备发起抓取。')
           .fontSize(10)
           .fontColor(Color.Grey)
       }.height('90%').width('95%').borderRadius(16).padding(20)
@@ -302,7 +302,7 @@ export struct tutorial{
           .fontSize(14)
           .margin({ bottom: 10 })
         Text('  您可以在“我的”界面里面设置您的用户名，初始用户名默认为机型型号。\n' +
-          '  您的用户名将作为投稿作者标识，帮助我们准确记录并感谢您的每一次分享。\n').fontSize(14)
+          '  您的用户名将作为投稿人标识，帮助我们准确记录并感谢您的每一次分享。\n').fontSize(14)
         Row() {
           Text('  投稿功能支持AI智能提取，将应用信息输入或粘贴进文本框即可自动提取！\n')
             .fontSize(14)
