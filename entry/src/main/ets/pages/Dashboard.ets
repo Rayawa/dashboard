@@ -26,6 +26,7 @@ struct Dashboard {
     //控制相关
     @State showButton: boolean = true;
     @State showTutorial: boolean = false;
+    @State buttonOnFocus: boolean = false;
     // @State isExpand: boolean = false;
     // @State isPrimaryIconChanged: boolean = false;
     // @State primaryHoverTips: string = '展开';
@@ -395,12 +396,7 @@ struct Dashboard {
 
                 // ==========================悬浮按钮==========================
                 Column({ space: 10 }) {
-                    Button() {
-                        Image($r('app.media.arrow_up'))
-                            .width(24)
-                            .height(24)
-                            .fillColor(Color.White)
-                    }
+                    Button() { Image($r('app.media.arrow_up')).width(24).height(24)}
                     .onClick(() => {
                         this.scroller.scrollTo({
                             xOffset: 0,
@@ -414,23 +410,18 @@ struct Dashboard {
                         });
                     })
                     .type(ButtonType.Circle)
+                    .backgroundBlurStyle(BlurStyle.Thin)
                     .backgroundColor($r('app.color.background'))
                     .width(45)
                     .height(45)
                     .shadow({
-                        radius: 4,
-                        color: '#182431',
+                        radius: 6,
+                        color: Color.Gray,
                         offsetX: 2,
                         offsetY: 4
                     })
-                    .stateEffect(true)
 
-                    Button() {
-                        Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh'))
-                            .width(24)
-                            .height(24)
-                            .fillColor(this.isLoading ? '#ff3b30' : Color.White)
-                    }
+                    Button() { Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh')).width(24).height(24) }
                     .onClick(() => {
                         if (this.isLoading) {
                             this.web_controller.stop();
@@ -457,19 +448,19 @@ struct Dashboard {
                         }
                     })
                     .type(ButtonType.Circle)
+                    .backgroundBlurStyle(BlurStyle.Thin)
                     .backgroundColor($r('app.color.background'))
                     .width(45)
                     .height(45)
                     .shadow({
-                        radius: 4,
-                        color: '#182431',
+                        radius: 6,
+                        color: Color.Gray,
                         offsetX: 2,
                         offsetY: 4
                     })
-                    .stateEffect(true)
 
                 }
-                    .position({
+                .position({
                         x: this.showButton ? this.buttonShowOffsetX : this.buttonHideOffsetX,
                         y: this.y
                     })
