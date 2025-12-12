@@ -18,12 +18,14 @@ struct app_log {
   @State updateLogs: UpdateLog[] = [
     {
       version: 'V1.1.0-rc.1',
-      date: '2025-12-11',
+      date: '2025-12-13',
       isRelease: false,
       type:'beta',
       items: ['重新设计所有页面顶部条，添加渐变模糊效果',
-        '为主界面按钮添加了显示/隐藏和拖动改变位置功能',
-        '为所有页面的交互添加了震动',
+        '为主界面按钮添加了显示/隐藏和拖动改变位置功能并简化主界面按钮',
+        '为所有页面添加了返回逻辑',
+        '投稿页面按钮新增波纹动效',
+        '为所有页面的交互添加了振动',
         '修复了应用商店“填写信息投稿”自动填充识别功能的异常',
         '为“填写信息投稿”增加了自动关闭的功能'
       ]
@@ -98,7 +100,33 @@ struct app_log {
       items: ['添加V1与V2的web界面', '添加了user界面', '添加了顶部导航条和menu']
     }
   ];
-
+  private triggerVibration(): void {
+    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+      if (err) {
+        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+        return;
+      }
+      console.info('Succeed in querying effect');
+      if (state) {
+        try {
+          vibrator.startVibration({
+            type: 'preset',
+            effectId: 'haptic.effect.hard',
+            count: 1,
+            intensity: 50,
+          }, { usage: 'touch' }, (error: BusinessError) => {
+            if (error) {
+              console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+            } else {
+              console.info('Succeed in starting vibration');
+            }
+          });
+        } catch (tryError) {
+          console.error(`An unexpected error occurred in try block: ${tryError}`);
+        }
+      }
+    });
+  }
   build() {
     HdsNavigation() {
         Scroll(){
@@ -224,31 +252,7 @@ struct app_log {
         },
         backIcon:{
           action:() => {
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) {
-                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                    } else {
-                      console.info('Succeed in starting vibration');
-                    }
-                  });
-                } catch (tryError) {
-                  console.error(`An unexpected error occurred in try block: ${tryError}`);
-                }
-              }
-            });
+            this.triggerVibration();
             router.back();
           }
         }

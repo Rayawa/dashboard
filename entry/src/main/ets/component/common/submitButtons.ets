@@ -16,31 +16,65 @@ interface ButtonAnimationState {
 @Component
 export struct submitButtons {
   clearForm(): void {
-    // prompt.showToast({
-    //   message: '表单已清空',
-    //   duration: 1500
-    // });
-    // setTimeout(()=>{
-    //   this.isCleaning = false;
-    // },500)
+    setTimeout(() => {
+      this.isCleaning = false;
+      this.stopCleanRippleLoop();
+      prompt.showToast({
+        message: '表单已清空',
+        duration: 1500
+      });
+    }, 500)
   }
+
   queryForm(): void {
-    // prompt.showToast({
-    //   message: '敬请期待！',
-    //   duration: 1500
-    // });
-    // setTimeout(()=>{
-    //   this.isSearching = false;
-    // },500)
+    setTimeout(() => {
+      this.isSearching = false;
+      this.stopSearchRippleLoop();
+      prompt.showToast({
+        message: '敬请期待！',
+        duration: 1500
+      });
+    }, 500)
   }
+
   submitForm(): void {
-    // setTimeout(()=>{
-    //   this.isSubmitting = false;
-    // },500)
-    // prompt.showToast({
-    //   message: '提交成功，感谢您的投稿！',
-    //   duration: 3000
-    // });
+    setTimeout(() => {
+      this.isSubmitting = false;
+      this.stopSubmitRippleLoop();
+      prompt.showToast({
+        message: '提交成功，感谢您的投稿！',
+        duration: 1500
+      });
+    }, 500)
+
+  }
+
+  private triggerVibration(): void {
+    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+      if (err) {
+        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+        return;
+      }
+      console.info('Succeed in querying effect');
+      if (state) {
+        try {
+          vibrator.startVibration({
+            type: 'preset',
+            effectId: 'haptic.effect.hard',
+            count: 1,
+            intensity: 50,
+          }, { usage: 'touch' }, (error: BusinessError) => {
+            if (error) {
+              console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+            } else {
+              console.info('Succeed in starting vibration');
+            }
+          });
+        } catch (tryError) {
+          console.error(`An unexpected error occurred in try block: ${tryError}`);
+        }
+      }
+    });
   }
 
   @State isCleaning: boolean = false;
@@ -276,28 +310,7 @@ export struct submitButtons {
               return;
             }
             this._cleanLastClick = now;
-
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
-                  });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-              }
-            });
-
+            this.triggerVibration();
             this.clearForm();
             this.isCleaning = !this.isCleaning;
 
@@ -333,28 +346,7 @@ export struct submitButtons {
               return;
             }
             this._searchLastClick = now;
-
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
-                  });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-              }
-            });
-
+            this.triggerVibration();
             this.queryForm();
             this.isSearching = !this.isSearching;
 
@@ -390,28 +382,7 @@ export struct submitButtons {
               return;
             }
             this._submitLastClick = now;
-
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
-                  });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-              }
-            });
-
+            this.triggerVibration();
             this.submitForm();
             this.isSubmitting = !this.isSubmitting;
 

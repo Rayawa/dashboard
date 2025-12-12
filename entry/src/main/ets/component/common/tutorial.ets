@@ -4,16 +4,41 @@ import { BusinessError } from '@kit.BasicServicesKit';
 
 @Component
 export struct tutorial{
-  @State handlePopupMenu: boolean = false;
+  private triggerVibration(): void {
+    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+      if (err) {
+        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+        return;
+      }
+      console.info('Succeed in querying effect');
+      if (state) {
+        try {
+          vibrator.startVibration({
+            type: 'preset',
+            effectId: 'haptic.effect.hard',
+            count: 1,
+            intensity: 50,
+          }, { usage: 'touch' }, (error: BusinessError) => {
+            if (error) {
+              console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+            } else {
+              console.info('Succeed in starting vibration');
+            }
+          });
+        } catch (tryError) {
+          console.error(`An unexpected error occurred in try block: ${tryError}`);
+        }
+      }
+    });
+  }
+
   @State handlePopupShareMenu: boolean = false;
-  @State handlePopupShareShare: boolean = false;
-  @State handlePopupApi: boolean = false;
-  @State handlePopupBack: boolean = false;
-  @State handlePopupRefresh: boolean = false;
-  @State handlePopupTop: boolean = false;
   @State handlePopupSwitch: boolean = false;
   @State handlePopupUser: boolean = false;
-  @State handlePopupBackPage: boolean = false;
+  @State handlePopupShareShare: boolean = false;
+  @State handlePopupTop: boolean = false;
+  @State handlePopupRefresh: boolean = false;
+
   private currentIndex: number = 0
   private readonly cardSwiperResourcesPhone: CardRes[] = [
     {
@@ -46,7 +71,7 @@ export struct tutorial{
           .fontColor($r('app.color.diff_content'))
           .fontWeight(FontWeight.Medium)
 
-      }.height('87%').width('95%').borderRadius(16).padding(20)
+      }.height('90%').width('95%').borderRadius(16).padding(20)
       // 主界面部分
       Column() {
         Text('主界面部分')
@@ -74,110 +99,30 @@ export struct tutorial{
           Text('• 过滤选项 - 可排除华为/元服务应用').fontSize(14)
         }.alignItems(HorizontalAlign.Start)
 
-      }.height('87%').width('95%').borderRadius(16).padding(20)
+      }.height('90%').width('95%').borderRadius(16).padding(20)
       // 导航功能
       Column() {
-        Text('导航功能')
-          .fontSize(24)
-          .fontColor($r('app.color.diff_content'))
-          .fontWeight(FontWeight.Bold)
-          .margin({ bottom: 20 })
+        Text('导航功能').fontSize(24).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
         Text('* 点击图标以显示详情').fontSize(14).margin({ bottom: 10 }).fontColor(Color.Grey)
-        Text('  1. 分享链接：在主页面或任意应用详情页点击分享按钮分享当前页面链接。\n').fontSize(14)
-        Image($r('app.media.share'))
-          .width(28)
-          .height(28)
-          .margin({ bottom: 20 })
-          .onClick(() => {
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) {
-                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                    } else {
-                      console.info('Succeed in starting vibration');
-                    }
-                  });
-                } catch (tryError) {
-                  console.error(`An unexpected error occurred in try block: ${tryError}`);
-                }
-              }
-            });
-            this.handlePopupShareMenu = !this.handlePopupShareMenu;
-          })
-          .bindPopup(this.handlePopupShareMenu, {
-            message: '在主页面点击以分享当前页面链接',
-            placement: Placement.Top,
-            showInSubWindow: true,
-            onStateChange: (e) => {
-              if (!e.isVisible) {
-                this.handlePopupShareMenu = false;
-              }
-            },
-            transition: TransitionEffect.asymmetric(
-              TransitionEffect.OPACITY
-                .animation({ duration: 500, curve: Curve.Ease })
-                .combine(TransitionEffect.translate({ x: 0, y: 12 })),
-
-              TransitionEffect.OPACITY
-                .animation({ duration: 300, curve: Curve.EaseOut })
-                .combine(TransitionEffect.translate({ x: 0, y: 12 }))
-            )
-          })
-        Text('  2. 主界面按钮：主要用于操作网页内容，如返回上级、回到顶部、刷新与切换版本。\n\n' +
-          '   横向滑动按钮可以隐藏按钮、点击屏幕侧边可以显示按钮；上下滑动可以改变按钮位置。\n\n' +
-          '   按钮支持智感握姿功能，可根据您的握持姿势改变位置。').fontSize(14).margin({ bottom: 1 })
-        Text('    * 此功能当前仅支持部分机型。若设置菜单中存在“智感握姿”开关（可在“设置-系统”中查看），则表明该设备支持此功能。\n')
-          .fontSize(10)
-          .fontColor(Color.Grey)
-        Row() {
-          Image($r('app.media.arrow_back')).width(28).height(28)
+        Text('  1. 主界面导航栏：导航栏显示您所在的站点，和分享、切换站点与我的界面按钮。\n\n' +
+          '   点击分享可以一键将当前页面分享给他人。\n\n' +
+          '   点击切换站点以选择您心仪的站点布局。\n\n' +
+          '   我的页面是您的个人中心与一站式门户：\n' +
+          '       您在此可以设置用户名、投稿应用、查看最新的更新日志、阅读API文档说明；\n' +
+          '       联系我们、使用教程和问题反馈也在我的页面中，确保您能随时获得所需的帮助与支持。\n' ).fontSize(14).margin({ bottom: 1 })
+        Row({ space: 40 }) {
+          Image($r('sys.symbol.arrow_right_and_square')).width(28).height(28)
             .onClick(() => {
-              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                if (err) {
-                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                  return;
-                }
-                console.info('Succeed in querying effect');
-                if (state) {
-                  try {
-                    vibrator.startVibration({
-                      type: 'preset',
-                      effectId: 'haptic.effect.hard',
-                      count: 1,
-                      intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) {
-                        console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                      } else {
-                        console.info('Succeed in starting vibration');
-                      }
-                    });
-                  } catch (tryError) {
-                    console.error(`An unexpected error occurred in try block: ${tryError}`);
-                  }
-                }
-              });
-              this.handlePopupBack = !this.handlePopupBack;
+              this.triggerVibration();
+              this.handlePopupShareMenu = !this.handlePopupShareMenu;
             })
-            .bindPopup(this.handlePopupBack, {
-              message: '单击按钮以返回上一个网页',
+            .bindPopup(this.handlePopupShareMenu, {
+              message: '单击按钮分享当前网页',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
                 if (!e.isVisible) {
-                  this.handlePopupBack = false;
+                  this.handlePopupShareMenu = false;
                 }
               },
               transition: TransitionEffect.asymmetric(
@@ -190,33 +135,63 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
+          Image($r('sys.symbol.transfer_station')).width(28).height(28)
+            .onClick(() => {
+              this.triggerVibration();
+              this.handlePopupSwitch = !this.handlePopupSwitch;
+            })
+            .bindPopup(this.handlePopupSwitch, {
+              message: '单击按钮切换不同站点',
+              placement: Placement.Top,
+              showInSubWindow: false,
+              onStateChange: (e) => {
+                if (!e.isVisible) {
+                  this.handlePopupSwitch = false;
+                }
+              },
+              transition: TransitionEffect.asymmetric(
+                TransitionEffect.OPACITY
+                  .animation({ duration: 500, curve: Curve.Ease })
+                  .combine(TransitionEffect.translate({ x: 0, y: 12 })),
+
+                TransitionEffect.OPACITY
+                  .animation({ duration: 300, curve: Curve.EaseOut })
+                  .combine(TransitionEffect.translate({ x: 0, y: 12 }))
+              )
+            })
+          Image($r('sys.symbol.person')).width(28).height(28)
+            .onClick(() => {
+              this.triggerVibration();
+              this.handlePopupUser = !this.handlePopupUser;
+            })
+            .bindPopup(this.handlePopupUser, {
+              message: '单击按钮进入我的页面',
+              placement: Placement.Top,
+              showInSubWindow: false,
+              onStateChange: (e) => {
+                if (!e.isVisible) {
+                  this.handlePopupUser = false;
+                }
+              },
+              transition: TransitionEffect.asymmetric(
+                TransitionEffect.OPACITY
+                  .animation({ duration: 500, curve: Curve.Ease })
+                  .combine(TransitionEffect.translate({ x: 0, y: 12 })),
+
+                TransitionEffect.OPACITY
+                  .animation({ duration: 300, curve: Curve.EaseOut })
+                  .combine(TransitionEffect.translate({ x: 0, y: 12 }))
+              )
+            })
+        }.margin({ bottom: 40 })
+        Text('  2. 主界面按钮：主要用于操作网页回到顶部与刷新。\n\n' +
+          '   横向滑动按钮可以隐藏按钮、点击屏幕侧边可以显示按钮；上下滑动可以改变按钮位置。\n\n' +
+          '   按钮支持智感握姿功能，可根据您的握持姿势改变位置。').fontSize(14).margin({ bottom: 1 })
+        Text('    * 此功能当前仅支持部分机型。若设置菜单中存在“智感握姿”开关（可在“设置-系统”中查看），则表明该设备支持此功能。\n').fontSize(10).fontColor(Color.Grey)
+        Row({ space: 20 }) {
           Image($r('app.media.arrow_up')).width(28).height(28)
             .onClick(() => {
-              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                if (err) {
-                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                  return;
-                }
-                console.info('Succeed in querying effect');
-                if (state) {
-                  try {
-                    vibrator.startVibration({
-                      type: 'preset',
-                      effectId: 'haptic.effect.hard',
-                      count: 1,
-                      intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) {
-                        console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                      } else {
-                        console.info('Succeed in starting vibration');
-                      }
-                    });
-                  } catch (tryError) {
-                    console.error(`An unexpected error occurred in try block: ${tryError}`);
-                  }
-                }
-              });
+              this.triggerVibration();
               this.handlePopupTop = !this.handlePopupTop;
             })
             .bindPopup(this.handlePopupTop, {
@@ -240,31 +215,7 @@ export struct tutorial{
             })
           Image($r('app.media.refresh')).width(28).height(28)
             .onClick(() => {
-              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                if (err) {
-                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                  return;
-                }
-                console.info('Succeed in querying effect');
-                if (state) {
-                  try {
-                    vibrator.startVibration({
-                      type: 'preset',
-                      effectId: 'haptic.effect.hard',
-                      count: 1,
-                      intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) {
-                        console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                      } else {
-                        console.info('Succeed in starting vibration');
-                      }
-                    });
-                  } catch (tryError) {
-                    console.error(`An unexpected error occurred in try block: ${tryError}`);
-                  }
-                }
-              });
+              this.triggerVibration();
               this.handlePopupRefresh = !this.handlePopupRefresh;
             })
             .bindPopup(this.handlePopupRefresh, {
@@ -286,110 +237,9 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
-          Image($r('app.media.switch')).width(28).height(28)
-            .onClick(() => {
-              vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                if (err) {
-                  console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                  return;
-                }
-                console.info('Succeed in querying effect');
-                if (state) {
-                  try {
-                    vibrator.startVibration({
-                      type: 'preset',
-                      effectId: 'haptic.effect.hard',
-                      count: 1,
-                      intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                      if (error) {
-                        console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                      } else {
-                        console.info('Succeed in starting vibration');
-                      }
-                    });
-                  } catch (tryError) {
-                    console.error(`An unexpected error occurred in try block: ${tryError}`);
-                  }
-                }
-              });
-              this.handlePopupSwitch = !this.handlePopupSwitch;
-            })
-            .bindPopup(this.handlePopupSwitch, {
-              message: '单击按钮以切换不同站点',
-              placement: Placement.Top,
-              showInSubWindow: false,
-              onStateChange: (e) => {
-                if (!e.isVisible) {
-                  this.handlePopupSwitch = false;
-                }
-              },
-              transition: TransitionEffect.asymmetric(
-                TransitionEffect.OPACITY
-                  .animation({ duration: 500, curve: Curve.Ease })
-                  .combine(TransitionEffect.translate({ x: 0, y: 12 })),
+        }.margin({ bottom: 20 })
 
-                TransitionEffect.OPACITY
-                  .animation({ duration: 300, curve: Curve.EaseOut })
-                  .combine(TransitionEffect.translate({ x: 0, y: 12 }))
-              )
-            })
-        }.width('80%').justifyContent(FlexAlign.SpaceBetween).margin({ bottom: 20 })
-
-        Text('  3. 我的页面：您在此可以设置用户名、投稿应用、查看最新的更新日志、阅读API文档说明。\n' +
-          '   联系我们、使用教程和问题反馈也在我的页面中，确保您能随时获得所需的帮助与支持。\n').fontSize(14)
-        Image($r('app.media.user'))
-          .width(28)
-          .height(28)
-          .margin({ bottom: 20 })
-          .onClick(() => {
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) {
-                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                    } else {
-                      console.info('Succeed in starting vibration');
-                    }
-                  });
-                } catch (tryError) {
-                  console.error(`An unexpected error occurred in try block: ${tryError}`);
-                }
-              }
-            });
-            this.handlePopupUser = !this.handlePopupUser;
-          })
-          .bindPopup(this.handlePopupUser, {
-            message: '在菜单栏点击以打开我的界面',
-            placement: Placement.Top,
-            showInSubWindow: false,
-            onStateChange: (e) => {
-              if (!e.isVisible) {
-                this.handlePopupUser = false;
-              }
-            },
-            transition: TransitionEffect.asymmetric(
-              TransitionEffect.OPACITY
-                .animation({ duration: 500, curve: Curve.Ease })
-                .combine(TransitionEffect.translate({ x: 0, y: 12 })),
-
-              TransitionEffect.OPACITY
-                .animation({ duration: 300, curve: Curve.EaseOut })
-                .combine(TransitionEffect.translate({ x: 0, y: 12 }))
-            )
-          })
-      }.height('87%').width('95%').borderRadius(16).padding(20)
+      }.height('90%').width('95%').borderRadius(16).padding(20)
       // 分享功能
       Column() {
         Text('分享功能')
@@ -399,36 +249,12 @@ export struct tutorial{
           .margin({ bottom: 20 })
         Text('* 目前分享功能仅支持手机设备').fontSize(14).margin({ bottom: 10 }).fontColor(Color.Grey)
         Text('  1. 链接分享：在主界面或任意应用详情页点击分享按钮分享当前页面链接。\n').fontSize(14)
-        Image($r('app.media.share'))
+        Image($r('sys.symbol.arrow_right_and_square'))
           .width(28)
           .height(28)
           .margin({ bottom: 20 })
           .onClick(() => {
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) {
-                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                    } else {
-                      console.info('Succeed in starting vibration');
-                    }
-                  });
-                } catch (tryError) {
-                  console.error(`An unexpected error occurred in try block: ${tryError}`);
-                }
-              }
-            });
+            this.triggerVibration();
             this.handlePopupShareShare = !this.handlePopupShareShare;
           })
           .bindPopup(this.handlePopupShareShare, {
@@ -464,7 +290,7 @@ export struct tutorial{
           '    * 当前版本仅支持从手机抓取内容并分享至其他手机、平板、PC或二合一设备，暂不支持从平板、PC或二合一设备发起抓取。')
           .fontSize(10)
           .fontColor(Color.Grey)
-      }.height('87%').width('95%').borderRadius(16).padding(20)
+      }.height('90%').width('95%').borderRadius(16).padding(20)
       // 投稿功能
       Column() {
         Text('投稿功能')
@@ -516,7 +342,7 @@ export struct tutorial{
         .height('44%')
         .justifyContent(FlexAlign.SpaceBetween)
 
-      }.height('87%').width('95%').borderRadius(16).padding(20)
+      }.height('90%').width('95%').borderRadius(16).padding(20)
     }
     .shadow({
       radius: 20,
