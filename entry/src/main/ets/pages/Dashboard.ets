@@ -26,9 +26,9 @@ struct Dashboard {
     //控制相关
     @State showButton: boolean = true;
     @State showTutorial: boolean = false;
-    @State isExpand: boolean = false;
-    @State isPrimaryIconChanged: boolean = false;
-    @State primaryHoverTips: string = '展开';
+    // @State isExpand: boolean = false;
+    // @State isPrimaryIconChanged: boolean = false;
+    // @State primaryHoverTips: string = '展开';
 
     //切换版本方法
     @State isT: boolean = true;
@@ -42,68 +42,25 @@ struct Dashboard {
     }
 
     //智感握持
-    @State offsetX: number = 0
-    @State offsetY: number = 0
-    @State startX: number = 0
-    @State startY: number = 0
-    private uiAbilityContext: Context | undefined = undefined;
-    @State y: number = 200;
-    @State buttonShowOffsetX: number = 0;
-    @State buttonHideOffsetX: number = 0;
-    @State screenWidth: number = 0;
+    @State y: number = 300;
+    @State buttonShowOffsetX: string = '3%';
+    @State buttonHideOffsetX: string = '-20%'
     @State showButtonAnimation: boolean = true;
     holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
         switch (data) {
-            case 1:
-                this.setButtonToLeft();
+            case 1: // 左手握持
+                this.buttonShowOffsetX = '3%';
+                this.buttonHideOffsetX = '-20%';
                 break;
-            case 2:
-                this.setButtonToRight();
+            case 2: // 右手握持
+                this.buttonShowOffsetX = '84%';
+                this.buttonHideOffsetX = '101%';
                 break;
             default:
                 break;
         }
     };
-    async getWindowSizeInVp() {
-        try {
-            // 获取当前窗口
-            let context = getContext(this) as common.UIAbilityContext;
-            let windowClass = await window.getLastWindow(context);
 
-            // 获取窗口属性 - 这个返回的可能是VP单位
-            let windowProperties = await windowClass.getWindowProperties();
-            const width = windowProperties.windowRect.width;
-
-            // 获取窗口的视觉区域（Viewport） - 通常返回的是VP
-            const windowRect = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
-
-            console.log(`窗口宽度: ${width}`);
-            console.log(`视觉区域: ${windowRect}`);
-
-            // 通常这个值就是VP单位的宽度
-            this.screenWidth = width;
-            return width;
-        } catch (error) {
-            console.error('获取窗口尺寸失败:', error);
-            return 0;
-        }
-    }
-
-    // 设置到左边
-    setButtonToLeft() {
-        const buttonWidth = 60; // 假设按钮宽度为60px
-        this.buttonShowOffsetX = 10; // 左边留10px边距
-        this.buttonHideOffsetX = -buttonWidth - 10; // 隐藏在左边
-    }
-
-    // 设置到右边
-    setButtonToRight() {
-        const buttonWidth = 60; // 假设按钮宽度为60px
-        if (this.screenWidth > 0) {
-            this.buttonShowOffsetX = this.screenWidth - buttonWidth - 10; // 右边留10px边距
-            this.buttonHideOffsetX = this.screenWidth + 10; // 隐藏在右边
-        }
-    }
     //动画相关
     private effect: TransitionEffect =
         TransitionEffect.OPACITY
@@ -113,21 +70,6 @@ struct Dashboard {
     //entry
     @State url: string = (new URL(dashboardURL, TBaseURL)).toString();
     private win: window.Window | null = null;
-
-    @StorageLink('userName') userName: string = ''
-    //用户名初始化(防止小天才模式）
-    async loadUserName() {
-        initializeUserStorage()
-        this.userName = await getUsername();
-    }
-    async saveUserName() {
-        await setUsername(this.userName);
-    }
-    async resetToDeviceName() {
-        await setUsername(undefined);
-        await this.loadUserName()
-    }
-
     private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
     private async checkFirstLaunch(): Promise<void> {
         try {
@@ -158,6 +100,20 @@ struct Dashboard {
         }
     }
 
+    //用户名初始化(防止小天才模式）
+    @StorageLink('userName') userName: string = ''
+    async loadUserName() {
+        initializeUserStorage()
+        this.userName = await getUsername();
+    }
+    async saveUserName() {
+        await setUsername(this.userName);
+    }
+    async resetToDeviceName() {
+        await setUsername(undefined);
+        await this.loadUserName()
+    }
+
     //Web控制
     scroller: Scroller = new Scroller();
     private web_controller: webview.WebviewController = new webview.WebviewController();
@@ -167,7 +123,6 @@ struct Dashboard {
 
     //==========================页面生命周期部分==========================
     async aboutToAppear() {
-        await this.getWindowSizeInVp();
         this.loadUserName();
         //UA
         const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
@@ -842,50 +797,49 @@ struct Dashboard {
                 //     }),
                 //     isExpand: this.isExpand!!
                 // })
-                //     .position({
-                //         x: this.showButton ? this.buttonShowOffsetX : this.buttonHideOffsetX,
-                //         y: this.y
-                //     })
-                // .animation(this.showButton ? { curve: curves.springMotion(0.7, 0.8), duration: 500 } :
-                //     { duration: 0 })
-                // .gesture(
-                //     SwipeGesture({ direction: SwipeDirection.Horizontal })
-                //         .onAction((move: GestureEvent | undefined) => {
-                //             if (move) {
-                //                 this.showButton = false;
-                //                 setTimeout(() => {
-                //                     this.showButtonAnimation = false;
-                //                 }, 300);
-                //             }
-                //         })
-                // )
-                .translate({ x: this.offsetX, y: this.offsetY })
+                    .position({
+                        x: this.showButton ? this.buttonShowOffsetX : this.buttonHideOffsetX,
+                        y: this.y
+                    })
+                .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.7, 0.8), duration: 500 } : { duration: 0 })
                 .gesture(
-                    PanGesture({ fingers:1, direction: PanDirection.All })
-                        .onActionStart(() => {
-                            this.startX = this.offsetX
-                            this.startY = this.offsetY
-                        })
-                        .onActionUpdate((event: GestureEvent) => {
-                            // 更新位置
-                            this.offsetX = this.startX + event.offsetX
-                            this.offsetY = this.startY + event.offsetY
+                    SwipeGesture({ direction: SwipeDirection.Horizontal })
+                        .onAction((move: GestureEvent | undefined) => {
+                            if (move) {
+                                this.showButton = false;
+                                setTimeout(() => {
+                                    this.showButtonAnimation = false;
+                                }, 300);
+                            }
                         })
                 )
+                // .translate({ x: this.offsetX, y: this.offsetY })
                 // .gesture(
-                //     PanGesture({ direction: PanDirection.Vertical })
-                //         .onActionEnd((event: GestureEvent) => {
-                //             this.y = this.y + event.offsetY
-                //             if (this.y > 550) {
-                //                 this.y = 550;
-                //                 prompt.showToast({ message: '不能再往下啦', duration: 500 })
-                //             } else if (this.y < 60) {
-                //                 this.y = 60;
-                //                 prompt.showToast({ message: '不能再往上啦', duration: 500 })
-                //             }
-                //             console.log('平移中，垂直偏移量 y 为:', this.y);
+                //     PanGesture({ fingers:1, direction: PanDirection.All })
+                //         .onActionStart(() => {
+                //             this.startX = this.offsetX
+                //             this.startY = this.offsetY
+                //         })
+                //         .onActionUpdate((event: GestureEvent) => {
+                //             // 更新位置
+                //             this.offsetX = this.startX + event.offsetX
+                //             this.offsetY = this.startY + event.offsetY
                 //         })
                 // )
+                .gesture(
+                    PanGesture({ direction: PanDirection.Vertical })
+                        .onActionEnd((event: GestureEvent) => {
+                            this.y = this.y + event.offsetY
+                            if (this.y > 550) {
+                                this.y = 550;
+                                prompt.showToast({ message: '不能再往下啦', duration: 500 })
+                            } else if (this.y < 60) {
+                                this.y = 60;
+                                prompt.showToast({ message: '不能再往上啦', duration: 500 })
+                            }
+                            console.log('平移中，垂直偏移量 y 为:', this.y);
+                        })
+                )
 
                 if (!this.showButton) {
                     Column()

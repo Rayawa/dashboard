@@ -59,7 +59,7 @@ struct web_log {
                             .onPageEnd(() => this.isLoading = false)
                             .onControllerAttached(() => {
                                 try {
-                                    this.web_controller.setCustomUserAgent(APP_UA);
+                                    // this.web_controller.setCustomUserAgent(APP_UA);
                                 } catch {
                                 }
                             });
