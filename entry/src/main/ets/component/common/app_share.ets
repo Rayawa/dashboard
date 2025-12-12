@@ -15,8 +15,8 @@ interface FormData {
 @Entry
 @Component
 export struct app_share {
-
   @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
+  @StorageLink('userName') userName: string = ''
   @State formData: FormData = {
     appLink: '',
     packageName: '',
@@ -27,10 +27,8 @@ export struct app_share {
   @State extractedApps: AppInfo[] = [];
   @State isProcessing: boolean = false;
 
-
   private debounceTimer: number | null = null;
   private readonly DEBOUNCE_DELAY: number = 800;
-
 
   build() {
     Column() {

@@ -99,7 +99,33 @@ struct app_log {
       items: ['添加V1与V2的web界面', '添加了user界面', '添加了顶部导航条和menu']
     }
   ];
-
+  private triggerVibration(): void {
+    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+      if (err) {
+        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+        return;
+      }
+      console.info('Succeed in querying effect');
+      if (state) {
+        try {
+          vibrator.startVibration({
+            type: 'preset',
+            effectId: 'haptic.effect.hard',
+            count: 1,
+            intensity: 50,
+          }, { usage: 'touch' }, (error: BusinessError) => {
+            if (error) {
+              console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+            } else {
+              console.info('Succeed in starting vibration');
+            }
+          });
+        } catch (tryError) {
+          console.error(`An unexpected error occurred in try block: ${tryError}`);
+        }
+      }
+    });
+  }
   build() {
     HdsNavigation() {
         Scroll(){
@@ -225,31 +251,7 @@ struct app_log {
         },
         backIcon:{
           action:() => {
-            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) {
-                      console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                    } else {
-                      console.info('Succeed in starting vibration');
-                    }
-                  });
-                } catch (tryError) {
-                  console.error(`An unexpected error occurred in try block: ${tryError}`);
-                }
-              }
-            });
+            this.triggerVibration();
             router.back();
           }
         }
