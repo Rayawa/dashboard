@@ -1,29 +1,24 @@
-import { NaturalLanguageExtractor, AppInfo } from '../../ability/NaturalLanguageExtract';
+import { AppInfo, NaturalLanguageExtractor } from '../../ability/NaturalLanguageExtract';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { submitButtons } from './submitButtons'
+import { submitButtons } from './submitButtons';
 
-interface FormData {
-  appLink: string;
-  packageName: string;
-  appId: string;
-  remark: string;
-}
-
+import type { FormData } from '../../common/types';
 
 @Entry
 @Component
 export struct app_share {
   @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
   @StorageLink('userName') userName: string = ''
-  @State formData: FormData = {
+  @StorageLink('inputText') inputText: string = ''
+  @StorageLink('formData') formData: FormData = {
     appLink: '',
     packageName: '',
     appId: '',
     remark: ''
   };
-  @State inputText: string = '';
+
   @State extractedApps: AppInfo[] = [];
   @State isProcessing: boolean = false;
 

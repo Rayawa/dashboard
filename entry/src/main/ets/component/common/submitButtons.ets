@@ -1,6 +1,9 @@
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { prompt } from '@kit.ArkUI';
+import type { FormData } from '../../common/types';
+import { submit_app } from '../../common/api';
+
 interface Scale {
   x: number;
   y: number;
@@ -15,67 +18,14 @@ interface ButtonAnimationState {
 
 @Component
 export struct submitButtons {
-  clearForm(): void {
-    setTimeout(() => {
-      this.isCleaning = false;
-      this.stopCleanRippleLoop();
-      prompt.showToast({
-        message: '表单已清空',
-        duration: 1500
-      });
-    }, 500)
-  }
-
-  queryForm(): void {
-    setTimeout(() => {
-      this.isSearching = false;
-      this.stopSearchRippleLoop();
-      prompt.showToast({
-        message: '敬请期待！',
-        duration: 1500
-      });
-    }, 500)
-  }
-
-  submitForm(): void {
-    setTimeout(() => {
-      this.isSubmitting = false;
-      this.stopSubmitRippleLoop();
-      prompt.showToast({
-        message: '提交成功，感谢您的投稿！',
-        duration: 1500
-      });
-    }, 500)
-
-  }
-
-  private triggerVibration(): void {
-    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-      if (err) {
-        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-        return;
-      }
-      console.info('Succeed in querying effect');
-      if (state) {
-        try {
-          vibrator.startVibration({
-            type: 'preset',
-            effectId: 'haptic.effect.hard',
-            count: 1,
-            intensity: 50,
-          }, { usage: 'touch' }, (error: BusinessError) => {
-            if (error) {
-              console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-            } else {
-              console.info('Succeed in starting vibration');
-            }
-          });
-        } catch (tryError) {
-          console.error(`An unexpected error occurred in try block: ${tryError}`);
-        }
-      }
-    });
-  }
+  @StorageLink('userName') userName: string = ''
+  @StorageLink('inputText') inputText: string = ''
+  @StorageLink('formData') formData: FormData = {
+    appLink: '',
+    packageName: '',
+    appId: '',
+    remark: ''
+  };
 
   @State isCleaning: boolean = false;
   @State isSearching: boolean = false;
@@ -88,40 +38,20 @@ export struct submitButtons {
   private readonly BORDER_RADIUS: number = 22;
   private readonly CLICK_INTERVAL = 800;
 
-  @Styles
-  ripplesStyleClean() {
-    .width(this.BUTTON_WIDTH)
-    .height(this.BUTTON_HEIGHT)
-    .borderRadius(this.BORDER_RADIUS)
-    .backgroundColor(Color.Green)
-  }
-  @Styles
-  ripplesStyleSearch() {
-    .width(this.BUTTON_WIDTH)
-    .height(this.BUTTON_HEIGHT)
-    .borderRadius(this.BORDER_RADIUS)
-    .backgroundColor(Color.Blue)
-  }
-  @Styles
-  ripplesStyleSubmit() {
-    .width(this.BUTTON_WIDTH)
-    .height(this.BUTTON_HEIGHT)
-    .borderRadius(this.BORDER_RADIUS)
-    .backgroundColor(Color.Red)
-  }
-
   @State cleanAnimation: ButtonAnimationState = {
     immediatelyOpacity: 0.8,
     immediatelyScale: { x: 1, y: 1 },
     delayOpacity: 0.4,
     delayScale: { x: 1, y: 1 }
   };
+
   @State searchAnimation: ButtonAnimationState = {
     immediatelyOpacity: 0.8,
     immediatelyScale: { x: 1, y: 1 },
     delayOpacity: 0.4,
     delayScale: { x: 1, y: 1 }
   };
+
   @State submitAnimation: ButtonAnimationState = {
     immediatelyOpacity: 0.8,
     immediatelyScale: { x: 1, y: 1 },
@@ -129,271 +59,247 @@ export struct submitButtons {
     delayScale: { x: 1, y: 1 }
   };
 
-  private _cleanLoopRunning: boolean = false;
-  private _searchLoopRunning: boolean = false;
-  private _submitLoopRunning: boolean = false;
-
-  private _cleanLastClick: number = 0;
-  private _searchLastClick: number = 0;
-  private _submitLastClick: number = 0;
-
-  private startCleanRippleLoop() {
-    if (this._cleanLoopRunning) return;
-    this._cleanLoopRunning = true;
-
-    const loop = () => {
-      if (!this._cleanLoopRunning) return;
-
+  // 统一动画控制方法
+  private async playButtonAnimation(animationState: ButtonAnimationState, color: Color): Promise<void> {
+    return new Promise<void>((resolve) => {
+      // 立即开始动画
       this.getUIContext().animateTo({
         duration: this.ANIMATION_DURATION,
         curve: Curve.EaseInOut
       }, () => {
-        this.cleanAnimation.immediatelyOpacity = 0;
-        this.cleanAnimation.immediatelyScale = { x: 4, y: 4 };
+        animationState.immediatelyOpacity = 0;
+        animationState.immediatelyScale = { x: 4, y: 4 };
       });
 
+      // 延迟开始动画
       this.getUIContext().animateTo({
         duration: this.ANIMATION_DURATION,
         delay: 200,
         curve: Curve.EaseInOut
       }, () => {
-        this.cleanAnimation.delayOpacity = 0;
-        this.cleanAnimation.delayScale = { x: 4, y: 4 };
+        animationState.delayOpacity = 0;
+        animationState.delayScale = { x: 4, y: 4 };
       });
 
-      const total = this.ANIMATION_DURATION + 200 + 40;
-
+      // 动画完成后重置
       setTimeout(() => {
-        if (!this._cleanLoopRunning) {
-          this.cleanAnimation.immediatelyOpacity = 0.8;
-          this.cleanAnimation.delayOpacity = 0.8;
-          this.cleanAnimation.immediatelyScale = { x: 1, y: 1 };
-          this.cleanAnimation.delayScale = { x: 1, y: 1 };
-          return;
-        }
+        this.getUIContext().animateTo({
+          duration: 300,
+          curve: Curve.EaseOut
+        }, () => {
+          animationState.immediatelyOpacity = 0.8;
+          animationState.delayOpacity = 0.8;
+          animationState.immediatelyScale = { x: 1, y: 1 };
+          animationState.delayScale = { x: 1, y: 1 };
+          resolve();
+        });
+      }, this.ANIMATION_DURATION + 200);
+    });
+  }
 
-        this.cleanAnimation.immediatelyOpacity = 0.8;
-        this.cleanAnimation.delayOpacity = 0.8;
-        this.cleanAnimation.immediatelyScale = { x: 1, y: 1 };
-        this.cleanAnimation.delayScale = { x: 1, y: 1 };
+  // 通用按钮样式
+  @Builder
+  RippleButton(content: string, isActive: boolean, color: Color,
+    animationState: ButtonAnimationState, onClick: () => void) {
+    Stack() {
+      // 立即波纹层
+      Stack()
+        .width(this.BUTTON_WIDTH)
+        .height(this.BUTTON_HEIGHT)
+        .borderRadius(this.BORDER_RADIUS)
+        .backgroundColor(color)
+        .opacity(animationState.immediatelyOpacity)
+        .scale(animationState.immediatelyScale)
 
-        loop();
-      }, total);
+      // 延迟波纹层
+      Stack()
+        .width(this.BUTTON_WIDTH)
+        .height(this.BUTTON_HEIGHT)
+        .borderRadius(this.BORDER_RADIUS)
+        .backgroundColor(color)
+        .opacity(animationState.delayOpacity)
+        .scale(animationState.delayScale)
+
+      // 按钮主体
+      Button(isActive ? `${content}中...` : content, { type: ButtonType.Normal })
+        .margin(2)
+        .width(this.BUTTON_WIDTH)
+        .height(this.BUTTON_HEIGHT)
+        .backgroundColor(color)
+        .borderRadius(this.BORDER_RADIUS)
+        .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
+        .onClick(onClick)
+    }
+  }
+
+  async clearForm(): Promise<void> {
+    if (this.isCleaning) return;
+
+    this.isCleaning = true;
+    this.triggerVibration();
+
+    // 播放动画并等待完成
+    await this.playButtonAnimation(this.cleanAnimation, Color.Green);
+
+    // 清空表单
+    this.formData = {
+      appLink: '',
+      packageName: '',
+      appId: '',
+      remark: ''
     };
+    this.inputText = '';
 
-    loop();
+    prompt.showToast({
+      message: '表单已清空',
+      duration: 1500
+    });
+
+    this.isCleaning = false;
   }
-  private stopCleanRippleLoop() {
-    this._cleanLoopRunning = false;
+
+  async queryForm(): Promise<void> {
+    if (this.isSearching) return;
+
+    this.isSearching = true;
+    this.triggerVibration();
+
+    // 播放动画并等待完成
+    await this.playButtonAnimation(this.searchAnimation, Color.Blue);
+
+    prompt.showToast({
+      message: '敬请期待！',
+      duration: 1500
+    });
+
+    this.isSearching = false;
   }
-  private startSearchRippleLoop() {
-    if (this._searchLoopRunning) return;
-    this._searchLoopRunning = true;
 
-    const loop = () => {
-      if (!this._searchLoopRunning) return;
+  async submitForm(): Promise<void> {
+    if (this.isSubmitting) return;
 
-      this.getUIContext().animateTo({
-        duration: this.ANIMATION_DURATION,
-        curve: Curve.EaseInOut
-      }, () => {
-        this.searchAnimation.immediatelyOpacity = 0;
-        this.searchAnimation.immediatelyScale = { x: 4, y: 4 };
+    // 表单验证
+    if (!this.formData.packageName.trim()) {
+      prompt.showToast({
+        message: '请输入包名',
+        duration: 2000
+      });
+      return;
+    }
+
+    if (!this.formData.appId.trim()) {
+      prompt.showToast({
+        message: '请输入app_id',
+        duration: 2000
+      });
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.triggerVibration();
+
+    // 播放动画
+    const animationPromise = this.playButtonAnimation(this.submitAnimation, Color.Red);
+
+    try {
+      const pkg = this.formData.packageName.trim();
+      const appId = this.formData.appId.trim();
+
+      // 同时执行动画和提交，等待两者都完成
+      await Promise.all([
+        animationPromise,
+        submit_app({
+          pkg_name: pkg,
+          app_id: appId,
+          comment: {
+            user: this.userName,
+            note: this.formData.remark?.trim() || undefined
+          }
+        })
+      ]);
+
+      prompt.showToast({
+        message: '提交成功，感谢您的投稿！',
+        duration: 1500
       });
 
-      this.getUIContext().animateTo({
-        duration: this.ANIMATION_DURATION,
-        delay: 200,
-        curve: Curve.EaseInOut
-      }, () => {
-        this.searchAnimation.delayOpacity = 0;
-        this.searchAnimation.delayScale = { x: 4, y: 4 };
+      this.formData = {
+        appLink: '',
+        packageName: '',
+        appId: '',
+        remark: ''
+      };
+      this.inputText = '';
+
+    } catch (error) {
+      console.error('提交失败:', error);
+      prompt.showToast({
+        message: '提交失败，请稍后重试',
+        duration: 2000
       });
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
 
-      const total = this.ANIMATION_DURATION + 200 + 40;
-
-      setTimeout(() => {
-        if (!this._searchLoopRunning) {
-          this.searchAnimation.immediatelyOpacity = 0.8;
-          this.searchAnimation.delayOpacity = 0.8;
-          this.searchAnimation.immediatelyScale = { x: 1, y: 1 };
-          this.searchAnimation.delayScale = { x: 1, y: 1 };
-          return;
+  private triggerVibration(): void {
+    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+      if (err) {
+        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+        return;
+      }
+      if (state) {
+        try {
+          vibrator.startVibration({
+            type: 'preset',
+            effectId: 'haptic.effect.hard',
+            count: 1,
+            intensity: 50,
+          }, { usage: 'touch' }, (error: BusinessError) => {
+            if (error) {
+              console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+            }
+          });
+        } catch (tryError) {
+          console.error(`An unexpected error occurred: ${tryError}`);
         }
-
-        this.searchAnimation.immediatelyOpacity = 0.8;
-        this.searchAnimation.delayOpacity = 0.8;
-        this.searchAnimation.immediatelyScale = { x: 1, y: 1 };
-        this.searchAnimation.delayScale = { x: 1, y: 1 };
-
-        loop();
-      }, total);
-    };
-
-    loop();
-  }
-  private stopSearchRippleLoop() {
-    this._searchLoopRunning = false;
-  }
-  private startSubmitRippleLoop() {
-    if (this._submitLoopRunning) return;
-    this._submitLoopRunning = true;
-
-    const loop = () => {
-      if (!this._submitLoopRunning) return;
-
-      this.getUIContext().animateTo({
-        duration: this.ANIMATION_DURATION,
-        curve: Curve.EaseInOut
-      }, () => {
-        this.submitAnimation.immediatelyOpacity = 0;
-        this.submitAnimation.immediatelyScale = { x: 4, y: 4 };
-      });
-
-      this.getUIContext().animateTo({
-        duration: this.ANIMATION_DURATION,
-        delay: 200,
-        curve: Curve.EaseInOut
-      }, () => {
-        this.submitAnimation.delayOpacity = 0;
-        this.submitAnimation.delayScale = { x: 4, y: 4 };
-      });
-
-      const total = this.ANIMATION_DURATION + 200 + 40;
-
-      setTimeout(() => {
-        if (!this._submitLoopRunning) {
-          this.submitAnimation.immediatelyOpacity = 0.8;
-          this.submitAnimation.delayOpacity = 0.8;
-          this.submitAnimation.immediatelyScale = { x: 1, y: 1 };
-          this.submitAnimation.delayScale = { x: 1, y: 1 };
-          return;
-        }
-
-        this.submitAnimation.immediatelyOpacity = 0.8;
-        this.submitAnimation.delayOpacity = 0.8;
-        this.submitAnimation.immediatelyScale = { x: 1, y: 1 };
-        this.submitAnimation.delayScale = { x: 1, y: 1 };
-
-        loop();
-      }, total);
-    };
-
-    loop();
-  }
-  private stopSubmitRippleLoop() {
-    this._submitLoopRunning = false;
+      }
+    });
   }
 
   build() {
-    Row(){
+    Row() {
       // 清空按钮
-      Stack() {
-        Stack()
-          .ripplesStyleClean()
-          .opacity(this.cleanAnimation.immediatelyOpacity)
-          .scale(this.cleanAnimation.immediatelyScale)
-        Stack()
-          .ripplesStyleClean()
-          .opacity(this.cleanAnimation.delayOpacity)
-          .scale(this.cleanAnimation.delayScale)
-        Button(this.isCleaning? '清空中...':'清空', { type: ButtonType.Normal })
-          .margin(2)
-          .width(this.BUTTON_WIDTH)
-          .height(this.BUTTON_HEIGHT)
-          .backgroundColor(Color.Green)
-          .borderRadius(this.BORDER_RADIUS)
-          .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
-          .onClick(() => {
-            const now = Date.now();
-            if (now - this._cleanLastClick < this.CLICK_INTERVAL) {
-              return;
-            }
-            this._cleanLastClick = now;
-            this.triggerVibration();
-            this.clearForm();
-            this.isCleaning = !this.isCleaning;
-
-            if (this.isCleaning) {
-              this.startCleanRippleLoop();
-            } else {
-              this.stopCleanRippleLoop();
-            }
-          })
-
-      }
+      this.RippleButton('清空', this.isCleaning, Color.Green, this.cleanAnimation, () => {
+        const now = Date.now();
+        if (now - this._cleanLastClick < this.CLICK_INTERVAL) return;
+        this._cleanLastClick = now;
+        this.clearForm();
+      })
 
       // 查询按钮
-      Stack() {
-        Stack()
-          .ripplesStyleSearch()
-          .opacity(this.searchAnimation.immediatelyOpacity)
-          .scale(this.searchAnimation.immediatelyScale)
-        Stack()
-          .ripplesStyleSearch()
-          .opacity(this.searchAnimation.delayOpacity)
-          .scale(this.searchAnimation.delayScale)
-        Button(this.isSearching? '查询中...':'查询', { type: ButtonType.Normal })
-          .margin(2)
-          .width(this.BUTTON_WIDTH)
-          .height(this.BUTTON_HEIGHT)
-          .backgroundColor(Color.Blue)
-          .borderRadius(this.BORDER_RADIUS)
-          .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
-          .onClick(() => {
-            const now = Date.now();
-            if (now - this._searchLastClick < this.CLICK_INTERVAL) {
-              return;
-            }
-            this._searchLastClick = now;
-            this.triggerVibration();
-            this.queryForm();
-            this.isSearching = !this.isSearching;
-
-            if (this.isSearching) {
-              this.startSearchRippleLoop();
-            } else {
-              this.stopSearchRippleLoop();
-            }
-          })
-
-      }
+      this.RippleButton('查询', this.isSearching, Color.Blue, this.searchAnimation, () => {
+        const now = Date.now();
+        if (now - this._searchLastClick < this.CLICK_INTERVAL) return;
+        this._searchLastClick = now;
+        this.queryForm();
+      })
 
       // 提交按钮
-      Stack() {
-        Stack()
-          .ripplesStyleSubmit()
-          .opacity(this.submitAnimation.immediatelyOpacity)
-          .scale(this.submitAnimation.immediatelyScale)
-        Stack()
-          .ripplesStyleSubmit()
-          .opacity(this.submitAnimation.delayOpacity)
-          .scale(this.submitAnimation.delayScale)
-        Button(this.isSubmitting? '提交中...':'提交投稿', { type: ButtonType.Normal })
-          .margin(2)
-          .width(this.BUTTON_WIDTH)
-          .height(this.BUTTON_HEIGHT)
-          .backgroundColor(Color.Red)
-          .borderRadius(this.BORDER_RADIUS)
-          .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
-          .onClick(() => {
-            const now = Date.now();
-            if (now - this._submitLastClick < this.CLICK_INTERVAL) {
-              return;
-            }
-            this._submitLastClick = now;
-            this.triggerVibration();
-            this.submitForm();
-            this.isSubmitting = !this.isSubmitting;
-
-            if (this.isSubmitting) {
-              this.startSubmitRippleLoop();
-            } else {
-              this.stopSubmitRippleLoop();
-            }
-          })
-
-      }
-    }.width('100%').justifyContent(FlexAlign.SpaceBetween).margin({ top: 15 })
+      this.RippleButton('提交投稿', this.isSubmitting, Color.Red, this.submitAnimation, () => {
+        const now = Date.now();
+        if (now - this._submitLastClick < this.CLICK_INTERVAL) return;
+        this._submitLastClick = now;
+        this.submitForm();
+      })
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.SpaceBetween)
+    .margin({ top: 15 })
   }
+
+  // 防止重复点击的时间戳记录
+  private _cleanLastClick: number = 0;
+  private _searchLastClick: number = 0;
+  private _submitLastClick: number = 0;
 }
