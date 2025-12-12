@@ -5,31 +5,27 @@ import { common } from '@kit.AbilityKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { submitButtons } from '../component/common/submitButtons';
+import { FormData } from '../common/types';
 
 interface ShareParams {
   shareAppId: string;
   shareUrl: string;
-}
-interface FormData {
-  appLink: string;
-  packageName: string;
-  appId: string;
-  remark: string;
 }
 
 @Entry
 @Component
 struct complex_share {
   @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
-
-  @State formData: FormData = {
+  @StorageLink('userName') userName: string = ''
+  @StorageLink('inputText') inputText: string = ''
+  @StorageLink('formData') formData: FormData = {
     appLink: '',
     packageName: '',
     appId: '',
     remark: ''
   };
-  @StorageProp('shareParams') shareParams: ShareParams = { shareAppId: '', shareUrl: '' };
 
+  @StorageProp('shareParams') shareParams: ShareParams = { shareAppId: '', shareUrl: '' };
   private triggerVibration(): void {
     vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
       if (err) {
@@ -58,10 +54,8 @@ struct complex_share {
     });
   }
 
-  @State inputText: string = '';
   @State extractedApps: AppInfo[] = [];
   @State isProcessing: boolean = false;
-  @StorageLink('userName') userName: string = ''
 
   private debounceTimer: number | null = null;
   private readonly DEBOUNCE_DELAY: number = 800;

@@ -35,8 +35,6 @@ export default class shareEntryAbility extends UIAbility {
 
     if (sharePackageName && shareUrl) {
       this.shareWantParams = { sharePackageName, shareUrl };
-
-      // 存储到 AppStorage，让页面可以访问
       AppStorage.setOrCreate<WantParams>('shareParams', this.shareWantParams);
     }
   }

@@ -14,7 +14,7 @@ export function getDeviceName(): string {
     try {
         const productModel = deviceInfo.productModel;
         return productModel && productModel.trim().length > 0 ?
-            productModel : 'HarmonyOS用户';
+            productModel : 'HarmonyOS设备';
     } catch (error) {
         console.error('Failed to get device name:', error);
         return '我的设备';

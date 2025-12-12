@@ -1,11 +1,15 @@
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { getUsername, initialize as initializeUserStorage } from '../common/profile';
 import { parseInputSplitLinksPkgsAndAppIds } from '../common/utils';
 
 export class ShareAbility extends ShareExtensionAbility {
     onSessionCreate(want: Want, session: UIExtensionContentSession): void {
+
         console.info("session created!")
+        initializeUserStorage(this.context)
+
         systemShare.getSharedData(want)
             .then((data: systemShare.SharedData) => {
                 const contents: string[] = [];
