@@ -14,11 +14,39 @@ import { LengthMetrics } from '@kit.ArkUI';
 @Entry
 @Component
 export struct user {
+
     private effect: TransitionEffect =
         TransitionEffect.OPACITY
             .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
             .combine(TransitionEffect.scale({ x: 0, y: 1 }))
             .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 })
+    private triggerVibration(): void {
+        vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+                try {
+                    vibrator.startVibration({
+                        type: 'preset',
+                        effectId: 'haptic.effect.hard',
+                        count: 1,
+                        intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                        if (error) {
+                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                        } else {
+                            console.info('Succeed in starting vibration');
+                        }
+                    });
+                } catch (tryError) {
+                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+                }
+            }
+        });
+    }
     @State showTutorial: boolean = false;
     @State showSubmit: boolean = false;
     @State showContact: boolean = false;
@@ -262,32 +290,7 @@ export struct user {
                                     .width(24)
                                     .objectFit(ImageFit.Contain)
                                     .onClick(() => {
-                                        vibrator.isSupportEffect('haptic.effect.hard',
-                                            (err: BusinessError, state: boolean) => {
-                                                if (err) {
-                                                    console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                                    return;
-                                                }
-                                                console.info('Succeed in querying effect');
-                                                if (state) {
-                                                    try {
-                                                        vibrator.startVibration({
-                                                            type: 'preset',
-                                                            effectId: 'haptic.effect.hard',
-                                                            count: 1,
-                                                            intensity: 50,
-                                                        }, { usage: 'touch' }, (error: BusinessError) => {
-                                                            if (error) {
-                                                                console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                            } else {
-                                                                console.info('Succeed in starting vibration');
-                                                            }
-                                                        });
-                                                    } catch (tryError) {
-                                                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                                    }
-                                                }
-                                            });
+                                        this.triggerVibration();
                                         this.handlePopup = !this.handlePopup;
                                     })
                                     .bindPopup(this.handlePopup, {
@@ -357,31 +360,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.showSubmit = !this.showSubmit;
-                                vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                                    if (err) {
-                                        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                        return;
-                                    }
-                                    console.info('Succeed in querying effect');
-                                    if (state) {
-                                        try {
-                                            vibrator.startVibration({
-                                                type: 'preset',
-                                                effectId: 'haptic.effect.hard',
-                                                count: 1,
-                                                intensity: 50,
-                                            }, { usage: 'touch' }, (error: BusinessError) => {
-                                                if (error) {
-                                                    console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                } else {
-                                                    console.info('Succeed in starting vibration');
-                                                }
-                                            });
-                                        } catch (tryError) {
-                                            console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                        }
-                                    }
-                                });
+                                this.triggerVibration();
                             })
                             .height(56)
                             .width('100%')
@@ -422,31 +401,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 router.pushUrl({ url: 'pages/user/web_log' });
-                                vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                                    if (err) {
-                                        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                        return;
-                                    }
-                                    console.info('Succeed in querying effect');
-                                    if (state) {
-                                        try {
-                                            vibrator.startVibration({
-                                                type: 'preset',
-                                                effectId: 'haptic.effect.hard',
-                                                count: 1,
-                                                intensity: 50,
-                                            }, { usage: 'touch' }, (error: BusinessError) => {
-                                                if (error) {
-                                                    console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                } else {
-                                                    console.info('Succeed in starting vibration');
-                                                }
-                                            });
-                                        } catch (tryError) {
-                                            console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                        }
-                                    }
-                                });
+                                this.triggerVibration();
                             })
                             .height(56)
                             .width('100%')
@@ -477,31 +432,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 router.pushUrl({ url: 'pages/user/app_log' });
-                                vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                                    if (err) {
-                                        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                        return;
-                                    }
-                                    console.info('Succeed in querying effect');
-                                    if (state) {
-                                        try {
-                                            vibrator.startVibration({
-                                                type: 'preset',
-                                                effectId: 'haptic.effect.hard',
-                                                count: 1,
-                                                intensity: 50,
-                                            }, { usage: 'touch' }, (error: BusinessError) => {
-                                                if (error) {
-                                                    console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                } else {
-                                                    console.info('Succeed in starting vibration');
-                                                }
-                                            });
-                                        } catch (tryError) {
-                                            console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                        }
-                                    }
-                                });
+                                this.triggerVibration();
                             })
                             .height(56)
                             .width('100%')
@@ -532,31 +463,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 router.pushUrl({ url: 'pages/user/web_api' });
-                                vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                                    if (err) {
-                                        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                        return;
-                                    }
-                                    console.info('Succeed in querying effect');
-                                    if (state) {
-                                        try {
-                                            vibrator.startVibration({
-                                                type: 'preset',
-                                                effectId: 'haptic.effect.hard',
-                                                count: 1,
-                                                intensity: 50,
-                                            }, { usage: 'touch' }, (error: BusinessError) => {
-                                                if (error) {
-                                                    console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                } else {
-                                                    console.info('Succeed in starting vibration');
-                                                }
-                                            });
-                                        } catch (tryError) {
-                                            console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                        }
-                                    }
-                                });
+                                this.triggerVibration();
                             })
                             .height(56)
                             .width('100%')
@@ -587,31 +494,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.showContact = !this.showContact;
-                                vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                                    if (err) {
-                                        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                        return;
-                                    }
-                                    console.info('Succeed in querying effect');
-                                    if (state) {
-                                        try {
-                                            vibrator.startVibration({
-                                                type: 'preset',
-                                                effectId: 'haptic.effect.hard',
-                                                count: 1,
-                                                intensity: 50,
-                                            }, { usage: 'touch' }, (error: BusinessError) => {
-                                                if (error) {
-                                                    console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                } else {
-                                                    console.info('Succeed in starting vibration');
-                                                }
-                                            });
-                                        } catch (tryError) {
-                                            console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                        }
-                                    }
-                                });
+                                this.triggerVibration();
                             })
                             .height(56)
                             .width('100%')
@@ -642,31 +525,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.showTutorial = !this.showTutorial;
-                                vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                                    if (err) {
-                                        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                        return;
-                                    }
-                                    console.info('Succeed in querying effect');
-                                    if (state) {
-                                        try {
-                                            vibrator.startVibration({
-                                                type: 'preset',
-                                                effectId: 'haptic.effect.hard',
-                                                count: 1,
-                                                intensity: 50,
-                                            }, { usage: 'touch' }, (error: BusinessError) => {
-                                                if (error) {
-                                                    console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                } else {
-                                                    console.info('Succeed in starting vibration');
-                                                }
-                                            });
-                                        } catch (tryError) {
-                                            console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                        }
-                                    }
-                                });
+                                this.triggerVibration();
                             })
                             .height(56)
                             .width('100%')
@@ -726,32 +585,7 @@ export struct user {
                                 .fontSize(12)
                                 .fontColor($r('app.color.diff_content'))
                                 .onClick(() => {
-                                    vibrator.isSupportEffect('haptic.effect.hard',
-                                        (err: BusinessError, state: boolean) => {
-                                            if (err) {
-                                                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                                return;
-                                            }
-                                            console.info('Succeed in querying effect');
-                                            if (state) {
-                                                try {
-                                                    vibrator.startVibration({
-                                                        type: 'preset',
-                                                        effectId: 'haptic.effect.hard',
-                                                        count: 1,
-                                                        intensity: 50,
-                                                    }, { usage: 'touch' }, (error: BusinessError) => {
-                                                        if (error) {
-                                                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                        } else {
-                                                            console.info('Succeed in starting vibration');
-                                                        }
-                                                    });
-                                                } catch (tryError) {
-                                                    console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                                }
-                                            }
-                                        });
+                                    this.triggerVibration();
                                     this.openLink();
                                 })
                         }
@@ -832,32 +666,7 @@ export struct user {
                                 icon: $r('sys.symbol.gearshape'),
                                 isEnabled: true,
                                 action: () => {
-                                    vibrator.isSupportEffect('haptic.effect.hard',
-                                        (err: BusinessError, state: boolean) => {
-                                            if (err) {
-                                                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                                return;
-                                            }
-                                            console.info('Succeed in querying effect');
-                                            if (state) {
-                                                try {
-                                                    vibrator.startVibration({
-                                                        type: 'preset',
-                                                        effectId: 'haptic.effect.hard',
-                                                        count: 1,
-                                                        intensity: 50,
-                                                    }, { usage: 'touch' }, (error: BusinessError) => {
-                                                        if (error) {
-                                                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                        } else {
-                                                            console.info('Succeed in starting vibration');
-                                                        }
-                                                    });
-                                                } catch (tryError) {
-                                                    console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                                }
-                                            }
-                                        });
+                                    this.triggerVibration();
                                     router.pushUrl({ url: 'pages/settings' })
                                 },
                             }
@@ -866,31 +675,7 @@ export struct user {
                 },
                 backIcon: {
                     action: () => {
-                        vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                            if (err) {
-                                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                return;
-                            }
-                            console.info('Succeed in querying effect');
-                            if (state) {
-                                try {
-                                    vibrator.startVibration({
-                                        type: 'preset',
-                                        effectId: 'haptic.effect.hard',
-                                        count: 1,
-                                        intensity: 50,
-                                    }, { usage: 'touch' }, (error: BusinessError) => {
-                                        if (error) {
-                                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                        } else {
-                                            console.info('Succeed in starting vibration');
-                                        }
-                                    });
-                                } catch (tryError) {
-                                    console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                }
-                            }
-                        });
+                        this.triggerVibration();
                         router.back();
                     }
                 }
