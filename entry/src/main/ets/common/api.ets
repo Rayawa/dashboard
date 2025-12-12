@@ -1,8 +1,9 @@
-import type { appIdOrPkgName, CommentInfo, SubmitAppBody } from './types';
+import type { AppDetailInfo, appIdOrPkgName, BaseAPIResponse, CommentInfo, SubmitAppBody } from './types';
 import { SUBMIT_PLATFORM } from '../common/constants';
 import { SAPIBaseURL, submitURL } from './constants';
 import URL from './url';
 import { http } from '@kit.NetworkKit';
+import App from '@system.app';
 
 // 本文件代碼所使用的源站（也就是基礎的 url）
 const BASEURL = SAPIBaseURL;
@@ -12,7 +13,7 @@ export async function request() {
 
 export async function submit_app(
     data: SubmitAppBody
-) {
+): Promise<BaseAPIResponse<AppDetailInfo> | undefined> {
     const final_comment: CommentInfo = {
         user: data.comment?.user,
         note: data.comment?.note,
@@ -39,8 +40,11 @@ export async function submit_app(
         }
         )
         console.info(`request response code: ${response.responseCode}`);
-        if (response.responseCode == 200) {
-            console.info(JSON.stringify(response.result));
+        const res: object = typeof response.result === 'string' ? JSON.parse(response.result) : response.result;
+        try {
+            return res as BaseAPIResponse<AppDetailInfo>;
+        } catch (e) {
+            return null;
         }
     } catch (e) {
         console.warn(`error ${e}`)
