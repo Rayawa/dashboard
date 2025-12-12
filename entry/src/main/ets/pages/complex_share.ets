@@ -80,7 +80,8 @@ struct complex_share {
     uiAbilityContext.terminateSelf();
   }
   onPageHide(): void {
-    this.closePage()
+    let uiAbilityContext = getContext(this) as common.UIAbilityContext;
+    uiAbilityContext.terminateSelf();
   }
 
   build() {
