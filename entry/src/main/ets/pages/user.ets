@@ -72,6 +72,29 @@ export struct user {
         this.loadUserName();
     }
 
+    onBackPress(): boolean | void {
+        if (this.showTutorial) {
+            this.showTutorial = false;
+            this.triggerVibration();
+            console.info('关闭教程页面');
+            return true;
+        }
+        if (this.showSubmit) {
+            this.showSubmit = false;
+            this.triggerVibration();
+            console.info('关闭投稿页面');
+            return true;
+        }
+        if (this.showContact) {
+            this.showContact = false;
+            this.triggerVibration();
+            console.info('关闭联系我们页面');
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     async openLink() {
         const url = 'https://beian.miit.gov.cn/#/Integrated/index';
         const ui_content = this.getUIContext();
@@ -110,118 +133,6 @@ export struct user {
     build() {
         HdsNavigation() {
             Stack() {
-                if (this.showSubmit) {
-                    Stack() {
-                        Column() {
-                            Text('* 点击外部区域或向下滑动关闭页面')
-                                .fontSize(14)
-                                .margin({ bottom: 10 })
-                                .position({ x: '40%', y: '64%' })
-                                .fontColor(Color.Grey)
-                        }
-                        .backgroundColor(Color.Transparent)
-                        .height('300%')
-                        .width('300%')
-                        .onClick(() => {
-                            this.showSubmit = !this.showSubmit;
-                        })
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .transition(TransitionEffect.OPACITY.animation({
-                            curve: curves.springMotion(0, 1),
-                            duration: 1000
-                        }))
-
-                        app_share()
-                    }
-                    .transition(this.effect)
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Vertical })
-                            .onAction((move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showSubmit = !this.showSubmit
-                                }
-                            })
-                    )
-                    .zIndex(2)
-                    .height('100%')
-                    .width('100%')
-
-                }
-                if (this.showTutorial) {
-                    Stack() {
-                        Column() {
-                            Text('* 点击外部区域或向下滑动关闭页面')
-                                .fontSize(14)
-                                .margin({ bottom: 10 })
-                                .position({ x: '40%', y: '65%' })
-                                .fontColor(Color.Grey)
-                        }
-                        .backgroundColor(Color.Transparent)
-                        .height('300%')
-                        .width('300%')
-                        .onClick(() => {
-                            this.showTutorial = !this.showTutorial;
-                        })
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .transition(TransitionEffect.OPACITY.animation({
-                            curve: curves.springMotion(0, 1),
-                            duration: 1000
-                        }))
-
-                        tutorial()
-                    }
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Vertical })
-                            .onAction((move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showTutorial = !this.showTutorial
-                                }
-                            })
-                    )
-                    .transition(this.effect)
-                    .zIndex(4)
-                    .height('100%')
-                    .width('100%')
-
-                }
-                if (this.showContact) {
-                    Stack() {
-                        Column() {
-                            Text('* 点击外部区域或向下滑动关闭页面')
-                                .fontSize(14)
-                                .margin({ bottom: 10 })
-                                .position({ x: '40%', y: '65%' })
-                                .fontColor(Color.Grey)
-                        }
-                        .backgroundColor(Color.Transparent)
-                        .height('300%')
-                        .width('300%')
-                        .onClick(() => {
-                            this.showContact = !this.showContact;
-                        })
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .transition(TransitionEffect.OPACITY.animation({
-                            curve: curves.springMotion(0, 1),
-                            duration: 1000
-                        }))
-
-                        contact()
-                    }
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Vertical })
-                            .onAction((move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showContact = !this.showContact
-                                }
-                            })
-                    )
-                    .transition(this.effect)
-                    .zIndex(4)
-                    .height('100%')
-                    .width('100%')
-
-                }
-
                 Scroll() {
                     Column() {
                         Column() {
@@ -599,6 +510,114 @@ export struct user {
                 .width('100%')
                 .height('100%')
 
+                if (this.showSubmit) {
+                    Stack() {
+                        Column() {
+                            Text('* 点击外部区域或向下滑动关闭页面')
+                                .fontSize(14)
+                                .margin({ bottom: 10 })
+                                .position({ x: '40%', y: '64%' })
+                                .fontColor(Color.Grey)
+                        }
+                        .backgroundColor(Color.Transparent)
+                        .height('300%')
+                        .width('300%')
+                        .onClick(() => {
+                            this.showSubmit = !this.showSubmit;
+                        })
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                        .transition(TransitionEffect.OPACITY.animation({
+                            curve: curves.springMotion(0, 1),
+                            duration: 1000
+                        }))
+
+                        app_share()
+                    }
+                    .transition(this.effect)
+                    .gesture(
+                        SwipeGesture({ direction: SwipeDirection.Vertical })
+                            .onAction((move: GestureEvent | undefined) => {
+                                if (move) {
+                                    this.showSubmit = !this.showSubmit
+                                }
+                            })
+                    )
+                    .height('100%')
+                    .width('100%')
+
+                }
+                if (this.showTutorial) {
+                    Stack() {
+                        Column() {
+                            Text('* 点击外部区域或向下滑动关闭页面')
+                                .fontSize(14)
+                                .margin({ bottom: 10 })
+                                .position({ x: '40%', y: '65.3%' })
+                                .fontColor(Color.Grey)
+                        }
+                        .backgroundColor(Color.Transparent)
+                        .height('300%')
+                        .width('300%')
+                        .onClick(() => {
+                            this.showTutorial = !this.showTutorial;
+                        })
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                        .transition(TransitionEffect.OPACITY.animation({
+                            curve: curves.springMotion(0, 1),
+                            duration: 1000
+                        }))
+
+                        tutorial()
+                    }
+                    .gesture(
+                        SwipeGesture({ direction: SwipeDirection.Vertical })
+                            .onAction((move: GestureEvent | undefined) => {
+                                if (move) {
+                                    this.showTutorial = !this.showTutorial
+                                }
+                            })
+                    )
+                    .transition(this.effect)
+                    .height('100%')
+                    .width('100%')
+
+                }
+                if (this.showContact) {
+                    Stack() {
+                        Column() {
+                            Text('* 点击外部区域或向下滑动关闭页面')
+                                .fontSize(14)
+                                .margin({ bottom: 10 })
+                                .position({ x: '40%', y: '65%' })
+                                .fontColor(Color.Grey)
+                        }
+                        .backgroundColor(Color.Transparent)
+                        .height('300%')
+                        .width('300%')
+                        .onClick(() => {
+                            this.showContact = !this.showContact;
+                        })
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                        .transition(TransitionEffect.OPACITY.animation({
+                            curve: curves.springMotion(0, 1),
+                            duration: 1000
+                        }))
+
+                        contact()
+                    }
+                    .gesture(
+                        SwipeGesture({ direction: SwipeDirection.Vertical })
+                            .onAction((move: GestureEvent | undefined) => {
+                                if (move) {
+                                    this.showContact = !this.showContact
+                                }
+                            })
+                    )
+                    .transition(this.effect)
+                    .height('100%')
+                    .width('100%')
+
+                }
             }
             .backgroundColor($r('app.color.backcolor'))
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])

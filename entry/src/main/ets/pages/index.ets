@@ -50,34 +50,6 @@ struct Index {
         .width('100%')
         .height('100%')
 
-        Column() {
-          Column() { Text('\n').fontSize(14) }
-          Row() {
-            Text('原生API')
-              .fontSize(23)
-              .fontWeight(FontWeight.Bold)
-              .margin({ left: 20 })
-
-            Image($r('app.media.arrow_back'))
-              .height(28)
-              .width(28)
-              .margin({ right: 25 })
-              .onClick(() => router.back())
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween)
-          .height(55)
-
-          Rect()
-            .width('100%')
-            .height(0.5)
-            .fill($r('app.color.border'))
-            .position({ x: 0, y: 87 })
-
-        }
-        .backgroundBlurStyle(BlurStyle.Thin)
-        .position({ x: 0, y: 0 })
-        .width('100%')
 
       }
       .backgroundColor($r('app.color.backcolor'))

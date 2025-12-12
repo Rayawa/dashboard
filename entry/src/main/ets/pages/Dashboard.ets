@@ -498,7 +498,6 @@ struct Dashboard {
                             console.log('平移中，垂直偏移量 y 为:', this.y);
                         })
                 )
-
                 if (!this.showButton) {
                     Column()
                         .backgroundColor(Color.Transparent)
@@ -531,7 +530,7 @@ struct Dashboard {
                             Text('* 点击外部区域或向下滑动关闭页面')
                                 .fontSize(14)
                                 .margin({ bottom: 10 })
-                                .position({ x: '40%', y: '65%' })
+                                .position({ x: '40%', y: '65.3%' })
                                 .fontColor(Color.Grey)
                         }
                         .backgroundColor(Color.Transparent)
