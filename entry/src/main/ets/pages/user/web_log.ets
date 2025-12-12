@@ -20,6 +20,33 @@ struct web_log {
     @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
     @State mode: WebDarkMode = WebDarkMode.Auto;
     @State isLoading: boolean = false;
+    private triggerVibration(): void {
+        vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+            if (err) {
+                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                return;
+            }
+            console.info('Succeed in querying effect');
+            if (state) {
+                try {
+                    vibrator.startVibration({
+                        type: 'preset',
+                        effectId: 'haptic.effect.hard',
+                        count: 1,
+                        intensity: 50,
+                    }, { usage: 'touch' }, (error: BusinessError) => {
+                        if (error) {
+                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                        } else {
+                            console.info('Succeed in starting vibration');
+                        }
+                    });
+                } catch (tryError) {
+                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+                }
+            }
+        });
+    }
 
     async aboutToAppear() {
       const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
@@ -32,6 +59,17 @@ struct web_log {
             statusBarColor: '#00000000',
             statusBarContentColor: isDark ? '#FFFFFF' : '#000000'
         });
+    }
+    onBackPress(): boolean | void {
+        if (this.web_controller.accessStep(-1)) {
+            console.info('网页可以返回，执行后退');
+            this.web_controller.backward();
+            this.triggerVibration();
+            prompt.showToast({ message: '返回上一页', duration: 1000 });
+            return true;
+        } else {
+            return false;
+        }
     }
 
     build() {
@@ -59,7 +97,7 @@ struct web_log {
                             .onPageEnd(() => this.isLoading = false)
                             .onControllerAttached(() => {
                                 try {
-                                    this.web_controller.setCustomUserAgent(APP_UA);
+                                    // this.web_controller.setCustomUserAgent(APP_UA);
                                 } catch {
                                 }
                             });
@@ -135,32 +173,7 @@ struct web_log {
                                     if (this.isLoading) {
                                         this.web_controller.stop();
                                         this.isLoading = false;
-                                        vibrator.isSupportEffect('haptic.effect.hard',
-                                            (err: BusinessError, state: boolean) => {
-                                                if (err) {
-                                                    console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                                    return;
-                                                }
-                                                console.info('Succeed in querying effect');
-                                                if (state) {
-                                                    try {
-                                                        vibrator.startVibration({
-                                                            type: 'preset',
-                                                            effectId: 'haptic.effect.hard',
-                                                            count: 1,
-                                                            intensity: 50,
-                                                        }, { usage: 'touch' }, (error: BusinessError) => {
-                                                            if (error) {
-                                                                console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                            } else {
-                                                                console.info('Succeed in starting vibration');
-                                                            }
-                                                        });
-                                                    } catch (tryError) {
-                                                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                                    }
-                                                }
-                                            });
+                                        this.triggerVibration();
                                         prompt.showToast({
                                             message: '已停止加载',
                                             duration: 1000
@@ -168,32 +181,7 @@ struct web_log {
                                     } else {
                                         this.web_controller.refresh();
                                         this.isLoading = true;
-                                        vibrator.isSupportEffect('haptic.effect.hard',
-                                            (err: BusinessError, state: boolean) => {
-                                                if (err) {
-                                                    console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                                    return;
-                                                }
-                                                console.info('Succeed in querying effect');
-                                                if (state) {
-                                                    try {
-                                                        vibrator.startVibration({
-                                                            type: 'preset',
-                                                            effectId: 'haptic.effect.hard',
-                                                            count: 1,
-                                                            intensity: 50,
-                                                        }, { usage: 'touch' }, (error: BusinessError) => {
-                                                            if (error) {
-                                                                console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                            } else {
-                                                                console.info('Succeed in starting vibration');
-                                                            }
-                                                        });
-                                                    } catch (tryError) {
-                                                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                                    }
-                                                }
-                                            });
+                                        this.triggerVibration();
                                         prompt.showToast({
                                             message: '刷新中...',
                                             duration: 1000
@@ -219,32 +207,7 @@ struct web_log {
                                         yOffset: 0,
                                         animation: { duration: 300, curve: Curve.Ease }
                                     })
-                                    vibrator.isSupportEffect('haptic.effect.hard',
-                                        (err: BusinessError, state: boolean) => {
-                                            if (err) {
-                                                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                                return;
-                                            }
-                                            console.info('Succeed in querying effect');
-                                            if (state) {
-                                                try {
-                                                    vibrator.startVibration({
-                                                        type: 'preset',
-                                                        effectId: 'haptic.effect.hard',
-                                                        count: 1,
-                                                        intensity: 50,
-                                                    }, { usage: 'touch' }, (error: BusinessError) => {
-                                                        if (error) {
-                                                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                                        } else {
-                                                            console.info('Succeed in starting vibration');
-                                                        }
-                                                    });
-                                                } catch (tryError) {
-                                                    console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                                }
-                                            }
-                                        });
+                                    this.triggerVibration();
                                     prompt.showToast({
                                         message: '回到顶部',
                                         duration: 500
@@ -256,31 +219,7 @@ struct web_log {
                 },
                 backIcon: {
                     action: () => {
-                        vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-                            if (err) {
-                                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                                return;
-                            }
-                            console.info('Succeed in querying effect');
-                            if (state) {
-                                try {
-                                    vibrator.startVibration({
-                                        type: 'preset',
-                                        effectId: 'haptic.effect.hard',
-                                        count: 1,
-                                        intensity: 50,
-                                    }, { usage: 'touch' }, (error: BusinessError) => {
-                                        if (error) {
-                                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                                        } else {
-                                            console.info('Succeed in starting vibration');
-                                        }
-                                    });
-                                } catch (tryError) {
-                                    console.error(`An unexpected error occurred in try block: ${tryError}`);
-                                }
-                            }
-                        });
+                        this.triggerVibration();
                         router.back();
                     }
                 }

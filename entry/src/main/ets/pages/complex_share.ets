@@ -30,6 +30,34 @@ struct complex_share {
   };
   @StorageProp('shareParams') shareParams: ShareParams = { shareAppId: '', shareUrl: '' };
 
+  private triggerVibration(): void {
+    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+      if (err) {
+        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+        return;
+      }
+      console.info('Succeed in querying effect');
+      if (state) {
+        try {
+          vibrator.startVibration({
+            type: 'preset',
+            effectId: 'haptic.effect.hard',
+            count: 1,
+            intensity: 50,
+          }, { usage: 'touch' }, (error: BusinessError) => {
+            if (error) {
+              console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+            } else {
+              console.info('Succeed in starting vibration');
+            }
+          });
+        } catch (tryError) {
+          console.error(`An unexpected error occurred in try block: ${tryError}`);
+        }
+      }
+    });
+  }
+
   @State inputText: string = '';
   @State extractedApps: AppInfo[] = [];
   @State isProcessing: boolean = false;
@@ -52,31 +80,13 @@ struct complex_share {
     uiAbilityContext.terminateSelf();
   }
   onPageHide(): void {
-    this.closePage()
+    let uiAbilityContext = getContext(this) as common.UIAbilityContext;
+    uiAbilityContext.terminateSelf();
   }
 
   build() {
     Stack(){
-      Column().width('100%').height('100%').backgroundColor($r('app.color.backcolor')).backgroundBlurStyle(BlurStyle.BACKGROUND_THIN).onClick(()=>{ vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-        if (err) {
-          console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-          return;
-        }
-        console.info('Succeed in querying effect');
-        if (state) {
-          try {
-            vibrator.startVibration({
-              type: 'preset',
-              effectId: 'haptic.effect.hard',
-              count: 1,
-              intensity: 50,
-            }, { usage: 'touch' }, (error: BusinessError) => {
-              if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-              else { console.info('Succeed in starting vibration'); }
-            });
-          } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-        }
-      });this.closePage() })
+      Column().width('100%').height('100%').backgroundColor($r('app.color.backcolor')).backgroundBlurStyle(BlurStyle.BACKGROUND_THIN).onClick(()=>{ this.triggerVibration(); this.closePage() })
       Column() {
         // 标题
         Row() {
@@ -96,26 +106,7 @@ struct complex_share {
             .height(26)
             .width(26)
             .margin({right:10})
-            .onClick(() => { vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-              if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-              }
-              console.info('Succeed in querying effect');
-              if (state) {
-                try {
-                  vibrator.startVibration({
-                    type: 'preset',
-                    effectId: 'haptic.effect.hard',
-                    count: 1,
-                    intensity: 50,
-                  }, { usage: 'touch' }, (error: BusinessError) => {
-                    if (error) { console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`); }
-                    else { console.info('Succeed in starting vibration'); }
-                  });
-                } catch (tryError) { console.error(`An unexpected error occurred in try block: ${tryError}`); }
-              }
-            });this.closePage() })
+            .onClick(() => { this.triggerVibration(); this.closePage() })
         }
         .width('100%')
         .justifyContent(FlexAlign.SpaceBetween)
@@ -405,13 +396,6 @@ struct complex_share {
         offsetY: 4
       })
     }.height('100%').width('100%')
-    // Column(){
-    //   Text('111\n')
-    //   Text(this.formData.appId)
-    //   Text('222\n')
-    //   Text(this.inputText)
-    //   Text('333\n')
-    // }
   }
 
   // 处理提取信息
