@@ -1,4 +1,4 @@
-import { URL } from "./url";
+import { URL } from './url';
 import { deviceInfo } from '@kit.BasicServicesKit';
 
 export const SBaseURL = new URL("http://shenjack.top:10003/")

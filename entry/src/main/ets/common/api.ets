@@ -3,7 +3,6 @@ import { SUBMIT_PLATFORM } from '../common/constants';
 import { SAPIBaseURL, submitURL } from './constants';
 import URL from './url';
 import { http } from '@kit.NetworkKit';
-import App from '@system.app';
 
 // 本文件代碼所使用的源站（也就是基礎的 url）
 const BASEURL = SAPIBaseURL;
@@ -44,14 +43,14 @@ export async function submit_app(
         try {
             return res as BaseAPIResponse<AppDetailInfo>;
         } catch (e) {
-            return null;
+            return ;
         }
     } catch (e) {
         console.warn(`error ${e}`)
     } finally {
         request.destroy();
     }
-    return null;
+    return ;
 }
 
 export async function query_app(

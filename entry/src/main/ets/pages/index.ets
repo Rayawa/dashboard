@@ -1,9 +1,11 @@
 import { AppsTableComponent } from '../component/index/AppsTableComponent'
-import { TopDownloadChartComponent, NonHuaweiDownloadChartComponent, ChartsAreaComponent } from '../component/index/ChartsAreaComponent'
+import {
+  ChartsAreaComponent,
+  NonHuaweiDownloadChartComponent,
+  TopDownloadChartComponent
+} from '../component/index/ChartsAreaComponent'
 import { HeaderComponent } from '../component/index/HeaderComponent'
-import { HelpModal, HelpSection } from '../component/index/ModalComponents'
 import { StatsCardsComponent } from '../component/index/StatsCardsComponent'
-import { router } from '@kit.ArkUI'
 
 @Entry
 @Component

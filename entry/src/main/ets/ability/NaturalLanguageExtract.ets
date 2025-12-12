@@ -1,4 +1,4 @@
-import { textProcessing, EntityType } from '@kit.NaturalLanguageKit';
+import { EntityType, textProcessing } from '@kit.NaturalLanguageKit';
 
 // ========== 类型定义 ==========
 export interface HuaweiLinkParseResult {
