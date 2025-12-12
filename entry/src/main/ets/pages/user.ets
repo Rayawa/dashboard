@@ -682,7 +682,7 @@ export struct user {
                         {
                             content: {
                                 label: 'settings',
-                                icon: $r('sys.symbol.gearshape'),
+                                icon: $r('app.media.settings'),
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();

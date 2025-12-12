@@ -111,13 +111,13 @@ export struct tutorial{
           '       您在此可以设置用户名、投稿应用、查看最新的更新日志、阅读API文档说明；\n' +
           '       联系我们、使用教程和问题反馈也在我的页面中，确保您能随时获得所需的帮助与支持。\n' ).fontSize(14).margin({ bottom: 1 })
         Row({ space: 40 }) {
-          Image($r('sys.symbol.arrow_right_and_square')).width(28).height(28)
+          Image($r('app.media.share')).width(28).height(28)
             .onClick(() => {
               this.triggerVibration();
               this.handlePopupShareMenu = !this.handlePopupShareMenu;
             })
             .bindPopup(this.handlePopupShareMenu, {
-              message: '单击按钮分享当前网页',
+              message: '点击按钮分享当前网页',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -135,13 +135,13 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
-          Image($r('sys.symbol.transfer_station')).width(28).height(28)
+          Image($r('app.media.switch')).width(28).height(28)
             .onClick(() => {
               this.triggerVibration();
               this.handlePopupSwitch = !this.handlePopupSwitch;
             })
             .bindPopup(this.handlePopupSwitch, {
-              message: '单击按钮切换不同站点',
+              message: '点击按钮切换不同站点',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -159,13 +159,13 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
-          Image($r('sys.symbol.person')).width(28).height(28)
+          Image($r('app.media.user')).width(28).height(28)
             .onClick(() => {
               this.triggerVibration();
               this.handlePopupUser = !this.handlePopupUser;
             })
             .bindPopup(this.handlePopupUser, {
-              message: '单击按钮进入我的页面',
+              message: '点击按钮进入我的页面',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -183,19 +183,19 @@ export struct tutorial{
                   .combine(TransitionEffect.translate({ x: 0, y: 12 }))
               )
             })
-        }.margin({ bottom: 40 })
+        }.margin({ bottom: 20 })
         Text('  2. 主界面按钮：主要用于操作网页回到顶部与刷新。\n\n' +
           '   横向滑动按钮可以隐藏按钮、点击屏幕侧边可以显示按钮；上下滑动可以改变按钮位置。\n\n' +
           '   按钮支持智感握姿功能，可根据您的握持姿势改变位置。').fontSize(14).margin({ bottom: 1 })
         Text('    * 此功能当前仅支持部分机型。若设置菜单中存在“智感握姿”开关（可在“设置-系统”中查看），则表明该设备支持此功能。\n').fontSize(10).fontColor(Color.Grey)
-        Row({ space: 20 }) {
+        Row({ space: 40 }) {
           Image($r('app.media.arrow_up')).width(28).height(28)
             .onClick(() => {
               this.triggerVibration();
               this.handlePopupTop = !this.handlePopupTop;
             })
             .bindPopup(this.handlePopupTop, {
-              message: '单击按钮以回到顶部',
+              message: '点击按钮回到顶部',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -219,7 +219,7 @@ export struct tutorial{
               this.handlePopupRefresh = !this.handlePopupRefresh;
             })
             .bindPopup(this.handlePopupRefresh, {
-              message: '单击按钮以刷新当前网页',
+              message: '点击按钮刷新当前网页',
               placement: Placement.Top,
               showInSubWindow: false,
               onStateChange: (e) => {
@@ -249,7 +249,7 @@ export struct tutorial{
           .margin({ bottom: 20 })
         Text('* 目前分享功能仅支持手机设备').fontSize(14).margin({ bottom: 10 }).fontColor(Color.Grey)
         Text('  1. 链接分享：在主界面或任意应用详情页点击分享按钮分享当前页面链接。\n').fontSize(14)
-        Image($r('sys.symbol.arrow_right_and_square'))
+        Image($r('app.media.share'))
           .width(28)
           .height(28)
           .margin({ bottom: 20 })
@@ -258,7 +258,7 @@ export struct tutorial{
             this.handlePopupShareShare = !this.handlePopupShareShare;
           })
           .bindPopup(this.handlePopupShareShare, {
-            message: '在主页面单击以分享当前页面链接',
+            message: '在主页面点击以分享当前页面链接',
             placement: Placement.Top,
             showInSubWindow: false,
             onStateChange: (e) => {
@@ -287,7 +287,7 @@ export struct tutorial{
           .borderWidth(1)
           .borderColor($r('app.color.border'))
         Text('    * 使用前，请确保两台设备均在设置中开启“隔空传送”功能。\n' +
-          '    * 当前版本仅支持从手机抓取内容并分享至其他手机、平板、PC或二合一设备，暂不支持从平板、PC或二合一设备发起抓取。')
+          '    * 当前版本仅支持从手机抓取内容并分享至其他手机、平板、PC/2in1设备，暂不支持从平板、PC/2in1设备发起抓取。')
           .fontSize(10)
           .fontColor(Color.Grey)
       }.height('90%').width('95%').borderRadius(16).padding(20)
@@ -302,7 +302,7 @@ export struct tutorial{
           .fontSize(14)
           .margin({ bottom: 10 })
         Text('  您可以在“我的”界面里面设置您的用户名，初始用户名默认为机型型号。\n' +
-          '  您的用户名将作为投稿作者标识，帮助我们准确记录并感谢您的每一次分享。\n').fontSize(14)
+          '  您的用户名将作为投稿人标识，帮助我们准确记录并感谢您的每一次分享。\n').fontSize(14)
         Row() {
           Text('  投稿功能支持AI智能提取，将应用信息输入或粘贴进文本框即可自动提取！\n')
             .fontSize(14)

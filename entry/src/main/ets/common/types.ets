@@ -87,3 +87,10 @@ export interface AppDetailInfo {
     new_metric: boolean;
     new_rating: boolean;
 }
+
+export interface FormData {
+    appLink: string;
+    packageName: string;
+    appId: string;
+    remark: string;
+}

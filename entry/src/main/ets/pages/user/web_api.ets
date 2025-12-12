@@ -166,7 +166,7 @@ struct web_api {
                         {
                             content: {
                                 label: 'refresh',
-                                icon: this.isLoading ? $r('sys.symbol.xmark_circle') : $r('sys.symbol.arrow_clockwise'),
+                                icon: this.isLoading ? $r('app.media.stop') : $r('app.media.refresh'),
                                 isEnabled: true,
                                 action: () => {
                                     if (this.isLoading) {
@@ -198,7 +198,7 @@ struct web_api {
                         {
                             content: {
                                 label: 'top',
-                                icon: $r('sys.symbol.arrow_up_to_line'),
+                                icon: $r('app.media.arrow_up'),
                                 isEnabled: true,
                                 action: () => {
                                     this.scroller.scrollTo({

@@ -453,7 +453,7 @@ struct Dashboard {
                     .width(45)
                     .height(45)
                     .shadow({
-                        radius: 6,
+                        radius: 4,
                         color: Color.Gray,
                         offsetX: 2,
                         offsetY: 4
@@ -613,7 +613,7 @@ struct Dashboard {
                         {
                             content: {
                                 label: 'share',
-                                icon: $r('sys.symbol.arrow_right_up_and_square'),
+                                icon: $r('app.media.share'),
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
@@ -624,7 +624,7 @@ struct Dashboard {
                         {
                             content: {
                                 label: 'switch',
-                                icon: $r('sys.symbol.transfer_station'),
+                                icon: $r('app.media.switch'),
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
@@ -635,7 +635,7 @@ struct Dashboard {
                         {
                             content: {
                                 label: 'user',
-                                icon: $r('sys.symbol.person'),
+                                icon: $r('app.media.user'),
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
