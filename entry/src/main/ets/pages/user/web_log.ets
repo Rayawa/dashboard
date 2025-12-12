@@ -1,5 +1,5 @@
 import { webview } from '@kit.ArkWeb';
-import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, HdsNavigationAttribute } from '@kit.UIDesignKit';
 import { LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { changelog, TBaseURL } from '../../common/constants';
 import window from '@ohos.window';

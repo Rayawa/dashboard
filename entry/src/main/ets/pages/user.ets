@@ -8,7 +8,7 @@ import { getUsername, initialize as initializeUserStorage, setUsername as setUse
 import { tutorial } from '../component/tutorial';
 import { contact } from '../component/contact';
 import { app_share } from '../component/app_share';
-import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, HdsNavigationAttribute } from '@kit.UIDesignKit';
 
 @Entry
 @Component

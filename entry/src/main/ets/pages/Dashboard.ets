@@ -1,7 +1,6 @@
 import { webview } from '@kit.ArkWeb';
-import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
-import { curves, LengthMetrics, prompt, router } from '@kit.ArkUI';
-import window from '@ohos.window';
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, HdsNavigationAttribute } from '@kit.UIDesignKit';
+import { curves, LengthMetrics, prompt, router, window, display } from '@kit.ArkUI';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -15,6 +14,7 @@ import { getUsername, initialize as initializeUserStorage, setUsername as setUse
 import { tutorial } from '../component/tutorial';
 import URL from '../common/url';
 
+
 @Entry
 @Component
 struct Dashboard {
@@ -23,10 +23,7 @@ struct Dashboard {
     @State showButton: boolean = true;
     @State showTutorial: boolean = false;
     @State buttonOnFocus: boolean = false;
-    // @State isExpand: boolean = false;
-    // @State isPrimaryIconChanged: boolean = false;
-    // @State primaryHoverTips: string = '展开';
-
+    
     //切换版本方法
     @State isT: boolean = true;
     private switchWebVersion(): void {
@@ -38,19 +35,20 @@ struct Dashboard {
     }
 
     //智感握持
-    @State y: number = 300;
-    @State buttonShowOffsetX: string = '3%';
-    @State buttonHideOffsetX: string = '-20%'
+    @State Vp: number = 376;
+    @State buttonY: number = 300;
+    @State buttonShowX: number = 10;
+    @State buttonHideX: number = -25-10;
     @State showButtonAnimation: boolean = true;
     holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
         switch (data) {
             case 1: // 左手握持
-                this.buttonShowOffsetX = '3%';
-                this.buttonHideOffsetX = '-20%';
+                this.buttonShowX = 10;
+                this.buttonHideX = -45-10;
                 break;
             case 2: // 右手握持
-                this.buttonShowOffsetX = '84%';
-                this.buttonHideOffsetX = '101%';
+                this.buttonShowX = this.Vp-45-10;
+                this.buttonHideX = this.Vp+10;
                 break;
             default:
                 break;
@@ -147,6 +145,11 @@ struct Dashboard {
 
     //==========================页面生命周期部分==========================
     async aboutToAppear() {
+        const displayInfo = display.getDefaultDisplaySync();
+        const screenWidthVp = px2vp(displayInfo.width);
+        this.Vp = screenWidthVp;
+        this.buttonShowX = this.Vp-45-10;
+        this.buttonHideX = this.Vp+10;
         this.loadUserName();
         //UA
         const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
@@ -457,10 +460,10 @@ struct Dashboard {
 
                 }
                 .position({
-                    x: this.showButton ? this.buttonShowOffsetX : this.buttonHideOffsetX,
-                    y: this.y
+                    x: this.showButton ? this.buttonShowX : this.buttonHideX,
+                    y: this.buttonY
                 })
-                .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.7, 0.8), duration: 500 } : { duration: 0 })
+                .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.7, 0.6), duration: 500 } : { duration: 0 })
                 .gesture(
                     SwipeGesture({ direction: SwipeDirection.Horizontal })
                         .onAction((move: GestureEvent | undefined) => {
@@ -475,15 +478,15 @@ struct Dashboard {
                 .gesture(
                     PanGesture({ direction: PanDirection.Vertical })
                         .onActionEnd((event: GestureEvent) => {
-                            this.y = this.y + event.offsetY
-                            if (this.y > 660) {
-                                this.y = 660;
+                            this.buttonY = this.buttonY + event.offsetY
+                            if (this.buttonY > 660) {
+                                this.buttonY = 660;
                                 prompt.showToast({ message: '不能再往下啦', duration: 500 })
-                            } else if (this.y < 70) {
-                                this.y = 70;
+                            } else if (this.buttonY < 70) {
+                                this.buttonY = 70;
                                 prompt.showToast({ message: '不能再往上啦', duration: 500 })
                             }
-                            console.log('平移中，垂直偏移量 y 为:', this.y);
+                            console.log('平移中，垂直偏移量 y 为:', this.buttonY);
                         })
                 )
                 if (!this.showButton) {
@@ -492,7 +495,7 @@ struct Dashboard {
                         .height('100%')
                         .width(15)
                         .zIndex(5)
-                        .position({ x: '0%' })
+                        .position({ x: 0 })
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
@@ -503,7 +506,7 @@ struct Dashboard {
                         .height('100%')
                         .width(15)
                         .zIndex(5)
-                        .position({ x: '96%' })
+                        .position({ x: this.Vp-15 })
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
