@@ -223,8 +223,9 @@ struct Dashboard {
     private waitTime: number = 2000;
     onBackPress(): boolean | void {
         if (this.showTutorial) {
-            console.info('关闭教程');
             this.showTutorial = false;
+            this.triggerVibration();
+            console.info('关闭教程');
             return true;
         }
         if (this.web_controller.accessStep(-1)) {
