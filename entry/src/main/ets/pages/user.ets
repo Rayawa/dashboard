@@ -685,7 +685,7 @@ export struct user {
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
-                                    router.pushUrl({ url: 'pages/settings' })
+                                    router.pushUrl({ url: 'pages/user/settings' })
                                 },
                             }
                         },

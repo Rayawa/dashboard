@@ -73,7 +73,7 @@ export struct contact {
 
                 Column({ space: 5 }) {
                     Text('📱 鸿蒙应用开发').fontSize(18).fontWeight(FontWeight.Bold)
-                    Text('Rayawa').fontSize(14)
+                    Text('清霁·Rayawa').fontSize(14)
                     Text('  邮箱：rayawa.work@outlook.com').fontSize(14).fontColor($r('app.color.diff_content'))
                 }
                 .width('95%')

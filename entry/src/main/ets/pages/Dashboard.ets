@@ -19,12 +19,13 @@ import componentUtils from '@ohos.arkui.componentUtils';
 @Entry
 @Component
 struct Dashboard {
-    @State DashboardHeight: number = 2100;
     //==========================状态声明部分==========================
     //控制相关
     @State showButton: boolean = true;
     @State showTutorial: boolean = false;
-    @State buttonOnFocus: boolean = false;
+    @StorageLink('defaultSiteT') defaultSiteT: boolean = true;
+    @StorageLink('holdCheckOn') holdCheckOn: boolean = true;
+    @StorageLink('buttonPositionRight') buttonPositionRight: boolean = false;
     
     //切换版本方法
     @State isT: boolean = true;
@@ -43,17 +44,19 @@ struct Dashboard {
     @State buttonHideX: number = -25-10;
     @State showButtonAnimation: boolean = true;
     holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
-        switch (data) {
-            case 1: // 左手握持
-                this.buttonShowX = 10;
-                this.buttonHideX = -45-10;
-                break;
-            case 2: // 右手握持
-                this.buttonShowX = this.Vp-45-10;
-                this.buttonHideX = this.Vp+10;
-                break;
-            default:
-                break;
+        if(this.holdCheckOn){
+            switch (data) {
+                case 1: // 左手握持
+                    this.buttonShowX = 10;
+                    this.buttonHideX = -45-10;
+                    break;
+                case 2: // 右手握持
+                    this.buttonShowX = this.Vp-45-10;
+                    this.buttonHideX = this.Vp+10;
+                    break;
+                default:
+                    break;
+            }
         }
     };
 
@@ -139,6 +142,7 @@ struct Dashboard {
     }
 
     //Web控制
+    @State DashboardHeight: number = 2100;
     scroller: Scroller = new Scroller();
     private web_controller: webview.WebviewController = new webview.WebviewController();
     @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
@@ -151,8 +155,7 @@ struct Dashboard {
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
         this.Vp = screenWidthVp;
-        this.buttonShowX = this.Vp-45-10;
-        this.buttonHideX = this.Vp+10;
+        //用户名
         this.loadUserName();
         //UA
         const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
@@ -182,6 +185,18 @@ struct Dashboard {
     }
 
     async onPageShow(): Promise<void> {
+        if(this.defaultSiteT){
+            this.url =(new URL(dashboardURL, TBaseURL)).toString();
+        } else {
+            this.url =(new URL(dashboardURL, SBaseURL)).toString();
+        }
+        if(this.buttonPositionRight){
+            this.buttonShowX = this.Vp-45-10;
+            this.buttonHideX = this.Vp+10;
+        } else {
+            this.buttonShowX = 10;
+            this.buttonHideX = -45-10;
+        }
         await this.isLoading
         const rect = componentUtils.getRectangleById('Dashboard');
         const vpHeight = px2vp(rect.size.height);
@@ -396,7 +411,6 @@ struct Dashboard {
                             });
 
                     }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-                    // .height(2090)
                 }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
 
