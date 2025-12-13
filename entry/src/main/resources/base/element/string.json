@@ -38,7 +38,7 @@
     },
     {
       "name": "GENSTURE_distributed_permission_reason",
-      "value": "分享时读取保存在本地的设置"
+      "value": "获取用户握持手以改变按钮位置"
     }
   ]
 }
