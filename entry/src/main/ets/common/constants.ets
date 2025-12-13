@@ -20,7 +20,7 @@ export const APP_VERSION: string = "1.1.0-rc.1";
 
 /** 太长了点
  */
-const device_model: string = `${deviceInfo.productModel}|${deviceInfo.productModelAlias}|${deviceInfo.softwareModel}|${deviceInfo.hardwareModel}`;
+const device_model: string = `${deviceInfo.deviceType}|${deviceInfo.productModel}|${deviceInfo.productModelAlias}|${deviceInfo.softwareModel}|${deviceInfo.hardwareModel}`.replace('phone','Mobile');
 
 /** UA
  */
