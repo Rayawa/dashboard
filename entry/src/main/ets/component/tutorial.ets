@@ -366,7 +366,7 @@ export struct tutorial {
         .loop(false)
         .effectMode(EdgeEffect.Spring)
         .margin({ top: 30, bottom: 10 })
-        .width('90%')
+        .width(339)
         .borderRadius(20)
         .backgroundColor($r('app.color.backcolor'))
         .indicator(new DotIndicator()

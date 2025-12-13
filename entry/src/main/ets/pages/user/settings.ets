@@ -79,6 +79,10 @@ export struct settings {
                 Scroll() {
                     Column() {
                         Column() {
+                            Text('页面施工中')
+                                .fontSize(30)
+                                .fontWeight(900)
+                                .margin({bottom:40})
                             Image($r('app.media.app_icon'))
                                 .height(100)
                                 .width(100)
