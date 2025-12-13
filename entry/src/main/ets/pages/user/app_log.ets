@@ -17,6 +17,18 @@ class UpdateLog {
 struct app_log {
   @State updateLogs: UpdateLog[] = [
     {
+      version: 'V1.1.0-rc.2',
+      date: '2025-12-15',
+      isRelease: false,
+      type:'rc',
+      items: ['为主界面按钮添加拖动动画，并修复了动画弹出屏幕的问题',
+        '新增三个设置项：包括默认站点、智感握姿开关和默认按钮位置',
+        '修复了主见面缩放的问题',
+        '修复投稿文本框在页面关闭之后不会清空的问题',
+        '修复了切换深色模式按钮颜色不随之变化的问题'
+      ]
+    },
+    {
       version: 'V1.1.0-rc.1',
       date: '2025-12-13',
       isRelease: false,
