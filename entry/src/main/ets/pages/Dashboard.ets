@@ -160,6 +160,7 @@ struct Dashboard {
         //UA
         const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
         webview.WebviewController.setAppCustomUserAgent(customUA);
+        console.log(`UA:${APP_UA}`)
         //握持监听
         try {
             motion.on('holdingHandChanged', this.holdingHandCallback);
