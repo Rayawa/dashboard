@@ -485,7 +485,7 @@ struct Dashboard {
                     x: this.showButton ? this.buttonShowX : this.buttonHideX,
                     y: this.buttonY
                 })
-                .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.7, 0.6), duration: 500 } : { duration: 0 })
+                .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.8, 0.8), duration: 400 } : { duration: 0 })
                 .gesture(
                     SwipeGesture({ direction: SwipeDirection.Horizontal })
                         .onAction((move: GestureEvent | undefined) => {

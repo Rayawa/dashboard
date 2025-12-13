@@ -1,28 +1,27 @@
-import { LengthMetrics, router } from '@kit.ArkUI';
+import { LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, HdsNavigationAttribute } from '@kit.UIDesignKit';
 
-
-class UpdateLog {
-  version: string = '';
-  date: string = '';
-  isRelease?: boolean = false;
-  type: string = '';
-  items: string[] = [];
+interface UpdateLog {
+  version: string;
+  date: string;
+  type: 'beta' | 'rc' | 'release';
+  isRelease?: boolean;
+  items: string[];
 }
 
 @Entry
 @Component
 struct app_log {
-  @State updateLogs: UpdateLog[] = [
+  private updateLogs: UpdateLog[] = [
     {
       version: 'V1.1.0-rc.2',
       date: '2025-12-15',
-      isRelease: false,
-      type:'rc',
+      type: 'rc',
       items: ['为主界面按钮添加拖动动画，并修复了动画弹出屏幕的问题',
         '新增三个设置项：包括默认站点、智感握姿开关和默认按钮位置',
+        'App更新日志界面支持筛选功能，可以按发布类型进行筛选',
         '修复了主见面缩放的问题',
         '修复投稿文本框在页面关闭之后不会清空的问题',
         '修复了切换深色模式按钮颜色不随之变化的问题'
@@ -31,8 +30,7 @@ struct app_log {
     {
       version: 'V1.1.0-rc.1',
       date: '2025-12-13',
-      isRelease: false,
-      type:'rc',
+      type: 'rc',
       items: ['重新设计所有页面顶部条，添加渐变模糊效果',
         '为主界面按钮添加了显示/隐藏和拖动改变位置功能并简化主界面按钮',
         '为所有页面添加了返回逻辑',
@@ -46,8 +44,7 @@ struct app_log {
     {
       version: 'V1.1.0-beta.4',
       date: '2025-12-9',
-      isRelease: false,
-      type:'beta',
+      type: 'beta',
       items: ['为投稿应用功能增加AI识别能力',
         '完善了应用市场填写信息分享功能',
         '增加了主界面的按钮，并可以基于左右手判断',
@@ -57,8 +54,7 @@ struct app_log {
     {
       version: 'V1.1.0-beta.3',
       date: '2025-12-7',
-      isRelease: false,
-      type:'beta',
+      type: 'beta',
       items: ['完成按已有信息投稿到看板',
         '在user页面用户名边增加弹窗信息',
         '增加投稿应用功能，并增加蒙版动画',
@@ -72,8 +68,7 @@ struct app_log {
     {
       version: 'V1.1.0-beta.2',
       date: '2025-12-7',
-      isRelease: false,
-      type:'beta',
+      type: 'beta',
       items: ['增加shareAbility接口，现在可以通过应用市场投稿app添加信息',
         '网页页面支持一键分享链接',
         '现在可以在任意界面发起分隔空抓取或碰一碰给其他鸿蒙设备',
@@ -85,16 +80,15 @@ struct app_log {
     {
       version: 'V1.0.0',
       date: '2025-12-1',
+      type: 'release',
       isRelease: true,
-      type:'Release',
       items: ['为备案链接跳转添加了弹窗二次提示', '增加备案信息']
     },
 
     {
       version: 'V1.0.0-rc1',
       date: '2025-11-29',
-      isRelease: false,
-      type:'rc',
+      type: 'rc',
       items: [
         '#9 fixed，链接现在可以以正常字体大小显示并成功跳转。考虑在rc2添加确认跳转弹窗' ,
         '#8 fixed，统一了全部页面的margin，新增加color.json重制并统一所有颜色' ,
@@ -108,11 +102,19 @@ struct app_log {
     {
       version: 'V1.0.0-beta.1',
       date: '2025-11-29',
-      isRelease: false,
-      type:'Beta',
+      type: 'beta',
       items: ['添加V1与V2的web界面', '添加了user界面', '添加了顶部导航条和menu']
     }
   ];
+  @State private showBeta: boolean = true;
+  @State private showRc: boolean = true;
+  @State private showRelease: boolean = true;
+  @State private filteredLogs: UpdateLog[] = [];
+
+  aboutToAppear() {
+    this.updateFilteredLogs();
+  }
+
   private triggerVibration(): void {
     vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
       if (err) {
@@ -140,68 +142,115 @@ struct app_log {
       }
     });
   }
+
+  private updateFilteredLogs() {
+    this.filteredLogs = this.updateLogs.filter(log => {
+      switch(log.type) {
+        case 'beta': return this.showBeta;
+        case 'rc': return this.showRc;
+        case 'release': return this.showRelease;
+        default: return true;
+      }
+    });
+  }
+
+  toggleFilter(type: 'beta' | 'rc' | 'release') {
+    this.triggerVibration();
+    switch(type) {
+      case 'beta': this.showBeta = !this.showBeta; break;
+      case 'rc': this.showRc = !this.showRc; break;
+      case 'release': this.showRelease = !this.showRelease; break;
+    }
+    this.updateFilteredLogs();
+  }
+
   build() {
     HdsNavigation() {
-      Scroll(){
+      Scroll() {
         Column() {
-          ForEach(this.updateLogs, (log: UpdateLog) => {
-            Column() {
-              Row() {
-                Column() {
-                  Row() {
-                    Text(log.version)
-                      .fontSize(18)
-                      .fontWeight(FontWeight.Medium)
-                    if (log.isRelease) {
-                      Text('正式版')
-                        .fontSize(12)
-                        .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-                        .backgroundColor('#FF6A39')
-                        .fontColor('#fff')
-                        .borderRadius(6)
-                        .margin({ left: 8 })
+          Column() {
+            ForEach(this.filteredLogs, (log: UpdateLog) => {
+              Column() {
+                Row() {
+                  Column() {
+                    Row() {
+                      Text(log.version)
+                        .fontSize(18)
+                        .fontWeight(FontWeight.Medium)
+                      if (log.isRelease) {
+                        Text('正式版')
+                          .fontSize(12)
+                          .padding({
+                            left: 6,
+                            right: 6,
+                            top: 2,
+                            bottom: 2
+                          })
+                          .backgroundColor('#FF6A39')
+                          .fontColor('#fff')
+                          .borderRadius(6)
+                          .margin({ left: 8 })
+                      }
                     }
+
+                    Text(log.date)
+                      .fontSize(13)
+                      .fontColor('#999')
+                      .margin({ top: 4 })
                   }
-                  Text(log.date)
-                    .fontSize(13)
-                    .fontColor('#999')
-                    .margin({ top: 4 })
                 }
+
+                Column({ space: 5 }) {
+                  ForEach(log.items, (item: string) => {
+                    Row() {
+                      Text('•')
+                        .fontSize(16)
+                        .fontWeight(600)
+                        .fontColor('#666')
+                      Text(item)
+                        .margin({ left: 5 })
+                        .fontSize(15)
+                        .lineHeight(20)
+                        .flexShrink(1)
+                    }
+                    .justifyContent(FlexAlign.Start)
+                    .width('100%')
+                    .padding({ right: 5 })
+                  })
+                }
+                .margin({ top: 10 })
               }
-              Column({ space: 5 }) {
-                ForEach(log.items, (item: string) => {
-                  Row() {
-                    Text('•')
-                      .fontSize(16)
-                      .fontWeight(600)
-                      .fontColor('#666')
-                    Text(item)
-                      .margin({ left: 5 })
-                      .fontSize(15)
-                      .lineHeight(20)
-                      .flexShrink(1)
-                  }
-                  .justifyContent(FlexAlign.Start)
-                  .width('100%')
-                  .padding({right:5})
-                })
-              }
-              .margin({ top: 10 })
-            }
-            .padding(16)
-            .borderRadius(16)
-            .backgroundColor($r('app.color.background'))
-            .shadow({
-              radius: 8,
-              color: '#1a000000',
-              offsetX: 0,
-              offsetY: 2
+              .padding(16)
+              .borderRadius(16)
+              .backgroundColor($r('app.color.background'))
+              .shadow({
+                radius: 8,
+                color: '#1a000000',
+                offsetX: 0,
+                offsetY: 2
+              })
+              .width('90%')
+              .margin({ bottom: 16 })
             })
-            .width('90%')
-            .margin({ bottom: 16 })
-          })
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Center)
+
+          if (this.filteredLogs.length === 0) {
+            Column() {
+              Image($r('app.media.empty')).borderRadius($r('sys.float.corner_radius_level6'))
+              Text('暂无符合条件的日志')
+                .fontWeight(800)
+                .fontSize(30)
+                .margin({ top: 10 })
+                .fontColor($r('app.color.diff_content'))
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
+          }
         }
-        .margin({top:60,bottom:20})
+        .margin({ top: 60, bottom: 20 })
         .width('100%')
         .alignItems(HorizontalAlign.Center)
       }
@@ -263,14 +312,59 @@ struct app_log {
         title: {
           mainTitle: 'App更新日志',
         },
-        backIcon:{
-          action:() => {
+        menu: {
+          value: [
+            {
+              content: {
+                label: 'beta',
+                icon: this.showBeta? $r('app.media.betaON') : $r('app.media.beta'),
+                isEnabled: true,
+                action: () => {
+                  this.toggleFilter('beta');
+                  prompt.showToast({
+                    message: this.showBeta? '打开Beta版本日志' : '关闭Beta版本日志',
+                    duration: 500,
+                  });
+                },
+              }
+            },
+            {
+              content: {
+                label: 'rc',
+                icon: this.showRc? $r('app.media.rcON') : $r('app.media.rc'),
+                isEnabled: true,
+                action: () => {
+                  this.toggleFilter('rc');
+                  prompt.showToast({
+                    message: this.showRc? '打开ReleaseCandidate版本日志' : '关闭ReleaseCandidate版本日志',
+                    duration: 500,
+                  });
+                },
+              }
+            },
+            {
+              content: {
+                label: 'release',
+                icon: this.showRelease? $r('app.media.releaseON') : $r('app.media.release'),
+                isEnabled: true,
+                action: () => {
+                  this.toggleFilter('release');
+                  prompt.showToast({
+                    message: this.showRelease? '打开正式版日志' : '关闭正式版日志',
+                    duration: 500,
+                  });
+                },
+              }
+            },
+          ]
+        },
+        backIcon: {
+          action: () => {
             this.triggerVibration();
             router.back();
           }
         }
       }
     })
-
   }
 }
