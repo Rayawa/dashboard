@@ -18,7 +18,13 @@ export const changelog: string = "changelog";
 
 export const APP_VERSION: string = "1.1.0-rc.1";
 
+/** 太长了点
+ */
+const device_model: string = `${deviceInfo.productModel}|${deviceInfo.productModelAlias}|${deviceInfo.softwareModel}|${deviceInfo.hardwareModel}`;
+
+/** UA
+ */
 export const APP_UA: string =
-    `top.rayawa.dashboard ${APP_VERSION} ${deviceInfo.osFullName} ${deviceInfo.productModel} ${deviceInfo.sdkApiVersion}`;
+    `top.rayawa.dashboard ${APP_VERSION} ${deviceInfo.osFullName} API:${deviceInfo.sdkApiVersion} ${device_model}`;
 
 export const SUBMIT_PLATFORM: string = `ray_dashboard ${APP_VERSION}`
