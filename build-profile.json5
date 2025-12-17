@@ -39,6 +39,19 @@
           "storeFile": "C:\\Users\\36958\\.ohos\\config\\shenjack_dashboard_MfjAxnsZYyFsvaJHc3z9Vt2ocwt5zsdKY17o12v5q_k=.p12",
           "storePassword": "0000001B17D8626971725AF2DE99A21699E3FF2D13233767286DDDE82603F6CBC47537A8B251151BEA0283"
         }
+      },
+      {
+        "name": "shenjack-5800x",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\shenjack\\.ohos\\config\\shenjack_hm_dashboard_uBwvObzgct-8KTUU4e8GDx2bP8GWoHWd2aB8jsBGwIg=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B89B9B3A2BD413392EBC83F962BA343F4682435D3941CB80A0E77C90226A9093744F7968BE66B33",
+          "profile": "C:\\Users\\shenjack\\.ohos\\config\\shenjack_hm_dashboard_uBwvObzgct-8KTUU4e8GDx2bP8GWoHWd2aB8jsBGwIg=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\shenjack\\.ohos\\config\\shenjack_hm_dashboard_uBwvObzgct-8KTUU4e8GDx2bP8GWoHWd2aB8jsBGwIg=.p12",
+          "storePassword": "0000001B08EC4BF981FEE1628CD4DF26404C8DDBDD30EF25C88AAF96F0A068CA92238D3B5321A8C86DFBE0"
+        }
       }
     ],
     "products": [
