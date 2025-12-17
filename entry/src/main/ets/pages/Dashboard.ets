@@ -144,6 +144,7 @@ struct Dashboard {
 
     //Web控制
     @State DashboardHeight: number = 2100;
+    @State progress: number = 0;
     scroller: Scroller = new Scroller();
     private web_controller: webview.WebviewController = new webview.WebviewController();
     @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
@@ -381,6 +382,9 @@ struct Dashboard {
         HdsNavigation() {
             Stack() {
                 //==========================网页嵌套滚动==========================
+                if (this.isLoading) {
+                    Progress({ value: this.progress, total: 100 }).width('100%').height(3).position({y:5}).zIndex(99);
+                }
                 Scroll(this.scroller) {
                     Column() {
                         Blank()
@@ -406,6 +410,7 @@ struct Dashboard {
                             .forceDarkAccess(true)
                             .width('100%')
                             .backgroundColor($r('app.color.backcolor'))
+                            .onProgressChange((p) => this.progress = p.newProgress)
                             .onPageBegin(() => this.isLoading = true)
                             .onPageEnd(() => this.isLoading = false)
                             .metaViewport(true)
@@ -443,12 +448,6 @@ struct Dashboard {
 
                     Button() { Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh')).width(24).height(24) }
                     .onClick(() => {
-                        try {
-                            Promise.all([this.web_controller.removeCache(true), this.web_controller.removeCache(false)])
-                        } catch (error) {
-                            // man! what can I say
-                            console.warn(`hm dashboard 清除缓存失败 e: ${error}`)
-                        }
                         if (this.isLoading) {
                             this.web_controller.stop();
                             this.isLoading = false;
@@ -459,16 +458,25 @@ struct Dashboard {
                             });
                         } else {
                             this.web_controller.refresh();
+                            try {
+                                Promise.all([this.web_controller.removeCache(true), this.web_controller.removeCache(false)])
+                            } catch (error) {
+                                // man! what can I say
+                                console.warn(`hm dashboard 清除缓存失败 e: ${error}`)
+                            }
                             this.isLoading = true;
                             this.triggerVibration();
                             prompt.showToast({
                                 message: '刷新中...',
                                 duration: 1000
                             });
-
                             setTimeout(() => {
                                 if (this.isLoading) {
                                     this.isLoading = false;
+                                    prompt.showToast({
+                                        message: '加载超时！',
+                                        duration: 1000
+                                    });
                                 }
                             }, 3000);
                         }
