@@ -70,7 +70,7 @@ export struct settings {
             },
         })
     }
-    @StorageLink('defaultSiteT') defaultSiteT: boolean = true;
+    @StorageLink('defaultSiteT') defaultSiteT: boolean = false;
     @StorageLink('holdCheckOn') holdCheckOn: boolean = true;
     @StorageLink('buttonPositionRight') buttonPositionRight: boolean = false;
     build() {
@@ -105,7 +105,7 @@ export struct settings {
                                 }
                                 Row({ space:8 }){
                                     Text('S站').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
-                                    Toggle({ type: ToggleType.Switch, isOn: true })
+                                    Toggle({ type: ToggleType.Switch, isOn: false })
                                         .selectedColor($r('app.color.diff_content'))
                                         .switchStyle({unselectedColor:$r('app.color.diff_content')})
                                         .onChange(async (isOn: boolean) => {
@@ -121,16 +121,33 @@ export struct settings {
                                         })
                                     Text('T站').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
-                            }
-                            .height(56)
-                            .width('100%')
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
+                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
 
-                            Divider()
-                                .color($r('app.color.border'))
-                                .strokeWidth(0.5)
-                                .margin({ left: 16, right: 16 })
+                            Divider().color($r('app.color.border')).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
+                            Row() {
+                                Row({ space:12 }) {
+                                    Image($r('app.media.vibrate')).height(24).width(24).objectFit(ImageFit.Contain)
+                                    Text('震感反馈').fontSize(16)
+                                }
+                                Row({ space:8 }){
+                                    Text('关').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
+                                    Toggle({ type: ToggleType.Switch, isOn:true })
+                                        .selectedColor($r('app.color.diff_content'))
+                                        .onChange(async (isOn: boolean) => {
+                                            if (isOn) {
+                                                this.holdCheckOn = false;
+                                                this.triggerVibration();
+                                            } else {
+                                                this.holdCheckOn = true;
+                                                this.triggerVibration();
+                                            }
+                                        })
+                                    Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
+                                }
+                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
+
+                            Divider().color($r('app.color.border')).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             Row() {
                                 Row({ space:12 }) {
@@ -152,16 +169,9 @@ export struct settings {
                                         })
                                     Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
-                            }
-                            .height(56)
-                            .width('100%')
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
+                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
 
-                            Divider()
-                                .strokeWidth(0.5)
-                                .color($r('app.color.border'))
-                                .margin({ left: 16, right: 16 })
+                            Divider().color($r('app.color.border')).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             Row() {
                                 Row({ space:12 }) {
@@ -184,14 +194,32 @@ export struct settings {
                                         })
                                     Text('右').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
-                            }
-                            .height(56)
-                            .width('100%')
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
+                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
+
+                            Divider().color($r('app.color.border')).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
+                            Row() {
+                                Row({ space:12 }) {
+                                    Image($r('app.media.theme')).height(24).width(24).objectFit(ImageFit.Contain)
+                                    Text('主题').fontSize(16)
+                                }
+                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
                         }
+                        .borderWidth(0.5)
+                        .borderColor($r('app.color.border'))
+                        .backgroundColor($r('app.color.background'))
+                        .borderRadius(16)
+                        .shadow({
+                            radius: 8,
+                            color: '#1a000000',
+                            offsetX: 0,
+                            offsetY: 2
+                        })
+                        .width('90%')
 
                         Divider().margin({ top: 20, bottom: 20 }).color($r('app.color.border'))
+
+
 
                         Text(`Version ${APP_VERSION}`)
                             .fontColor('#888')
