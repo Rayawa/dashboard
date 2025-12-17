@@ -4,7 +4,7 @@ import { curves, LengthMetrics, prompt, router, window, display } from '@kit.Ark
 import { motion } from '@kit.MultimodalAwarenessKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { APP_UA, dashboardURL, SBaseURL, TBaseURL } from '../common/constants';
+import { customUserAgent, dashboardURL, SBaseURL, TBaseURL } from '../common/constants';
 import { Logger } from '../utils/Logger';
 import { common } from '@kit.AbilityKit';
 import { harmonyShare, systemShare } from '@kit.ShareKit';
@@ -23,12 +23,12 @@ struct Dashboard {
     //控制相关
     @State showButton: boolean = true;
     @State showTutorial: boolean = false;
-    @StorageLink('defaultSiteT') defaultSiteT: boolean = true;
+    @StorageLink('defaultSiteT') defaultSiteT: boolean = false;
     @StorageLink('holdCheckOn') holdCheckOn: boolean = true;
     @StorageLink('buttonPositionRight') buttonPositionRight: boolean = false;
-    
+
     //切换版本方法
-    @State isT: boolean = true;
+    @State isT: boolean = false;
     private switchWebVersion(): void {
         this.isT = !this.isT;
         const switchVersion = this.isT ? 'T站' : 'S站';
@@ -95,7 +95,7 @@ struct Dashboard {
     }
 
     //entry
-    @State url: string = (new URL(dashboardURL, TBaseURL)).toString();
+    @State url: string = (new URL(dashboardURL, SBaseURL)).toString();
     private win: window.Window | null = null;
     private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
     private async checkFirstLaunch(): Promise<void> {
@@ -155,12 +155,16 @@ struct Dashboard {
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
         this.Vp = screenWidthVp;
+        //UA
+        try {
+            webview.WebviewController.initializeWebEngine();
+            let appUA = webview.WebviewController.getDefaultUserAgent() + customUserAgent;
+            webview.WebviewController.setAppCustomUserAgent(appUA);
+        } catch (error) {
+            console.error(`UserAgent Error, ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`);
+        }
         //用户名
         this.loadUserName();
-        //UA
-        const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
-        webview.WebviewController.setAppCustomUserAgent(customUA);
-        console.log(`UA:${APP_UA}`)
         //握持监听
         try {
             motion.on('holdingHandChanged', this.holdingHandCallback);
@@ -378,16 +382,16 @@ struct Dashboard {
                 Scroll(this.scroller) {
                     Column() {
                         Blank()
-                            .height(70)
+                            .height(50)
                             .width('100%')
                             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                         Web({ src: this.url, controller: this.web_controller, renderMode: RenderMode.SYNC_RENDER })
                             .id('Dashboard')
                             .onControllerAttached(() => {
                                 try {
-                                    console.warn("before useragent:", this.web_controller.getUserAgent())
-                                    console.warn("useragent:", APP_UA)
-                                    this.web_controller.setCustomUserAgent(`${APP_UA} Mobile`);
+                                    let webUserAgent = this.web_controller.getUserAgent() + customUserAgent;
+                                    this.web_controller.setCustomUserAgent(webUserAgent);
+                                    console.info('onControllerAttached, UA: ', `${webUserAgent}`)
                                 } catch {
                                 }
                             })
@@ -404,12 +408,6 @@ struct Dashboard {
                             .backgroundColor($r('app.color.backcolor'))
                             .onPageBegin(() => this.isLoading = true)
                             .onPageEnd(() => this.isLoading = false)
-                            .onControllerAttached(() => {
-                                try {
-                                    this.web_controller.setCustomUserAgent(APP_UA);
-                                } catch {
-                                }
-                            });
 
                     }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                 }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
