@@ -6,6 +6,7 @@ import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { customUserAgent, dashboardURL, SBaseURL, TBaseURL } from '../common/constants';
 import { Logger } from '../utils/Logger';
+import { deviceInfo } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
 import { harmonyShare, systemShare } from '@kit.ShareKit';
 import { preferences, uniformTypeDescriptor as utd } from '@kit.ArkData';
@@ -158,8 +159,9 @@ struct Dashboard {
         //UA
         try {
             webview.WebviewController.initializeWebEngine();
-            let appUA = webview.WebviewController.getDefaultUserAgent() + customUserAgent;
-            webview.WebviewController.setAppCustomUserAgent(appUA);
+            if (deviceInfo.sdkApiVersion > 20) {
+                webview.WebviewController.setAppCustomUserAgent(customUserAgent);
+            }
         } catch (error) {
             console.error(`UserAgent Error, ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`);
         }
@@ -389,9 +391,7 @@ struct Dashboard {
                             .id('Dashboard')
                             .onControllerAttached(() => {
                                 try {
-                                    let webUserAgent = this.web_controller.getUserAgent() + customUserAgent;
-                                    this.web_controller.setCustomUserAgent(webUserAgent);
-                                    console.info('onControllerAttached, UA: ', `${webUserAgent}`)
+                                    this.web_controller.setCustomUserAgent(customUserAgent);
                                 } catch {
                                 }
                             })
@@ -408,6 +408,7 @@ struct Dashboard {
                             .backgroundColor($r('app.color.backcolor'))
                             .onPageBegin(() => this.isLoading = true)
                             .onPageEnd(() => this.isLoading = false)
+                            .metaViewport(true)
 
                     }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                 }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
