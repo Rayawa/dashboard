@@ -442,6 +442,12 @@ struct Dashboard {
 
                     Button() { Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh')).width(24).height(24) }
                     .onClick(() => {
+                        try {
+                            Promise.all([this.web_controller.removeCache(true), this.web_controller.removeCache(false)])
+                        } catch (error) {
+                            // man! what can I say
+                            console.warn(`hm dashboard 清除缓存失败 e: ${error}`)
+                        }
                         if (this.isLoading) {
                             this.web_controller.stop();
                             this.isLoading = false;
