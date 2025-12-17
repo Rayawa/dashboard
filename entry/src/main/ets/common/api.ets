@@ -4,15 +4,22 @@ import { SAPIBaseURL, submitURL } from './constants';
 import URL from './url';
 import { http } from '@kit.NetworkKit';
 
+// import Got from './got';
+// import { Got } from './got';
+
 // 本文件代碼所使用的源站（也就是基礎的 url）
 const BASEURL = SAPIBaseURL;
 
 export async function request() {
+    // Got.create({
+    //     url: BASEURL.toString(),
+    //     retry: 3,
+    // })
 }
 
 export async function submit_app(
     data: SubmitAppBody
-): Promise<BaseAPIResponse<AppDetailInfo> | undefined> {
+): Promise<BaseAPIResponse<AppDetailInfo> | null> {
     const final_comment: CommentInfo = {
         user: data.comment?.user,
         note: data.comment?.note,
@@ -43,14 +50,14 @@ export async function submit_app(
         try {
             return res as BaseAPIResponse<AppDetailInfo>;
         } catch (e) {
-            return ;
+            return null;
         }
     } catch (e) {
         console.warn(`error ${e}`)
     } finally {
         request.destroy();
     }
-    return ;
+    return null;
 }
 
 export async function query_app(
