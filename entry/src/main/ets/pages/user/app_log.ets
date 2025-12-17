@@ -17,12 +17,14 @@ struct app_log {
   private updateLogs: UpdateLog[] = [
     {
       version: 'V1.1.0-rc.2',
-      date: '2025-12-15',
+      date: '2025-12-18',
       type: 'rc',
       items: ['为主界面按钮添加拖动动画，并修复了动画弹出屏幕的问题',
-        '新增三个设置项：包括默认站点、智感握姿开关和默认按钮位置',
+        '新增四个设置项：包括默认站点、振动开关、智感握姿开关和默认按钮位置',
+        '新增主题功能，但是暂未开放',
         'App更新日志界面支持筛选功能，可以按发布类型进行筛选',
-        '修复了主见面缩放的问题',
+        '将默认站点更改为S站',
+        '修复了主界面缩放的问题',
         '修复投稿文本框在页面关闭之后不会清空的问题',
         '修复了切换深色模式按钮颜色不随之变化的问题'
       ]
@@ -52,7 +54,7 @@ struct app_log {
       ]
     },
     {
-      version: 'V1.1.0-beta.3',
+      version: 'v1.1.0-beta.3',
       date: '2025-12-7',
       type: 'beta',
       items: ['完成按已有信息投稿到看板',
@@ -61,7 +63,7 @@ struct app_log {
         '将联系我们界面写为弹窗',
         '修复文本错误与更新图表',
         '删除问题反馈界面并与重写的联系我们合并',
-        '修复V2底部与web_log底部存在文字遮挡问题',
+        '修复v2底部与web_log底部存在文字遮挡问题',
         '制作教程界面',
       ]
     },
@@ -90,11 +92,11 @@ struct app_log {
       date: '2025-11-29',
       type: 'rc',
       items: [
-        '#9 fixed，链接现在可以以正常字体大小显示并成功跳转。考虑在rc2添加确认跳转弹窗' ,
-        '#8 fixed，统一了全部页面的margin，新增加color.json重制并统一所有颜色' ,
-        '修改同步版本与版本号' ,
-        '更新UA&删除不必要文件@shenjackyuanjie' ,
-        '重新修改了原user界面至settings界面使其更加美观' ,
+        '#9 fixed，链接现在可以以正常字体大小显示并成功跳转。考虑在rc2添加确认跳转弹窗',
+        '#8 fixed，统一了全部页面的margin，新增加color.json重制并统一所有颜色',
+        '修改同步版本与版本号',
+        '更新UA&删除不必要文件@shenjackyuanjie',
+        '重新修改了原user界面至settings界面使其更加美观',
         '对于TopNavBar的图标进行重新排列和更改，删除了原user内ArkWeb页面的非必要MenuItem',
         '新增数据同步功能'
       ]
@@ -115,51 +117,18 @@ struct app_log {
     this.updateFilteredLogs();
   }
 
-  private triggerVibration(): void {
-    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-      if (err) {
-        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-        return;
-      }
-      console.info('Succeed in querying effect');
-      if (state) {
-        try {
-          vibrator.startVibration({
-            type: 'preset',
-            effectId: 'haptic.effect.hard',
-            count: 1,
-            intensity: 50,
-          }, { usage: 'touch' }, (error: BusinessError) => {
-            if (error) {
-              console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-            } else {
-              console.info('Succeed in starting vibration');
-            }
-          });
-        } catch (tryError) {
-          console.error(`An unexpected error occurred in try block: ${tryError}`);
-        }
-      }
-    });
-  }
-
-  private updateFilteredLogs() {
-    this.filteredLogs = this.updateLogs.filter(log => {
-      switch(log.type) {
-        case 'beta': return this.showBeta;
-        case 'rc': return this.showRc;
-        case 'release': return this.showRelease;
-        default: return true;
-      }
-    });
-  }
-
   toggleFilter(type: 'beta' | 'rc' | 'release') {
     this.triggerVibration();
-    switch(type) {
-      case 'beta': this.showBeta = !this.showBeta; break;
-      case 'rc': this.showRc = !this.showRc; break;
-      case 'release': this.showRelease = !this.showRelease; break;
+    switch (type) {
+      case 'beta':
+        this.showBeta = !this.showBeta;
+        break;
+      case 'rc':
+        this.showRc = !this.showRc;
+        break;
+      case 'release':
+        this.showRelease = !this.showRelease;
+        break;
     }
     this.updateFilteredLogs();
   }
@@ -317,12 +286,12 @@ struct app_log {
             {
               content: {
                 label: 'beta',
-                icon: this.showBeta? $r('app.media.betaON') : $r('app.media.beta'),
+                icon: this.showBeta ? $r('app.media.betaON') : $r('app.media.beta'),
                 isEnabled: true,
                 action: () => {
                   this.toggleFilter('beta');
                   prompt.showToast({
-                    message: this.showBeta? '打开Beta版本日志' : '关闭Beta版本日志',
+                    message: this.showBeta ? '打开Beta版本日志' : '关闭Beta版本日志',
                     duration: 500,
                   });
                 },
@@ -331,12 +300,12 @@ struct app_log {
             {
               content: {
                 label: 'rc',
-                icon: this.showRc? $r('app.media.rcON') : $r('app.media.rc'),
+                icon: this.showRc ? $r('app.media.rcON') : $r('app.media.rc'),
                 isEnabled: true,
                 action: () => {
                   this.toggleFilter('rc');
                   prompt.showToast({
-                    message: this.showRc? '打开ReleaseCandidate版本日志' : '关闭ReleaseCandidate版本日志',
+                    message: this.showRc ? '打开ReleaseCandidate版本日志' : '关闭ReleaseCandidate版本日志',
                     duration: 500,
                   });
                 },
@@ -345,12 +314,12 @@ struct app_log {
             {
               content: {
                 label: 'release',
-                icon: this.showRelease? $r('app.media.releaseON') : $r('app.media.release'),
+                icon: this.showRelease ? $r('app.media.releaseON') : $r('app.media.release'),
                 isEnabled: true,
                 action: () => {
                   this.toggleFilter('release');
                   prompt.showToast({
-                    message: this.showRelease? '打开正式版日志' : '关闭正式版日志',
+                    message: this.showRelease ? '打开正式版日志' : '关闭正式版日志',
                     duration: 500,
                   });
                 },
@@ -366,5 +335,48 @@ struct app_log {
         }
       }
     })
+  }
+
+  private triggerVibration(): void {
+    vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+      if (err) {
+        console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+        return;
+      }
+      console.info('Succeed in querying effect');
+      if (state) {
+        try {
+          vibrator.startVibration({
+            type: 'preset',
+            effectId: 'haptic.effect.hard',
+            count: 1,
+            intensity: 50,
+          }, { usage: 'touch' }, (error: BusinessError) => {
+            if (error) {
+              console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+            } else {
+              console.info('Succeed in starting vibration');
+            }
+          });
+        } catch (tryError) {
+          console.error(`An unexpected error occurred in try block: ${tryError}`);
+        }
+      }
+    });
+  }
+
+  private updateFilteredLogs() {
+    this.filteredLogs = this.updateLogs.filter(log => {
+      switch (log.type) {
+        case 'beta':
+          return this.showBeta;
+        case 'rc':
+          return this.showRc;
+        case 'release':
+          return this.showRelease;
+        default:
+          return true;
+      }
+    });
   }
 }
