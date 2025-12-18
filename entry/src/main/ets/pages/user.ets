@@ -53,6 +53,9 @@ export struct user {
     @State customPopup: boolean = false;
     @StorageLink('userName') userName: string = ''
     @State deviceName: string = ''
+    aboutToAppear() {
+        this.loadUserName();
+    }
     async loadUserName() {
         initializeUserStorage()
         this.userName = await getUsername();
@@ -67,9 +70,6 @@ export struct user {
         await this.loadUserName()
     }
 
-    aboutToAppear() {
-        this.loadUserName();
-    }
 
     onBackPress(): boolean | void {
         if (this.showTutorial) {

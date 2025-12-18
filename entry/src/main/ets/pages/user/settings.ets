@@ -3,7 +3,13 @@ import { vibrator } from '@kit.SensorServiceKit';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
 import { APP_VERSION } from '../../common/constants';
+import { getDefaultSite, setDefaultSite, getHoldCheckEnabled, setHoldCheckEnabled,
+    getButtonPosition, setButtonPosition,
+    getThemeColor, setThemeColor,
+    getVibrationEnabled, setVibrationEnabled,
+    initializeSettings} from '../../common/SettingsStorage';
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, HdsNavigationAttribute } from '@kit.UIDesignKit';
+import { initialize } from '../../common/profile';
 
 @Entry
 @Component
@@ -70,9 +76,70 @@ export struct settings {
         })
     }
     @State handlePopup: boolean = false;
-    @StorageLink('defaultSiteT') defaultSiteT: boolean = false;
-    @StorageLink('holdCheckOn') holdCheckOn: boolean = true;
-    @StorageLink('buttonPositionRight') buttonPositionRight: boolean = false;
+    @State defaultSiteT: boolean = false;
+    @State vibrationON: boolean = true;
+    @State holdCheckON: boolean = true;
+    @State buttonPositionRIGHT: boolean = false;
+    @State themeColor: string = 'blue';
+
+    // 页面显示时加载设置
+    async aboutToAppear() {
+        initializeSettings();
+        await this.loadSettings();
+    }
+
+    // 加载所有设置
+    private async loadSettings() {
+        try {
+            this.defaultSiteT = await getDefaultSite();
+            this.vibrationON = await getVibrationEnabled();
+            this.holdCheckON = await getHoldCheckEnabled();
+            this.buttonPositionRIGHT = await getButtonPosition();
+            this.themeColor = await getThemeColor();
+        } catch (error) {
+            console.error('加载设置失败:', error);
+        }
+    }
+
+    // 保存默认站点设置
+    private async saveDefaultSite(isT: boolean) {
+        try {
+            await setDefaultSite(isT);
+            this.defaultSiteT = isT;
+        } catch (error) {
+            console.error('保存默认站点设置失败:', error);
+        }
+    }
+
+    // 保存震感反馈设置
+    private async saveVibrationEnabled(enabled: boolean) {
+        try {
+            await setVibrationEnabled(enabled);
+            this.vibrationON = enabled;
+        } catch (error) {
+            console.error('保存震感反馈设置失败:', error);
+        }
+    }
+
+    // 保存智感握持设置
+    private async saveHoldCheckEnabled(enabled: boolean) {
+        try {
+            await setHoldCheckEnabled(enabled);
+            this.holdCheckON = enabled;
+        } catch (error) {
+            console.error('保存智感握持设置失败:', error);
+        }
+    }
+
+    // 保存按钮位置设置
+    private async saveButtonPosition(isRight: boolean) {
+        try {
+            await setButtonPosition(isRight);
+            this.buttonPositionRIGHT = isRight;
+        } catch (error) {
+            console.error('保存按钮位置设置失败:', error);
+        }
+    }
     build() {
         HdsNavigation() {
             Stack() {
@@ -105,19 +172,12 @@ export struct settings {
                                 }
                                 Row({ space:8 }){
                                     Text('S站').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
-                                    Toggle({ type: ToggleType.Switch, isOn: false })
+                                    Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
                                         .selectedColor($r('app.color.diff_content'))
                                         .switchStyle({unselectedColor:$r('app.color.diff_content')})
                                         .onChange(async (isOn: boolean) => {
-                                            if (isOn) {
-                                                this.defaultSiteT = true;
-                                                this.triggerVibration();
-
-                                            } else {
-                                                this.defaultSiteT = false;
-                                                this.triggerVibration();
-
-                                            }
+                                            await this.saveDefaultSite(isOn);
+                                            this.triggerVibration();
                                         })
                                     Text('T站').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
@@ -132,16 +192,11 @@ export struct settings {
                                 }
                                 Row({ space:8 }){
                                     Text('关').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
-                                    Toggle({ type: ToggleType.Switch, isOn:true })
+                                    Toggle({ type: ToggleType.Switch, isOn: this.vibrationON })
                                         .selectedColor($r('app.color.diff_content'))
                                         .onChange(async (isOn: boolean) => {
-                                            if (isOn) {
-                                                this.holdCheckOn = false;
-                                                this.triggerVibration();
-                                            } else {
-                                                this.holdCheckOn = true;
-                                                this.triggerVibration();
-                                            }
+                                            await this.saveVibrationEnabled(isOn);
+                                            this.triggerVibration();
                                         })
                                     Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
@@ -156,16 +211,11 @@ export struct settings {
                                 }
                                 Row({ space:8 }){
                                     Text('关').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
-                                    Toggle({ type: ToggleType.Switch, isOn:true })
+                                    Toggle({ type: ToggleType.Switch, isOn: this.holdCheckON })
                                         .selectedColor($r('app.color.diff_content'))
                                         .onChange(async (isOn: boolean) => {
-                                            if (isOn) {
-                                                this.holdCheckOn = false;
-                                                this.triggerVibration();
-                                            } else {
-                                                this.holdCheckOn = true;
-                                                this.triggerVibration();
-                                            }
+                                            await this.saveHoldCheckEnabled(isOn);
+                                            this.triggerVibration();
                                         })
                                     Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
@@ -180,17 +230,12 @@ export struct settings {
                                 }
                                 Row({ space:8 }){
                                     Text('左').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
-                                    Toggle({ type: ToggleType.Switch, isOn: true })
+                                    Toggle({ type: ToggleType.Switch, isOn: this.buttonPositionRIGHT })
                                         .selectedColor($r('app.color.diff_content'))
                                         .switchStyle({unselectedColor:$r('app.color.diff_content')})
                                         .onChange(async (isOn: boolean) => {
-                                            if (isOn) {
-                                                this.buttonPositionRight = false;
-                                                this.triggerVibration();
-                                            } else {
-                                                this.buttonPositionRight = true;
-                                                this.triggerVibration();
-                                            }
+                                            await this.saveButtonPosition(isOn);
+                                            this.triggerVibration();
                                         })
                                     Text('右').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
@@ -242,8 +287,6 @@ export struct settings {
                         .width('90%')
 
                         Divider().margin({ top: 20, bottom: 20 }).color($r('app.color.border'))
-
-
 
                         Text(`Version ${APP_VERSION}`)
                             .fontColor('#888')
