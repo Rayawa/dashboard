@@ -47,12 +47,12 @@ export async function setVibrationEnabled(enabled: boolean): Promise<void> {
 export async function getHoldCheckEnabled(): Promise<boolean> {
   const settings = getSettingsInstance();
   // true = 开, false = 关
-  return await settings.get("vibrationON", true) as boolean;
+  return await settings.get("holdCheckON", true) as boolean;
 }
 
 export async function setHoldCheckEnabled(enabled: boolean): Promise<void> {
   const settings = getSettingsInstance();
-  await settings.set("vibrationON", enabled);
+  await settings.set("holdCheckON", enabled);
 }
 
 // 按钮位置设置

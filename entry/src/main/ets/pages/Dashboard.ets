@@ -25,8 +25,9 @@ struct Dashboard {
     @State showButton: boolean = true;
     @State showTutorial: boolean = false;
     @StorageLink('defaultSiteT') defaultSiteT: boolean = false;
-    @StorageLink('holdCheckOn') holdCheckOn: boolean = true;
-    @StorageLink('buttonPositionRight') buttonPositionRight: boolean = false;
+    @StorageLink('vibrationON') vibrationON: boolean = false;
+    @StorageLink('holdCheckON') holdCheckON: boolean = true;
+    @StorageLink('buttonPositionRIGHT') buttonPositionRIGHT: boolean = false;
 
     //切换版本方法
     @State isT: boolean = false;
@@ -45,7 +46,7 @@ struct Dashboard {
     @State buttonHideX: number = -25-10;
     @State showButtonAnimation: boolean = true;
     holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
-        if(this.holdCheckOn){
+        if( this.holdCheckON ) {
             switch (data) {
                 case 1: // 左手握持
                     this.buttonShowX = 10;
@@ -168,6 +169,9 @@ struct Dashboard {
         }
         //用户名
         this.loadUserName();
+        //默认站点
+        if(this.defaultSiteT){ this.url = (new URL(dashboardURL, TBaseURL)).toString(); }
+        else { this.url = (new URL(dashboardURL, SBaseURL)).toString();}
         //握持监听
         try {
             motion.on('holdingHandChanged', this.holdingHandCallback);
@@ -198,7 +202,7 @@ struct Dashboard {
         } else {
             this.url =(new URL(dashboardURL, SBaseURL)).toString();
         }
-        if(this.buttonPositionRight){
+        if(this.buttonPositionRIGHT){
             this.buttonShowX = this.Vp-45-10;
             this.buttonHideX = this.Vp+10;
         } else {
