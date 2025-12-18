@@ -1,15 +1,21 @@
-import { curves, LengthMetrics, router } from '@kit.ArkUI';
+import { LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
 import { APP_VERSION } from '../../common/constants';
-import { getDefaultSite, setDefaultSite, getHoldCheckEnabled, setHoldCheckEnabled,
-    getButtonPosition, setButtonPosition,
-    getThemeColor, setThemeColor,
-    getVibrationEnabled, setVibrationEnabled,
-    initializeSettings} from '../../common/SettingsStorage';
+import {
+  getButtonPosition,
+  getDefaultSite,
+  getHoldCheckEnabled,
+  getThemeColor,
+  getVibrationEnabled,
+  initializeSettings,
+  setButtonPosition,
+  setDefaultSite,
+  setHoldCheckEnabled,
+  setVibrationEnabled
+} from '../../common/SettingsStorage';
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, HdsNavigationAttribute } from '@kit.UIDesignKit';
-import { initialize } from '../../common/profile';
 
 @Entry
 @Component
@@ -76,10 +82,10 @@ export struct settings {
         })
     }
     @State handlePopup: boolean = false;
-    @State defaultSiteT: boolean = false;
-    @State vibrationON: boolean = true;
-    @State holdCheckON: boolean = true;
-    @State buttonPositionRIGHT: boolean = false;
+    @StorageLink('defaultSiteT') defaultSiteT: boolean = false;
+    @StorageLink('vibrationON') vibrationON: boolean = false;
+    @StorageLink('holdCheckON') holdCheckON: boolean = true;
+    @StorageLink('buttonPositionRIGHT') buttonPositionRIGHT: boolean = false;
     @State themeColor: string = 'blue';
 
     // 页面显示时加载设置
@@ -146,10 +152,6 @@ export struct settings {
                 Scroll() {
                     Column() {
                         Column() {
-                            Text('页面施工中')
-                                .fontSize(30)
-                                .fontWeight(900)
-                                .margin({bottom:40})
                             Image($r('app.media.app_icon'))
                                 .height(100)
                                 .width(100)
@@ -168,17 +170,18 @@ export struct settings {
                             Row() {
                                 Row({ space:12 }) {
                                     Image($r('app.media.default')).height(24).width(24).objectFit(ImageFit.Contain)
-                                    Text('默认站点').fontSize(16)
+                                    Text('默认站点').fontSize(16).fontColor('#888')
                                 }
                                 Row({ space:8 }){
                                     Text('S站').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                     Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
-                                        .selectedColor($r('app.color.diff_content'))
-                                        .switchStyle({unselectedColor:$r('app.color.diff_content')})
-                                        .onChange(async (isOn: boolean) => {
-                                            await this.saveDefaultSite(isOn);
-                                            this.triggerVibration();
-                                        })
+                                        .selectedColor('#888')
+                                        .switchStyle({unselectedColor:'#888'})
+                                        .onClick(() => { prompt.showToast({message:"敬请期待！"}) })
+                                        // .onChange(async (isOn: boolean) => {
+                                            // await this.saveDefaultSite(isOn);
+                                            // this.triggerVibration();
+                                        // })
                                     Text('T站').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
                             }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
@@ -188,16 +191,18 @@ export struct settings {
                             Row() {
                                 Row({ space:12 }) {
                                     Image($r('app.media.vibrate')).height(24).width(24).objectFit(ImageFit.Contain)
-                                    Text('震感反馈').fontSize(16)
+                                    Text('震感反馈').fontSize(16).fontColor('#888')
                                 }
                                 Row({ space:8 }){
                                     Text('关').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                     Toggle({ type: ToggleType.Switch, isOn: this.vibrationON })
-                                        .selectedColor($r('app.color.diff_content'))
-                                        .onChange(async (isOn: boolean) => {
-                                            await this.saveVibrationEnabled(isOn);
-                                            this.triggerVibration();
-                                        })
+                                        .selectedColor('#888')
+                                        .switchStyle({unselectedColor:'#888'})
+                                        .onClick(() => { prompt.showToast({message:"敬请期待！"}) })
+                                        // .onChange(async (isOn: boolean) => {
+                                        //     // await this.saveVibrationEnabled(isOn);
+                                        //     // this.triggerVibration();
+                                        // })
                                     Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
                             }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
