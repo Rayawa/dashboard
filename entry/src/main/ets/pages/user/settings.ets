@@ -4,7 +4,6 @@ import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
 import { APP_VERSION } from '../../common/constants';
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, HdsNavigationAttribute } from '@kit.UIDesignKit';
-import { preferences } from '@kit.ArkData';
 
 @Entry
 @Component
@@ -70,6 +69,7 @@ export struct settings {
             },
         })
     }
+    @State handlePopup: boolean = false;
     @StorageLink('defaultSiteT') defaultSiteT: boolean = false;
     @StorageLink('holdCheckOn') holdCheckOn: boolean = true;
     @StorageLink('buttonPositionRight') buttonPositionRight: boolean = false;
@@ -203,6 +203,30 @@ export struct settings {
                                     Image($r('app.media.theme')).height(24).width(24).objectFit(ImageFit.Contain)
                                     Text('主题').fontSize(16)
                                 }
+                                Rect().width(24).height(24).fill($r('app.color.diff_content')).borderRadius(16).borderWidth(0.5)
+                                    .onClick(() => {
+                                        this.triggerVibration();
+                                        this.handlePopup = !this.handlePopup;
+                                    })
+                                    .bindPopup(this.handlePopup, {
+                                        message: '蓝',
+                                        placement: Placement.Top,
+                                        showInSubWindow: false,
+                                        onStateChange: (e) => {
+                                            if (!e.isVisible) {
+                                                this.handlePopup = false;
+                                            }
+                                        },
+                                        transition: TransitionEffect.asymmetric(
+                                            TransitionEffect.OPACITY
+                                                .animation({ duration: 500, curve: Curve.Ease })
+                                                .combine(TransitionEffect.translate({ x: 0, y: 12 })),
+
+                                            TransitionEffect.OPACITY
+                                                .animation({ duration: 300, curve: Curve.EaseOut })
+                                                .combine(TransitionEffect.translate({ x: 0, y: 12 }))
+                                        )
+                                    })
                             }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
                         }
                         .borderWidth(0.5)
