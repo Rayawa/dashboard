@@ -346,6 +346,7 @@ export struct settings {
                                 .strokeWidth(0.5)
                                 .margin({ left: 16, right: 16 })
                                 .visibility(this.isTDev ? Visibility.Visible : Visibility.Hidden)
+                                .height(this.isTDev ? undefined : 0)
 
                             Row() {
                                 Row({ space: 12 }) {
@@ -364,7 +365,7 @@ export struct settings {
                                     Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
                             }
-                            .height(56)
+                            .height(this.isTDev ? 56 : 0)
                             .width('100%')
                             .justifyContent(FlexAlign.SpaceBetween)
                             .padding({ left: 16, right: 16 })
