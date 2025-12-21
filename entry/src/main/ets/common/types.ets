@@ -1,3 +1,5 @@
+import { SBaseURL, TBaseURL, TBaseURLDev } from "./constants";
+
 export interface CommentInfo {
     platform?: string;
     user?: string;
@@ -93,4 +95,10 @@ export interface FormData {
     packageName: string;
     appId: string;
     remark: string;
+}
+
+export enum SiteMode {
+    SSite = 0,
+    TSite = 1,
+    TDevSite = 2
 }
