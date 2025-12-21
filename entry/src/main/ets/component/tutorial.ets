@@ -102,7 +102,7 @@ export struct tutorial {
 
             }.height('90%').width('95%').borderRadius(16).padding(20)
 
-            // 分享功能
+            // 分享功能git
             Column() {
                 Text('分享功能')
                     .fontSize(24)
