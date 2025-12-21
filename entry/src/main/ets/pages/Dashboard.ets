@@ -4,7 +4,7 @@ import { curves, LengthMetrics, prompt, router, window, display } from '@kit.Ark
 import { motion } from '@kit.MultimodalAwarenessKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { customUserAgent, dashboardURL, SBaseURL, TBaseURL } from '../common/constants';
+import { customUserAgent, dashboardURL, SBaseURL, siteMapping, TBaseURL } from '../common/constants';
 import { Logger } from '../utils/Logger';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
@@ -15,6 +15,8 @@ import { getUsername, initialize as initializeUserStorage, setUsername as setUse
 import { tutorial } from '../component/tutorial';
 import URL from '../common/url';
 import componentUtils from '@ohos.arkui.componentUtils';
+import { SiteMode } from '../common/types';
+import { getTDev } from '../common/SettingsStorage';
 
 
 @Entry
@@ -28,13 +30,29 @@ struct Dashboard {
     @StorageLink('vibrationON') vibrationON: boolean = false;
     @StorageLink('holdCheckON') holdCheckON: boolean = true;
     @StorageLink('buttonPositionRIGHT') buttonPositionRIGHT: boolean = false;
-
     //切换版本方法
-    @State isT: boolean = false;
-    private switchWebVersion(): void {
-        this.isT = !this.isT;
-        const switchVersion = this.isT ? 'T站' : 'S站';
-        this.url = (new URL(dashboardURL, this.isT ? TBaseURL : SBaseURL)).toString();
+    @State siteMode: SiteMode = SiteMode.SSite;
+
+    private getNextWebVersion() {
+        switch (this.siteMode) {
+            case SiteMode.SSite:
+                return SiteMode.TSite;
+            default:
+                return SiteMode.SSite;
+        }
+    }
+
+    private async getWebUrl(): Promise<URL> {
+        const isTDev = await getTDev();
+        return siteMapping[isTDev && this.siteMode == SiteMode.TSite ? SiteMode.TDevSite : this.siteMode];
+    }
+
+    private async switchWebVersion(): Promise<void> {
+        // const isTDev = await getTDev()
+        let next = this.getNextWebVersion();
+        const switchVersion = next == SiteMode.SSite ? 'S站' : 'T站';
+        this.siteMode = next;
+        this.url = (await this.getWebUrl()).toString();
         this.web_controller.loadUrl(this.url);
         prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
     }
@@ -43,31 +61,31 @@ struct Dashboard {
     @State Vp: number = 376;
     @State buttonY: number = 300;
     @State buttonShowX: number = 10;
-    @State buttonHideX: number = -25-10;
+    @State buttonHideX: number = -25 - 10;
     @State showButtonAnimation: boolean = true;
     holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
-        if( this.holdCheckON ) {
+        if (this.holdCheckON) {
             switch (data) {
                 case 1: // 左手握持
                     this.buttonShowX = 10;
-                    this.buttonHideX = -45-10;
+                    this.buttonHideX = -45 - 10;
                     break;
                 case 2: // 右手握持
-                    this.buttonShowX = this.Vp-45-10;
-                    this.buttonHideX = this.Vp+10;
+                    this.buttonShowX = this.Vp - 45 - 10;
+                    this.buttonHideX = this.Vp + 10;
                     break;
                 default:
                     break;
             }
         }
     };
-
     //动画与振动
     private effect: TransitionEffect =
         TransitionEffect.OPACITY
             .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
             .combine(TransitionEffect.scale({ x: 0, y: 1 }))
             .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 })
+
     private triggerVibration(): void {
         vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
             if (err) {
@@ -100,6 +118,7 @@ struct Dashboard {
     @State url: string = (new URL(dashboardURL, SBaseURL)).toString();
     private win: window.Window | null = null;
     private IS_FIRST_LAUNCH_KEY: string = 'isFirstLaunch';
+
     private async checkFirstLaunch(): Promise<void> {
         try {
             let context = getContext(this) as common.UIAbilityContext;
@@ -131,13 +150,16 @@ struct Dashboard {
 
     //用户名初始化(防止小天才模式）
     @StorageLink('userName') userName: string = ''
+
     async loadUserName() {
         initializeUserStorage()
         this.userName = await getUsername();
     }
+
     async saveUserName() {
         await setUsername(this.userName);
     }
+
     async resetToDeviceName() {
         await setUsername(undefined);
         await this.loadUserName()
@@ -169,9 +191,13 @@ struct Dashboard {
         }
         //用户名
         this.loadUserName();
+        this.siteMode = this.defaultSiteT ? SiteMode.TSite : SiteMode.SSite;
         //默认站点
-        if(this.defaultSiteT){ this.url = (new URL(dashboardURL, TBaseURL)).toString(); }
-        else { this.url = (new URL(dashboardURL, SBaseURL)).toString();}
+        if (this.defaultSiteT) {
+            this.url = (new URL(dashboardURL, TBaseURL)).toString();
+        } else {
+            this.url = (new URL(dashboardURL, SBaseURL)).toString();
+        }
         //握持监听
         try {
             motion.on('holdingHandChanged', this.holdingHandCallback);
@@ -197,17 +223,17 @@ struct Dashboard {
     }
 
     async onPageShow(): Promise<void> {
-        if(this.defaultSiteT){
-            this.url =(new URL(dashboardURL, TBaseURL)).toString();
+        if (this.defaultSiteT) {
+            this.url = (new URL(dashboardURL, TBaseURL)).toString();
         } else {
-            this.url =(new URL(dashboardURL, SBaseURL)).toString();
+            this.url = (new URL(dashboardURL, SBaseURL)).toString();
         }
-        if(this.buttonPositionRIGHT){
-            this.buttonShowX = this.Vp-45-10;
-            this.buttonHideX = this.Vp+10;
+        if (this.buttonPositionRIGHT) {
+            this.buttonShowX = this.Vp - 45 - 10;
+            this.buttonHideX = this.Vp + 10;
         } else {
             this.buttonShowX = 10;
-            this.buttonHideX = -45-10;
+            this.buttonHideX = -45 - 10;
         }
         await this.isLoading
         const rect = componentUtils.getRectangleById('Dashboard');
@@ -253,6 +279,7 @@ struct Dashboard {
 
     @State firstBackTime: number = 0;
     private waitTime: number = 2000;
+
     onBackPress(): boolean | void {
         if (this.showTutorial) {
             this.showTutorial = false;
@@ -293,6 +320,7 @@ struct Dashboard {
             }
         }
     }
+
     private shareDisablingListening() {
         harmonyShare.off('knockShare', this.purityCallback);
         harmonyShare.off('gesturesShare', this.immersiveCallback);
@@ -303,12 +331,14 @@ struct Dashboard {
     @State ShareStatus: boolean = false;
     @State rejectStatus: boolean = false;
     @State updateStatus: boolean = false;
+
     private isNoListening() {
         return !this.ShareStatus && !this.rejectStatus && !this.updateStatus;
     }
 
     //获得页面URL
     @State currentUrl: string = ''; //分享URL注册
+
     public async getCurrentWebUrl(): Promise<string> {
         try {
             return this.web_controller.getUrl();
@@ -317,6 +347,7 @@ struct Dashboard {
             return '';
         }
     }
+
     //按钮分享URL方法
     private async shareUrl() {
         const uiContext: UIContext = this.getUIContext();
@@ -387,7 +418,11 @@ struct Dashboard {
             Stack() {
                 //==========================网页嵌套滚动==========================
                 if (this.isLoading) {
-                    Progress({ value: this.progress, total: 100 }).width('100%').height(3).position({y:5}).zIndex(99);
+                    Progress({ value: this.progress, total: 100 })
+                        .width('100%')
+                        .height(3)
+                        .position({ y: 5 })
+                        .zIndex(99);
                 }
                 Scroll(this.scroller) {
                     Column() {
@@ -425,7 +460,9 @@ struct Dashboard {
 
                 // ==========================悬浮按钮==========================
                 Column({ space: 10 }) {
-                    Button() { Image($r('app.media.arrow_up')).width(24).height(24)}
+                    Button() {
+                        Image($r('app.media.arrow_up')).width(24).height(24)
+                    }
                     .onClick(() => {
                         this.scroller.scrollTo({
                             xOffset: 0,
@@ -450,7 +487,9 @@ struct Dashboard {
                         offsetY: 4
                     })
 
-                    Button() { Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh')).width(24).height(24) }
+                    Button() {
+                        Image(this.isLoading ? $r('app.media.stop') : $r('app.media.refresh')).width(24).height(24)
+                    }
                     .onClick(() => {
                         if (this.isLoading) {
                             this.web_controller.stop();
@@ -463,7 +502,8 @@ struct Dashboard {
                         } else {
                             this.web_controller.refresh();
                             try {
-                                Promise.all([this.web_controller.removeCache(true), this.web_controller.removeCache(false)])
+                                Promise.all([this.web_controller.removeCache(true),
+                                    this.web_controller.removeCache(false)])
                             } catch (error) {
                                 // man! what can I say
                                 console.warn(`hm dashboard 清除缓存失败 e: ${error}`)
@@ -502,7 +542,8 @@ struct Dashboard {
                     x: this.showButton ? this.buttonShowX : this.buttonHideX,
                     y: this.buttonY
                 })
-                .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.8, 0.8), duration: 400 } : { duration: 0 })
+                .animation(this.showButtonAnimation ? { curve: curves.springMotion(0.8, 0.8), duration: 400 } :
+                    { duration: 0 })
                 .gesture(
                     SwipeGesture({ direction: SwipeDirection.Horizontal })
                         .onAction((move: GestureEvent | undefined) => {
@@ -528,6 +569,7 @@ struct Dashboard {
                             console.log('平移中，垂直偏移量 y 为:', this.buttonY);
                         })
                 )
+
                 if (!this.showButton) {
                     Column()
                         .backgroundColor(Color.Transparent)
@@ -545,7 +587,7 @@ struct Dashboard {
                         .height('100%')
                         .width(15)
                         .zIndex(5)
-                        .position({ x: this.Vp-15 })
+                        .position({ x: this.Vp - 15 })
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
@@ -644,7 +686,7 @@ struct Dashboard {
             },
             content: {
                 title: {
-                    mainTitle: this.isT ? '应用看板 - T站' : '应用看板 - S站',
+                    mainTitle: this.siteMode == SiteMode.SSite ? '应用看板 - S站' : '应用看板 - T站',
                 },
                 menu: {
                     value: [
@@ -664,9 +706,9 @@ struct Dashboard {
                                 label: 'switch',
                                 icon: $r('app.media.switch'),
                                 isEnabled: true,
-                                action: () => {
+                                action: async () => {
                                     this.triggerVibration();
-                                    this.switchWebVersion();
+                                    await this.switchWebVersion();
                                 },
                             }
                         },

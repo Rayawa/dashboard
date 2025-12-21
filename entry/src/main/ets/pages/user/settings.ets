@@ -2,18 +2,20 @@ import { LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
-import { APP_VERSION } from '../../common/constants';
+import { APP_VERSION, isTSiteDev } from '../../common/constants';
 import {
-  getButtonPosition,
-  getDefaultSite,
-  getHoldCheckEnabled,
-  getThemeColor,
-  getVibrationEnabled,
-  initializeSettings,
-  setButtonPosition,
-  setDefaultSite,
-  setHoldCheckEnabled,
-  setVibrationEnabled
+    getButtonPosition,
+    getDefaultSite,
+    getHoldCheckEnabled,
+    getThemeColor,
+    getVibrationEnabled,
+    initializeSettings,
+    setButtonPosition,
+    setDefaultSite,
+    setHoldCheckEnabled,
+    setVibrationEnabled,
+    setTDev,
+    getTDev
 } from '../../common/SettingsStorage';
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, HdsNavigationAttribute } from '@kit.UIDesignKit';
 
@@ -47,6 +49,7 @@ export struct settings {
             }
         });
     }
+
     async openLink() {
         const url = 'https://beian.miit.gov.cn/#/Integrated/index';
         const ui_content = this.getUIContext();
@@ -81,17 +84,26 @@ export struct settings {
             },
         })
     }
+
     @State handlePopup: boolean = false;
     @StorageLink('defaultSiteT') defaultSiteT: boolean = false;
     @StorageLink('vibrationON') vibrationON: boolean = false;
     @StorageLink('holdCheckON') holdCheckON: boolean = true;
     @StorageLink('buttonPositionRIGHT') buttonPositionRIGHT: boolean = false;
+    @StorageLink('TSiteDev') siteTDev: boolean = false;
+    @State isTDev: boolean = false;
     @State themeColor: string = 'blue';
 
     // 页面显示时加载设置
     async aboutToAppear() {
         initializeSettings();
         await this.loadSettings();
+        isTSiteDev().then((val) => {
+            if (!val) {
+                return;
+            }
+            this.isTDev = true;
+        })
     }
 
     // 加载所有设置
@@ -102,6 +114,7 @@ export struct settings {
             this.holdCheckON = await getHoldCheckEnabled();
             this.buttonPositionRIGHT = await getButtonPosition();
             this.themeColor = await getThemeColor();
+            this.siteTDev = await getTDev()
         } catch (error) {
             console.error('加载设置失败:', error);
         }
@@ -146,6 +159,15 @@ export struct settings {
             console.error('保存按钮位置设置失败:', error);
         }
     }
+
+    private async saveTDev(val: boolean) {
+        try {
+            await setTDev(val);
+        } catch (error) {
+            console.error('保存按钮位置设置失败:', error);
+        }
+    }
+
     build() {
         HdsNavigation() {
             Stack() {
@@ -168,53 +190,70 @@ export struct settings {
 
                         Column() {
                             Row() {
-                                Row({ space:12 }) {
+                                Row({ space: 12 }) {
                                     Image($r('app.media.default')).height(24).width(24).objectFit(ImageFit.Contain)
-                                    Text('默认站点').fontSize(16).fontColor('#888')
+                                    Text('默认站点').fontSize(16)
+                                    //.fontColor('#888')
                                 }
-                                Row({ space:8 }){
+
+                                Row({ space: 8 }) {
                                     Text('S站').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                     Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
-                                        .selectedColor('#888')
-                                        .switchStyle({unselectedColor:'#888'})
-                                        .onClick(() => { prompt.showToast({message:"敬请期待！"}) })
-                                        // .onChange(async (isOn: boolean) => {
-                                            // await this.saveDefaultSite(isOn);
-                                            // this.triggerVibration();
-                                        // })
+                                    // .selectedColor('#888')
+                                        .selectedColor($r('app.color.diff_content'))
+                                        .switchStyle({ unselectedColor: '#888' })
+                                        .onClick(() => {
+                                            prompt.showToast({ message: "已保存" })
+                                        })
+                                        .onChange(async (isOn: boolean) => {
+                                            await this.saveDefaultSite(isOn);
+                                            this.triggerVibration();
+                                        })
                                     Text('T站').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
-                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
+                            }
+                            .height(56)
+                            .width('100%')
+                            .justifyContent(FlexAlign.SpaceBetween)
+                            .padding({ left: 16, right: 16 })
 
                             Divider().color($r('app.color.border')).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             Row() {
-                                Row({ space:12 }) {
+                                Row({ space: 12 }) {
                                     Image($r('app.media.vibrate')).height(24).width(24).objectFit(ImageFit.Contain)
                                     Text('震感反馈').fontSize(16).fontColor('#888')
                                 }
-                                Row({ space:8 }){
+
+                                Row({ space: 8 }) {
                                     Text('关').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                     Toggle({ type: ToggleType.Switch, isOn: this.vibrationON })
                                         .selectedColor('#888')
-                                        .switchStyle({unselectedColor:'#888'})
-                                        .onClick(() => { prompt.showToast({message:"敬请期待！"}) })
-                                        // .onChange(async (isOn: boolean) => {
-                                        //     // await this.saveVibrationEnabled(isOn);
-                                        //     // this.triggerVibration();
-                                        // })
+                                        .switchStyle({ unselectedColor: '#888' })
+                                        .onClick(() => {
+                                            prompt.showToast({ message: "敬请期待！" })
+                                        })
+                                    // .onChange(async (isOn: boolean) => {
+                                    //     // await this.saveVibrationEnabled(isOn);
+                                    //     // this.triggerVibration();
+                                    // })
                                     Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
-                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
+                            }
+                            .height(56)
+                            .width('100%')
+                            .justifyContent(FlexAlign.SpaceBetween)
+                            .padding({ left: 16, right: 16 })
 
                             Divider().color($r('app.color.border')).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             Row() {
-                                Row({ space:12 }) {
+                                Row({ space: 12 }) {
                                     Image($r('app.media.hand')).height(24).width(24).objectFit(ImageFit.Contain)
                                     Text('智感握持').fontSize(16)
                                 }
-                                Row({ space:8 }){
+
+                                Row({ space: 8 }) {
                                     Text('关').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                     Toggle({ type: ToggleType.Switch, isOn: this.holdCheckON })
                                         .selectedColor($r('app.color.diff_content'))
@@ -224,36 +263,51 @@ export struct settings {
                                         })
                                     Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
-                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
+                            }
+                            .height(56)
+                            .width('100%')
+                            .justifyContent(FlexAlign.SpaceBetween)
+                            .padding({ left: 16, right: 16 })
 
                             Divider().color($r('app.color.border')).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             Row() {
-                                Row({ space:12 }) {
+                                Row({ space: 12 }) {
                                     Image($r('app.media.button')).height(24).width(24).objectFit(ImageFit.Contain)
                                     Text('按钮默认位置').fontSize(16)
                                 }
-                                Row({ space:8 }){
+
+                                Row({ space: 8 }) {
                                     Text('左').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                     Toggle({ type: ToggleType.Switch, isOn: this.buttonPositionRIGHT })
                                         .selectedColor($r('app.color.diff_content'))
-                                        .switchStyle({unselectedColor:$r('app.color.diff_content')})
+                                        .switchStyle({ unselectedColor: $r('app.color.diff_content') })
                                         .onChange(async (isOn: boolean) => {
                                             await this.saveButtonPosition(isOn);
                                             this.triggerVibration();
                                         })
                                     Text('右').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
-                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
+                            }
+                            .height(56)
+                            .width('100%')
+                            .justifyContent(FlexAlign.SpaceBetween)
+                            .padding({ left: 16, right: 16 })
 
                             Divider().color($r('app.color.border')).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             Row() {
-                                Row({ space:12 }) {
+                                Row({ space: 12 }) {
                                     Image($r('app.media.theme')).height(24).width(24).objectFit(ImageFit.Contain)
                                     Text('主题').fontSize(16)
                                 }
-                                Rect().width(24).height(24).fill($r('app.color.diff_content')).borderRadius(16).borderWidth(0.5)
+
+                                Rect()
+                                    .width(24)
+                                    .height(24)
+                                    .fill($r('app.color.diff_content'))
+                                    .borderRadius(16)
+                                    .borderWidth(0.5)
                                     .onClick(() => {
                                         this.triggerVibration();
                                         this.handlePopup = !this.handlePopup;
@@ -277,7 +331,44 @@ export struct settings {
                                                 .combine(TransitionEffect.translate({ x: 0, y: 12 }))
                                         )
                                     })
-                            }.height(56).width('100%').justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
+
+
+                            }
+                            .height(56)
+                            .width('100%')
+                            .justifyContent(FlexAlign.SpaceBetween)
+                            .padding({ left: 16, right: 16 })
+
+                            ///
+
+                            Divider()
+                                .color($r('app.color.border'))
+                                .strokeWidth(0.5)
+                                .margin({ left: 16, right: 16 })
+                                .visibility(this.isTDev ? Visibility.Visible : Visibility.Hidden)
+
+                            Row() {
+                                Row({ space: 12 }) {
+                                    Image($r('app.media.theme')).height(24).width(24).objectFit(ImageFit.Contain)
+                                    Text('T站开发').fontSize(16)
+                                }
+
+                                Row({ space: 8 }) {
+                                    Text('关').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
+                                    Toggle({ type: ToggleType.Switch, isOn: this.siteTDev })
+                                        .selectedColor($r('app.color.diff_content'))
+                                        .onChange(async (isOn: boolean) => {
+                                            await this.saveTDev(isOn);
+                                            // this.triggerVibration();
+                                        })
+                                    Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
+                                }
+                            }
+                            .height(56)
+                            .width('100%')
+                            .justifyContent(FlexAlign.SpaceBetween)
+                            .padding({ left: 16, right: 16 })
+                            .visibility(this.isTDev ? Visibility.Visible : Visibility.Hidden)
                         }
                         .borderWidth(0.5)
                         .borderColor($r('app.color.border'))
