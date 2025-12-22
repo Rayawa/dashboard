@@ -23,31 +23,33 @@ import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, HdsNavigationA
 @Component
 export struct settings {
     private triggerVibration(): void {
-        vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-            if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-            }
-            console.info('Succeed in querying effect');
-            if (state) {
-                try {
-                    vibrator.startVibration({
-                        type: 'preset',
-                        effectId: 'haptic.effect.hard',
-                        count: 1,
-                        intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                        if (error) {
-                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                        } else {
-                            console.info('Succeed in starting vibration');
-                        }
-                    });
-                } catch (tryError) {
-                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+        if(this.vibrationON){
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                    console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                    return;
                 }
-            }
-        });
+                console.info('Succeed in querying effect');
+                if (state) {
+                    try {
+                        vibrator.startVibration({
+                            type: 'preset',
+                            effectId: 'haptic.effect.hard',
+                            count: 1,
+                            intensity: 50,
+                        }, { usage: 'touch' }, (error: BusinessError) => {
+                            if (error) {
+                                console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                            } else {
+                                console.info('Succeed in starting vibration');
+                            }
+                        });
+                    } catch (tryError) {
+                        console.error(`An unexpected error occurred in try block: ${tryError}`);
+                    }
+                }
+            });
+        }
     }
 
     async openLink() {
@@ -86,7 +88,7 @@ export struct settings {
     }
 
     @State handlePopup: boolean = false;
-    @StorageLink('defaultSiteT') defaultSiteT: boolean = false;
+    @StorageLink('defaultSiteT') defaultSiteT: boolean = true;
     @StorageLink('vibrationON') vibrationON: boolean = false;
     @StorageLink('holdCheckON') holdCheckON: boolean = true;
     @StorageLink('buttonPositionRIGHT') buttonPositionRIGHT: boolean = false;
@@ -199,12 +201,8 @@ export struct settings {
                                 Row({ space: 8 }) {
                                     Text('S站').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                     Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
-                                    // .selectedColor('#888')
                                         .selectedColor($r('app.color.diff_content'))
                                         .switchStyle({ unselectedColor: '#888' })
-                                        .onClick(() => {
-                                            prompt.showToast({ message: "已保存" })
-                                        })
                                         .onChange(async (isOn: boolean) => {
                                             await this.saveDefaultSite(isOn);
                                             this.triggerVibration();
@@ -222,21 +220,17 @@ export struct settings {
                             Row() {
                                 Row({ space: 12 }) {
                                     Image($r('app.media.vibrate')).height(24).width(24).objectFit(ImageFit.Contain)
-                                    Text('震感反馈').fontSize(16).fontColor('#888')
+                                    Text('震感反馈').fontSize(16)
                                 }
 
                                 Row({ space: 8 }) {
                                     Text('关').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                     Toggle({ type: ToggleType.Switch, isOn: this.vibrationON })
-                                        .selectedColor('#888')
-                                        .switchStyle({ unselectedColor: '#888' })
-                                        .onClick(() => {
-                                            prompt.showToast({ message: "敬请期待！" })
+                                        .selectedColor($r('app.color.diff_content'))
+                                        .onChange(async (isOn: boolean) => {
+                                            await this.saveVibrationEnabled(isOn);
+                                            this.triggerVibration();
                                         })
-                                    // .onChange(async (isOn: boolean) => {
-                                    //     // await this.saveVibrationEnabled(isOn);
-                                    //     // this.triggerVibration();
-                                    // })
                                     Text('开').fontSize(14).fontColor('#888').width(24).textAlign(TextAlign.Center)
                                 }
                             }

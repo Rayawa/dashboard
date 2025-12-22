@@ -15,32 +15,36 @@ struct web_api {
     @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
     @State mode: WebDarkMode = WebDarkMode.Auto;
     @State isLoading: boolean = false;
+
+    @StorageLink('vibrationON') vibrationON: boolean = false;
     private triggerVibration(): void {
-        vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-            if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-            }
-            console.info('Succeed in querying effect');
-            if (state) {
-                try {
-                    vibrator.startVibration({
-                        type: 'preset',
-                        effectId: 'haptic.effect.hard',
-                        count: 1,
-                        intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                        if (error) {
-                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                        } else {
-                            console.info('Succeed in starting vibration');
-                        }
-                    });
-                } catch (tryError) {
-                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+        if(this.vibrationON){
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                    console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                    return;
                 }
-            }
-        });
+                console.info('Succeed in querying effect');
+                if (state) {
+                    try {
+                        vibrator.startVibration({
+                            type: 'preset',
+                            effectId: 'haptic.effect.hard',
+                            count: 1,
+                            intensity: 50,
+                        }, { usage: 'touch' }, (error: BusinessError) => {
+                            if (error) {
+                                console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                            } else {
+                                console.info('Succeed in starting vibration');
+                            }
+                        });
+                    } catch (tryError) {
+                        console.error(`An unexpected error occurred in try block: ${tryError}`);
+                    }
+                }
+            });
+        }
     }
 
     async aboutToAppear() {

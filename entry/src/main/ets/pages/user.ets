@@ -19,33 +19,38 @@ export struct user {
             .combine(TransitionEffect.move(TransitionEdge.BOTTOM))
             .combine(TransitionEffect.scale({ x: 0, y: 1 }))
             .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 })
+
+    @StorageLink('vibrationON') vibrationON: boolean = false;
     private triggerVibration(): void {
-        vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
-            if (err) {
-                console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
-                return;
-            }
-            console.info('Succeed in querying effect');
-            if (state) {
-                try {
-                    vibrator.startVibration({
-                        type: 'preset',
-                        effectId: 'haptic.effect.hard',
-                        count: 1,
-                        intensity: 50,
-                    }, { usage: 'touch' }, (error: BusinessError) => {
-                        if (error) {
-                            console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
-                        } else {
-                            console.info('Succeed in starting vibration');
-                        }
-                    });
-                } catch (tryError) {
-                    console.error(`An unexpected error occurred in try block: ${tryError}`);
+        if(this.vibrationON){
+            vibrator.isSupportEffect('haptic.effect.hard', (err: BusinessError, state: boolean) => {
+                if (err) {
+                    console.error(`Failed to query effect. Code: ${err.code}, message: ${err.message}`);
+                    return;
                 }
-            }
-        });
+                console.info('Succeed in querying effect');
+                if (state) {
+                    try {
+                        vibrator.startVibration({
+                            type: 'preset',
+                            effectId: 'haptic.effect.hard',
+                            count: 1,
+                            intensity: 50,
+                        }, { usage: 'touch' }, (error: BusinessError) => {
+                            if (error) {
+                                console.error(`Failed to start vibration. Code: ${error.code}, message: ${error.message}`);
+                            } else {
+                                console.info('Succeed in starting vibration');
+                            }
+                        });
+                    } catch (tryError) {
+                        console.error(`An unexpected error occurred in try block: ${tryError}`);
+                    }
+                }
+            });
+        }
     }
+
     @State showTutorial: boolean = false;
     @State showSubmit: boolean = false;
     @State showContact: boolean = false;
