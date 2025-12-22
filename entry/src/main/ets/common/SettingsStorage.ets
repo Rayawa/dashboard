@@ -23,7 +23,7 @@ export function getSettingsInstance(): DiskStorageInstance {
 export async function getDefaultSite(): Promise<boolean> {
     const settings = getSettingsInstance();
     // false = S站, true = T站
-    return await settings.get("defaultSiteT", false) as boolean;
+    return await settings.get("defaultSiteT", true) as boolean;
 }
 
 export async function setDefaultSite(isT: boolean): Promise<void> {
