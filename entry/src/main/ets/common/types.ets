@@ -12,11 +12,11 @@ export interface appIdOrPkgName {
 }
 
 export interface SubmitAppBody extends appIdOrPkgName {
-    comment?: CommentInfo
+    comment?: CommentInfo;
 }
 
 export function checkAppIdOrPkgName(value: appIdOrPkgName, raise_error: boolean = false): boolean {
-    const res = Number(value.app_id != undefined) + Number(value.pkg_name != undefined)
+    const res = Number(value.app_id != undefined) + Number(value.pkg_name != undefined);
     if (!raise_error) {
         return res == 1;
     }
@@ -100,5 +100,5 @@ export interface FormData {
 export enum SiteMode {
     SSite = 0,
     TSite = 1,
-    TDevSite = 2
+    TDevSite = 2,
 }

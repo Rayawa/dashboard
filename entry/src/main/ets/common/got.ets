@@ -1,6 +1,6 @@
-import { http } from '@kit.NetworkKit';
-import URL from './url';
-import { util } from '@kit.ArkTS';
+import { http } from "@kit.NetworkKit";
+import URL from "./url";
+import { util } from "@kit.ArkTS";
 
 export interface RequestOptions extends http.HttpRequestOptions {
     method?: http.RequestMethod;
@@ -28,7 +28,7 @@ export class Got {
         this.defaultOptions = {
             method: http.RequestMethod.GET,
             timeout: 60000,
-            ...defaultOptions
+            ...defaultOptions,
         };
         this.httpService = http.createHttp();
     }
@@ -36,11 +36,14 @@ export class Got {
     /**
      * 发起HTTP请求
      */
-    async request<T = ArrayBuffer>(url: string, options: RequestOptions = {}): Promise<Response<T>> {
+    async request<T = ArrayBuffer>(
+        url: string,
+        options: RequestOptions = {},
+    ): Promise<Response<T>> {
         const mergedOptions: RequestOptions = {
             ...this.defaultOptions,
             ...options,
-            url
+            url,
         };
 
         // 处理查询参数
@@ -60,22 +63,22 @@ export class Got {
                 // 二进制数据
                 mergedOptions.extraData = mergedOptions.body;
                 mergedOptions.header = {
-                    'Content-Type': 'application/octet-stream',
-                    ...mergedOptions.header
+                    "Content-Type": "application/octet-stream",
+                    ...mergedOptions.header,
                 };
-            } else if (typeof mergedOptions.body === 'string') {
+            } else if (typeof mergedOptions.body === "string") {
                 // 字符串数据
                 mergedOptions.extraData = mergedOptions.body;
                 mergedOptions.header = {
-                    'Content-Type': 'text/plain',
-                    ...mergedOptions.header
+                    "Content-Type": "text/plain",
+                    ...mergedOptions.header,
                 };
-            } else if (typeof mergedOptions.body === 'object') {
+            } else if (typeof mergedOptions.body === "object") {
                 // JSON数据
                 mergedOptions.extraData = JSON.stringify(mergedOptions.body);
                 mergedOptions.header = {
-                    'Content-Type': 'application/json',
-                    ...mergedOptions.header
+                    "Content-Type": "application/json",
+                    ...mergedOptions.header,
                 };
             }
         }
@@ -93,14 +96,14 @@ export class Got {
             try {
                 const response: http.HttpResponse = await this.httpService.request(
                     mergedOptions.url!,
-                    mergedOptions
+                    mergedOptions,
                 );
 
                 // 获取响应体，默认为ArrayBuffer
                 let body: ArrayBuffer = new ArrayBuffer(0);
 
                 if (response.result) {
-                    if (typeof response.result === 'string') {
+                    if (typeof response.result === "string") {
                         // 字符串转换为ArrayBuffer - 使用 ArkTS 的 TextEncoder
                         const encoder = new util.TextEncoder();
                         body = encoder.encodeInto(response.result).buffer;
@@ -119,60 +122,71 @@ export class Got {
                     headers: (response.header as Record<string, string>) || {},
                     body: body as T,
                     request: mergedOptions,
-                    ok: response.responseCode >= 200 && response.responseCode < 300
+                    ok: response.responseCode >= 200 && response.responseCode < 300,
                 };
             } catch (error) {
                 lastError = error as Error;
                 if (retryCount > 0) {
                     retryCount--;
                     // 等待1秒后重试
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
                 } else {
                     break;
                 }
             }
         }
 
-        throw lastError || new Error('Request failed');
+        throw lastError || new Error("Request failed");
     }
 
     /**
      * GET请求 - 返回ArrayBuffer
      */
-    async get(url: string, options: Omit<RequestOptions, 'method'> = {}): Promise<Response<ArrayBuffer>> {
+    async get(
+        url: string,
+        options: Omit<RequestOptions, "method"> = {},
+    ): Promise<Response<ArrayBuffer>> {
         return this.request<ArrayBuffer>(url, { ...options, method: http.RequestMethod.GET });
     }
 
     /**
      * GET请求 - 返回字符串
      */
-    async getText(url: string, options: Omit<RequestOptions, 'method'> = {}): Promise<Response<string>> {
-        const response = await this.request<ArrayBuffer>(url, { ...options, method: http.RequestMethod.GET });
+    async getText(
+        url: string,
+        options: Omit<RequestOptions, "method"> = {},
+    ): Promise<Response<string>> {
+        const response = await this.request<ArrayBuffer>(url, {
+            ...options,
+            method: http.RequestMethod.GET,
+        });
 
         // 将ArrayBuffer转换为字符串 - 使用 ArkTS 的 TextDecoder
 
-        const decoder = new util.TextDecoder('utf-8');
+        const decoder = new util.TextDecoder("utf-8");
         const bodyUint8Array = new Uint8Array(response.body);
         const text = decoder.decodeWithStream(bodyUint8Array);
 
         return {
             ...response,
-            body: text
+            body: text,
         };
     }
 
     /**
      * GET请求 - 返回JSON对象
      */
-    async getJson<T extends Record<string, unknown>>(url: string,
-        options: Omit<RequestOptions, 'method'> = {}): Promise<Response<T>> {
+    async getJson<T extends Record<string, unknown>>(
+        url: string,
+        options: Omit<RequestOptions, "method"> = {},
+    ): Promise<Response<T>> {
         const response = await this.getText(url, options);
 
         try {
             const json = JSON.parse(response.body) as T;
             return {
                 ...response,
-                body: json
+                body: json,
             };
         } catch (error) {
             throw new Error(`Failed to parse JSON: ${(error as Error).message}`);
@@ -182,25 +196,46 @@ export class Got {
     /**
      * POST请求 - 发送ArrayBuffer
      */
-    async post(url: string, body: ArrayBuffer,
-        options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<Response<ArrayBuffer>> {
-        return this.request<ArrayBuffer>(url, { ...options, method: http.RequestMethod.POST, body });
+    async post(
+        url: string,
+        body: ArrayBuffer,
+        options: Omit<RequestOptions, "method" | "body"> = {},
+    ): Promise<Response<ArrayBuffer>> {
+        return this.request<ArrayBuffer>(url, {
+            ...options,
+            method: http.RequestMethod.POST,
+            body,
+        });
     }
 
     /**
      * POST请求 - 发送字符串
      */
-    async postText(url: string, body: string,
-        options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<Response<ArrayBuffer>> {
-        return this.request<ArrayBuffer>(url, { ...options, method: http.RequestMethod.POST, body });
+    async postText(
+        url: string,
+        body: string,
+        options: Omit<RequestOptions, "method" | "body"> = {},
+    ): Promise<Response<ArrayBuffer>> {
+        return this.request<ArrayBuffer>(url, {
+            ...options,
+            method: http.RequestMethod.POST,
+            body,
+        });
     }
 
     /**
      * POST请求 - 发送JSON
      */
-    async postJson(url: string, body: Record<string, unknown>,
-        options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<Response<ArrayBuffer>> {
-        return this.request<ArrayBuffer>(url, { ...options, method: http.RequestMethod.POST, body });
+    async postJson(
+        url: string,
+        body: Record<string, unknown>,
+        options: Omit<RequestOptions, "method" | "body"> = {},
+    ): Promise<Response<ArrayBuffer>> {
+        return this.request<ArrayBuffer>(url, {
+            ...options,
+            method: http.RequestMethod.POST,
+            body,
+        });
     }
 
     /**
@@ -209,7 +244,7 @@ export class Got {
     async postJsonWithJsonResponse<T extends Record<string, unknown>>(
         url: string,
         body: Record<string, unknown>,
-        options: Omit<RequestOptions, 'method' | 'body'> = {}
+        options: Omit<RequestOptions, "method" | "body"> = {},
     ): Promise<Response<T>> {
         const response = await this.postJson(url, body, options);
         const textResponse = await this.responseToText(response);
@@ -218,7 +253,7 @@ export class Got {
             const json = JSON.parse(textResponse.body) as T;
             return {
                 ...textResponse,
-                body: json
+                body: json,
             };
         } catch (error) {
             throw new Error(`Failed to parse JSON response: ${(error as Error).message}`);
@@ -228,15 +263,21 @@ export class Got {
     /**
      * PUT请求
      */
-    async put(url: string, body: ArrayBuffer | string | Record<string, unknown>,
-        options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<Response<ArrayBuffer>> {
+    async put(
+        url: string,
+        body: ArrayBuffer | string | Record<string, unknown>,
+        options: Omit<RequestOptions, "method" | "body"> = {},
+    ): Promise<Response<ArrayBuffer>> {
         return this.request<ArrayBuffer>(url, { ...options, method: http.RequestMethod.PUT, body });
     }
 
     /**
      * DELETE请求
      */
-    async delete(url: string, options: Omit<RequestOptions, 'method'> = {}): Promise<Response<ArrayBuffer>> {
+    async delete(
+        url: string,
+        options: Omit<RequestOptions, "method"> = {},
+    ): Promise<Response<ArrayBuffer>> {
         return this.request<ArrayBuffer>(url, { ...options, method: http.RequestMethod.DELETE });
     }
 
@@ -251,7 +292,10 @@ export class Got {
     /**
      * HEAD请求
      */
-    async head(url: string, options: Omit<RequestOptions, 'method'> = {}): Promise<Response<ArrayBuffer>> {
+    async head(
+        url: string,
+        options: Omit<RequestOptions, "method"> = {},
+    ): Promise<Response<ArrayBuffer>> {
         return this.request<ArrayBuffer>(url, { ...options, method: http.RequestMethod.HEAD });
     }
 
@@ -259,27 +303,29 @@ export class Got {
      * 将响应体转换为字符串
      */
     async responseToText(response: Response<ArrayBuffer>): Promise<Response<string>> {
-        const decoder = new util.TextDecoder('utf-8');
+        const decoder = new util.TextDecoder("utf-8");
         const bodyUint8Array = new Uint8Array(response.body);
         const text = decoder.decodeWithStream(bodyUint8Array);
 
         return {
             ...response,
-            body: text
+            body: text,
         };
     }
 
     /**
      * 将响应体转换为JSON
      */
-    async responseToJson<T extends Record<string, unknown>>(response: Response<ArrayBuffer>): Promise<Response<T>> {
+    async responseToJson<T extends Record<string, unknown>>(
+        response: Response<ArrayBuffer>,
+    ): Promise<Response<T>> {
         const textResponse = await this.responseToText(response);
 
         try {
             const json = JSON.parse(textResponse.body) as T;
             return {
                 ...textResponse,
-                body: json
+                body: json,
             };
         } catch (error) {
             throw new Error(`Failed to parse JSON: ${(error as Error).message}`);
@@ -296,21 +342,32 @@ export class Got {
     /**
      * 静态快捷方法
      */
-    static async get(url: string, options: Omit<RequestOptions, 'method'> = {}): Promise<Response<ArrayBuffer>> {
+    static async get(
+        url: string,
+        options: Omit<RequestOptions, "method"> = {},
+    ): Promise<Response<ArrayBuffer>> {
         return new Got().get(url, options);
     }
 
-    static async getText(url: string, options: Omit<RequestOptions, 'method'> = {}): Promise<Response<string>> {
+    static async getText(
+        url: string,
+        options: Omit<RequestOptions, "method"> = {},
+    ): Promise<Response<string>> {
         return new Got().getText(url, options);
     }
 
-    static async getJson<T extends Record<string, unknown>>(url: string,
-        options: Omit<RequestOptions, 'method'> = {}): Promise<Response<T>> {
+    static async getJson<T extends Record<string, unknown>>(
+        url: string,
+        options: Omit<RequestOptions, "method"> = {},
+    ): Promise<Response<T>> {
         return new Got().getJson<T>(url, options);
     }
 
-    static async post(url: string, body: ArrayBuffer,
-        options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<Response<ArrayBuffer>> {
+    static async post(
+        url: string,
+        body: ArrayBuffer,
+        options: Omit<RequestOptions, "method" | "body"> = {},
+    ): Promise<Response<ArrayBuffer>> {
         return new Got().post(url, body, options);
     }
 

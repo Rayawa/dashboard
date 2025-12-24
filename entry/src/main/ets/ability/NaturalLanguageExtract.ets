@@ -1,285 +1,291 @@
-import { EntityType, textProcessing } from '@kit.NaturalLanguageKit';
+import { EntityType, textProcessing } from "@kit.NaturalLanguageKit";
 
 // ========== 类型定义 ==========
 export interface HuaweiLinkParseResult {
-  packageName: string;
+    packageName: string;
 }
 interface PatternItem {
-  name: string;
-  pattern: RegExp;
+    name: string;
+    pattern: RegExp;
 }
 export interface HuaweiLinkInfo {
-  url: string;
-  packageName: string;
-  charOffset: number;
+    url: string;
+    packageName: string;
+    charOffset: number;
 }
 
 export interface AppInfo {
-  link: string | null;
-  packageName: string | null;
-  appID: string | null;
-  date: string | null;
-  isValid: boolean;
+    link: string | null;
+    packageName: string | null;
+    appID: string | null;
+    date: string | null;
+    isValid: boolean;
 }
 
 // ========== 自然语言提取器类 ==========
 export class NaturalLanguageExtractor {
+    // 主提取方法
+    static async extractAppInfoFromText(inputText: string): Promise<AppInfo[]> {
+        // 1. 输入验证
+        if (!inputText || inputText.trim().length === 0) {
+            console.log("错误：请输入文本");
+            return [];
+        }
 
-  // 主提取方法
-  static async extractAppInfoFromText(inputText: string): Promise<AppInfo[]> {
-    // 1. 输入验证
-    if (!inputText || inputText.trim().length === 0) {
-      console.log('错误：请输入文本');
-      return [];
-    }
+        if (inputText.length > 1000) {
+            console.log(`错误：文本长度${inputText.length}超过1000字符限制`);
+            return [];
+        }
 
-    if (inputText.length > 1000) {
-      console.log(`错误：文本长度${inputText.length}超过1000字符限制`);
-      return [];
-    }
-
-    try {
-      // 2. 使用文档中的实体抽取API - 明确指定需要的实体类型
-      const entities = await textProcessing.getEntity(inputText, {
-        entityTypes: [EntityType.URL, EntityType.DATETIME]
-      });
-
-      // 3. 处理URL实体 - 提取华为应用链接和包名
-      const huaweiLinks: HuaweiLinkInfo[] = [];
-      entities.forEach(entity => {
-        if (entity.type === EntityType.URL) {
-          const linkInfo = NaturalLanguageExtractor.parseHuaweiLink(entity.text);
-          if (linkInfo) {
-            huaweiLinks.push({
-              url: entity.text,
-              packageName: linkInfo.packageName,
-              charOffset: entity.charOffset
+        try {
+            // 2. 使用文档中的实体抽取API - 明确指定需要的实体类型
+            const entities = await textProcessing.getEntity(inputText, {
+                entityTypes: [EntityType.URL, EntityType.DATETIME],
             });
-          }
+
+            // 3. 处理URL实体 - 提取华为应用链接和包名
+            const huaweiLinks: HuaweiLinkInfo[] = [];
+            entities.forEach((entity) => {
+                if (entity.type === EntityType.URL) {
+                    const linkInfo = NaturalLanguageExtractor.parseHuaweiLink(entity.text);
+                    if (linkInfo) {
+                        huaweiLinks.push({
+                            url: entity.text,
+                            packageName: linkInfo.packageName,
+                            charOffset: entity.charOffset,
+                        });
+                    }
+                }
+            });
+
+            // 4. 使用正则表达式提取AppID（C开头+数字）
+            const appIDs = NaturalLanguageExtractor.extractAppIDs(inputText);
+
+            // 5. 提取所有日期实体
+            const dates = entities.filter((e) => e.type === EntityType.DATETIME).map((e) => e.text);
+
+            // 6. 智能匹配应用信息
+            const extractedApps = NaturalLanguageExtractor.matchAppInfo(
+                inputText,
+                huaweiLinks,
+                appIDs,
+                dates,
+            );
+
+            console.log(`提取完成，找到 ${extractedApps.length} 个应用`);
+            return extractedApps;
+        } catch (error) {
+            console.error("实体抽取失败:", error);
+            return [];
         }
-      });
-
-      // 4. 使用正则表达式提取AppID（C开头+数字）
-      const appIDs = NaturalLanguageExtractor.extractAppIDs(inputText);
-
-      // 5. 提取所有日期实体
-      const dates = entities
-        .filter(e => e.type === EntityType.DATETIME)
-        .map(e => e.text);
-
-      // 6. 智能匹配应用信息
-      const extractedApps = NaturalLanguageExtractor.matchAppInfo(
-        inputText,
-        huaweiLinks,
-        appIDs,
-        dates
-      );
-
-      console.log(`提取完成，找到 ${extractedApps.length} 个应用`);
-      return extractedApps;
-
-    } catch (error) {
-      console.error('实体抽取失败:', error);
-      return [];
-    }
-  }
-
-  // 解析华为应用链接
-  private static parseHuaweiLink(url: string): HuaweiLinkParseResult | null {
-    const huaweiPrefix = 'https://appgallery.huawei.com/app/detail?id=';
-
-    if (!url.startsWith(huaweiPrefix)) {
-      return null;
     }
 
-    // 提取id参数值
-    const idPart = url.substring(huaweiPrefix.length);
+    // 解析华为应用链接
+    private static parseHuaweiLink(url: string): HuaweiLinkParseResult | null {
+        const huaweiPrefix = "https://appgallery.huawei.com/app/detail?id=";
 
-    // 创建结束字符数组
-    const endChars = ['&', '?', '#', ' ', '，', ',', '。'];
-    let endIndex = idPart.length; // 默认结束位置为字符串末尾
-
-    // 找到最早出现的结束字符位置
-    for (const char of endChars) {
-      const index = idPart.indexOf(char);
-      if (index !== -1 && index < endIndex) {
-        endIndex = index;
-      }
-    }
-
-    // 包名中应该包含点，但不以点开头或结尾
-    // 查找最后一个点号的位置
-    const lastDotIndex = idPart.lastIndexOf('.');
-    if (lastDotIndex !== -1 && lastDotIndex < endIndex) {
-      // 如果最后一个点号在结束字符之前，确保点号后还有字符
-      const afterDot = idPart.substring(lastDotIndex + 1, endIndex);
-      if (afterDot.length === 0) {
-        // 点号后面没有字符，说明点号可能是结束字符
-        endIndex = lastDotIndex;
-      }
-    }
-
-    const packageName = idPart.substring(0, endIndex);
-
-    // 验证包名格式（至少包含一个点且不以点开头或结尾）
-    if (packageName.includes('.') &&
-      !packageName.startsWith('.') &&
-      !packageName.endsWith('.')) {
-      return { packageName };
-    }
-
-    return null;
-  }
-
-  // 提取AppID - C开头 + 数字
-  private static extractAppIDs(text: string): string[] {
-    const sampleText = text.substring(0, Math.min(200, text.length));
-    console.log('[提取调试] 输入文本样本:', sampleText);
-    console.log('[提取调试] 文本总长度:', text.length);
-
-    const patterns: PatternItem[] = [
-      { name: '严格模式 (C+10-25数字)', pattern: /\bC\d{10,25}\b/g },
-      { name: '忽略大小写 (C/c)', pattern: /\b[Cc]\d{10,25}\b/g },
-      { name: '允许下划线或短横线', pattern: /\b[Cc][-_]?\d{10,25}\b/g },
-      { name: '允许任意分隔符（宽松）', pattern: /\b[Cc][\s\-_:.]?\d{10,25}\b/g },
-      { name: '无边界宽松匹配', pattern: /[Cc]\d{10,25}/g }
-    ];
-
-    let allMatches: string[] = [];
-
-    for (const item of patterns) {
-      const name = item.name;
-      const pattern = item.pattern;
-
-      pattern.lastIndex = 0;
-      const matches = text.match(pattern);
-      if (matches && matches.length > 0) {
-        console.log(`[提取调试] "${name}" 匹配到:`, matches);
-        const uniqueNew = matches.filter(m => !allMatches.includes(m));
-        allMatches.push(...uniqueNew);
-        if (name.startsWith('严格模式') || name.startsWith('忽略大小写')) {
-          break;
+        if (!url.startsWith(huaweiPrefix)) {
+            return null;
         }
-      } else {
-        console.log(`[提取调试] "${name}" 未匹配到结果。`);
-      }
-    }
 
-    if (allMatches.length === 0) {
-      console.log('[提取调试] 常规模式均未匹配，尝试查找所有长数字序列...');
-      const allNumberGroups = text.match(/\d{10,25}/g);
-      if (allNumberGroups) {
-        console.log('[提取调试] 文本中找到的长数字序列:', allNumberGroups);
+        // 提取id参数值
+        const idPart = url.substring(huaweiPrefix.length);
 
-        for (const numStr of allNumberGroups) {
-          const index = text.indexOf(numStr);
-          if (index > 0) {
-            const precedingChar = text.substring(index - 1, index);
-            if (precedingChar === 'C' || precedingChar === 'c') {
-              const candidate = precedingChar + numStr;
-              allMatches.push(candidate);
+        // 创建结束字符数组
+        const endChars = ["&", "?", "#", " ", "，", ",", "。"];
+        let endIndex = idPart.length; // 默认结束位置为字符串末尾
+
+        // 找到最早出现的结束字符位置
+        for (const char of endChars) {
+            const index = idPart.indexOf(char);
+            if (index !== -1 && index < endIndex) {
+                endIndex = index;
             }
-          }
         }
-      }
+
+        // 包名中应该包含点，但不以点开头或结尾
+        // 查找最后一个点号的位置
+        const lastDotIndex = idPart.lastIndexOf(".");
+        if (lastDotIndex !== -1 && lastDotIndex < endIndex) {
+            // 如果最后一个点号在结束字符之前，确保点号后还有字符
+            const afterDot = idPart.substring(lastDotIndex + 1, endIndex);
+            if (afterDot.length === 0) {
+                // 点号后面没有字符，说明点号可能是结束字符
+                endIndex = lastDotIndex;
+            }
+        }
+
+        const packageName = idPart.substring(0, endIndex);
+
+        // 验证包名格式（至少包含一个点且不以点开头或结尾）
+        if (
+            packageName.includes(".") &&
+            !packageName.startsWith(".") &&
+            !packageName.endsWith(".")
+        ) {
+            return { packageName };
+        }
+
+        return null;
     }
 
-    // 4. 最终结果处理与日志
-    const finalResults = Array.from(new Set(allMatches)); // 去重
-    console.log('[提取调试] === 最终提取结果 ===:', finalResults);
-    return finalResults;
-  }
+    // 提取AppID - C开头 + 数字
+    private static extractAppIDs(text: string): string[] {
+        const sampleText = text.substring(0, Math.min(200, text.length));
+        console.log("[提取调试] 输入文本样本:", sampleText);
+        console.log("[提取调试] 文本总长度:", text.length);
 
-  // 匹配应用信息
-  private static matchAppInfo(
-    fullText: string,
-    links: HuaweiLinkInfo[],
-    appIDs: string[],
-    dates: string[]
-  ): AppInfo[] {
-    const apps: AppInfo[] = [];
+        const patterns: PatternItem[] = [
+            { name: "严格模式 (C+10-25数字)", pattern: /\bC\d{10,25}\b/g },
+            { name: "忽略大小写 (C/c)", pattern: /\b[Cc]\d{10,25}\b/g },
+            { name: "允许下划线或短横线", pattern: /\b[Cc][-_]?\d{10,25}\b/g },
+            { name: "允许任意分隔符（宽松）", pattern: /\b[Cc][\s\-_:.]?\d{10,25}\b/g },
+            { name: "无边界宽松匹配", pattern: /[Cc]\d{10,25}/g },
+        ];
 
-    // 处理每个链接
-    links.forEach(link => {
-      // 在链接周围寻找AppID（50字符范围内）
-      const nearbyAppID = NaturalLanguageExtractor.findNearbyText(
-        fullText,
-        link.charOffset,
-        appIDs,
-        50
-      );
+        let allMatches: string[] = [];
 
-      // 在链接周围寻找日期（100字符范围内）
-      const nearbyDate = NaturalLanguageExtractor.findNearbyText(
-        fullText,
-        link.charOffset,
-        dates,
-        100
-      );
+        for (const item of patterns) {
+            const name = item.name;
+            const pattern = item.pattern;
 
-      apps.push({
-        link: link.url,
-        packageName: link.packageName,
-        appID: nearbyAppID,
-        date: nearbyDate,
-        isValid: !!(link.packageName && nearbyAppID)
-      });
-    });
+            pattern.lastIndex = 0;
+            const matches = text.match(pattern);
+            if (matches && matches.length > 0) {
+                console.log(`[提取调试] "${name}" 匹配到:`, matches);
+                const uniqueNew = matches.filter((m) => !allMatches.includes(m));
+                allMatches.push(...uniqueNew);
+                if (name.startsWith("严格模式") || name.startsWith("忽略大小写")) {
+                    break;
+                }
+            } else {
+                console.log(`[提取调试] "${name}" 未匹配到结果。`);
+            }
+        }
 
-    // 为没有链接的AppID创建记录
-    const usedAppIDs = new Set(apps.map(app => app.appID).filter(Boolean));
-    const unusedAppIDs = appIDs.filter(id => !usedAppIDs.has(id));
+        if (allMatches.length === 0) {
+            console.log("[提取调试] 常规模式均未匹配，尝试查找所有长数字序列...");
+            const allNumberGroups = text.match(/\d{10,25}/g);
+            if (allNumberGroups) {
+                console.log("[提取调试] 文本中找到的长数字序列:", allNumberGroups);
 
-    unusedAppIDs.forEach(appID => {
-      const appIDIndex = fullText.indexOf(appID);
-      if (appIDIndex !== -1) {
-        // 尝试在AppID附近找包名（可能是文本形式）
-        const nearbyPackage = NaturalLanguageExtractor.findPackageNearby(fullText, appIDIndex);
-        const nearbyDate = NaturalLanguageExtractor.findNearbyText(fullText, appIDIndex, dates, 100);
+                for (const numStr of allNumberGroups) {
+                    const index = text.indexOf(numStr);
+                    if (index > 0) {
+                        const precedingChar = text.substring(index - 1, index);
+                        if (precedingChar === "C" || precedingChar === "c") {
+                            const candidate = precedingChar + numStr;
+                            allMatches.push(candidate);
+                        }
+                    }
+                }
+            }
+        }
 
-        apps.push({
-          link: null,
-          packageName: nearbyPackage,
-          appID: appID,
-          date: nearbyDate,
-          isValid: !!nearbyPackage
+        // 4. 最终结果处理与日志
+        const finalResults = Array.from(new Set(allMatches)); // 去重
+        console.log("[提取调试] === 最终提取结果 ===:", finalResults);
+        return finalResults;
+    }
+
+    // 匹配应用信息
+    private static matchAppInfo(
+        fullText: string,
+        links: HuaweiLinkInfo[],
+        appIDs: string[],
+        dates: string[],
+    ): AppInfo[] {
+        const apps: AppInfo[] = [];
+
+        // 处理每个链接
+        links.forEach((link) => {
+            // 在链接周围寻找AppID（50字符范围内）
+            const nearbyAppID = NaturalLanguageExtractor.findNearbyText(
+                fullText,
+                link.charOffset,
+                appIDs,
+                50,
+            );
+
+            // 在链接周围寻找日期（100字符范围内）
+            const nearbyDate = NaturalLanguageExtractor.findNearbyText(
+                fullText,
+                link.charOffset,
+                dates,
+                100,
+            );
+
+            apps.push({
+                link: link.url,
+                packageName: link.packageName,
+                appID: nearbyAppID,
+                date: nearbyDate,
+                isValid: !!(link.packageName && nearbyAppID),
+            });
         });
-      }
-    });
 
-    return apps;
-  }
+        // 为没有链接的AppID创建记录
+        const usedAppIDs = new Set(apps.map((app) => app.appID).filter(Boolean));
+        const unusedAppIDs = appIDs.filter((id) => !usedAppIDs.has(id));
 
-  // 在指定位置附近查找文本
-  private static findNearbyText(
-    fullText: string,
-    position: number,
-    candidates: string[],
-    radius: number
-  ): string | null {
-    const start = Math.max(0, position - radius);
-    const end = Math.min(fullText.length, position + radius);
-    const context = fullText.substring(start, end);
+        unusedAppIDs.forEach((appID) => {
+            const appIDIndex = fullText.indexOf(appID);
+            if (appIDIndex !== -1) {
+                // 尝试在AppID附近找包名（可能是文本形式）
+                const nearbyPackage = NaturalLanguageExtractor.findPackageNearby(
+                    fullText,
+                    appIDIndex,
+                );
+                const nearbyDate = NaturalLanguageExtractor.findNearbyText(
+                    fullText,
+                    appIDIndex,
+                    dates,
+                    100,
+                );
 
-    for (const candidate of candidates) {
-      if (context.includes(candidate)) {
-        return candidate;
-      }
+                apps.push({
+                    link: null,
+                    packageName: nearbyPackage,
+                    appID: appID,
+                    date: nearbyDate,
+                    isValid: !!nearbyPackage,
+                });
+            }
+        });
+
+        return apps;
     }
-    return null;
-  }
 
-  // 在位置附近查找包名（文本形式的）
-  private static findPackageNearby(fullText: string, position: number): string | null {
-    const radius = 30;
-    const start = Math.max(0, position - radius);
-    const end = Math.min(fullText.length, position + radius);
-    const context = fullText.substring(start, end);
+    // 在指定位置附近查找文本
+    private static findNearbyText(
+        fullText: string,
+        position: number,
+        candidates: string[],
+        radius: number,
+    ): string | null {
+        const start = Math.max(0, position - radius);
+        const end = Math.min(fullText.length, position + radius);
+        const context = fullText.substring(start, end);
 
-    // 包名通常的格式
-    const packagePattern = /[a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)+/;
-    const match = context.match(packagePattern);
+        for (const candidate of candidates) {
+            if (context.includes(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
 
-    return match ? match[0] : null;
-  }
+    // 在位置附近查找包名（文本形式的）
+    private static findPackageNearby(fullText: string, position: number): string | null {
+        const radius = 30;
+        const start = Math.max(0, position - radius);
+        const end = Math.min(fullText.length, position + radius);
+        const context = fullText.substring(start, end);
+
+        // 包名通常的格式
+        const packagePattern = /[a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)+/;
+        const match = context.match(packagePattern);
+
+        return match ? match[0] : null;
+    }
 }

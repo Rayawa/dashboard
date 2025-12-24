@@ -1,5 +1,5 @@
-import { common } from '@kit.AbilityKit';
-import getDiskStorageInstance, { DiskStorageInstance } from './DiskStorage';
+import { common } from "@kit.AbilityKit";
+import getDiskStorageInstance, { DiskStorageInstance } from "./DiskStorage";
 
 let instance: DiskStorageInstance | undefined = undefined;
 
@@ -23,7 +23,7 @@ export function getSettingsInstance(): DiskStorageInstance {
 export async function getDefaultSite(): Promise<boolean> {
     const settings = getSettingsInstance();
     // false = S站, true = T站
-    return await settings.get("defaultSiteT", true) as boolean;
+    return (await settings.get("defaultSiteT", true)) as boolean;
 }
 
 export async function setDefaultSite(isT: boolean): Promise<void> {
@@ -35,7 +35,7 @@ export async function setDefaultSite(isT: boolean): Promise<void> {
 export async function getVibrationEnabled(): Promise<boolean> {
     const settings = getSettingsInstance();
     // true = 开, false = 关
-    return await settings.get("vibrationON", true) as boolean;
+    return (await settings.get("vibrationON", true)) as boolean;
 }
 
 export async function setVibrationEnabled(enabled: boolean): Promise<void> {
@@ -47,7 +47,7 @@ export async function setVibrationEnabled(enabled: boolean): Promise<void> {
 export async function getHoldCheckEnabled(): Promise<boolean> {
     const settings = getSettingsInstance();
     // true = 开, false = 关
-    return await settings.get("holdCheckON", true) as boolean;
+    return (await settings.get("holdCheckON", true)) as boolean;
 }
 
 export async function setHoldCheckEnabled(enabled: boolean): Promise<void> {
@@ -59,7 +59,7 @@ export async function setHoldCheckEnabled(enabled: boolean): Promise<void> {
 export async function getButtonPosition(): Promise<boolean> {
     const settings = getSettingsInstance();
     // false = 左, true = 右
-    return await settings.get("buttonPositionRIGHT", false) as boolean;
+    return (await settings.get("buttonPositionRIGHT", false)) as boolean;
 }
 
 export async function setButtonPosition(isRight: boolean): Promise<void> {
@@ -70,7 +70,7 @@ export async function setButtonPosition(isRight: boolean): Promise<void> {
 // 主题设置（如果需要存储主题）
 export async function getThemeColor(): Promise<string> {
     const settings = getSettingsInstance();
-    return await settings.get("themeColor", "blue") as string;
+    return (await settings.get("themeColor", "blue")) as string;
 }
 
 export async function setThemeColor(color: string): Promise<void> {
@@ -85,7 +85,7 @@ export async function setTDev(val: boolean): Promise<void> {
 
 export async function getTDev(): Promise<boolean> {
     try {
-        return await getSettingsInstance().get("TSideDev", false) as boolean
+        return (await getSettingsInstance().get("TSideDev", false)) as boolean;
     } catch (e) {
         return false;
     }
@@ -117,7 +117,7 @@ export async function getAllSettings(): Promise<AppSettings> {
         vibrationON: await getVibrationEnabled(),
         holdCheckON: await getHoldCheckEnabled(),
         buttonPositionRIGHT: await getButtonPosition(),
-        themeColor: await getThemeColor()
+        themeColor: await getThemeColor(),
     };
 }
 
