@@ -1,4 +1,4 @@
-import URL from './url';
+import URL from "./url";
 
 export interface LinksPkgsAppIds {
     links: string[];
@@ -88,7 +88,7 @@ export function parseInputSplitLinksPkgsAndAppIds(inputStr: string): LinksPkgsAp
 
                     // 如果pathname以/开头，去掉开头的/
                     let content = matchedUrl.slice(matchedUrl.indexOf(pathname));
-                    if (content.startsWith('/')) {
+                    if (content.startsWith("/")) {
                         content = content.substring(1);
                     }
 

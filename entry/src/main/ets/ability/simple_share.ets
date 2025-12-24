@@ -1,10 +1,10 @@
 // shenjack
-import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
-import { systemShare } from '@kit.ShareKit';
-import { BusinessError } from '@kit.BasicServicesKit';
-import { getUsername, initialize as initializeUserStorage } from '../common/profile';
-import { parseInputSplitLinksPkgsAndAppIds } from '../common/utils';
-import { submit_app } from '../common/api';
+import { ShareExtensionAbility, UIExtensionContentSession, Want } from "@kit.AbilityKit";
+import { systemShare } from "@kit.ShareKit";
+import { BusinessError } from "@kit.BasicServicesKit";
+import { getUsername, initialize as initializeUserStorage } from "../common/profile";
+import { parseInputSplitLinksPkgsAndAppIds } from "../common/utils";
+import { submit_app } from "../common/api";
 
 /**
  * 这个 ability 是用来直接接受并投稿链接的
@@ -13,8 +13,9 @@ import { submit_app } from '../common/api';
  */
 export class ShareAbility extends ShareExtensionAbility {
     onSessionCreate(want: Want, session: UIExtensionContentSession): void {
-        initializeUserStorage(this.context)
-        systemShare.getSharedData(want)
+        initializeUserStorage(this.context);
+        systemShare
+            .getSharedData(want)
             .then((data: systemShare.SharedData) => {
                 data.getRecords().forEach((record: systemShare.SharedRecord) => {
                     if (record.content == undefined) {
@@ -25,9 +26,11 @@ export class ShareAbility extends ShareExtensionAbility {
                     const res = parseInputSplitLinksPkgsAndAppIds(content);
                     const pkgs = res.pkgs;
                     const app_ids = res.app_ids;
-                    const pkg: string | undefined = pkgs.length != 0 ? pkgs[pkgs.length - 1] : undefined;
-                    const app_id: string | undefined = app_ids.length != 0 ? app_ids[app_ids.length - 1] : undefined;
-                    console.info("content", res.links, res.pkgs, res.app_ids)
+                    const pkg: string | undefined =
+                        pkgs.length != 0 ? pkgs[pkgs.length - 1] : undefined;
+                    const app_id: string | undefined =
+                        app_ids.length != 0 ? app_ids[app_ids.length - 1] : undefined;
+                    console.info("content", res.links, res.pkgs, res.app_ids);
                     console.info(`dashboard_share_parse ${pkg || app_id}`);
                     console.info(`dashboard_share_raw ${content}`);
 
@@ -36,19 +39,21 @@ export class ShareAbility extends ShareExtensionAbility {
                             pkg_name: pkg,
                             app_id,
                             comment: {
-                                user: username
-                            }
+                                user: username,
+                            },
                         }).then(() => {
-                            console.log(`dashboard_shared ${content}`)
+                            console.log(`dashboard_shared ${content}`);
                             session.terminateSelfWithResult({
-                                resultCode: systemShare.ShareAbilityResultCode.CLOSE
-                            })
+                                resultCode: systemShare.ShareAbilityResultCode.CLOSE,
+                            });
                         });
-                    })
+                    });
                 });
             })
             .catch((error: BusinessError) => {
-                console.error(`Failed to getSharedData. Code: ${error.code}, message: ${error.message}`);
+                console.error(
+                    `Failed to getSharedData. Code: ${error.code}, message: ${error.message}`,
+                );
                 session.terminateSelf();
             });
     }
