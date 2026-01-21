@@ -5,52 +5,26 @@
         "name": "release",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "/Users/raychen/Documents/Code/HarmonyOS/DevEco-Studio/#certificate/Rayawa.p12",
-          "storePassword": "0000001ECBF5A3058500DEC1E0B0E5C233030935313E289B1B9F01DB1D82DD57F2B833B4D6F86CA16F88C4AA11B8",
+          "storeFile": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/Rayawa.p12",
+          "storePassword": "0000001E8B23E691F632A0B7E3464184AF3F4BF8009B543B902E3DF20A83F6785766D20E5252A3F38F2234562E17",
           "keyAlias": "Rayawa",
-          "keyPassword": "0000001ECFD27CB22569D042C49C807874FED46C5FA5C9329F053C3396DC55F654BA4F13A20175E9997B09901190",
+          "keyPassword": "0000001E60D7CED965C547CB68FFB34EE45798F501F69F9A53570D7BE2731BAD42B6D17E95648ECF68CCC5E67169",
           "signAlg": "SHA256withECDSA",
-          "profile": "/Users/raychen/Documents/Code/HarmonyOS/DevEco-Studio/#certificate/RayawaRelease.p7b",
-          "certpath": "/Users/raychen/Documents/Code/HarmonyOS/DevEco-Studio/#certificate/Rayawa.cer"
+          "profile": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/RayawaRelease.p7b",
+          "certpath": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/Rayawa.cer"
         }
       },
       {
         "name": "debug",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "/Users/raychen/.ohos/config/debug_dashboard_25f8DyWZP3oxkEReIDJyhmsfd12m1ARCNkSINtxcXFE=.cer",
+          "certpath": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B424AB7832C12D1C7E631678987414146E1E75075611283FB5B23D5C40FF9FC2429E3F7341B14F4",
-          "profile": "/Users/raychen/.ohos/config/debug_dashboard_25f8DyWZP3oxkEReIDJyhmsfd12m1ARCNkSINtxcXFE=.p7b",
+          "keyPassword": "0000001B6EA05B1100F6B0715EA1E9DBA353C85E87AA0EDED10130E10ED4F84F6070AA24D221C781027D9B",
+          "profile": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.p7b",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "/Users/raychen/.ohos/config/debug_dashboard_25f8DyWZP3oxkEReIDJyhmsfd12m1ARCNkSINtxcXFE=.p12",
-          "storePassword": "0000001B00AD23C8BE0959507B7BE727F37BEE606EA7F11C957918E0D7866B2BCFB9C934737D733B1D7E89"
-        }
-      },
-      {
-        "name": "shenjack",
-        "type": "HarmonyOS",
-        "material": {
-          "certpath": "C:\\Users\\36958\\.ohos\\config\\shenjack_dashboard_MfjAxnsZYyFsvaJHc3z9Vt2ocwt5zsdKY17o12v5q_k=.cer",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001B76775A4E3E4DC8DF3156093630A8E3A68099C216E29C877AF82F2C7CC3DE63ECFF7F4739827E6D",
-          "profile": "C:\\Users\\36958\\.ohos\\config\\shenjack_dashboard_MfjAxnsZYyFsvaJHc3z9Vt2ocwt5zsdKY17o12v5q_k=.p7b",
-          "signAlg": "SHA256withECDSA",
-          "storeFile": "C:\\Users\\36958\\.ohos\\config\\shenjack_dashboard_MfjAxnsZYyFsvaJHc3z9Vt2ocwt5zsdKY17o12v5q_k=.p12",
-          "storePassword": "0000001B17D8626971725AF2DE99A21699E3FF2D13233767286DDDE82603F6CBC47537A8B251151BEA0283"
-        }
-      },
-      {
-        "name": "shenjack5800x",
-        "type": "HarmonyOS",
-        "material": {
-          "certpath": "C:\\Users\\shenjack\\.ohos\\config\\shenjack5800x_hm_dashboard_uBwvObzgct-8KTUU4e8GDx2bP8GWoHWd2aB8jsBGwIg=.cer",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001BF3C63C1C4EF770BC6691B91E22D22FEA428494150CCE434ECD3A49836F299F9D91210DE41E370B",
-          "profile": "C:\\Users\\shenjack\\.ohos\\config\\shenjack5800x_hm_dashboard_uBwvObzgct-8KTUU4e8GDx2bP8GWoHWd2aB8jsBGwIg=.p7b",
-          "signAlg": "SHA256withECDSA",
-          "storeFile": "C:\\Users\\shenjack\\.ohos\\config\\shenjack5800x_hm_dashboard_uBwvObzgct-8KTUU4e8GDx2bP8GWoHWd2aB8jsBGwIg=.p12",
-          "storePassword": "0000001B976C4D0FCD3CCE0F8764C74F6FD97895CA4458DEB742460E50B02F507498D80105C220008C0EEA"
+          "storeFile": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.p12",
+          "storePassword": "0000001BC05B4F4429D809F1BAEEEBDA477D979BBD6C7FE31D9C8EA4A2CA57A431FCB2E531501E9886A839"
         }
       }
     ],
