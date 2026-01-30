@@ -15,7 +15,7 @@ import { URL } from "../../common/url";
 @Entry
 @Component
 struct web_log {
-    @StorageLink("vibrationON") vibrationON: boolean = false;
+    @StorageLink("vibrationON") vibrationON: boolean = true;
     @State url: string = new URL(changelog, TBaseURL).toString();
     private win: window.Window | null = null;
     scroller: Scroller = new Scroller();

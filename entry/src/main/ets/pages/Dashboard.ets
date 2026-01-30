@@ -41,7 +41,7 @@ struct Dashboard {
     @State showButton: boolean = true;
     @State showTutorial: boolean = false;
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
-    @StorageLink("vibrationON") vibrationON: boolean = false;
+    @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
     //切换版本方法
@@ -204,6 +204,7 @@ struct Dashboard {
     @State isLoading: boolean = false;
 
     //==========================页面生命周期部分==========================
+
     async aboutToAppear() {
         //获取屏幕右边位置
         const displayInfo = display.getDefaultDisplaySync();

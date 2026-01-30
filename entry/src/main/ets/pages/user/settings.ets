@@ -101,7 +101,7 @@ export struct settings {
 
     @State handlePopup: boolean = false;
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
-    @StorageLink("vibrationON") vibrationON: boolean = false;
+    @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
     @StorageLink("TSiteDev") siteTDev: boolean = false;
