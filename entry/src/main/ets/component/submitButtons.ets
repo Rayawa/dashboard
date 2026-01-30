@@ -250,7 +250,7 @@ export struct submitButtons {
         }
     }
 
-    @StorageLink("vibrationON") vibrationON: boolean = false;
+    @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
             vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {

@@ -27,7 +27,7 @@ export struct user {
         .combine(TransitionEffect.scale({ x: 0, y: 1 }))
         .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
 
-    @StorageLink("vibrationON") vibrationON: boolean = false;
+    @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
             vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {

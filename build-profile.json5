@@ -5,13 +5,13 @@
         "name": "release",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/Rayawa.p12",
-          "storePassword": "0000001E8B23E691F632A0B7E3464184AF3F4BF8009B543B902E3DF20A83F6785766D20E5252A3F38F2234562E17",
+          "certpath": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/Rayawa.cer",
           "keyAlias": "Rayawa",
-          "keyPassword": "0000001E60D7CED965C547CB68FFB34EE45798F501F69F9A53570D7BE2731BAD42B6D17E95648ECF68CCC5E67169",
-          "signAlg": "SHA256withECDSA",
+          "keyPassword": "0000001E349C0F3C9D3E28E12FAB8C5CB910833DD0A244A6BC9EF1DABB283D06827E97A26741683EDC11362E4E1B",
           "profile": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/RayawaRelease.p7b",
-          "certpath": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/Rayawa.cer"
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/Rayawa.p12",
+          "storePassword": "0000001EBB77E3F171ECC56786F352ED028757F9F47ED6FA13618AB0ED99F6012D0B1E831778F1259C3644ED079E"
         }
       },
       {
@@ -20,11 +20,11 @@
         "material": {
           "certpath": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B6EA05B1100F6B0715EA1E9DBA353C85E87AA0EDED10130E10ED4F84F6070AA24D221C781027D9B",
+          "keyPassword": "0000001BA08AE3A835F67D93A30B92767756D5AE4533C8F30DA0BF29221D846F17927188A185890D06B245",
           "profile": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.p12",
-          "storePassword": "0000001BC05B4F4429D809F1BAEEEBDA477D979BBD6C7FE31D9C8EA4A2CA57A431FCB2E531501E9886A839"
+          "storePassword": "0000001B1142BC32D3ABB55DC2F5B9F55F47A273144B5DCF8F67A65F188FEF3C09546EEF8F838CFA46D128"
         }
       }
     ],
