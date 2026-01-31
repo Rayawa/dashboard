@@ -1,4 +1,5 @@
 import { webview } from "@kit.ArkWeb";
+import { userStatus } from '@kit.MultimodalAwarenessKit';
 import {
     HdsNavigation,
     HdsNavigationTitleMode,
@@ -206,6 +207,16 @@ struct Dashboard {
     //==========================页面生命周期部分==========================
 
     async aboutToAppear() {
+        let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
+            console.info('callback succeeded, ageGroup:' + data.ageGroup + ", confidence:" + data.confidence);
+        };
+        try {
+            userStatus.on('userAgeGroupDetected', callback);
+            console.info("on succeeded");
+        } catch (err) {
+            let error = err as BusinessError;
+            console.error("Failed on and err code is " + error.code);
+        }
         //获取屏幕右边位置
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
