@@ -21,9 +21,9 @@ interface UpdateLog {
 struct app_log {
     private updateLogs: UpdateLog[] = [
         {
-            version: "V1.1.0-rc.2",
+            version: "V1.1.0",
             date: "2026-2-5",
-            type: "rc",
+            type: "release",
             items: [
                // "为主界面按钮添加拖动动画，并修复了动画弹出屏幕的问题",
                 "新增四个设置项：包括默认站点、振动开关、智感握姿开关和默认按钮位置",
