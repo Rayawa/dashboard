@@ -206,43 +206,43 @@ export struct settings {
                             .margin({ top: 20, bottom: 20 })
                             .color($r("app.color.border"))
                         Column() {
-                            Row() {
-                                Row({ space: 12 }) {
-                                    Image($r("app.media.default"))
-                                        .height(24)
-                                        .width(24)
-                                        .objectFit(ImageFit.Contain)
-                                    Text("默认站点").fontSize(16)
-                                }
-                                //.fontColor('#888')
-                                Row({ space: 8 }) {
-                                    Text("S站")
-                                        .fontSize(14)
-                                        .fontColor("#888")
-                                        .width(24)
-                                        .textAlign(TextAlign.Center)
-                                    Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
-                                        .selectedColor($r("app.color.diff_content"))
-                                        .switchStyle({ unselectedColor: "#888" })
-                                        .onChange(async (isOn: boolean) => {
-                                            await this.saveDefaultSite(isOn);
-                                            this.triggerVibration();
-                                        })
-                                    Text("T站")
-                                        .fontSize(14)
-                                        .fontColor("#888")
-                                        .width(24)
-                                        .textAlign(TextAlign.Center)
-                                }
-                            }
-                            .height(56)
-                            .width("100%")
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
-                            Divider()
-                                .color($r("app.color.border"))
-                                .strokeWidth(0.5)
-                                .margin({ left: 16, right: 16 })
+                            // Row() {
+                            //     Row({ space: 12 }) {
+                            //         Image($r("app.media.default"))
+                            //             .height(24)
+                            //             .width(24)
+                            //             .objectFit(ImageFit.Contain)
+                            //         Text("默认站点").fontSize(16)
+                            //     }
+                            //     //.fontColor('#888')
+                            //     Row({ space: 8 }) {
+                            //         Text("S站")
+                            //             .fontSize(14)
+                            //             .fontColor("#888")
+                            //             .width(24)
+                            //             .textAlign(TextAlign.Center)
+                            //         Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
+                            //             .selectedColor($r("app.color.diff_content"))
+                            //             .switchStyle({ unselectedColor: "#888" })
+                            //             .onChange(async (isOn: boolean) => {
+                            //                 await this.saveDefaultSite(isOn);
+                            //                 this.triggerVibration();
+                            //             })
+                            //         Text("T站")
+                            //             .fontSize(14)
+                            //             .fontColor("#888")
+                            //             .width(24)
+                            //             .textAlign(TextAlign.Center)
+                            //     }
+                            // }
+                            // .height(56)
+                            // .width("100%")
+                            // .justifyContent(FlexAlign.SpaceBetween)
+                            // .padding({ left: 16, right: 16 })
+                            // Divider()
+                            //     .color($r("app.color.border"))
+                            //     .strokeWidth(0.5)
+                            //     .margin({ left: 16, right: 16 })
                             Row() {
                                 Row({ space: 12 }) {
                                     Image($r("app.media.vibrate"))
@@ -474,7 +474,7 @@ export struct settings {
                     }
                     .width("100%")
                     .alignItems(HorizontalAlign.Center)
-                    .margin({ top: 60, bottom: 20 })
+                    .margin({ top: 40, bottom: 20 })
                 }
                 .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                 .width("100%")
