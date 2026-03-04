@@ -21,6 +21,15 @@ interface UpdateLog {
 struct app_log {
     private updateLogs: UpdateLog[] = [
         {
+            version: "V1.1.1",
+            date: "2026-3-4",
+            type: "release",
+            items: [
+                "合并T站与S站页面",
+                "更改我的页面结构"
+            ],
+        },
+        {
             version: "V1.1.0",
             date: "2026-2-5",
             type: "release",

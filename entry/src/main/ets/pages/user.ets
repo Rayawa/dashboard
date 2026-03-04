@@ -153,24 +153,24 @@ export struct user {
             Stack() {
                 Scroll() {
                     Column() {
-                        Column() {
-                            Image($r("app.media.app_icon"))
-                                .height(100)
-                                .width(100)
-                                .borderRadius($r("sys.float.corner_radius_level6"))
-                            Text("应用看板")
-                                .fontWeight(800)
-                                .fontSize(30)
-                                .margin({ top: 20 })
-                                .fontColor($r("app.color.diff_content"))
-                            Text("Gallery Dashboard")
-                                .fontWeight(600)
-                                .fontSize(20)
-                                .margin({ top: 10 })
-                        }
-                        Divider()
-                            .margin({ top: 20, bottom: 20 })
-                            .color($r("app.color.border"))
+                        // Column() {
+                        //     Image($r("app.media.app_icon"))
+                        //         .height(100)
+                        //         .width(100)
+                        //         .borderRadius($r("sys.float.corner_radius_level6"))
+                        //     Text("应用看板")
+                        //         .fontWeight(800)
+                        //         .fontSize(30)
+                        //         .margin({ top: 20 })
+                        //         .fontColor($r("app.color.diff_content"))
+                        //     Text("Gallery Dashboard")
+                        //         .fontWeight(600)
+                        //         .fontSize(20)
+                        //         .margin({ top: 10 })
+                        // }
+                        // Divider()
+                        //     .margin({ top: 20, bottom: 20 })
+                        //     .color($r("app.color.border"))
                         Column() {
                             Row() {
                                 Row() {
@@ -443,6 +443,29 @@ export struct user {
                                 .color($r("app.color.border"))
                                 .strokeWidth(0.5)
                                 .margin({ left: 16, right: 16 })
+                            Row() {
+                                Row() {
+                                    Image($r("app.media.settings"))
+                                        .height(24)
+                                        .width(24)
+                                        .objectFit(ImageFit.Contain)
+                                    Text("设置")
+                                        .fontSize(16)
+                                        .margin({ left: 12 })
+                                }
+                                Image($r("app.media.right"))
+                                    .height(16)
+                                    .width(16)
+                                    .objectFit(ImageFit.Contain)
+                            }
+                            .onClick(() => {
+                                router.pushUrl({ url: "pages/user/settings" });
+                                this.triggerVibration();
+                            })
+                            .height(56)
+                            .width("100%")
+                            .justifyContent(FlexAlign.SpaceBetween)
+                            .padding({ left: 16, right: 16 })
                         }
                         // Row() {
                         //   Row() {
@@ -481,27 +504,27 @@ export struct user {
                         Divider()
                             .margin({ top: 20, bottom: 20 })
                             .color($r("app.color.border"))
-                        Text(`Version ${APP_VERSION}`)
-                            .fontColor("#888")
-                            .fontSize(12)
-                            .margin(5)
-                        Text("本应用备案域名：rayawa.top")
-                            .fontSize(12)
-                            .fontColor("#888")
-                            .margin(5)
-                        Column() {
-                            Text("京ICP备2025153453号")
-                                .fontSize(12)
-                                .fontColor($r("app.color.diff_content"))
-                                .onClick(() => {
-                                    this.triggerVibration();
-                                    this.openLink();
-                                })
-                        }.margin(5)
+                        // Text(`Version ${APP_VERSION}`)
+                        //     .fontColor("#888")
+                        //     .fontSize(12)
+                        //     .margin(5)
+                        // Text("本应用备案域名：rayawa.top")
+                        //     .fontSize(12)
+                        //     .fontColor("#888")
+                        //     .margin(5)
+                        // Column() {
+                        //     Text("京ICP备2025153453号")
+                        //         .fontSize(12)
+                        //         .fontColor($r("app.color.diff_content"))
+                        //         .onClick(() => {
+                        //             this.triggerVibration();
+                        //             this.openLink();
+                        //         })
+                        // }.margin(5)
                     }
                     .width("100%")
                     .alignItems(HorizontalAlign.Center)
-                    .margin({ top: 60, bottom: 20 })
+                    .margin({ top: 30, bottom: 20 })
                 }
                 .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                 .width("100%")
@@ -677,21 +700,21 @@ export struct user {
                 title: {
                     mainTitle: "我的",
                 },
-                menu: {
-                    value: [
-                        {
-                            content: {
-                                label: "settings",
-                                icon: $r("app.media.settings"),
-                                isEnabled: true,
-                                action: () => {
-                                    this.triggerVibration();
-                                    router.pushUrl({ url: "pages/user/settings" });
-                                },
-                            },
-                        },
-                    ],
-                },
+                // menu: {
+                //     value: [
+                //         {
+                //             content: {
+                //                 label: "settings",
+                //                 icon: $r("app.media.settings"),
+                //                 isEnabled: true,
+                //                 action: () => {
+                //                     this.triggerVibration();
+                //                     router.pushUrl({ url: "pages/user/settings" });
+                //                 },
+                //             },
+                //         },
+                //     ],
+                // },
                 backIcon: {
                     action: () => {
                         this.triggerVibration();

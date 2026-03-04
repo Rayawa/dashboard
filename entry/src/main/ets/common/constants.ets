@@ -7,7 +7,8 @@ export const SBaseURL = new URL("http://shenjack.top:10003/");
 
 export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
 
-export const TBaseURL = new URL("https://hmos.txit.top/");
+// export const TBaseURL = new URL("https://hmos.txit.top/");
+export const TBaseURL = new URL("http://shenjack.top:10003/");
 
 export const TBaseURLDev = new URL("http://192.168.2.9:50000/");
 
@@ -19,7 +20,7 @@ export const submitURL: string = "submit";
 
 export const changelog: string = "changelog";
 
-export const APP_VERSION: string = "1.1.0";
+export const APP_VERSION: string = "1.1.1";
 
 /** 太长了点
  */

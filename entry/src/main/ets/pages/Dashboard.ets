@@ -756,7 +756,7 @@ struct Dashboard {
             content: {
                 title: {
                     mainTitle:
-                        this.siteMode == SiteMode.SSite ? "应用看板 - S站" : "应用看板 - T站",
+                        this.siteMode == SiteMode.SSite ? "应用看板 - S站" : "应用看板 - S站",
                 },
                 menu: {
                     value: [
@@ -771,17 +771,17 @@ struct Dashboard {
                                 },
                             },
                         },
-                        {
-                            content: {
-                                label: "switch",
-                                icon: $r("app.media.switch"),
-                                isEnabled: true,
-                                action: async () => {
-                                    this.triggerVibration();
-                                    await this.switchWebVersion();
-                                },
-                            },
-                        },
+                        // {
+                        //     content: {
+                        //         label: "switch",
+                        //         icon: $r("app.media.switch"),
+                        //         isEnabled: true,
+                        //         action: async () => {
+                        //             this.triggerVibration();
+                        //             await this.switchWebVersion();
+                        //         },
+                        //     },
+                        // },
                         {
                             content: {
                                 label: "user",
