@@ -32,7 +32,15 @@ import { tutorial } from "../component/tutorial";
 import URL from "../common/url";
 import componentUtils from "@ohos.arkui.componentUtils";
 import { SiteMode } from "../common/types";
-import { getTDev } from "../common/SettingsStorage";
+import {
+    getButtonPosition,
+    getDefaultSite,
+    getHoldCheckEnabled,
+    getThemeColor,
+    getVibrationEnabled,
+    initializeSettings,
+    getTDev,
+} from "../common/SettingsStorage";
 
 @Entry
 @Component
@@ -45,6 +53,8 @@ struct Dashboard {
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
+    @State isTDev: boolean = false;
+    @State themeColor: string = "blue";
     //切换版本方法
     @State siteMode: SiteMode = SiteMode.SSite;
 
@@ -177,6 +187,19 @@ struct Dashboard {
             console.error("Index", "检查首选项失败: %{public}s", JSON.stringify(error));
         }
     }
+    // 加载所有设置
+    private async loadSettings() {
+        try {
+            this.defaultSiteT = await getDefaultSite();
+            this.vibrationON = await getVibrationEnabled();
+            this.holdCheckON = await getHoldCheckEnabled();
+            this.buttonPositionRIGHT = await getButtonPosition();
+            this.themeColor = await getThemeColor();
+            // this.siteTDev = await getTDev();
+        } catch (error) {
+            console.error("加载设置失败:", error);
+        }
+    }
 
     //用户名初始化(防止小天才模式）
     @StorageLink("userName") userName: string = "";
@@ -217,6 +240,7 @@ struct Dashboard {
             let error = err as BusinessError;
             console.error("Failed on and err code is " + error.code);
         }
+        this.loadSettings();
         //获取屏幕右边位置
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);

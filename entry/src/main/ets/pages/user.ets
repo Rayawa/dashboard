@@ -700,21 +700,21 @@ export struct user {
                 title: {
                     mainTitle: "我的",
                 },
-                // menu: {
-                //     value: [
-                //         {
-                //             content: {
-                //                 label: "settings",
-                //                 icon: $r("app.media.settings"),
-                //                 isEnabled: true,
-                //                 action: () => {
-                //                     this.triggerVibration();
-                //                     router.pushUrl({ url: "pages/user/settings" });
-                //                 },
-                //             },
-                //         },
-                //     ],
-                // },
+                menu: {
+                    value: [
+                        {
+                            content: {
+                                label: "settings",
+                                icon: $r("app.media.settings"),
+                                isEnabled: true,
+                                action: () => {
+                                    this.triggerVibration();
+                                    router.pushUrl({ url: "pages/user/settings" });
+                                },
+                            },
+                        },
+                    ],
+                },
                 backIcon: {
                     action: () => {
                         this.triggerVibration();
