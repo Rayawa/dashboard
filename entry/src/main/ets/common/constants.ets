@@ -19,7 +19,7 @@ export const submitURL: string = "submit";
 
 export const changelog: string = "changelog";
 
-export const APP_VERSION: string = "1.1.1";
+export const APP_VERSION: string = "1.1.2";
 
 /** 太长了点
  */

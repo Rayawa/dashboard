@@ -48,6 +48,7 @@ struct Dashboard {
     //==========================状态声明部分==========================
     //控制相关
     @State showButton: boolean = true;
+    @State buttonOnPageShow: boolean = false;
     @State showTutorial: boolean = false;
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
@@ -112,6 +113,12 @@ struct Dashboard {
     )
         .combine(TransitionEffect.scale({ x: 0, y: 1 }))
         .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
+    private effectOnPageShow: TransitionEffect = TransitionEffect.asymmetric(
+        TransitionEffect.OPACITY
+            .combine(TransitionEffect.scale({ x: 0, y: 0 }))
+            .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),
+        TransitionEffect.IDENTITY
+    );
 
     private triggerVibration(): void {
         if (this.vibrationON) {
@@ -152,8 +159,7 @@ struct Dashboard {
     }
 
     //entry
-    @State url: string = new URL(dashboardURL, SBaseURL).toString();
-    private win: window.Window | null = null;
+    @State url: string = "";
     private IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
 
     private async checkFirstLaunch(): Promise<void> {
@@ -196,6 +202,17 @@ struct Dashboard {
             this.buttonPositionRIGHT = await getButtonPosition();
             this.themeColor = await getThemeColor();
             // this.siteTDev = await getTDev();
+            if(this.buttonPositionRIGHT){
+                this.buttonShowX = this.Vp - 45 - 10;
+                this.buttonHideX = this.Vp + 10;
+            } else {
+                this.buttonShowX = 10;
+                this.buttonHideX = -45 - 10;
+            }
+            this.siteMode = this.defaultSiteT ? SiteMode.TSite : SiteMode.SSite;
+            const targetUrlObject = await this.getWebUrl();
+            this.url = targetUrlObject.toString();
+            this.web_controller.loadUrl(this.url);
         } catch (error) {
             console.error("加载设置失败:", error);
         }
@@ -230,6 +247,7 @@ struct Dashboard {
     //==========================页面生命周期部分==========================
 
     async aboutToAppear() {
+        this.buttonOnPageShow = false;
         let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
             console.info('callback succeeded, ageGroup:' + data.ageGroup + ", confidence:" + data.confidence);
         };
@@ -240,12 +258,12 @@ struct Dashboard {
             let error = err as BusinessError;
             console.error("Failed on and err code is " + error.code);
         }
-        initializeSettings();
-        this.loadSettings();
         //获取屏幕右边位置
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
         this.Vp = screenWidthVp;
+        initializeSettings();
+        await this.loadSettings();
         //UA
         try {
             webview.WebviewController.initializeWebEngine();
@@ -259,13 +277,6 @@ struct Dashboard {
         }
         //用户名
         this.loadUserName();
-        this.siteMode = this.defaultSiteT ? SiteMode.TSite : SiteMode.SSite;
-        //默认站点
-        if (this.defaultSiteT) {
-            this.url = new URL(dashboardURL, TBaseURL).toString();
-        } else {
-            this.url = new URL(dashboardURL, SBaseURL).toString();
-        }
         //握持监听
         try {
             motion.on("holdingHandChanged", this.holdingHandCallback);
@@ -290,32 +301,23 @@ struct Dashboard {
     }
 
     async onPageShow(): Promise<void> {
-        if (this.defaultSiteT) {
-            this.url = new URL(dashboardURL, TBaseURL).toString();
-        } else {
-            this.url = new URL(dashboardURL, SBaseURL).toString();
-        }
-        if (this.buttonPositionRIGHT) {
+        this.buttonOnPageShow = false;
+        // const rect = componentUtils.getRectangleById("Dashboard");
+        // const vpHeight = px2vp(rect.size.height);
+        // console.log(`px高度: ${rect.size.height}`);
+        // console.log(`vp高度: ${vpHeight}`);
+        this.checkFirstLaunch();
+        this.buttonPositionRIGHT = await getButtonPosition();
+        if(this.buttonPositionRIGHT){
             this.buttonShowX = this.Vp - 45 - 10;
             this.buttonHideX = this.Vp + 10;
         } else {
             this.buttonShowX = 10;
             this.buttonHideX = -45 - 10;
         }
-        await this.isLoading;
-        const rect = componentUtils.getRectangleById("Dashboard");
-        const vpHeight = px2vp(rect.size.height);
-        console.log(`px高度: ${rect.size.height}`);
-        console.log(`vp高度: ${vpHeight}`);
-        //教程页面检测
-        this.checkFirstLaunch();
-        //状态栏颜色
-        this.win = await window.getLastWindow(getContext());
-        const isDark = this.mode === WebDarkMode.On;
-        this.win.setWindowSystemBarProperties({
-            statusBarColor: "#00000000",
-            statusBarContentColor: isDark ? "#FFFFFF" : "#000000",
-        });
+        setTimeout(() => {
+            this.buttonOnPageShow = true;
+        }, 500);
     }
 
     aboutToDisappear() {
@@ -513,6 +515,9 @@ struct Dashboard {
                         })
                             .id("Dashboard")
                             .onControllerAttached(() => {
+                                if (this.url !== "") {
+                                    this.web_controller.loadUrl(this.url);
+                                }
                                 try {
                                     this.web_controller.setCustomUserAgent(customUserAgent);
                                 } catch {}
@@ -541,125 +546,131 @@ struct Dashboard {
                 .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
                 // ==========================悬浮按钮==========================
-                Column({ space: 10 }) {
-                    Button() {
-                        Image($r("app.media.arrow_up"))
-                            .width(24)
-                            .height(24)
-                    }
-                    .onClick(() => {
-                        this.scroller.scrollTo({
-                            xOffset: 0,
-                            yOffset: 0,
-                            animation: { duration: 300, curve: Curve.Ease },
-                        });
-                        this.triggerVibration();
-                        prompt.showToast({
-                            message: "回到顶部",
-                            duration: 500,
-                        });
-                    })
-                    .type(ButtonType.Circle)
-                    .backgroundBlurStyle(BlurStyle.Thin)
-                    .backgroundColor($r("app.color.background"))
-                    .width(45)
-                    .height(45)
-                    .shadow({
-                        radius: 6,
-                        color: Color.Gray,
-                        offsetX: 2,
-                        offsetY: 4,
-                    })
-                    Button() {
-                        Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
-                            .width(24)
-                            .height(24)
-                    }
-                    .onClick(() => {
-                        if (this.isLoading) {
-                            this.web_controller.stop();
-                            this.isLoading = false;
-                            this.triggerVibration();
-                            prompt.showToast({
-                                message: "已停止加载",
-                                duration: 1000,
-                            });
-                        } else {
-                            this.web_controller.refresh();
-                            try {
-                                Promise.all([
-                                    this.web_controller.removeCache(true),
-                                    this.web_controller.removeCache(false),
-                                ]);
-                            } catch (error) {
-                                // man! what can I say
-                                console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
-                            }
-                            this.isLoading = true;
-                            this.triggerVibration();
-                            prompt.showToast({
-                                message: "刷新中...",
-                                duration: 1000,
-                            });
-                            setTimeout(() => {
-                                if (this.isLoading) {
-                                    this.isLoading = false;
-                                    prompt.showToast({
-                                        message: "加载超时！",
-                                        duration: 1000,
-                                    });
-                                }
-                            }, 3000);
+                if(this.buttonOnPageShow){
+                    Column({ space: 10 }) {
+                        Button() {
+                            Image($r("app.media.arrow_up"))
+                                .width(24)
+                                .height(24)
                         }
-                    })
-                    .type(ButtonType.Circle)
-                    .backgroundBlurStyle(BlurStyle.Thin)
-                    .backgroundColor($r("app.color.background"))
-                    .width(45)
-                    .height(45)
-                    .shadow({
-                        radius: 4,
-                        color: Color.Gray,
-                        offsetX: 2,
-                        offsetY: 4,
-                    })
-                }
-                .position({
-                    x: this.showButton ? this.buttonShowX : this.buttonHideX,
-                    y: this.buttonY,
-                })
-                .animation(
-                    this.showButtonAnimation
-                        ? { curve: curves.springMotion(0.8, 0.8), duration: 400 }
-                        : { duration: 0 },
-                )
-                .gesture(
-                    SwipeGesture({ direction: SwipeDirection.Horizontal }).onAction(
-                        (move: GestureEvent | undefined) => {
-                            if (move) {
-                                this.showButton = false;
+                        .onClick(() => {
+                            this.scroller.scrollTo({
+                                xOffset: 0,
+                                yOffset: 0,
+                                animation: { duration: 300, curve: Curve.Ease },
+                            });
+                            this.triggerVibration();
+                            prompt.showToast({
+                                message: "回到顶部",
+                                duration: 500,
+                            });
+                        })
+                        .type(ButtonType.Circle)
+                        .backgroundBlurStyle(BlurStyle.Thin)
+                        .backgroundColor($r("app.color.background"))
+                        .width(45)
+                        .height(45)
+                        .shadow({
+                            radius: 6,
+                            color: Color.Gray,
+                            offsetX: 2,
+                            offsetY: 4,
+                        })
+                        Button() {
+                            Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
+                                .width(24)
+                                .height(24)
+                        }
+                        .onClick(() => {
+                            if (this.isLoading) {
+                                this.web_controller.stop();
+                                this.isLoading = false;
+                                this.triggerVibration();
+                                prompt.showToast({
+                                    message: "已停止加载",
+                                    duration: 1000,
+                                });
+                            } else {
+                                this.web_controller.refresh();
+                                try {
+                                    Promise.all([
+                                        this.web_controller.removeCache(true),
+                                        this.web_controller.removeCache(false),
+                                    ]);
+                                } catch (error) {
+                                    // man! what can I say
+                                    console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
+                                }
+                                this.isLoading = true;
+                                this.triggerVibration();
+                                prompt.showToast({
+                                    message: "刷新中...",
+                                    duration: 1000,
+                                });
                                 setTimeout(() => {
-                                    this.showButtonAnimation = false;
-                                }, 300);
+                                    if (this.isLoading) {
+                                        this.isLoading = false;
+                                        prompt.showToast({
+                                            message: "加载超时！",
+                                            duration: 1000,
+                                        });
+                                    }
+                                }, 3000);
                             }
-                        },
-                    ),
-                )
-                .gesture(
-                    PanGesture({ direction: PanDirection.Vertical }).onActionEnd(
-                        (event: GestureEvent) => {
-                            this.buttonY = this.buttonY + event.offsetY;
-                            if (this.buttonY > 660) {
-                                this.buttonY = 660;
-                                prompt.showToast({ message: "不能再往下啦", duration: 500 });
-                            } else if (this.buttonY < 70) {
-                                this.buttonY = 70;
-                                prompt.showToast({ message: "不能再往上啦", duration: 500 });
-                            }
-                            console.log("平移中，垂直偏移量 y 为:", this.buttonY);
-                        },
-                    ),
-                )
+                        })
+                        .type(ButtonType.Circle)
+                        .backgroundBlurStyle(BlurStyle.Thin)
+                        .backgroundColor($r("app.color.background"))
+                        .width(45)
+                        .height(45)
+                        .shadow({
+                            radius: 4,
+                            color: Color.Gray,
+                            offsetX: 2,
+                            offsetY: 4,
+                        })
+                    }
+                    .position({
+                        x: this.showButton ? this.buttonShowX : this.buttonHideX,
+                        y: this.buttonY,
+                    })
+                    .transition(this.effectOnPageShow)
+                    .animation(
+                        this.showButtonAnimation
+                            ? { curve: curves.springMotion(0.8, 0.8), duration: 400 }
+                            : { duration: 0 },
+                    )
+                    .gesture(
+                        SwipeGesture({ direction: SwipeDirection.Horizontal }).onAction(
+                            (move: GestureEvent | undefined) => {
+                                if (move) {
+                                    this.showButton = false;
+                                    setTimeout(() => {
+                                        this.showButtonAnimation = false;
+                                    }, 300);
+                                }
+                            },
+                        ),
+                    )
+                    .gesture(
+                        PanGesture({ direction: PanDirection.Vertical }).onActionEnd(
+                            (event: GestureEvent) => {
+                                this.buttonY = this.buttonY + event.offsetY;
+                                if (this.buttonY > 660) {
+                                    this.buttonY = 660;
+                                    prompt.showToast({ message: "不能再往下啦", duration: 500 });
+                                } else if (this.buttonY < 70) {
+                                    this.buttonY = 70;
+                                    prompt.showToast({ message: "不能再往上啦", duration: 500 });
+                                }
+                                console.log("平移中，垂直偏移量 y 为:", this.buttonY);
+                            },
+                        ),
+                    )
+                }
+
+
+
 
                 if (!this.showButton) {
                     Column()
@@ -781,7 +792,7 @@ struct Dashboard {
             content: {
                 title: {
                     mainTitle:
-                        this.siteMode == SiteMode.SSite ? "应用看板 - S站" : "应用看板 - T站",
+                        this.siteMode == SiteMode.TSite ? "应用看板 - T站" : "应用看板 - S站",
                 },
                 menu: {
                     value: [
