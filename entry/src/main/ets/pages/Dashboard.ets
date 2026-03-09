@@ -50,6 +50,7 @@ struct Dashboard {
     @State showButton: boolean = true;
     @State buttonOnPageShow: boolean = false;
     @State showTutorial: boolean = false;
+    @State startY: number = 0;
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
@@ -653,19 +654,29 @@ struct Dashboard {
                         ),
                     )
                     .gesture(
-                        PanGesture({ direction: PanDirection.Vertical }).onActionEnd(
-                            (event: GestureEvent) => {
-                                this.buttonY = this.buttonY + event.offsetY;
-                                if (this.buttonY > 660) {
-                                    this.buttonY = 660;
+                        PanGesture({ direction: PanDirection.Vertical })
+                            .onActionStart((event: GestureEvent) => {
+                                this.showButtonAnimation = false;
+                                this.startY = this.buttonY;
+                            })
+                            .onActionUpdate((event: GestureEvent) => {
+                                let nextY = this.startY + event.offsetY;
+                                if (nextY > 660) {
+                                    nextY = 660;
+                                } else if (nextY < 70) {
+                                    nextY = 70;
+                                }
+                                this.buttonY = nextY;
+                            })
+                            .onActionEnd((event: GestureEvent) => {
+                                this.showButtonAnimation = true;
+                                if (this.buttonY >= 660) {
                                     prompt.showToast({ message: "不能再往下啦", duration: 500 });
-                                } else if (this.buttonY < 70) {
-                                    this.buttonY = 70;
+                                } else if (this.buttonY <= 70) {
                                     prompt.showToast({ message: "不能再往上啦", duration: 500 });
                                 }
-                                console.log("平移中，垂直偏移量 y 为:", this.buttonY);
-                            },
-                        ),
+                                // 这里可以添加持久化存储逻辑，保存用户手动调整后的 buttonY
+                            }),
                     )
                 }
 
