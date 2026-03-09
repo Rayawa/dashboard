@@ -9,6 +9,12 @@ export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
 
 export const TBaseURL = new URL("https://hmos.txit.top/");
 
+export const RBaseURL = new URL("https://appgallery.info/index.html");
+
+export const OBaseURL = new URL("https://next.betahub.tech");
+
+export const NBaseURL = new URL("https://next.vcck.cn/#/apps");
+
 export const TBaseURLDev = new URL("http://192.168.2.9:50000/");
 
 export const TAPIBaseURL = new URL("/api/", TBaseURL);
