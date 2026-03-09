@@ -26,6 +26,7 @@ struct app_log {
             type: "release",
             items: [
                 "修复设置不生效的bug",
+                "为主界面按钮添加光感",
                 "为主界面按钮添加弹出动画以适应设置",
             ],
         },
