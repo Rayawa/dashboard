@@ -223,7 +223,9 @@ export struct settings {
                                         .textAlign(TextAlign.Center)
                                     Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
                                         .selectedColor($r("app.color.diff_content"))
-                                        .switchStyle({ unselectedColor: "#888" })
+                                        .switchStyle({
+                                            unselectedColor: $r("app.color.diff_content"),
+                                        })
                                         .onChange(async (isOn: boolean) => {
                                             await this.saveDefaultSite(isOn);
                                             prompt.showToast({

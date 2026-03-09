@@ -451,9 +451,9 @@ export struct user {
                             offsetY: 2,
                         })
                         .width("90%")
-                        Divider()
-                            .margin({ top: 20, bottom: 20 })
-                            .color($r("app.color.border"))
+                        // Divider()
+                        //     .margin({ top: 20, bottom: 20 })
+                        //     .color($r("app.color.border"))
                         // Text(`Version ${APP_VERSION}`)
                         //     .fontColor("#888")
                         //     .fontSize(12)

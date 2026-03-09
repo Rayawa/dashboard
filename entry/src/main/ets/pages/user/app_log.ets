@@ -21,11 +21,19 @@ interface UpdateLog {
 struct app_log {
     private updateLogs: UpdateLog[] = [
         {
+            version: "V1.1.2",
+            date: "2026-3-9",
+            type: "release",
+            items: [
+                "修复设置不生效的bug",
+                "为主界面按钮添加弹出动画以适应设置",
+            ],
+        },
+        {
             version: "V1.1.1",
             date: "2026-3-4",
             type: "release",
             items: [
-                "修复设置不生效的bug",
                 "更改我的页面结构"
             ],
         },
