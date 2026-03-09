@@ -25,7 +25,7 @@ struct app_log {
             date: "2026-3-4",
             type: "release",
             items: [
-                "合并T站与S站页面",
+                "修复设置不生效的bug",
                 "更改我的页面结构"
             ],
         },
