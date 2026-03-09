@@ -32,6 +32,7 @@ import { tutorial } from "../component/tutorial";
 import URL from "../common/url";
 import componentUtils from "@ohos.arkui.componentUtils";
 import { SiteMode } from "../common/types";
+import { hdsEffect } from '@kit.UIDesignKit';
 import {
     getButtonPosition,
     getDefaultSite,
@@ -51,10 +52,11 @@ struct Dashboard {
     @State buttonOnPageShow: boolean = false;
     @State showTutorial: boolean = false;
     @State startY: number = 0;
-    @State isPressed: boolean = false;
+    @State isPressed1: boolean = false;
+    @State isPressed2: boolean = false;
     @State touchX: number = 0;
     @State touchY: number = 0;
-    @State lightRadius: number = 0;
+    @State isTouching: boolean = false;
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
@@ -559,19 +561,14 @@ struct Dashboard {
                                 .height(24)
                         }
                         .onTouch((event: TouchEvent) => {
-                            if (event.type === TouchType.Down) {
-                                this.isPressed = true;
-                                this.lightRadius = 120; // 扩散光晕
-                                // 获取手指相对于按钮容器的坐标
-                                this.touchX = event.touches[0].x;
-                                this.touchY = event.touches[0].y;
-                            } else if (event.type === TouchType.Move) {
-                                // 实时追踪手指位置，光随指动
-                                this.touchX = event.touches[0].x;
-                                this.touchY = event.touches[0].y;
-                            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                this.isPressed = false;
-                                this.lightRadius = 0; // 收起光晕
+                            if (event && event.touches[0]) {
+                                if (event.type === TouchType.Down || event.type === TouchType.Move) {
+                                    this.isPressed1 = true;
+                                    this.touchX = event.touches[0].x;
+                                    this.touchY = event.touches[0].y;
+                                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                    this.isPressed1 = false;
+                                }
                             }
                         })
                         .onClick(() => {
@@ -587,40 +584,43 @@ struct Dashboard {
                             });
                         })
                         .type(ButtonType.Circle)
-                        .width(45)
-                        .height(45)
+                        .width(45).height(45)
                         .backgroundColor('rgba(255, 255, 255, 0.2)')
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, {
-                            colorMode: ThemeColorMode.SYSTEM,
-                            adaptiveColor: AdaptiveColor.AVERAGE,
-                            scale: 1.0
-                        })
-                        .linearGradientBlur(60, {
-                            fractionStops: [[0, 0], [0.5, 0.8], [1, 0]],
-                            direction: GradientDirection.Bottom
-                        })
-                        .border({ width: 1, color: 'rgba(255, 255, 255, 0.25)' })
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
+                        .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
+                        .border({ width: 0.5, color: 'rgba(255, 255, 255, 0.25)' })
                         .shadow(ShadowStyle.OUTER_DEFAULT_MD)
+                        .visualEffect(new hdsEffect.HdsEffectBuilder()
+                            .pressShadow(this.isPressed1 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                            .pointLight({
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                options: {
+                                    color: Color.White,
+                                    intensity: this.isPressed1 ? 40.0 : 0.5,
+                                    height: 30
+                                } as hdsEffect.PointLightOptions
+                            })
+                            .buildEffect())
+                        .border({
+                            width: 1,
+                            color: $r('app.color.border')
+                        })
                         .borderRadius(22.5)
+
                         Button() {
                             Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
                                 .width(24)
                                 .height(24)
                         }
                         .onTouch((event: TouchEvent) => {
-                            if (event.type === TouchType.Down) {
-                                this.isPressed = true;
-                                this.lightRadius = 120; // 扩散光晕
-                                // 获取手指相对于按钮容器的坐标
-                                this.touchX = event.touches[0].x;
-                                this.touchY = event.touches[0].y;
-                            } else if (event.type === TouchType.Move) {
-                                // 实时追踪手指位置，光随指动
-                                this.touchX = event.touches[0].x;
-                                this.touchY = event.touches[0].y;
-                            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                this.isPressed = false;
-                                this.lightRadius = 0; // 收起光晕
+                            if (event && event.touches[0]) {
+                                if (event.type === TouchType.Down || event.type === TouchType.Move) {
+                                    this.isPressed2 = true;
+                                    this.touchX = event.touches[0].x;
+                                    this.touchY = event.touches[0].y;
+                                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                    this.isPressed2 = false;
+                                }
                             }
                         })
                         .onClick(() => {
@@ -661,13 +661,27 @@ struct Dashboard {
                             }
                         })
                         .type(ButtonType.Circle)
-                        .width(45)
-                        .height(45)
+                        .width(45).height(45)
                         .backgroundColor('rgba(255, 255, 255, 0.2)')
                         .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
                         .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
-                        .border({ width: 1, color: 'rgba(255, 255, 255, 0.25)' })
+                        .border({ width: 0.5, color: 'rgba(255, 255, 255, 0.25)' })
                         .shadow(ShadowStyle.OUTER_DEFAULT_MD)
+                        .visualEffect(new hdsEffect.HdsEffectBuilder()
+                            .pressShadow(this.isPressed2 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                            .pointLight({
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                options: {
+                                    color: Color.White,
+                                    intensity: this.isPressed2 ? 40.0 : 0.5,
+                                    height: 30.0,
+                                } as hdsEffect.PointLightOptions
+                            })
+                            .buildEffect())
+                        .border({
+                            width: 1,
+                            color: $r('app.color.border')
+                        })
                         .borderRadius(22.5)
                     }
                     .animation({ curve: curves.springMotion(0.4, 0.8) })
@@ -719,9 +733,6 @@ struct Dashboard {
                             }),
                     )
                 }
-
-
-
 
                 if (!this.showButton) {
                     Column()
