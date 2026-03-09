@@ -226,6 +226,10 @@ export struct settings {
                                         .switchStyle({ unselectedColor: "#888" })
                                         .onChange(async (isOn: boolean) => {
                                             await this.saveDefaultSite(isOn);
+                                            prompt.showToast({
+                                                message: "重启应用后生效",
+                                                duration: 500,
+                                            });
                                             this.triggerVibration();
                                         })
                                     Text("T站")

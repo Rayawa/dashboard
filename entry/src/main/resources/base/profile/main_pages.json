@@ -6,7 +6,6 @@
     "pages/complex_share",
     "pages/user/web_log",
     "pages/user/web_api",
-    "pages/user/feedback",
     "pages/user/app_log",
     "pages/user/settings"
   ]

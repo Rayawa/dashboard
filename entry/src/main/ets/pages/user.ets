@@ -439,57 +439,7 @@ export struct user {
                             .width("100%")
                             .justifyContent(FlexAlign.SpaceBetween)
                             .padding({ left: 16, right: 16 })
-                            Divider()
-                                .color($r("app.color.border"))
-                                .strokeWidth(0.5)
-                                .margin({ left: 16, right: 16 })
-                            Row() {
-                                Row() {
-                                    Image($r("app.media.settings"))
-                                        .height(24)
-                                        .width(24)
-                                        .objectFit(ImageFit.Contain)
-                                    Text("设置")
-                                        .fontSize(16)
-                                        .margin({ left: 12 })
-                                }
-                                Image($r("app.media.right"))
-                                    .height(16)
-                                    .width(16)
-                                    .objectFit(ImageFit.Contain)
-                            }
-                            .onClick(() => {
-                                router.pushUrl({ url: "pages/user/settings" });
-                                this.triggerVibration();
-                            })
-                            .height(56)
-                            .width("100%")
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
                         }
-                        // Row() {
-                        //   Row() {
-                        //     Image($r('app.media.issue'))
-                        //       .height(24)
-                        //       .width(24)
-                        //       .objectFit(ImageFit.Contain)
-                        //
-                        //     Text('问题与反馈')
-                        //       .fontSize(16)
-                        //       .margin({ left: 12 })
-                        //   }
-                        //
-                        //   Image($r('app.media.right'))
-                        //     .height(16)
-                        //     .width(16)
-                        //     .objectFit(ImageFit.Contain)
-                        // }
-                        // .onClick(() => router.pushUrl({ url: 'pages/user/feedback' }))
-                        // .height(56)
-                        // .width('100%')
-                        // .justifyContent(FlexAlign.SpaceBetween)
-                        // .padding({ left: 16, right: 16 })
-
                         .borderWidth(0.5)
                         .borderColor($r("app.color.border"))
                         .backgroundColor($r("app.color.background"))

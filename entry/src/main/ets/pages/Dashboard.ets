@@ -240,6 +240,7 @@ struct Dashboard {
             let error = err as BusinessError;
             console.error("Failed on and err code is " + error.code);
         }
+        initializeSettings();
         this.loadSettings();
         //获取屏幕右边位置
         const displayInfo = display.getDefaultDisplaySync();
@@ -780,7 +781,7 @@ struct Dashboard {
             content: {
                 title: {
                     mainTitle:
-                        this.siteMode == SiteMode.SSite ? "应用看板 - S站" : "应用看板 - S站",
+                        this.siteMode == SiteMode.SSite ? "应用看板 - S站" : "应用看板 - T站",
                 },
                 menu: {
                     value: [
@@ -795,17 +796,17 @@ struct Dashboard {
                                 },
                             },
                         },
-                        // {
-                        //     content: {
-                        //         label: "switch",
-                        //         icon: $r("app.media.switch"),
-                        //         isEnabled: true,
-                        //         action: async () => {
-                        //             this.triggerVibration();
-                        //             await this.switchWebVersion();
-                        //         },
-                        //     },
-                        // },
+                        {
+                            content: {
+                                label: "switch",
+                                icon: $r("app.media.switch"),
+                                isEnabled: true,
+                                action: async () => {
+                                    this.triggerVibration();
+                                    await this.switchWebVersion();
+                                },
+                            },
+                        },
                         {
                             content: {
                                 label: "user",
