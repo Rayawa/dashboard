@@ -51,6 +51,10 @@ struct Dashboard {
     @State buttonOnPageShow: boolean = false;
     @State showTutorial: boolean = false;
     @State startY: number = 0;
+    @State isPressed: boolean = false;
+    @State touchX: number = 0;
+    @State touchY: number = 0;
+    @State lightRadius: number = 0;
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
@@ -554,6 +558,22 @@ struct Dashboard {
                                 .width(24)
                                 .height(24)
                         }
+                        .onTouch((event: TouchEvent) => {
+                            if (event.type === TouchType.Down) {
+                                this.isPressed = true;
+                                this.lightRadius = 120; // 扩散光晕
+                                // 获取手指相对于按钮容器的坐标
+                                this.touchX = event.touches[0].x;
+                                this.touchY = event.touches[0].y;
+                            } else if (event.type === TouchType.Move) {
+                                // 实时追踪手指位置，光随指动
+                                this.touchX = event.touches[0].x;
+                                this.touchY = event.touches[0].y;
+                            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                this.isPressed = false;
+                                this.lightRadius = 0; // 收起光晕
+                            }
+                        })
                         .onClick(() => {
                             this.scroller.scrollTo({
                                 xOffset: 0,
@@ -567,21 +587,42 @@ struct Dashboard {
                             });
                         })
                         .type(ButtonType.Circle)
-                        .backgroundBlurStyle(BlurStyle.Thin)
-                        .backgroundColor($r("app.color.background"))
                         .width(45)
                         .height(45)
-                        .shadow({
-                            radius: 6,
-                            color: Color.Gray,
-                            offsetX: 2,
-                            offsetY: 4,
+                        .backgroundColor('rgba(255, 255, 255, 0.2)')
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, {
+                            colorMode: ThemeColorMode.SYSTEM,
+                            adaptiveColor: AdaptiveColor.AVERAGE,
+                            scale: 1.0
                         })
+                        .linearGradientBlur(60, {
+                            fractionStops: [[0, 0], [0.5, 0.8], [1, 0]],
+                            direction: GradientDirection.Bottom
+                        })
+                        .border({ width: 1, color: 'rgba(255, 255, 255, 0.25)' })
+                        .shadow(ShadowStyle.OUTER_DEFAULT_MD)
+                        .borderRadius(22.5)
                         Button() {
                             Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
                                 .width(24)
                                 .height(24)
                         }
+                        .onTouch((event: TouchEvent) => {
+                            if (event.type === TouchType.Down) {
+                                this.isPressed = true;
+                                this.lightRadius = 120; // 扩散光晕
+                                // 获取手指相对于按钮容器的坐标
+                                this.touchX = event.touches[0].x;
+                                this.touchY = event.touches[0].y;
+                            } else if (event.type === TouchType.Move) {
+                                // 实时追踪手指位置，光随指动
+                                this.touchX = event.touches[0].x;
+                                this.touchY = event.touches[0].y;
+                            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                this.isPressed = false;
+                                this.lightRadius = 0; // 收起光晕
+                            }
+                        })
                         .onClick(() => {
                             if (this.isLoading) {
                                 this.web_controller.stop();
@@ -620,17 +661,16 @@ struct Dashboard {
                             }
                         })
                         .type(ButtonType.Circle)
-                        .backgroundBlurStyle(BlurStyle.Thin)
-                        .backgroundColor($r("app.color.background"))
                         .width(45)
                         .height(45)
-                        .shadow({
-                            radius: 4,
-                            color: Color.Gray,
-                            offsetX: 2,
-                            offsetY: 4,
-                        })
+                        .backgroundColor('rgba(255, 255, 255, 0.2)')
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
+                        .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
+                        .border({ width: 1, color: 'rgba(255, 255, 255, 0.25)' })
+                        .shadow(ShadowStyle.OUTER_DEFAULT_MD)
+                        .borderRadius(22.5)
                     }
+                    .animation({ curve: curves.springMotion(0.4, 0.8) })
                     .position({
                         x: this.showButton ? this.buttonShowX : this.buttonHideX,
                         y: this.buttonY,
