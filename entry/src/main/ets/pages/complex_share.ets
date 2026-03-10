@@ -1,4 +1,4 @@
-import { AppInfo, NaturalLanguageExtractor } from "../ability/NaturalLanguageExtract";
+import { AppInfo, NaturalLanguageExtractor } from "../common/NaturalLanguageExtract";
 import { hdsEffect } from "@kit.UIDesignKit";
 import { common } from "@kit.AbilityKit";
 import { vibrator } from "@kit.SensorServiceKit";

@@ -5,7 +5,7 @@ import type {
     CommentInfo,
     SubmitAppBody,
 } from "./types";
-import { SUBMIT_PLATFORM } from "../common/constants";
+import { SUBMIT_PLATFORM } from "./constants";
 import { SAPIBaseURL, submitURL } from "./constants";
 import URL from "./url";
 import { http } from "@kit.NetworkKit";

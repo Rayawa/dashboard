@@ -1,4 +1,4 @@
-import KnockShareGuideCard, { CardRes } from "../common/KnockShareGuideCard";
+import KnockShareGuideCard, { CardRes } from "./KnockShareGuideCard";
 import { vibrator } from "@kit.SensorServiceKit";
 import { BusinessError } from "@kit.BasicServicesKit";
 @Component
