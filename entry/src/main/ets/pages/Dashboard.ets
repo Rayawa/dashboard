@@ -233,16 +233,13 @@ struct Dashboard {
 
     //用户名初始化(防止小天才模式）
     @StorageLink("userName") userName: string = "";
-
     async loadUserName() {
         initializeUserStorage();
         this.userName = await getUsername();
     }
-
     async saveUserName() {
         await setUsername(this.userName);
     }
-
     async resetToDeviceName() {
         await setUsername(undefined);
         await this.loadUserName();
@@ -424,7 +421,6 @@ struct Dashboard {
 
     //获得页面URL
     @State currentUrl: string = ""; //分享URL注册
-
     public async getCurrentWebUrl(): Promise<string> {
         try {
             return this.web_controller.getUrl();
@@ -745,7 +741,6 @@ struct Dashboard {
                             }),
                     )
                 }
-
                 if (!this.showButton) {
                     Column()
                         .backgroundColor(Color.Transparent)
