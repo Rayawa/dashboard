@@ -60,6 +60,7 @@ struct Dashboard {
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
+    @State holdCheckTMP: boolean = false;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
     @State isTDev: boolean = false;
     @State themeColor: string = "blue";
@@ -90,6 +91,11 @@ struct Dashboard {
         this.url = (await this.getWebUrl()).toString();
         this.web_controller.loadUrl(this.url);
         prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
+        this.scroller.scrollTo({
+            xOffset: 0,
+            yOffset: 0,
+            animation: { duration: 300, curve: Curve.Ease },
+        });
     }
 
     //智感握持
@@ -714,6 +720,7 @@ struct Dashboard {
                     .gesture(
                         PanGesture({ direction: PanDirection.Vertical })
                             .onActionStart((event: GestureEvent) => {
+                                if(this.holdCheckON){ this.holdCheckON = false; this.holdCheckTMP = true; }
                                 this.showButtonAnimation = false;
                                 this.startY = this.buttonY;
                             })
@@ -728,6 +735,7 @@ struct Dashboard {
                             })
                             .onActionEnd((event: GestureEvent) => {
                                 this.showButtonAnimation = true;
+                                if(this.holdCheckTMP){ this.holdCheckON = true; }
                                 if (this.buttonY >= 660) {
                                     prompt.showToast({ message: "不能再往下啦", duration: 500 });
                                 } else if (this.buttonY <= 70) {
@@ -900,4 +908,5 @@ struct Dashboard {
             },
         });
     }
+
 }
