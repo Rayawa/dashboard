@@ -16,6 +16,9 @@ import {
     SBaseURL,
     siteMapping,
     TBaseURL,
+    RBaseURL,
+    NBaseURL,
+    OBaseURL
 } from "../common/constants";
 import { Logger } from "../utils/Logger";
 import { deviceInfo } from "@kit.BasicServicesKit";
@@ -51,69 +54,44 @@ struct Dashboard {
     @State showButton: boolean = true;
     @State buttonOnPageShow: boolean = false;
     @State showTutorial: boolean = false;
-    @State startY: number = 0;
-    @State isPressed1: boolean = false;
     @State isPressed2: boolean = false;
     @State touchX: number = 0;
     @State touchY: number = 0;
     @State isTouching: boolean = false;
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
+    @State currentSite: string = 'T';
+    @Builder SiteButton(text: string, siteKey: string, targetUrl: string) {
+        Button(text)
+            .fontSize(this.currentSite === siteKey ? 20 : 18)
+            .fontColor(this.currentSite === siteKey ? $r('app.color.diff_content') : Color.Grey)
+            .height(40)
+            .backgroundColor(Color.Transparent)
+            .onClick(() => {
+                this.currentSite = siteKey;
+                this.url = targetUrl.toString();
+                this.web_controller.loadUrl(this.url);
+                this.triggerVibration();
+            })
+    }
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
-    @State holdCheckTMP: boolean = false;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
     @State isTDev: boolean = false;
     @State themeColor: string = "blue";
-    //切换版本方法
-    @State siteMode: SiteMode = SiteMode.SSite;
-
-    private getNextWebVersion() {
-        switch (this.siteMode) {
-            case SiteMode.SSite:
-                return SiteMode.TSite;
-            default:
-                return SiteMode.SSite;
-        }
-    }
-
-    private async getWebUrl(): Promise<URL> {
-        const isTDev = await getTDev();
-        return siteMapping[
-            isTDev && this.siteMode == SiteMode.TSite ? SiteMode.TDevSite : this.siteMode
-        ];
-    }
-
-    private async switchWebVersion(): Promise<void> {
-        // const isTDev = await getTDev()
-        let next = this.getNextWebVersion();
-        const switchVersion = next == SiteMode.SSite ? "S站" : "T站";
-        this.siteMode = next;
-        this.url = (await this.getWebUrl()).toString();
-        this.web_controller.loadUrl(this.url);
-        prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
-        this.scroller.scrollTo({
-            xOffset: 0,
-            yOffset: 0,
-            animation: { duration: 300, curve: Curve.Ease },
-        });
-    }
 
     //智感握持
     @State Vp: number = 376;
-    @State buttonY: number = 300;
-    @State buttonShowX: number = 10;
-    @State buttonHideX: number = -25 - 10;
+    @State buttonX: number = 20;
+    @State buttonHeight: number = 0;
     @State showButtonAnimation: boolean = true;
     holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
         if (this.holdCheckON) {
             switch (data) {
                 case 1: // 左手握持
-                    this.buttonShowX = 10;
-                    this.buttonHideX = -45 - 10;
+                    this.buttonX = 20;
                     break;
                 case 2: // 右手握持
-                    this.buttonShowX = this.Vp - 45 - 10;
-                    this.buttonHideX = this.Vp + 10;
+                    this.buttonX = this.Vp - 200 - 5;
                     break;
                 default:
                     break;
@@ -125,11 +103,11 @@ struct Dashboard {
         TransitionEffect.move(TransitionEdge.BOTTOM),
     )
         .combine(TransitionEffect.scale({ x: 0, y: 1 }))
-        .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
+        .animation({ curve: curves.springMotion(0.7, 0.9), duration: 1000 });
     private effectOnPageShow: TransitionEffect = TransitionEffect.asymmetric(
         TransitionEffect.OPACITY
             .combine(TransitionEffect.scale({ x: 0, y: 0 }))
-            .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),
+            .animation({ curve: curves.springMotion(0.5, 0.6)}),
         TransitionEffect.IDENTITY
     );
 
@@ -216,15 +194,11 @@ struct Dashboard {
             this.themeColor = await getThemeColor();
             // this.siteTDev = await getTDev();
             if(this.buttonPositionRIGHT){
-                this.buttonShowX = this.Vp - 45 - 10;
-                this.buttonHideX = this.Vp + 10;
+                this.buttonX = this.Vp - 200 - 5;
             } else {
-                this.buttonShowX = 10;
-                this.buttonHideX = -45 - 10;
+                this.buttonX = 20;
             }
-            this.siteMode = this.defaultSiteT ? SiteMode.TSite : SiteMode.SSite;
-            const targetUrlObject = await this.getWebUrl();
-            this.url = targetUrlObject.toString();
+            this.url = this.defaultSiteT? TBaseURL.toString() : SBaseURL.toString()
             this.web_controller.loadUrl(this.url);
         } catch (error) {
             console.error("加载设置失败:", error);
@@ -276,6 +250,8 @@ struct Dashboard {
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
         this.Vp = screenWidthVp;
+        const buttonHeight = px2vp(displayInfo.height);
+        this.buttonHeight = buttonHeight
         initializeSettings();
         await this.loadSettings();
         //UA
@@ -326,11 +302,9 @@ struct Dashboard {
         });
         this.buttonPositionRIGHT = await getButtonPosition();
         if(this.buttonPositionRIGHT){
-            this.buttonShowX = this.Vp - 45 - 10;
-            this.buttonHideX = this.Vp + 10;
+            this.buttonX = this.Vp - 200 - 5;
         } else {
-            this.buttonShowX = 10;
-            this.buttonHideX = -45 - 10;
+            this.buttonX = 20;
         }
         setTimeout(() => {
             this.buttonOnPageShow = true;
@@ -564,20 +538,20 @@ struct Dashboard {
 
                 // ==========================悬浮按钮==========================
                 if(this.buttonOnPageShow){
-                    Column({ space: 10 }) {
+                    Row({ space: 10 }) {
                         Button() {
                             Image($r("app.media.arrow_up"))
-                                .width(24)
-                                .height(24)
+                                .width(22)
+                                .height(22)
                         }
                         .onTouch((event: TouchEvent) => {
                             if (event && event.touches[0]) {
                                 if (event.type === TouchType.Down || event.type === TouchType.Move) {
-                                    this.isPressed1 = true;
+                                    this.isPressed2 = true;
                                     this.touchX = event.touches[0].x;
                                     this.touchY = event.touches[0].y;
                                 } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                    this.isPressed1 = false;
+                                    this.isPressed2 = false;
                                 }
                             }
                         })
@@ -594,181 +568,50 @@ struct Dashboard {
                             });
                         })
                         .type(ButtonType.Circle)
-                        .width(45).height(45)
-                        .backgroundColor('rgba(255, 255, 255, 0.2)')
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
-                        .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
+                        .width(45)
+                        .height(45)
+                        .backgroundColor('rgba(255, 255, 255, 0.1)')
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN,
+                            { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
+                        .linearGradientBlur(60,
+                            { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
                         .border({ width: 0.5, color: 'rgba(255, 255, 255, 0.25)' })
                         .shadow(ShadowStyle.OUTER_DEFAULT_MD)
-                        .visualEffect(new hdsEffect.HdsEffectBuilder()
-                            .pressShadow(this.isPressed1 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                            .pointLight({
-                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                                options: {
-                                    color: Color.White,
-                                    intensity: this.isPressed1 ? 40.0 : 0.5,
-                                    height: 30
-                                } as hdsEffect.PointLightOptions
-                            })
-                            .buildEffect())
                         .border({
                             width: 1,
                             color: $r('app.color.border')
                         })
-                        .borderRadius(22.5)
+                        .borderRadius(40)
 
-                        Button() {
-                            Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
-                                .width(24)
-                                .height(24)
-                        }
-                        .onTouch((event: TouchEvent) => {
-                            if (event && event.touches[0]) {
-                                if (event.type === TouchType.Down || event.type === TouchType.Move) {
-                                    this.isPressed2 = true;
-                                    this.touchX = event.touches[0].x;
-                                    this.touchY = event.touches[0].y;
-                                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                    this.isPressed2 = false;
-                                }
-                            }
-                        })
-                        .onClick(() => {
-                            if (this.isLoading) {
-                                this.web_controller.stop();
-                                this.isLoading = false;
-                                this.triggerVibration();
-                                prompt.showToast({
-                                    message: "已停止加载",
-                                    duration: 1000,
-                                });
-                            } else {
-                                this.web_controller.refresh();
-                                try {
-                                    Promise.all([
-                                        this.web_controller.removeCache(true),
-                                        this.web_controller.removeCache(false),
-                                    ]);
-                                } catch (error) {
-                                    // man! what can I say
-                                    console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
-                                }
-                                this.isLoading = true;
-                                this.triggerVibration();
-                                prompt.showToast({
-                                    message: "刷新中...",
-                                    duration: 1000,
-                                });
-                                setTimeout(() => {
-                                    if (this.isLoading) {
-                                        this.isLoading = false;
-                                        prompt.showToast({
-                                            message: "加载超时！",
-                                            duration: 1000,
-                                        });
-                                    }
-                                }, 3000);
-                            }
-                        })
-                        .type(ButtonType.Circle)
-                        .width(45).height(45)
-                        .backgroundColor('rgba(255, 255, 255, 0.2)')
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
-                        .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
+                        Row({ space: 15 }) {
+                            this.SiteButton("T站", 'T', TBaseURL.toString())
+                            this.SiteButton("S站", 'S', SBaseURL.toString())
+                            // this.SiteButton("统计数据", 'R', RBaseURL.toString())
+                            // this.SiteButton("OpenStore", 'O', OBaseURL.toString())
+                            // this.SiteButton("NEXTStore", 'N', NBaseURL.toString())
+                        }.justifyContent(FlexAlign.SpaceEvenly)
+                        .height(45)
+                        .backgroundColor('rgba(255, 255, 255, 0.1)')
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN,
+                            { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
+                        .linearGradientBlur(60,
+                            { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
                         .border({ width: 0.5, color: 'rgba(255, 255, 255, 0.25)' })
                         .shadow(ShadowStyle.OUTER_DEFAULT_MD)
-                        .visualEffect(new hdsEffect.HdsEffectBuilder()
-                            .pressShadow(this.isPressed2 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                            .pointLight({
-                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                                options: {
-                                    color: Color.White,
-                                    intensity: this.isPressed2 ? 40.0 : 0.5,
-                                    height: 30.0,
-                                } as hdsEffect.PointLightOptions
-                            })
-                            .buildEffect())
                         .border({
                             width: 1,
                             color: $r('app.color.border')
                         })
-                        .borderRadius(22.5)
+                        .borderRadius(40)
                     }
+                    .position({ x: this.buttonX, y: this.buttonHeight - 120})
                     .animation({ curve: curves.springMotion(0.4, 0.8) })
-                    .position({
-                        x: this.showButton ? this.buttonShowX : this.buttonHideX,
-                        y: this.buttonY,
-                    })
                     .transition(this.effectOnPageShow)
                     .animation(
                         this.showButtonAnimation
                             ? { curve: curves.springMotion(0.8, 0.8), duration: 400 }
                             : { duration: 0 },
                     )
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Horizontal }).onAction(
-                            (move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showButton = false;
-                                    setTimeout(() => {
-                                        this.showButtonAnimation = false;
-                                    }, 300);
-                                }
-                            },
-                        ),
-                    )
-                    .gesture(
-                        PanGesture({ direction: PanDirection.Vertical })
-                            .onActionStart((event: GestureEvent) => {
-                                if(this.holdCheckON){ this.holdCheckON = false; this.holdCheckTMP = true; }
-                                this.showButtonAnimation = false;
-                                this.startY = this.buttonY;
-                            })
-                            .onActionUpdate((event: GestureEvent) => {
-                                let nextY = this.startY + event.offsetY;
-                                if (nextY > 660) {
-                                    nextY = 660;
-                                } else if (nextY < 70) {
-                                    nextY = 70;
-                                }
-                                this.buttonY = nextY;
-                            })
-                            .onActionEnd((event: GestureEvent) => {
-                                this.showButtonAnimation = true;
-                                if(this.holdCheckTMP){ this.holdCheckON = true; }
-                                if (this.buttonY >= 660) {
-                                    prompt.showToast({ message: "不能再往下啦", duration: 500 });
-                                } else if (this.buttonY <= 70) {
-                                    prompt.showToast({ message: "不能再往上啦", duration: 500 });
-                                }
-                                // 这里可以添加持久化存储逻辑，保存用户手动调整后的 buttonY
-                            }),
-                    )
-                }
-
-                if (!this.showButton) {
-                    Column()
-                        .backgroundColor(Color.Transparent)
-                        .height("100%")
-                        .width(15)
-                        .zIndex(5)
-                        .position({ x: 0 })
-                        .onClick(() => {
-                            this.showButtonAnimation = true;
-                            this.showButton = true;
-                            this.triggerVibration();
-                        });
-                    Column()
-                        .backgroundColor(Color.Transparent)
-                        .height("100%")
-                        .width(15)
-                        .zIndex(5)
-                        .position({ x: this.Vp - 15 })
-                        .onClick(() => {
-                            this.showButtonAnimation = true;
-                            this.showButton = true;
-                            this.triggerVibration();
-                        });
                 }
 
                 //==========================教程==========================
@@ -865,8 +708,7 @@ struct Dashboard {
             },
             content: {
                 title: {
-                    mainTitle:
-                        this.siteMode == SiteMode.TSite ? "应用看板 - T站" : "应用看板 - S站",
+                    mainTitle: "应用看板",
                 },
                 menu: {
                     value: [
@@ -883,12 +725,35 @@ struct Dashboard {
                         },
                         {
                             content: {
-                                label: "switch",
-                                icon: $r("app.media.switch"),
+                                label: "refresh",
+                                icon: this.isLoading
+                                    ? $r("app.media.stop")
+                                    : $r("app.media.refresh"),
                                 isEnabled: true,
-                                action: async () => {
-                                    this.triggerVibration();
-                                    await this.switchWebVersion();
+                                action: () => {
+                                    if (this.isLoading) {
+                                        this.web_controller.stop();
+                                        this.isLoading = false;
+                                        this.triggerVibration();
+                                        prompt.showToast({
+                                            message: "已停止加载",
+                                            duration: 1000,
+                                        });
+                                    } else {
+                                        this.web_controller.refresh();
+                                        this.isLoading = true;
+                                        this.triggerVibration();
+                                        prompt.showToast({
+                                            message: "刷新中...",
+                                            duration: 1000,
+                                        });
+
+                                        setTimeout(() => {
+                                            if (this.isLoading) {
+                                                this.isLoading = false;
+                                            }
+                                        }, 3000);
+                                    }
                                 },
                             },
                         },
@@ -908,5 +773,4 @@ struct Dashboard {
             },
         });
     }
-
 }
