@@ -21,7 +21,16 @@ export default class EntryAbility extends UIAbility {
             hilog.info(DOMAIN, "window", "Succeeded in loading the content.");
         });
     }
+    onContinue(wantParam: Record<string, Object>) {
+        const targetVersion = wantParam.version as number;
+        if (targetVersion < 10102001) {
+            return AbilityConstant.OnContinueResult.MISMATCH;
+        }
+        wantParam['myCustomData'] = '这是要迁移的数据';
+        return AbilityConstant.OnContinueResult.AGREE;
+    }
 
+    storage: LocalStorage = new LocalStorage();
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         try {
             this.context
@@ -36,6 +45,11 @@ export default class EntryAbility extends UIAbility {
             );
         }
         hilog.info(DOMAIN, "dashboard", "%{public}s", "dashboard Ability onCreate");
+        if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
+            let continueData = want.parameters?.myCustomData as string;
+            console.info('恢复的数据:', continueData);
+            this.context.restoreWindowStage(this.storage);
+        }
     }
 
     // async setGlobalImmersive(windowStage: window.WindowStage) {

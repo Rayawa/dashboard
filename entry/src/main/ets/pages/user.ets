@@ -153,24 +153,24 @@ export struct user {
             Stack() {
                 Scroll() {
                     Column() {
-                        // Column() {
-                        //     Image($r("app.media.app_icon"))
-                        //         .height(100)
-                        //         .width(100)
-                        //         .borderRadius($r("sys.float.corner_radius_level6"))
-                        //     Text("应用看板")
-                        //         .fontWeight(800)
-                        //         .fontSize(30)
-                        //         .margin({ top: 20 })
-                        //         .fontColor($r("app.color.diff_content"))
-                        //     Text("Gallery Dashboard")
-                        //         .fontWeight(600)
-                        //         .fontSize(20)
-                        //         .margin({ top: 10 })
-                        // }
-                        // Divider()
-                        //     .margin({ top: 20, bottom: 20 })
-                        //     .color($r("app.color.border"))
+                        Column() {
+                            Image($r("app.media.app_icon"))
+                                .height(100)
+                                .width(100)
+                                .borderRadius($r("sys.float.corner_radius_level6"))
+                            Text("应用看板")
+                                .fontWeight(800)
+                                .fontSize(30)
+                                .margin({ top: 20 })
+                                .fontColor($r("app.color.diff_content"))
+                            Text("HmDashboard")
+                                .fontWeight(600)
+                                .fontSize(20)
+                                .margin({ top: 10 })
+                        }.margin({ top: 40 })
+                        Divider()
+                            .margin({ top: 20, bottom: 20 })
+                            .color($r("app.color.border"))
                         Column() {
                             Row() {
                                 Row() {

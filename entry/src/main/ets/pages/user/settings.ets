@@ -197,7 +197,7 @@ export struct settings {
                                 .fontSize(30)
                                 .margin({ top: 20 })
                                 .fontColor($r("app.color.diff_content"))
-                            Text("Gallery Dashboard")
+                            Text("HmDashboard")
                                 .fontWeight(600)
                                 .fontSize(20)
                                 .margin({ top: 10 })

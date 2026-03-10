@@ -22,7 +22,7 @@ import {
 } from "../common/constants";
 import { Logger } from "../utils/Logger";
 import { deviceInfo } from "@kit.BasicServicesKit";
-import { common } from "@kit.AbilityKit";
+import { AbilityConstant, common } from "@kit.AbilityKit";
 import { harmonyShare, systemShare } from "@kit.ShareKit";
 import { preferences, uniformTypeDescriptor as utd } from "@kit.ArkData";
 import { resourceManager } from "@kit.LocalizationKit";
@@ -232,6 +232,7 @@ struct Dashboard {
     @State isLoading: boolean = false;
 
     //==========================页面生命周期部分==========================
+    private context = getContext(this) as common.UIAbilityContext;
 
     async aboutToAppear() {
         this.buttonOnPageShow = false;
@@ -296,6 +297,9 @@ struct Dashboard {
         // console.log(`px高度: ${rect.size.height}`);
         // console.log(`vp高度: ${vpHeight}`);
         this.checkFirstLaunch();
+        this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE, (result) => {
+            console.info('setMissionContinueState ACTIVE result: ', JSON.stringify(result));
+        });
         this.buttonPositionRIGHT = await getButtonPosition();
         if(this.buttonPositionRIGHT){
             this.buttonX = this.Vp - 200 - 5;
