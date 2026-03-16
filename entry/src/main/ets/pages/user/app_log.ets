@@ -22,9 +22,10 @@ struct app_log {
     private updateLogs: UpdateLog[] = [
         {
             version: "V1.1.2",
-            date: "2026-3-9",
+            date: "2026-3-16",
             type: "release",
             items: [
+                "注意：此版本为支持6.0(API20-22)最后一个版本",
                 "修复设置不生效的bug",
                 "为主界面按钮添加光感",
                 "将应用显示名称从应用看板更换至HmDashboard",
