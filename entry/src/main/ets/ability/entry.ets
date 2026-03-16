@@ -26,7 +26,7 @@ export default class EntryAbility extends UIAbility {
         if (targetVersion < 10102001) {
             return AbilityConstant.OnContinueResult.MISMATCH;
         }
-        wantParam['myCustomData'] = '这是要迁移的数据';
+        wantParam['myCustomData'] = '$';
         return AbilityConstant.OnContinueResult.AGREE;
     }
 
