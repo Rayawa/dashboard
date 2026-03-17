@@ -1,6 +1,6 @@
-import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from "@kit.AbilityKit";
-import { hilog } from "@kit.PerformanceAnalysisKit";
-import { window } from "@kit.ArkUI";
+import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { window } from '@kit.ArkUI';
 interface WantParams {
     sharePackageName: string;
     shareUrl: string;

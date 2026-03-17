@@ -5,18 +5,16 @@ import {
   hdsEffect,
   HdsNavigation,
   HdsNavigationTitleMode,
+  HdsSnackBar,
   HdsTabs,
   HdsTabsController,
-  ScrollEffectType
+  ScrollEffectType,
+  SnackBarIconOptions,
+  SnackBarMessageOptions,
+  SnackBarOperationOptions,
+  SnackBarOperationType,
+  SnackBarStyleOptions
 } from '@kit.UIDesignKit';
-import {
-    HdsSnackBar,
-    SnackBarIconOptions,
-    SnackBarMessageOptions,
-    SnackBarOperationOptions,
-    SnackBarStyleOptions,
-    SnackBarOperationType
-} from '@kit.UIDesignKit'
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
@@ -245,8 +243,8 @@ struct Dashboard {
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
-        { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') }
     ];
     @State private currentIndex: number = 0;

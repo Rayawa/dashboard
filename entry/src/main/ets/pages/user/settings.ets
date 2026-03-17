@@ -1,32 +1,27 @@
-import { LengthMetrics, prompt, router } from "@kit.ArkUI";
-import { vibrator } from "@kit.SensorServiceKit";
-import { common, Want } from "@kit.AbilityKit";
-import { BusinessError } from "@ohos.base";
-import { APP_VERSION, isTSiteDev } from "../../common/constants";
+import { LengthMetrics, prompt, router } from '@kit.ArkUI';
+import { vibrator } from '@kit.SensorServiceKit';
+import { common, Want } from '@kit.AbilityKit';
+import { BusinessError } from '@ohos.base';
+import { APP_VERSION, isTSiteDev } from '../../common/constants';
 import {
-    getButtonPosition,
-    getDefaultSite,
-    getHoldCheckEnabled,
-    getThemeColor,
-    getVibrationEnabled,
-    initializeSettings,
-    setButtonPosition,
-    setDefaultSite,
-    setHoldCheckEnabled,
-    setVibrationEnabled,
-    setTabBarAuto,
-    getTabBarAuto,
-    setTDev,
-    getTDev,
-} from "../../common/SettingsStorage";
+  getButtonPosition,
+  getDefaultSite,
+  getHoldCheckEnabled,
+  getTabBarAuto,
+  getTDev,
+  getThemeColor,
+  getVibrationEnabled,
+  initializeSettings,
+  setButtonPosition,
+  setDefaultSite,
+  setHoldCheckEnabled,
+  setTabBarAuto,
+  setTDev,
+  setVibrationEnabled,
+} from '../../common/SettingsStorage';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 
-import {
-    HdsNavigation,
-    HdsNavigationTitleMode,
-    ScrollEffectType,
-    HdsNavigationAttribute,
-} from "@kit.UIDesignKit";
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 @Entry
 @Component
 export struct settings {
@@ -222,45 +217,45 @@ export struct settings {
                             .margin({ top: 20, bottom: 20 })
                             .color($r("app.color.border"))
                         Column() {
-                            Row() {
-                                Row({ space: 12 }) {
-                                    Image($r("app.media.default"))
-                                        .height(24)
-                                        .width(24)
-                                        .objectFit(ImageFit.Contain)
-                                    Text("默认站点").fontSize(16)
-                                }
-                                //.fontColor('#888')
-                                Row({ space: 8 }) {
-                                    Text("S站")
-                                        .fontSize(14)
-                                        .fontColor("#888")
-                                        .width(24)
-                                        .textAlign(TextAlign.Center)
-                                    Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
-                                        .selectedColor($r("app.color.diff_content"))
-                                        .switchStyle({
-                                            unselectedColor: $r("app.color.diff_content"),
-                                        })
-                                        .onChange(async (isOn: boolean) => {
-                                            await this.saveDefaultSite(isOn);
-                                            prompt.showToast({
-                                                message: "重启应用后生效",
-                                                duration: 500,
-                                            });
-                                            this.triggerVibration();
-                                        })
-                                    Text("T站")
-                                        .fontSize(14)
-                                        .fontColor("#888")
-                                        .width(24)
-                                        .textAlign(TextAlign.Center)
-                                }
-                            }
-                            .height(56)
-                            .width("100%")
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
+                            // Row() {
+                            //     Row({ space: 12 }) {
+                            //         Image($r("app.media.default"))
+                            //             .height(24)
+                            //             .width(24)
+                            //             .objectFit(ImageFit.Contain)
+                            //         Text("默认站点").fontSize(16)
+                            //     }
+                            //     //.fontColor('#888')
+                            //     Row({ space: 8 }) {
+                            //         Text("S站")
+                            //             .fontSize(14)
+                            //             .fontColor("#888")
+                            //             .width(24)
+                            //             .textAlign(TextAlign.Center)
+                            //         Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
+                            //             .selectedColor($r("app.color.diff_content"))
+                            //             .switchStyle({
+                            //                 unselectedColor: $r("app.color.diff_content"),
+                            //             })
+                            //             .onChange(async (isOn: boolean) => {
+                            //                 await this.saveDefaultSite(isOn);
+                            //                 prompt.showToast({
+                            //                     message: "重启应用后生效",
+                            //                     duration: 500,
+                            //                 });
+                            //                 this.triggerVibration();
+                            //             })
+                            //         Text("T站")
+                            //             .fontSize(14)
+                            //             .fontColor("#888")
+                            //             .width(24)
+                            //             .textAlign(TextAlign.Center)
+                            //     }
+                            // }
+                            // .height(56)
+                            // .width("100%")
+                            // .justifyContent(FlexAlign.SpaceBetween)
+                            // .padding({ left: 16, right: 16 })
                             Divider()
                                 .color($r("app.color.border"))
                                 .strokeWidth(0.5)

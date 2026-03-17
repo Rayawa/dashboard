@@ -1,15 +1,7 @@
-import { LengthMetrics, prompt, router } from "@kit.ArkUI";
-import { vibrator } from "@kit.SensorServiceKit";
-import { BusinessError } from "@kit.BasicServicesKit";
-import {
-    BlurStrategy,
-    hdsEffect,
-    HdsNavigation,
-    HdsNavigationTitleMode,
-    HdsTabs,
-    HdsTabsController,
-    ScrollEffectType
-} from '@kit.UIDesignKit';
+import { LengthMetrics, prompt, router } from '@kit.ArkUI';
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 
 interface UpdateLog {
@@ -69,7 +61,7 @@ struct app_log {
             type: "release",
             isRelease: true,
             items: [
-               // "为主界面按钮添加拖动动画，并修复了动画弹出屏幕的问题",
+                // "为主界面按钮添加拖动动画，并修复了动画弹出屏幕的问题",
                 "新增四个设置项：包括默认站点、振动开关、智感握姿开关和默认按钮位置",
                 "新增主题功能，但是暂未开放",
                 "App更新日志界面支持筛选功能，可以按发布类型进行筛选",
