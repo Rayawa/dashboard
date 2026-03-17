@@ -67,6 +67,18 @@ export async function setButtonPosition(isRight: boolean): Promise<void> {
     await settings.set("buttonPositionRIGHT", isRight);
 }
 
+// 底部栏自动隐藏设置
+export async function getTabBarAuto(): Promise<boolean> {
+    const settings = getSettingsInstance();
+    // false = 不自动, true = 自动
+    return (await settings.get("tabBarAuto", false)) as boolean;
+}
+
+export async function setTabBarAuto(enabled: boolean): Promise<void> {
+    const settings = getSettingsInstance();
+    await settings.set("tabBarAuto", enabled);
+}
+
 // 主题设置（如果需要存储主题）
 export async function getThemeColor(): Promise<string> {
     const settings = getSettingsInstance();

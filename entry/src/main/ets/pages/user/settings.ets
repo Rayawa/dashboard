@@ -14,6 +14,8 @@ import {
     setDefaultSite,
     setHoldCheckEnabled,
     setVibrationEnabled,
+    setTabBarAuto,
+    getTabBarAuto,
     setTDev,
     getTDev,
 } from "../../common/SettingsStorage";
@@ -106,6 +108,7 @@ export struct settings {
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
+    @StorageLink("tabBarAuto") tabBarAuto: boolean = true;
     @StorageLink("TSiteDev") siteTDev: boolean = false;
     @State isTDev: boolean = false;
     @State themeColor: string = "blue";
@@ -129,6 +132,7 @@ export struct settings {
             this.vibrationON = await getVibrationEnabled();
             this.holdCheckON = await getHoldCheckEnabled();
             this.buttonPositionRIGHT = await getButtonPosition();
+            this.tabBarAuto = await getTabBarAuto();
             this.themeColor = await getThemeColor();
             this.siteTDev = await getTDev();
         } catch (error) {
@@ -173,6 +177,16 @@ export struct settings {
             this.buttonPositionRIGHT = isRight;
         } catch (error) {
             console.error("保存按钮位置设置失败:", error);
+        }
+    }
+
+    // 保存自动底部栏设置
+    private async saveTabBarAuto(enabled: boolean) {
+        try {
+            await setTabBarAuto(enabled);
+            this.tabBarAuto = enabled;
+        } catch (error) {
+            console.error("保存自动底部栏设置失败:", error);
         }
     }
 
@@ -348,6 +362,42 @@ export struct settings {
                                             this.triggerVibration();
                                         })
                                     Text("右")
+                                        .fontSize(14)
+                                        .fontColor("#888")
+                                        .width(24)
+                                        .textAlign(TextAlign.Center)
+
+                                }
+                            }
+                            .height(56)
+                            .width("100%")
+                            .justifyContent(FlexAlign.SpaceBetween)
+                            .padding({ left: 16, right: 16 })
+                            Divider()
+                                .color($r("app.color.border"))
+                                .strokeWidth(0.5)
+                                .margin({ left: 16, right: 16 })
+                            Row() {
+                                Row({ space: 12 }) {
+                                    Image($r("app.media.autoBar"))
+                                        .height(24)
+                                        .width(24)
+                                        .objectFit(ImageFit.Contain)
+                                    Text("自动隐藏底部栏").fontSize(16)
+                                }
+                                Row({ space: 8 }) {
+                                    Text("关")
+                                        .fontSize(14)
+                                        .fontColor("#888")
+                                        .width(24)
+                                        .textAlign(TextAlign.Center)
+                                    Toggle({ type: ToggleType.Switch, isOn: this.tabBarAuto })
+                                        .selectedColor($r("app.color.diff_content"))
+                                        .onChange(async (isOn: boolean) => {
+                                            await this.saveTabBarAuto(isOn);
+                                            this.triggerVibration();
+                                        })
+                                    Text("开")
                                         .fontSize(14)
                                         .fontColor("#888")
                                         .width(24)
