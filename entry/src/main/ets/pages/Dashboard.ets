@@ -1,12 +1,13 @@
 import { webview } from '@kit.ArkWeb';
 import { motion, userStatus } from '@kit.MultimodalAwarenessKit';
 import {
-  hdsEffect,
-  HdsNavigation,
-  HdsNavigationTitleMode,
-  HdsTabs,
-  HdsTabsController,
-  ScrollEffectType
+    BlurStrategy,
+    hdsEffect,
+    HdsNavigation,
+    HdsNavigationTitleMode,
+    HdsTabs,
+    HdsTabsController,
+    ScrollEffectType
 } from '@kit.UIDesignKit';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
@@ -17,20 +18,19 @@ import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare, systemShare } from '@kit.ShareKit';
 import { preferences, uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
-// 从6.0.2(22)版本开始，无需手动导入HdsTabsAttribute。具体请参考HdsTabs的导入模块说明。
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
 import URL from '../common/url';
 import { SiteMode } from '../common/types';
 import {
-  getButtonPosition,
-  getDefaultSite,
-  getHoldCheckEnabled,
-  getTDev,
-  getThemeColor,
-  getVibrationEnabled,
-  initializeSettings,
+    getButtonPosition,
+    getDefaultSite,
+    getHoldCheckEnabled,
+    getTDev,
+    getThemeColor,
+    getVibrationEnabled,
+    initializeSettings,
 } from '../common/SettingsStorage';
 
 interface SiteConfig {
@@ -46,7 +46,11 @@ struct Dashboard {
     //==========================状态声明部分==========================
     //控制相关
     @State showButton: boolean = true;
+    @State barMargin: number = 28;
+    @State lockBar: boolean = false;
     @State buttonOnPageShow: boolean = false;
+    private lastOffset: number = 0;
+    @State isTabsBarVisible: boolean = true;
     @State showTutorial: boolean = false;
     @State startY: number = 0;
     @State isPressed1: boolean = false;
@@ -63,18 +67,7 @@ struct Dashboard {
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
     @State isTDev: boolean = false;
     @State themeColor: string = "blue";
-    //切换版本方法
     @State siteMode: SiteMode = SiteMode.SSite;
-
-    private getNextWebVersion() {
-        switch (this.siteMode) {
-            case SiteMode.SSite:
-                return SiteMode.TSite;
-            default:
-                return SiteMode.SSite;
-        }
-    }
-
     private async getWebUrl(): Promise<URL> {
         const isTDev = await getTDev();
         return siteMapping[
@@ -82,23 +75,9 @@ struct Dashboard {
         ];
     }
 
-    private async switchWebVersion(): Promise<void> {
-        // const isTDev = await getTDev()
-        let next = this.getNextWebVersion();
-        const switchVersion = next == SiteMode.SSite ? "S站" : "T站";
-        this.siteMode = next;
-        this.url = (await this.getWebUrl()).toString();
-        this.web_controller.loadUrl(this.url);
-        prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
-        this.scroller.scrollTo({
-            xOffset: 0,
-            yOffset: 0,
-            animation: { duration: 300, curve: Curve.Ease },
-        });
-    }
-
     //智感握持
-    @State Vp: number = 376;
+    @State WVp: number = 376;
+    @State HVp: number = 376;
     @State buttonY: number = 300;
     @State buttonShowX: number = 10;
     @State buttonHideX: number = -25 - 10;
@@ -111,8 +90,8 @@ struct Dashboard {
                     this.buttonHideX = -45 - 10;
                     break;
                 case 2: // 右手握持
-                    this.buttonShowX = this.Vp - 45 - 10;
-                    this.buttonHideX = this.Vp + 10;
+                    this.buttonShowX = this.WVp - 45 - 10;
+                    this.buttonHideX = this.WVp + 10;
                     break;
                 default:
                     break;
@@ -120,12 +99,12 @@ struct Dashboard {
         }
     };
     //动画与振动
-    private effect: TransitionEffect = TransitionEffect.OPACITY.combine(
+    private pageEffect: TransitionEffect = TransitionEffect.OPACITY.combine(
         TransitionEffect.move(TransitionEdge.BOTTOM),
     )
         .combine(TransitionEffect.scale({ x: 0, y: 1 }))
         .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
-    private effectOnPageShow: TransitionEffect = TransitionEffect.asymmetric(
+    private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
         TransitionEffect.OPACITY
             .combine(TransitionEffect.scale({ x: 0, y: 0 }))
             .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),
@@ -214,8 +193,8 @@ struct Dashboard {
             this.themeColor = await getThemeColor();
             // this.siteTDev = await getTDev();
             if(this.buttonPositionRIGHT){
-                this.buttonShowX = this.Vp - 45 - 10;
-                this.buttonHideX = this.Vp + 10;
+                this.buttonShowX = this.WVp - 45 - 10;
+                this.buttonHideX = this.WVp + 10;
             } else {
                 this.buttonShowX = 10;
                 this.buttonHideX = -45 - 10;
@@ -279,7 +258,9 @@ struct Dashboard {
         //获取屏幕右边位置
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
-        this.Vp = screenWidthVp;
+        const screenHeightVp = px2vp(displayInfo.height);
+        this.WVp = screenWidthVp;
+        this.HVp = screenHeightVp;
         initializeSettings();
         await this.loadSettings();
         //UA
@@ -320,18 +301,14 @@ struct Dashboard {
 
     async onPageShow(): Promise<void> {
         this.buttonOnPageShow = false;
-        // const rect = componentUtils.getRectangleById("Dashboard");
-        // const vpHeight = px2vp(rect.size.height);
-        // console.log(`px高度: ${rect.size.height}`);
-        // console.log(`vp高度: ${vpHeight}`);
         this.checkFirstLaunch();
         this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE, (result) => {
             console.info('setMissionContinueState ACTIVE result: ', JSON.stringify(result));
         });
         this.buttonPositionRIGHT = await getButtonPosition();
         if(this.buttonPositionRIGHT){
-            this.buttonShowX = this.Vp - 45 - 10;
-            this.buttonHideX = this.Vp + 10;
+            this.buttonShowX = this.WVp - 45 - 10;
+            this.buttonHideX = this.WVp + 10;
         } else {
             this.buttonShowX = 10;
             this.buttonHideX = -45 - 10;
@@ -506,6 +483,7 @@ struct Dashboard {
         });
         sharableTarget.share(shareData);
     };
+
     @Builder Web(site: SiteConfig){
         Stack(){
             if (this.isLoading) {
@@ -558,7 +536,26 @@ struct Dashboard {
                         .metaViewport(true)
                 }
             }
-            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+            .onWillScroll(() => {
+                const currentOffset = this.scroller.currentOffset().yOffset;
+                if (currentOffset > this.lastOffset && currentOffset > 50) {
+                    if (this.isTabsBarVisible && !this.lockBar) {
+                        animateTo({ curve: curves.springMotion(0.9, 0.8) }, () => {
+                            this.barMargin = -90;
+                            this.isTabsBarVisible = false;
+                        })
+                    }
+                }
+                else if (currentOffset < this.lastOffset) {
+                    if (!this.isTabsBarVisible && !this.lockBar) {
+                        animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
+                            this.barMargin = 28;
+                            this.isTabsBarVisible = true;
+                        })
+                    }
+                }
+                this.lastOffset = currentOffset;
+            })
 
         }
     }
@@ -570,9 +567,7 @@ struct Dashboard {
                 //==========================网页嵌套滚动==========================
                 HdsTabs({ controller: this.controller }) {
                     ForEach(Array.from(this.sites.values()), (site: SiteConfig) => {
-                        TabContent() {
-                            this.Web(site)
-                        }
+                        TabContent() { this.Web(site) }
                         .tabBar(new BottomTabBarStyle(site.icon, site.label))
                     }, (item: SiteConfig) => item.key)
                 }
@@ -585,11 +580,17 @@ struct Dashboard {
                     });
                     this.triggerVibration();
                 })
+                .animation({ curve: curves.springMotion(0.8, 0.8), duration: 400 })
+                .transition(this.pageEffect)
+                .blurStrategy(BlurStrategy.ENABLE)
                 .barOverlap(true)
                 .barPosition(BarPosition.End)
                 .vertical(false)
+                .onAppear(() => {
+                    this.controller.bindScroller(0, this.scroller);
+                })
                 .barFloatingStyle({
-                    barBottomMargin: 28,
+                    barBottomMargin: this.barMargin,
                     lightColor: $r('app.color.light_color'),
                     gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
                     systemMaterialEffect: {
@@ -597,6 +598,7 @@ struct Dashboard {
                         materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
                     },
                 })
+
 
                 // ==========================悬浮按钮==========================
                 if(this.buttonOnPageShow){
@@ -634,14 +636,13 @@ struct Dashboard {
                         .backgroundColor('rgba(255, 255, 255, 0.2)')
                         .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
                         .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
-                        .shadow(ShadowStyle.OUTER_DEFAULT_MD)
                         .visualEffect(new hdsEffect.HdsEffectBuilder()
-                            .pressShadow(this.isPressed2 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                            .pressShadow(this.isPressed1 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
                             .pointLight({
                                 illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
                                 options: {
                                     color: $r('app.color.light_color'),
-                                    intensity: this.isPressed2 ? 40.0 : 0.2,
+                                    intensity: this.isPressed1 ? 40.0 : 0.2,
                                     height: 30.0,
                                 } as hdsEffect.PointLightOptions
                             })
@@ -705,6 +706,7 @@ struct Dashboard {
                                 }, 3000);
                             }
                         })
+                        .shadow(ShadowStyle.OUTER_DEFAULT_LG)
                         .type(ButtonType.Circle)
                         .width(45).height(45)
                         .backgroundColor('rgba(255, 255, 255, 0.2)')
@@ -728,17 +730,16 @@ struct Dashboard {
                         })
                         .borderRadius(22.5)
                     }
-                    .animation({ curve: curves.springMotion(0.4, 0.8) })
                     .position({
                         x: this.showButton ? this.buttonShowX : this.buttonHideX,
                         y: this.buttonY,
                     })
-                    .transition(this.effectOnPageShow)
                     .animation(
                         this.showButtonAnimation
                             ? { curve: curves.springMotion(0.8, 0.8), duration: 400 }
                             : { duration: 0 },
                     )
+                    .transition(this.buttonEffect)
                     .gesture(
                         SwipeGesture({ direction: SwipeDirection.Horizontal }).onAction(
                             (move: GestureEvent | undefined) => {
@@ -753,12 +754,13 @@ struct Dashboard {
                     )
                     .gesture(
                         PanGesture({ direction: PanDirection.Vertical })
-                            .onActionStart((event: GestureEvent) => {
+                            .onActionStart(() => {
                                 if(this.holdCheckON){ this.holdCheckON = false; this.holdCheckTMP = true; }
                                 this.showButtonAnimation = false;
                                 this.startY = this.buttonY;
                             })
                             .onActionUpdate((event: GestureEvent) => {
+                                //判断实际位置
                                 let nextY = this.startY + event.offsetY;
                                 if (nextY > 660) {
                                     nextY = 660;
@@ -767,7 +769,7 @@ struct Dashboard {
                                 }
                                 this.buttonY = nextY;
                             })
-                            .onActionEnd((event: GestureEvent) => {
+                            .onActionEnd(() => {
                                 this.showButtonAnimation = true;
                                 if(this.holdCheckTMP){ this.holdCheckON = true; }
                                 if (this.buttonY >= 660) {
@@ -795,11 +797,31 @@ struct Dashboard {
                         .height("100%")
                         .width(15)
                         .zIndex(5)
-                        .position({ x: this.Vp - 15 })
+                        .position({ x: this.WVp - 15 })
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
                             this.triggerVibration();
+                        });
+                }
+                if (!this.isTabsBarVisible) {
+                    Column()
+                        .backgroundColor(Color.Transparent)
+                        .height(50)
+                        .width("100%")
+                        .zIndex(5)
+                        .position({ y: this.HVp - 50 })
+                        .onClick(() => {
+                            if (this.lockBar) return;
+                            animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
+                                this.barMargin = 28;
+                                this.isTabsBarVisible = true;
+                            })
+                            this.triggerVibration()
+                            this.lockBar = true;
+                            setTimeout(() => {
+                                this.lockBar = false;
+                            }, 1000);
                         });
                 }
 
@@ -838,7 +860,7 @@ struct Dashboard {
                             },
                         ),
                     )
-                    .transition(this.effect);
+                    .transition(this.pageEffect);
                 }
             }
             .width("100%")
@@ -933,5 +955,4 @@ struct Dashboard {
             },
         });
     }
-
 }
