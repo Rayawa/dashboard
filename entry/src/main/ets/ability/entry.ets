@@ -5,103 +5,60 @@ import { window } from "@kit.ArkUI";
 const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
-    onWindowStageCreate(windowStage: window.WindowStage): void {
-        hilog.info(DOMAIN, "dashboard", "%{public}s", "dashboard Ability onWindowStageCreate");
-        // this.setGlobalImmersive(windowStage);
-        windowStage.loadContent("pages/Dashboard", (err) => {
-            if (err.code) {
-                hilog.error(
-                    DOMAIN,
-                    "dashboard",
-                    "Failed to load the content. Cause: %{public}s",
-                    JSON.stringify(err),
-                );
-                return;
-            }
-            hilog.info(DOMAIN, "window", "Succeeded in loading the content.");
-        });
-    }
-    onContinue(wantParam: Record<string, Object>) {
-        const targetVersion = wantParam.version as number;
-        if (targetVersion < 10102001) {
-            return AbilityConstant.OnContinueResult.MISMATCH;
-        }
-        wantParam['myCustomData'] = '这是要迁移的数据';
-        return AbilityConstant.OnContinueResult.AGREE;
-    }
-
     storage: LocalStorage = new LocalStorage();
-    onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-        try {
-            this.context
-                .getApplicationContext()
-                .setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
-        } catch (err) {
-            hilog.error(
-                DOMAIN,
-                "dashboard",
-                "Failed to set colorMode. Cause: %{public}s",
-                JSON.stringify(err),
-            );
-        }
-        hilog.info(DOMAIN, "dashboard", "%{public}s", "dashboard Ability onCreate");
+
+    private handleContinuation(want: Want, launchParam: AbilityConstant.LaunchParam) {
         if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
-            let continueData = want.parameters?.myCustomData as string;
-            console.info('恢复的数据:', continueData);
+            const continueUrl = want.parameters?.['migratedUrl'] as string;
+            const continueIndex = want.parameters?.['migratedIndex'] as number;
+
+            if (continueUrl) {
+                this.storage.setOrCreate('migratedUrl', continueUrl);
+                this.storage.setOrCreate('migratedIndex', continueIndex ?? 0);
+                hilog.info(DOMAIN, "dashboard", "Continuation Data Saved: %{public}s", continueUrl);
+            }
             this.context.restoreWindowStage(this.storage);
         }
     }
 
-    // async setGlobalImmersive(windowStage: window.WindowStage) {
-    //     try {
-    //         const windowClass = await windowStage.getMainWindow();
-    //         await windowClass.setWindowLayoutFullScreen(true);
-    //         await windowClass.setWindowSystemBarEnable(['status', 'navigation']);
-    //         await windowClass.setWindowSystemBarProperties({
-    //             statusBarColor: '#00000000',
-    //             navigationBarColor: '#00000000',
-    //             statusBarContentColor: '#FFffffff',
-    //             navigationBarContentColor: '#FFffffff'
-    //         });
-    //         await windowClass.setWindowSystemBarProperties({
-    //             isStatusBarLightIcon: true,
-    //             isNavigationBarLightIcon: true
-    //         });
-    //     } catch (err) {
-    //         hilog.error(DOMAIN, 'dashboard', 'Failed to set global immersive mode. Cause: %{public}s',
-    //             JSON.stringify(err));
-    //     }
-    // }
+    onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+        hilog.info(DOMAIN, "dashboard", "Ability onCreate");
+        this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
+        this.handleContinuation(want, launchParam);
+    }
 
-    // async setCutoutMode(windowStage: window.WindowStage) {
-    //     try {
-    //         const windowClass = await windowStage.getMainWindow();
-    //         await windowClass.setWindowLayoutFullScreen(true);
-    //         const avoidArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
-    //         hilog.info(DOMAIN, 'dashboard', 'Avoid area: %{public}s', JSON.stringify(avoidArea));
-    //         await windowClass.setFullScreen(true);
-    //     } catch (err) {
-    //         hilog.error(DOMAIN, 'dashboard', 'Failed to set cutout mode. Cause: %{public}s', JSON.stringify(err));
-    //     }
-    // }
+    onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+        this.handleContinuation(want, launchParam);
+    }
 
-    // async resetImmersiveMode() {
-    //     try {
-    //         const windowClass = await window.getLastWindow(this.context);
-    //         if (windowClass) {
-    //             await windowClass.setWindowSystemBarProperties({
-    //                 statusBarColor: '#00000000',
-    //                 navigationBarColor: '#00000000',
-    //                 statusBarContentColor: '#FFffffff',
-    //                 navigationBarContentColor: '#FFffffff'
-    //             });
-    //         }
-    //     } catch (err) {
-    //         hilog.error(DOMAIN, 'dashboard', 'Failed to reset immersive mode. Cause: %{public}s', JSON.stringify(err));
-    //     }
-    // }
+    onWindowStageCreate(windowStage: window.WindowStage): void {
+        this.loadMainContent(windowStage, "onWindowStageCreate");
+    }
 
-    onForeground(): void {
-        // this.resetImmersiveMode();
+    onWindowStageRestore(windowStage: window.WindowStage): void {
+        this.loadMainContent(windowStage, "onWindowStageRestore");
+    }
+
+    // 提取重复的加载逻辑
+    private loadMainContent(windowStage: window.WindowStage, tag: string) {
+        windowStage.loadContent("pages/Dashboard", this.storage, (err) => {
+            if (err.code) {
+                hilog.error(DOMAIN, "dashboard", `${tag} Failed. Cause: %{public}s`, JSON.stringify(err));
+                return;
+            }
+            hilog.info(DOMAIN, "window", `${tag} Succeeded.`);
+        });
+    }
+
+    onContinue(wantParam: Record<string, Object>) {
+        const currentUrl = AppStorage.get<string>('latestWebUrl');
+        const currentIndex = AppStorage.get<number>('latestIndex');
+
+        if (currentUrl) {
+            wantParam['migratedUrl'] = currentUrl as Object;
+            wantParam['migratedIndex'] = (currentIndex ?? 0) as Object;
+            return AbilityConstant.OnContinueResult.AGREE;
+        }
+        return AbilityConstant.OnContinueResult.REJECT;
     }
 }
