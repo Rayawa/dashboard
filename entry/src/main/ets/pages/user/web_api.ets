@@ -2,10 +2,8 @@ import { webview } from '@kit.ArkWeb';
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { LengthMetrics, prompt, router } from '@kit.ArkUI';
-import { changelog, TBaseURL } from '../../common/constants';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { URL } from '../../common/url';
 
 @Entry
 @Component

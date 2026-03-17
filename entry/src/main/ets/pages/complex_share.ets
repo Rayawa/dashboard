@@ -1,10 +1,10 @@
-import { AppInfo, NaturalLanguageExtractor } from "../common/NaturalLanguageExtract";
-import { hdsEffect } from "@kit.UIDesignKit";
-import { common } from "@kit.AbilityKit";
-import { vibrator } from "@kit.SensorServiceKit";
-import { BusinessError } from "@kit.BasicServicesKit";
-import { submitButtons } from "../component/submitButtons";
-import { FormData } from "../common/types";
+import { AppInfo, NaturalLanguageExtractor } from '../common/NaturalLanguageExtract';
+import { hdsEffect } from '@kit.UIDesignKit';
+import { common } from '@kit.AbilityKit';
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { submitButtons } from '../component/submitButtons';
+import { FormData } from '../common/types';
 
 interface ShareParams {
     shareAppId: string;
