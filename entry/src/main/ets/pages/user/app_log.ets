@@ -21,9 +21,28 @@ interface UpdateLog {
 struct app_log {
     private updateLogs: UpdateLog[] = [
         {
+            version: "V2.0.0-beta.1",
+            date: "2026-3-20",
+            type: "beta",
+            items: [
+                "更新页面设计，增加了触感反馈与动效",
+                "增加底部栏与新的站点，适配沉浸式材质效果",
+                "为不同比例的设备增加了页面适配",
+                "为输入框增加了未填写时震动的提示",
+                "增加用户设置用户名的提示",
+                "加入一镜到底的动效，使页面流转更加生动",
+                "修复了applog正式版图标不生效的问题",
+                "修复了平板与pc设备分享失效的问题",
+                "修复了碰一碰卡片的格式问题",
+                "修复了顶部栏图标深色模式适配异常的问题",
+                "修复了流转跳转页面异常的问题",
+            ],
+        },
+        {
             version: "V1.1.2",
-            date: "2026-3-9",
+            date: "2026-3-16",
             type: "release",
+            isRelease: true,
             items: [
                 "修复设置不生效的bug",
                 "为主界面按钮添加光感",
@@ -35,6 +54,7 @@ struct app_log {
             version: "V1.1.1",
             date: "2026-3-4",
             type: "release",
+            isRelease: true,
             items: [
                 "更改我的页面结构"
             ],
@@ -43,6 +63,7 @@ struct app_log {
             version: "V1.1.0",
             date: "2026-2-5",
             type: "release",
+            isRelease: true,
             items: [
                // "为主界面按钮添加拖动动画，并修复了动画弹出屏幕的问题",
                 "新增四个设置项：包括默认站点、振动开关、智感握姿开关和默认按钮位置",

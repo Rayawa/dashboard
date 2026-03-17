@@ -1,50 +1,44 @@
-import { webview } from "@kit.ArkWeb";
-import { userStatus } from '@kit.MultimodalAwarenessKit';
+import { webview } from '@kit.ArkWeb';
+import { motion, userStatus } from '@kit.MultimodalAwarenessKit';
 import {
-    HdsNavigation,
-    HdsNavigationTitleMode,
-    ScrollEffectType,
-    HdsNavigationAttribute,
-} from "@kit.UIDesignKit";
-import { curves, LengthMetrics, prompt, router, window, display } from "@kit.ArkUI";
-import { motion } from "@kit.MultimodalAwarenessKit";
-import { vibrator } from "@kit.SensorServiceKit";
-import { BusinessError } from "@kit.BasicServicesKit";
+  hdsEffect,
+  HdsNavigation,
+  HdsNavigationTitleMode,
+  HdsTabs,
+  HdsTabsController,
+  ScrollEffectType
+} from '@kit.UIDesignKit';
+import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
+import { customUserAgent, SBaseURL, siteMapping, TBaseURL, RBaseURL, NBaseURL, OBaseURL } from '../common/constants';
+import { Logger } from '../utils/Logger';
+import { AbilityConstant, common } from '@kit.AbilityKit';
+import { harmonyShare, systemShare } from '@kit.ShareKit';
+import { preferences, uniformTypeDescriptor as utd } from '@kit.ArkData';
+import { resourceManager } from '@kit.LocalizationKit';
+// 从6.0.2(22)版本开始，无需手动导入HdsTabsAttribute。具体请参考HdsTabs的导入模块说明。
+import { hdsMaterial } from '@hms.hds.hdsMaterial';
+import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
+import { tutorial } from '../component/tutorial';
+import URL from '../common/url';
+import { SiteMode } from '../common/types';
 import {
-    customUserAgent,
-    dashboardURL,
-    SBaseURL,
-    siteMapping,
-    TBaseURL,
-    RBaseURL,
-    NBaseURL,
-    OBaseURL
-} from "../common/constants";
-import { Logger } from "../utils/Logger";
-import { deviceInfo } from "@kit.BasicServicesKit";
-import { AbilityConstant, common } from "@kit.AbilityKit";
-import { harmonyShare, systemShare } from "@kit.ShareKit";
-import { preferences, uniformTypeDescriptor as utd } from "@kit.ArkData";
-import { resourceManager } from "@kit.LocalizationKit";
-import {
-    getUsername,
-    initialize as initializeUserStorage,
-    setUsername as setUsername,
-} from "../common/profile";
-import { tutorial } from "../component/tutorial";
-import URL from "../common/url";
-import componentUtils from "@ohos.arkui.componentUtils";
-import { SiteMode } from "../common/types";
-import { hdsEffect } from '@kit.UIDesignKit';
-import {
-    getButtonPosition,
-    getDefaultSite,
-    getHoldCheckEnabled,
-    getThemeColor,
-    getVibrationEnabled,
-    initializeSettings,
-    getTDev,
-} from "../common/SettingsStorage";
+  getButtonPosition,
+  getDefaultSite,
+  getHoldCheckEnabled,
+  getTDev,
+  getThemeColor,
+  getVibrationEnabled,
+  initializeSettings,
+} from '../common/SettingsStorage';
+
+interface SiteConfig {
+    key: string;
+    url: string;
+    label: string;
+    icon: Resource;
+}
 
 @Entry
 @Component
@@ -54,44 +48,71 @@ struct Dashboard {
     @State showButton: boolean = true;
     @State buttonOnPageShow: boolean = false;
     @State showTutorial: boolean = false;
+    @State startY: number = 0;
+    @State isPressed1: boolean = false;
     @State isPressed2: boolean = false;
     @State touchX: number = 0;
     @State touchY: number = 0;
     @State isTouching: boolean = false;
+    private controller: HdsTabsController = new HdsTabsController();
+
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
-    @State currentSite: string = 'T';
-    @Builder SiteButton(text: string, siteKey: string, targetUrl: string) {
-        Button(text)
-            .fontSize(this.currentSite === siteKey ? 20 : 18)
-            .fontColor(this.currentSite === siteKey ? $r('app.color.diff_content') : Color.Grey)
-            .height(40)
-            .backgroundColor(Color.Transparent)
-            .onClick(() => {
-                this.currentSite = siteKey;
-                this.url = targetUrl.toString();
-                this.web_controller.loadUrl(this.url);
-                this.triggerVibration();
-            })
-    }
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
+    @State holdCheckTMP: boolean = false;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
     @State isTDev: boolean = false;
     @State themeColor: string = "blue";
+    //切换版本方法
+    @State siteMode: SiteMode = SiteMode.SSite;
+
+    private getNextWebVersion() {
+        switch (this.siteMode) {
+            case SiteMode.SSite:
+                return SiteMode.TSite;
+            default:
+                return SiteMode.SSite;
+        }
+    }
+
+    private async getWebUrl(): Promise<URL> {
+        const isTDev = await getTDev();
+        return siteMapping[
+        isTDev && this.siteMode == SiteMode.TSite ? SiteMode.TDevSite : this.siteMode
+        ];
+    }
+
+    private async switchWebVersion(): Promise<void> {
+        // const isTDev = await getTDev()
+        let next = this.getNextWebVersion();
+        const switchVersion = next == SiteMode.SSite ? "S站" : "T站";
+        this.siteMode = next;
+        this.url = (await this.getWebUrl()).toString();
+        this.web_controller.loadUrl(this.url);
+        prompt.showToast({ message: `切换至${switchVersion}`, duration: 500 });
+        this.scroller.scrollTo({
+            xOffset: 0,
+            yOffset: 0,
+            animation: { duration: 300, curve: Curve.Ease },
+        });
+    }
 
     //智感握持
     @State Vp: number = 376;
-    @State buttonX: number = 20;
-    @State buttonHeight: number = 0;
+    @State buttonY: number = 300;
+    @State buttonShowX: number = 10;
+    @State buttonHideX: number = -25 - 10;
     @State showButtonAnimation: boolean = true;
     holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
         if (this.holdCheckON) {
             switch (data) {
                 case 1: // 左手握持
-                    this.buttonX = 20;
+                    this.buttonShowX = 10;
+                    this.buttonHideX = -45 - 10;
                     break;
                 case 2: // 右手握持
-                    this.buttonX = this.Vp - 200 - 5;
+                    this.buttonShowX = this.Vp - 45 - 10;
+                    this.buttonHideX = this.Vp + 10;
                     break;
                 default:
                     break;
@@ -103,11 +124,11 @@ struct Dashboard {
         TransitionEffect.move(TransitionEdge.BOTTOM),
     )
         .combine(TransitionEffect.scale({ x: 0, y: 1 }))
-        .animation({ curve: curves.springMotion(0.7, 0.9), duration: 1000 });
+        .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
     private effectOnPageShow: TransitionEffect = TransitionEffect.asymmetric(
         TransitionEffect.OPACITY
             .combine(TransitionEffect.scale({ x: 0, y: 0 }))
-            .animation({ curve: curves.springMotion(0.5, 0.6)}),
+            .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),
         TransitionEffect.IDENTITY
     );
 
@@ -150,7 +171,6 @@ struct Dashboard {
     }
 
     //entry
-    @State url: string = "";
     private IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
 
     private async checkFirstLaunch(): Promise<void> {
@@ -194,11 +214,15 @@ struct Dashboard {
             this.themeColor = await getThemeColor();
             // this.siteTDev = await getTDev();
             if(this.buttonPositionRIGHT){
-                this.buttonX = this.Vp - 200 - 5;
+                this.buttonShowX = this.Vp - 45 - 10;
+                this.buttonHideX = this.Vp + 10;
             } else {
-                this.buttonX = 20;
+                this.buttonShowX = 10;
+                this.buttonHideX = -45 - 10;
             }
-            this.url = this.defaultSiteT? TBaseURL.toString() : SBaseURL.toString()
+            this.siteMode = this.defaultSiteT ? SiteMode.TSite : SiteMode.SSite;
+            const targetUrlObject = await this.getWebUrl();
+            this.url = targetUrlObject.toString();
             this.web_controller.loadUrl(this.url);
         } catch (error) {
             console.error("加载设置失败:", error);
@@ -207,22 +231,28 @@ struct Dashboard {
 
     //用户名初始化(防止小天才模式）
     @StorageLink("userName") userName: string = "";
-
     async loadUserName() {
         initializeUserStorage();
         this.userName = await getUsername();
     }
-
     async saveUserName() {
         await setUsername(this.userName);
     }
-
     async resetToDeviceName() {
         await setUsername(undefined);
         await this.loadUserName();
     }
 
     //Web控制
+    private sites: Map<string, SiteConfig> = new Map<string, SiteConfig>([
+        ['S', { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') }],
+        ['T', { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') }],
+        ['R', { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') }],
+        // ['O', { key: 'O', url: OBaseURL.toString(), label: 'O站', icon: $r('sys.symbol.beidou_satellite_fill') }],
+        // ['N', { key: 'N', url: NBaseURL.toString(), label: 'N站', icon: $r('sys.symbol.beidou_satellite_fill') }],
+    ] as [string, SiteConfig][]);
+    @State private currentIndex: number = 0;
+    @State private url: string = Array.from(this.sites.values())[0].url;
     @State DashboardHeight: number = 2100;
     @State progress: number = 0;
     scroller: Scroller = new Scroller();
@@ -250,8 +280,6 @@ struct Dashboard {
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
         this.Vp = screenWidthVp;
-        const buttonHeight = px2vp(displayInfo.height);
-        this.buttonHeight = buttonHeight
         initializeSettings();
         await this.loadSettings();
         //UA
@@ -302,9 +330,11 @@ struct Dashboard {
         });
         this.buttonPositionRIGHT = await getButtonPosition();
         if(this.buttonPositionRIGHT){
-            this.buttonX = this.Vp - 200 - 5;
+            this.buttonShowX = this.Vp - 45 - 10;
+            this.buttonHideX = this.Vp + 10;
         } else {
-            this.buttonX = 20;
+            this.buttonShowX = 10;
+            this.buttonHideX = -45 - 10;
         }
         setTimeout(() => {
             this.buttonOnPageShow = true;
@@ -398,7 +428,6 @@ struct Dashboard {
 
     //获得页面URL
     @State currentUrl: string = ""; //分享URL注册
-
     public async getCurrentWebUrl(): Promise<string> {
         try {
             return this.web_controller.getUrl();
@@ -477,81 +506,114 @@ struct Dashboard {
         });
         sharableTarget.share(shareData);
     };
+    @Builder Web(site: SiteConfig){
+        Stack(){
+            if (this.isLoading) {
+                Progress({ value: this.progress, total: 100 })
+                    .width("100%")
+                    .height(90)
+                    .position({ y: 5 })
+                    .zIndex(99);
+            }
+            Scroll(this.scroller) {
+                Column(){
+                    Blank()
+                        .height(80)
+                        .width("100%")
+                        .expandSafeArea(
+                            [SafeAreaType.SYSTEM],
+                            [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
+                        )
+                    Web({
+                        src: site.url,
+                        controller: this.web_controller,
+                        renderMode: RenderMode.SYNC_RENDER,
+                    })
+                        .id(`HmDashboard_${site.key}`)
+                        .onControllerAttached(() => {
+                            if (this.url !== "") {
+                                this.web_controller.loadUrl(this.url);
+                            }
+                            try {
+                                this.web_controller.setCustomUserAgent(customUserAgent);
+                            } catch {}
+                        })
+                        .layoutMode(WebLayoutMode.FIT_CONTENT)
+                        .nestedScroll({
+                            scrollForward: NestedScrollMode.SELF_FIRST,
+                            scrollBackward: NestedScrollMode.SELF_FIRST,
+                        })
+                        .expandSafeArea(
+                            [SafeAreaType.SYSTEM],
+                            [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
+                        )
+                        .domStorageAccess(true)
+                        .darkMode(this.mode)
+                        .forceDarkAccess(true)
+                        .width("100%")
+                        .backgroundColor($r("app.color.backcolor"))
+                        .onProgressChange((p) => (this.progress = p.newProgress))
+                        .onPageBegin(() => (this.isLoading = true))
+                        .onPageEnd(() => (this.isLoading = false))
+                        .metaViewport(true)
+                }
+            }
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+
+        }
+    }
 
     //==========================主程序部分==========================
     build() {
         HdsNavigation() {
             Stack() {
                 //==========================网页嵌套滚动==========================
-                if (this.isLoading) {
-                    Progress({ value: this.progress, total: 100 })
-                        .width("100%")
-                        .height(3)
-                        .position({ y: 5 })
-                        .zIndex(99);
+                HdsTabs({ controller: this.controller }) {
+                    ForEach(Array.from(this.sites.values()), (site: SiteConfig) => {
+                        TabContent() {
+                            this.Web(site)
+                        }
+                        .tabBar(new BottomTabBarStyle(site.icon, site.label))
+                    }, (item: SiteConfig) => item.key)
                 }
-                Scroll(this.scroller) {
-                    Column() {
-                        Blank()
-                            .height(50)
-                            .width("100%")
-                            .expandSafeArea(
-                                [SafeAreaType.SYSTEM],
-                                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
-                            )
-                        Web({
-                            src: this.url,
-                            controller: this.web_controller,
-                            renderMode: RenderMode.SYNC_RENDER,
-                        })
-                            .id("Dashboard")
-                            .onControllerAttached(() => {
-                                if (this.url !== "") {
-                                    this.web_controller.loadUrl(this.url);
-                                }
-                                try {
-                                    this.web_controller.setCustomUserAgent(customUserAgent);
-                                } catch {}
-                            })
-                            .layoutMode(WebLayoutMode.FIT_CONTENT)
-                            .nestedScroll({
-                                scrollForward: NestedScrollMode.SELF_FIRST,
-                                scrollBackward: NestedScrollMode.SELF_FIRST,
-                            })
-                            .expandSafeArea(
-                                [SafeAreaType.SYSTEM],
-                                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
-                            )
-                            .domStorageAccess(true)
-                            .darkMode(this.mode)
-                            .forceDarkAccess(true)
-                            .width("100%")
-                            .backgroundColor($r("app.color.backcolor"))
-                            .onProgressChange((p) => (this.progress = p.newProgress))
-                            .onPageBegin(() => (this.isLoading = true))
-                            .onPageEnd(() => (this.isLoading = false))
-                            .metaViewport(true)
-                    }
-                    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-                }
-                .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                .onChange((index: number) => {
+                    this.currentIndex = index;
+                    this.scroller.scrollTo({
+                        xOffset: 0,
+                        yOffset: 0,
+                        animation: { duration: 300, curve: Curve.Ease },
+                    });
+                    this.triggerVibration();
+                })
+                .barOverlap(true)
+                .barPosition(BarPosition.End)
+                .vertical(false)
+                .barFloatingStyle({
+                    barBottomMargin: 28,
+                    lightColor: $r('app.color.light_color'),
+                    gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
+                    systemMaterialEffect: {
+                        materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                        materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+                    },
+                })
 
                 // ==========================悬浮按钮==========================
                 if(this.buttonOnPageShow){
-                    Row({ space: 10 }) {
+                    Column({ space: 10 }) {
                         Button() {
                             Image($r("app.media.arrow_up"))
-                                .width(22)
-                                .height(22)
+                                .width(24)
+                                .height(24)
                         }
                         .onTouch((event: TouchEvent) => {
                             if (event && event.touches[0]) {
                                 if (event.type === TouchType.Down || event.type === TouchType.Move) {
-                                    this.isPressed2 = true;
+                                    this.isPressed1 = true;
                                     this.touchX = event.touches[0].x;
                                     this.touchY = event.touches[0].y;
                                 } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                    this.isPressed2 = false;
+                                    this.isPressed1 = false;
                                 }
                             }
                         })
@@ -568,50 +630,177 @@ struct Dashboard {
                             });
                         })
                         .type(ButtonType.Circle)
-                        .width(45)
-                        .height(45)
-                        .backgroundColor('rgba(255, 255, 255, 0.1)')
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN,
-                            { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
-                        .linearGradientBlur(60,
-                            { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
-                        .border({ width: 0.5, color: 'rgba(255, 255, 255, 0.25)' })
+                        .width(45).height(45)
+                        .backgroundColor('rgba(255, 255, 255, 0.2)')
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
+                        .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
                         .shadow(ShadowStyle.OUTER_DEFAULT_MD)
+                        .visualEffect(new hdsEffect.HdsEffectBuilder()
+                            .pressShadow(this.isPressed2 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                            .pointLight({
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                options: {
+                                    color: $r('app.color.light_color'),
+                                    intensity: this.isPressed2 ? 40.0 : 0.2,
+                                    height: 30.0,
+                                } as hdsEffect.PointLightOptions
+                            })
+                            .buildEffect())
                         .border({
                             width: 1,
-                            color: $r('app.color.border')
+                            color: $r('app.color.button_border')
                         })
-                        .borderRadius(40)
+                        .borderRadius(22.5)
 
-                        Row({ space: 15 }) {
-                            this.SiteButton("T站", 'T', TBaseURL.toString())
-                            this.SiteButton("S站", 'S', SBaseURL.toString())
-                            // this.SiteButton("统计数据", 'R', RBaseURL.toString())
-                            // this.SiteButton("OpenStore", 'O', OBaseURL.toString())
-                            // this.SiteButton("NEXTStore", 'N', NBaseURL.toString())
-                        }.justifyContent(FlexAlign.SpaceEvenly)
-                        .height(45)
-                        .backgroundColor('rgba(255, 255, 255, 0.1)')
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN,
-                            { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
-                        .linearGradientBlur(60,
-                            { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
-                        .border({ width: 0.5, color: 'rgba(255, 255, 255, 0.25)' })
+                        Button() {
+                            Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
+                                .width(24)
+                                .height(24)
+                        }
+                        .onTouch((event: TouchEvent) => {
+                            if (event && event.touches[0]) {
+                                if (event.type === TouchType.Down || event.type === TouchType.Move) {
+                                    this.isPressed2 = true;
+                                    this.touchX = event.touches[0].x;
+                                    this.touchY = event.touches[0].y;
+                                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                    this.isPressed2 = false;
+                                }
+                            }
+                        })
+                        .onClick(() => {
+                            if (this.isLoading) {
+                                this.web_controller.stop();
+                                this.isLoading = false;
+                                this.triggerVibration();
+                                prompt.showToast({
+                                    message: "已停止加载",
+                                    duration: 1000,
+                                });
+                            } else {
+                                this.web_controller.refresh();
+                                try {
+                                    Promise.all([
+                                        this.web_controller.removeCache(true),
+                                        this.web_controller.removeCache(false),
+                                    ]);
+                                } catch (error) {
+                                    // man! what can I say
+                                    console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
+                                }
+                                this.isLoading = true;
+                                this.triggerVibration();
+                                prompt.showToast({
+                                    message: "刷新中...",
+                                    duration: 1000,
+                                });
+                                setTimeout(() => {
+                                    if (this.isLoading) {
+                                        this.isLoading = false;
+                                        prompt.showToast({
+                                            message: "加载超时！",
+                                            duration: 1000,
+                                        });
+                                    }
+                                }, 3000);
+                            }
+                        })
+                        .type(ButtonType.Circle)
+                        .width(45).height(45)
+                        .backgroundColor('rgba(255, 255, 255, 0.2)')
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
+                        .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
                         .shadow(ShadowStyle.OUTER_DEFAULT_MD)
+                        .visualEffect(new hdsEffect.HdsEffectBuilder()
+                            .pressShadow(this.isPressed2 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                            .pointLight({
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                options: {
+                                    color: $r('app.color.light_color'),
+                                    intensity: this.isPressed2 ? 40.0 : 0.2,
+                                    height: 30.0,
+                                } as hdsEffect.PointLightOptions
+                            })
+                            .buildEffect())
                         .border({
                             width: 1,
-                            color: $r('app.color.border')
+                            color: $r('app.color.button_border')
                         })
-                        .borderRadius(40)
+                        .borderRadius(22.5)
                     }
-                    .position({ x: this.buttonX, y: this.buttonHeight - 120})
                     .animation({ curve: curves.springMotion(0.4, 0.8) })
+                    .position({
+                        x: this.showButton ? this.buttonShowX : this.buttonHideX,
+                        y: this.buttonY,
+                    })
                     .transition(this.effectOnPageShow)
                     .animation(
                         this.showButtonAnimation
                             ? { curve: curves.springMotion(0.8, 0.8), duration: 400 }
                             : { duration: 0 },
                     )
+                    .gesture(
+                        SwipeGesture({ direction: SwipeDirection.Horizontal }).onAction(
+                            (move: GestureEvent | undefined) => {
+                                if (move) {
+                                    this.showButton = false;
+                                    setTimeout(() => {
+                                        this.showButtonAnimation = false;
+                                    }, 300);
+                                }
+                            },
+                        ),
+                    )
+                    .gesture(
+                        PanGesture({ direction: PanDirection.Vertical })
+                            .onActionStart((event: GestureEvent) => {
+                                if(this.holdCheckON){ this.holdCheckON = false; this.holdCheckTMP = true; }
+                                this.showButtonAnimation = false;
+                                this.startY = this.buttonY;
+                            })
+                            .onActionUpdate((event: GestureEvent) => {
+                                let nextY = this.startY + event.offsetY;
+                                if (nextY > 660) {
+                                    nextY = 660;
+                                } else if (nextY < 70) {
+                                    nextY = 70;
+                                }
+                                this.buttonY = nextY;
+                            })
+                            .onActionEnd((event: GestureEvent) => {
+                                this.showButtonAnimation = true;
+                                if(this.holdCheckTMP){ this.holdCheckON = true; }
+                                if (this.buttonY >= 660) {
+                                    prompt.showToast({ message: "不能再往下啦", duration: 500 });
+                                } else if (this.buttonY <= 70) {
+                                    prompt.showToast({ message: "不能再往上啦", duration: 500 });
+                                }
+                            }),
+                    )
+                }
+                if (!this.showButton) {
+                    Column()
+                        .backgroundColor(Color.Transparent)
+                        .height("100%")
+                        .width(15)
+                        .zIndex(5)
+                        .position({ x: 0 })
+                        .onClick(() => {
+                            this.showButtonAnimation = true;
+                            this.showButton = true;
+                            this.triggerVibration();
+                        });
+                    Column()
+                        .backgroundColor(Color.Transparent)
+                        .height("100%")
+                        .width(15)
+                        .zIndex(5)
+                        .position({ x: this.Vp - 15 })
+                        .onClick(() => {
+                            this.showButtonAnimation = true;
+                            this.showButton = true;
+                            this.triggerVibration();
+                        });
                 }
 
                 //==========================教程==========================
@@ -658,6 +847,7 @@ struct Dashboard {
         }
         .width("100%")
         .navBarWidth("100%")
+        .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .titleMode(HdsNavigationTitleMode.MODAL)
         .titleBar({
             style: {
@@ -705,17 +895,21 @@ struct Dashboard {
                         },
                     },
                 },
+                systemMaterialEffect: {
+                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+                },
             },
             content: {
                 title: {
-                    mainTitle: "应用看板",
+                    mainTitle: "HmDashboard",
                 },
                 menu: {
                     value: [
                         {
                             content: {
                                 label: "share",
-                                icon: $r("app.media.share"),
+                                icon: $r("sys.symbol.share"),
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
@@ -725,42 +919,8 @@ struct Dashboard {
                         },
                         {
                             content: {
-                                label: "refresh",
-                                icon: this.isLoading
-                                    ? $r("app.media.stop")
-                                    : $r("app.media.refresh"),
-                                isEnabled: true,
-                                action: () => {
-                                    if (this.isLoading) {
-                                        this.web_controller.stop();
-                                        this.isLoading = false;
-                                        this.triggerVibration();
-                                        prompt.showToast({
-                                            message: "已停止加载",
-                                            duration: 1000,
-                                        });
-                                    } else {
-                                        this.web_controller.refresh();
-                                        this.isLoading = true;
-                                        this.triggerVibration();
-                                        prompt.showToast({
-                                            message: "刷新中...",
-                                            duration: 1000,
-                                        });
-
-                                        setTimeout(() => {
-                                            if (this.isLoading) {
-                                                this.isLoading = false;
-                                            }
-                                        }, 3000);
-                                    }
-                                },
-                            },
-                        },
-                        {
-                            content: {
                                 label: "user",
-                                icon: $r("app.media.user"),
+                                icon: $r("sys.symbol.person"),
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
@@ -773,4 +933,5 @@ struct Dashboard {
             },
         });
     }
+
 }

@@ -25,7 +25,7 @@ export const submitURL: string = "submit";
 
 export const changelog: string = "changelog";
 
-export const APP_VERSION: string = "1.1.2";
+export const APP_VERSION: string = "2.0.0-beta.1";
 
 /** 太长了点
  */
