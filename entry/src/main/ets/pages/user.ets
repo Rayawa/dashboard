@@ -1,26 +1,13 @@
-import { curves, LengthMetrics, router } from "@kit.ArkUI";
-import { vibrator } from "@kit.SensorServiceKit";
-import { common, Want } from "@kit.AbilityKit";
-import { BusinessError } from "@ohos.base";
-import { APP_VERSION } from "../common/constants";
-import { deviceInfo } from "@kit.BasicServicesKit";
-import {
-    getUsername,
-    initialize as initializeUserStorage,
-    setUsername as setUsername,
-} from "../common/profile";
-import { tutorial } from "../component/tutorial";
-import { contact } from "../component/contact";
-import { app_share } from "../component/app_share";
-import {
-    BlurStrategy,
-    hdsEffect,
-    HdsNavigation,
-    HdsNavigationTitleMode,
-    HdsTabs,
-    HdsTabsController,
-    ScrollEffectType
-} from '@kit.UIDesignKit';
+import { curves, LengthMetrics, router } from '@kit.ArkUI';
+import { vibrator } from '@kit.SensorServiceKit';
+import { common, Want } from '@kit.AbilityKit';
+import { BusinessError } from '@ohos.base';
+import { deviceInfo } from '@kit.BasicServicesKit';
+import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
+import { tutorial } from '../component/tutorial';
+import { contact } from '../component/contact';
+import { app_share } from '../component/app_share';
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 @Entry
 @Component

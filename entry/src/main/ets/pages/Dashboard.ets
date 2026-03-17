@@ -9,6 +9,14 @@ import {
   HdsTabsController,
   ScrollEffectType
 } from '@kit.UIDesignKit';
+import {
+    HdsSnackBar,
+    SnackBarIconOptions,
+    SnackBarMessageOptions,
+    SnackBarOperationOptions,
+    SnackBarStyleOptions,
+    SnackBarOperationType
+} from '@kit.UIDesignKit'
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
@@ -42,6 +50,23 @@ interface SiteConfig {
 @Component
 struct Dashboard {
     //==========================状态声明部分==========================
+    uiContext: UIContext = this.getUIContext();
+    hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
+    icon: SnackBarIconOptions = {
+        icon: $r('sys.symbol.rename')
+    }
+    message: SnackBarMessageOptions = {
+        title: "您还未设置用户名",
+        content: "前往我的页面设置用户名"
+    }
+    operation: SnackBarOperationOptions = {
+        operationType: SnackBarOperationType.TEXT_WITH_CLOSE,
+    }
+    style: SnackBarStyleOptions = {
+        backgroundBlurStyle: BlurStyle.Thin,
+        nextFocusId: 'button',
+        duration: 7999
+    }
     //控制相关
     @State showButton: boolean = true;
     @State barMargin: number = 28;
@@ -317,9 +342,15 @@ struct Dashboard {
             this.buttonShowX = 10;
             this.buttonHideX = -45 - 10;
         }
-        setTimeout(() => {
-            this.buttonOnPageShow = true;
-        }, 500);
+        console.log("currentusername",this.userName)
+        if(this.userName == ''){
+            console.info("currentusername_pop!!")
+            setTimeout(() => {
+                this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
+            },3000)
+        } else {
+            console.info("currentusername_set")
+        }
     }
 
     aboutToDisappear() {
