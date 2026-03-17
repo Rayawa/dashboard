@@ -30,6 +30,7 @@ import {
     getTDev,
     getThemeColor,
     getVibrationEnabled,
+    getTabBarAuto,
     initializeSettings,
 } from '../common/SettingsStorage';
 
@@ -62,6 +63,7 @@ struct Dashboard {
 
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
+    @StorageLink("tabBarAuto") tabBarAuto: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
     @State holdCheckTMP: boolean = false;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
@@ -190,6 +192,7 @@ struct Dashboard {
             this.vibrationON = await getVibrationEnabled();
             this.holdCheckON = await getHoldCheckEnabled();
             this.buttonPositionRIGHT = await getButtonPosition();
+            this.tabBarAuto = await getTabBarAuto();
             this.themeColor = await getThemeColor();
             // this.siteTDev = await getTDev();
             if(this.buttonPositionRIGHT){
@@ -537,26 +540,26 @@ struct Dashboard {
                 }
             }
             .onWillScroll(() => {
-                const currentOffset = this.scroller.currentOffset().yOffset;
-                if (currentOffset > this.lastOffset && currentOffset > 50) {
-                    if (this.isTabsBarVisible && !this.lockBar) {
-                        animateTo({ curve: curves.springMotion(0.9, 0.8) }, () => {
-                            this.barMargin = -90;
-                            this.isTabsBarVisible = false;
-                        })
+                if(this.tabBarAuto) {
+                    const currentOffset = this.scroller.currentOffset().yOffset;
+                    if (currentOffset > this.lastOffset && currentOffset > 50) {
+                        if (this.isTabsBarVisible && !this.lockBar) {
+                            animateTo({ curve: curves.springMotion(0.9, 0.8) }, () => {
+                                this.barMargin = -90;
+                                this.isTabsBarVisible = false;
+                            })
+                        }
+                    } else if (currentOffset < this.lastOffset) {
+                        if (!this.isTabsBarVisible && !this.lockBar) {
+                            animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
+                                this.barMargin = 28;
+                                this.isTabsBarVisible = true;
+                            })
+                        }
                     }
+                    this.lastOffset = currentOffset;
                 }
-                else if (currentOffset < this.lastOffset) {
-                    if (!this.isTabsBarVisible && !this.lockBar) {
-                        animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
-                            this.barMargin = 28;
-                            this.isTabsBarVisible = true;
-                        })
-                    }
-                }
-                this.lastOffset = currentOffset;
             })
-
         }
     }
 
@@ -803,7 +806,7 @@ struct Dashboard {
                             this.triggerVibration();
                         });
                 }
-                if (!this.isTabsBarVisible) {
+                if (this.tabBarAuto && !this.isTabsBarVisible) {
                     Column()
                         .backgroundColor(Color.Transparent)
                         .height(50)
