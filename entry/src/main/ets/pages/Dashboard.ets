@@ -9,6 +9,7 @@ import {
     HdsTabsController,
     ScrollEffectType
 } from '@kit.UIDesignKit';
+import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
@@ -18,7 +19,6 @@ import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare, systemShare } from '@kit.ShareKit';
 import { preferences, uniformTypeDescriptor as utd } from '@kit.ArkData';
 import { resourceManager } from '@kit.LocalizationKit';
-import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
 import URL from '../common/url';
@@ -581,7 +581,6 @@ struct Dashboard {
                     this.triggerVibration();
                 })
                 .animation({ curve: curves.springMotion(0.8, 0.8), duration: 400 })
-                .transition(this.pageEffect)
                 .blurStrategy(BlurStrategy.ENABLE)
                 .barOverlap(true)
                 .barPosition(BarPosition.End)

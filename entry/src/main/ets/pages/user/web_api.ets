@@ -1,27 +1,23 @@
-import { webview } from "@kit.ArkWeb";
-import {
-    HdsNavigation,
-    HdsNavigationTitleMode,
-    ScrollEffectType,
-    HdsNavigationAttribute,
-} from "@kit.UIDesignKit";
-import { LengthMetrics, prompt, router } from "@kit.ArkUI";
-import window from "@ohos.window";
-import { vibrator } from "@kit.SensorServiceKit";
-import { BusinessError } from "@kit.BasicServicesKit";
+import { webview } from '@kit.ArkWeb';
+import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, } from '@kit.UIDesignKit';
+import { hdsMaterial } from '@hms.hds.hdsMaterial';
+import { LengthMetrics, prompt, router } from '@kit.ArkUI';
+import { changelog, TBaseURL } from '../../common/constants';
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { URL } from '../../common/url';
 
 @Entry
 @Component
-struct web_api {
-    @State url: string = "http://shenjack.top:10003/docs";
-    private win: window.Window | null = null;
+struct web_log {
+    @StorageLink("vibrationON") vibrationON: boolean = true;
+    @State url: string = 'http://shenjack.top:10003/docs';
+    @State progress: number = 0;
     scroller: Scroller = new Scroller();
     private web_controller: webview.WebviewController = new webview.WebviewController();
     @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
     @State mode: WebDarkMode = WebDarkMode.Auto;
     @State isLoading: boolean = false;
-
-    @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
             vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
@@ -60,18 +56,6 @@ struct web_api {
         }
     }
 
-    async aboutToAppear() {
-        const customUA = webview.WebviewController.getDefaultUserAgent() + " Hm_dashboard";
-        webview.WebviewController.setAppCustomUserAgent(customUA);
-    }
-    async onPageShow(): Promise<void> {
-        this.win = await window.getLastWindow(getContext());
-        const isDark = this.mode === WebDarkMode.On;
-        this.win.setWindowSystemBarProperties({
-            statusBarColor: "#00000000",
-            statusBarContentColor: isDark ? "#FFFFFF" : "#000000",
-        });
-    }
     onBackPress(): boolean | void {
         if (this.web_controller.accessStep(-1)) {
             console.info("网页可以返回，执行后退");
@@ -86,44 +70,47 @@ struct web_api {
 
     build() {
         HdsNavigation() {
-            Stack() {
+            Stack(){
+                if (this.isLoading) {
+                    Progress({ value: this.progress, total: 100 })
+                        .width("100%")
+                        .height(90)
+                        .position({ y: 5 })
+                        .zIndex(99);
+                }
                 Scroll(this.scroller) {
-                    Column() {
-                        Blank()
-                            .height(60)
-                            .width("100%")
-                            .expandSafeArea(
-                                [SafeAreaType.SYSTEM],
-                                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
-                            )
-                        Web({
-                            src: this.url,
-                            controller: this.web_controller,
-                            renderMode: RenderMode.SYNC_RENDER,
+
+                    Web({
+                        src: this.url,
+                        controller: this.web_controller,
+                        renderMode: RenderMode.SYNC_RENDER,
+                    })
+                        .id(`HmDashboard_web_api`)
+                        .onControllerAttached(() => {
+                            if (this.url !== "") {
+                                this.web_controller.loadUrl(this.url);
+                            }
+
                         })
-                            .layoutMode(WebLayoutMode.FIT_CONTENT)
-                            .nestedScroll({
-                                scrollForward: NestedScrollMode.SELF_FIRST,
-                                scrollBackward: NestedScrollMode.SELF_FIRST,
-                            })
-                            .expandSafeArea(
-                                [SafeAreaType.SYSTEM],
-                                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
-                            )
-                            .domStorageAccess(true)
-                            .darkMode(this.mode)
-                            .forceDarkAccess(true)
-                            .width("100%")
-                            .backgroundColor($r("app.color.backcolor"))
-                            .onPageBegin(() => (this.isLoading = true))
-                            .onPageEnd(() => (this.isLoading = false))
-                            .onControllerAttached(() => {
-                                try {
-                                    // this.web_controller.setCustomUserAgent(APP_UA);
-                                } catch {}
-                            })
-                    }
-                    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                        .layoutMode(WebLayoutMode.FIT_CONTENT)
+                        .nestedScroll({
+                            scrollForward: NestedScrollMode.SELF_FIRST,
+                            scrollBackward: NestedScrollMode.SELF_FIRST,
+                        })
+                        .expandSafeArea(
+                            [SafeAreaType.SYSTEM],
+                            [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
+                        )
+                        .domStorageAccess(true)
+                        .darkMode(this.mode)
+                        .forceDarkAccess(true)
+                        .width("100%")
+                        .backgroundColor($r("app.color.backcolor"))
+                        .onProgressChange((p) => (this.progress = p.newProgress))
+                        .onPageBegin(() => (this.isLoading = true))
+                        .onPageEnd(() => (this.isLoading = false))
+                        .metaViewport(true)
+
                 }
                 .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
             }
@@ -178,10 +165,14 @@ struct web_api {
                         },
                     },
                 },
+                systemMaterialEffect: {
+                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+                },
             },
             content: {
                 title: {
-                    mainTitle: "API文档说明",
+                    mainTitle: "Web更新日志",
                 },
                 menu: {
                     value: [
@@ -189,8 +180,8 @@ struct web_api {
                             content: {
                                 label: "refresh",
                                 icon: this.isLoading
-                                    ? $r("app.media.stop")
-                                    : $r("app.media.refresh"),
+                                    ? $r("sys.symbol.xmark_circle")
+                                    : $r("sys.symbol.arrow_clockwise"),
                                 isEnabled: true,
                                 action: () => {
                                     if (this.isLoading) {
@@ -222,7 +213,7 @@ struct web_api {
                         {
                             content: {
                                 label: "top",
-                                icon: $r("app.media.arrow_up"),
+                                icon: $r("sys.symbol.arrow_up_to_line"),
                                 isEnabled: true,
                                 action: () => {
                                     this.scroller.scrollTo({

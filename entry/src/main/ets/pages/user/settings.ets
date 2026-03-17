@@ -17,6 +17,8 @@ import {
     setTDev,
     getTDev,
 } from "../../common/SettingsStorage";
+import { hdsMaterial } from '@hms.hds.hdsMaterial';
+
 import {
     HdsNavigation,
     HdsNavigationTitleMode,
@@ -538,6 +540,10 @@ export struct settings {
                             iconColor: $r("sys.color.icon_primary"),
                         },
                     },
+                },
+                systemMaterialEffect: {
+                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
                 },
             },
             content: {
