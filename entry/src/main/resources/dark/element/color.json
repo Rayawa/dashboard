@@ -14,6 +14,18 @@
       "value": "#FF121E29"
     },
     {
+      "name": "mask_color",
+      "value": "#33000000"
+    },
+    {
+      "name": "light_color",
+      "value": "#33E5E5E5"
+    },
+    {
+      "name": "button_border",
+      "value": "#626B74"
+    },
+    {
       "name": "backcolor",
       "value": "#1D2328"
     },
