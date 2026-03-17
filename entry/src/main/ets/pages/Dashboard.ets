@@ -193,8 +193,12 @@ struct Dashboard {
                 this.buttonShowX = 10;
                 this.buttonHideX = -45 - 10;
             }
-            this.siteMode = this.defaultSiteT ? SiteMode.TSite : SiteMode.SSite;
-            this.web_controller.loadUrl(this.url);
+            if (!this.isContinuation) {
+                this.web_controller.loadUrl(this.url);
+            } else {
+                // 如果是接续，确保控制器加载的是接续的 URL
+                this.web_controller.loadUrl(this.mUrl);
+            }
         } catch (error) {
             console.error("加载设置失败:", error);
         }
@@ -215,15 +219,15 @@ struct Dashboard {
     }
 
     //Web控制
-    private sites: Map<string, SiteConfig> = new Map<string, SiteConfig>([
-        ['S', { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') }],
-        ['T', { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') }],
-        ['R', { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') }],
-        // ['O', { key: 'O', url: OBaseURL.toString(), label: 'O站', icon: $r('sys.symbol.beidou_satellite_fill') }],
-        // ['N', { key: 'N', url: NBaseURL.toString(), label: 'N站', icon: $r('sys.symbol.beidou_satellite_fill') }],
-    ] as [string, SiteConfig][]);
+    @State private sitesList: SiteConfig[] = [
+        { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') }
+    ];
     @State private currentIndex: number = 0;
-    @State private url: string = Array.from(this.sites.values())[0].url;
+    @LocalStorageProp('migratedUrl') mUrl: string = "";
+    @LocalStorageProp('migratedIndex') mIndex: number = 0;
+    @State private url: string = Array.from(this.sitesList.values())[0].url;
     @State DashboardHeight: number = 2100;
     @State progress: number = 0;
     scroller: Scroller = new Scroller();
@@ -235,9 +239,18 @@ struct Dashboard {
     //==========================页面生命周期部分==========================
     private shareManager?: WebShareManager;
     private context = getContext(this) as common.UIAbilityContext;
+    @State isContinuation: boolean = false;
 
     async aboutToAppear() {
         this.buttonOnPageShow = false;
+        if (this.mUrl) {
+            this.isContinuation = true;
+            this.currentIndex = this.mIndex;
+            this.url = this.mUrl;
+            if (this.sitesList[this.mIndex]) {
+                this.sitesList[this.mIndex].url = this.mUrl;
+            }
+        }
         let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
             console.info('callback succeeded, ageGroup:' + data.ageGroup + ", confidence:" + data.confidence);
         };
@@ -391,6 +404,12 @@ struct Dashboard {
                                 this.web_controller.setCustomUserAgent(customUserAgent);
                             } catch {}
                         })
+                        .onPageBegin((event) => {
+                            this.isLoading = true;
+                            if (event) {
+                                AppStorage.setOrCreate('latestWebUrl', event.url);
+                            }
+                        })
                         .layoutMode(WebLayoutMode.FIT_CONTENT)
                         .nestedScroll({
                             scrollForward: NestedScrollMode.SELF_FIRST,
@@ -441,13 +460,14 @@ struct Dashboard {
             Stack() {
                 //==========================网页嵌套滚动==========================
                 HdsTabs({ controller: this.controller }) {
-                    ForEach(Array.from(this.sites.values()), (site: SiteConfig) => {
+                    ForEach(this.sitesList, (site: SiteConfig) => {
                         TabContent() { this.Web(site) }
                         .tabBar(new BottomTabBarStyle(site.icon, site.label))
-                    }, (item: SiteConfig) => item.key)
+                    }, (item: SiteConfig) => item.key + item.url)
                 }
                 .onChange((index: number) => {
                     this.currentIndex = index;
+                    AppStorage.setOrCreate('latestIndex', index);
                     this.scroller.scrollTo({
                         xOffset: 0,
                         yOffset: 0,
@@ -472,7 +492,6 @@ struct Dashboard {
                         materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
                     },
                 })
-
 
                 // ==========================悬浮按钮==========================
                 if(this.buttonOnPageShow){
