@@ -2,11 +2,15 @@ import { LengthMetrics, prompt, router } from "@kit.ArkUI";
 import { vibrator } from "@kit.SensorServiceKit";
 import { BusinessError } from "@kit.BasicServicesKit";
 import {
+    BlurStrategy,
+    hdsEffect,
     HdsNavigation,
     HdsNavigationTitleMode,
-    ScrollEffectType,
-    HdsNavigationAttribute,
-} from "@kit.UIDesignKit";
+    HdsTabs,
+    HdsTabsController,
+    ScrollEffectType
+} from '@kit.UIDesignKit';
+import { hdsMaterial } from '@hms.hds.hdsMaterial';
 
 interface UpdateLog {
     version: string;
@@ -327,6 +331,10 @@ struct app_log {
                             iconColor: $r("sys.color.icon_primary"),
                         },
                     },
+                },
+                systemMaterialEffect: {
+                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
                 },
             },
             content: {

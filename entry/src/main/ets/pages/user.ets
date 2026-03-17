@@ -13,11 +13,15 @@ import { tutorial } from "../component/tutorial";
 import { contact } from "../component/contact";
 import { app_share } from "../component/app_share";
 import {
+    BlurStrategy,
+    hdsEffect,
     HdsNavigation,
     HdsNavigationTitleMode,
-    ScrollEffectType,
-    HdsNavigationAttribute,
-} from "@kit.UIDesignKit";
+    HdsTabs,
+    HdsTabsController,
+    ScrollEffectType
+} from '@kit.UIDesignKit';
+import { hdsMaterial } from '@hms.hds.hdsMaterial';
 @Entry
 @Component
 export struct user {
@@ -645,6 +649,10 @@ export struct user {
                         },
                     },
                 },
+                systemMaterialEffect: {
+                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+                },
             },
             content: {
                 title: {
@@ -655,7 +663,7 @@ export struct user {
                         {
                             content: {
                                 label: "settings",
-                                icon: $r("app.media.settings"),
+                                icon: $r("sys.symbol.gearshape"),
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
