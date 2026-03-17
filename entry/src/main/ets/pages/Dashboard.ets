@@ -342,8 +342,11 @@ struct Dashboard {
             this.buttonShowX = 10;
             this.buttonHideX = -45 - 10;
         }
+        setTimeout(() => {
+            this.buttonOnPageShow = true;
+        }, 500);
         console.log("currentusername",this.userName)
-        if(this.userName == ''){
+        if(this.userName == '' || this.userName == deviceInfo.productModel){
             console.info("currentusername_pop!!")
             setTimeout(() => {
                 this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
@@ -367,7 +370,6 @@ struct Dashboard {
             const error = err as BusinessError;
             console.error("Motion off failed: " + error.code);
         }
-        this.buttonOnPageShow = false;
     }
 
     onBackGround() {
