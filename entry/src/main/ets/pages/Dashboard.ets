@@ -1,37 +1,34 @@
 import { webview } from '@kit.ArkWeb';
 import { motion, userStatus } from '@kit.MultimodalAwarenessKit';
 import {
-    BlurStrategy,
-    hdsEffect,
-    HdsNavigation,
-    HdsNavigationTitleMode,
-    HdsTabs,
-    HdsTabsController,
-    ScrollEffectType
+  BlurStrategy,
+  hdsEffect,
+  HdsNavigation,
+  HdsNavigationTitleMode,
+  HdsTabs,
+  HdsTabsController,
+  ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
-import { customUserAgent, SBaseURL, siteMapping, TBaseURL, RBaseURL, NBaseURL, OBaseURL } from '../common/constants';
-import { Logger } from '../utils/Logger';
+import { customUserAgent, RBaseURL, SBaseURL, TBaseURL } from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
-import { harmonyShare, systemShare } from '@kit.ShareKit';
-import { preferences, uniformTypeDescriptor as utd } from '@kit.ArkData';
-import { resourceManager } from '@kit.LocalizationKit';
+import { harmonyShare } from '@kit.ShareKit';
+import { WebShareManager } from '../common/shareControl';
+import { preferences } from '@kit.ArkData';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
-import URL from '../common/url';
 import { SiteMode } from '../common/types';
 import {
-    getButtonPosition,
-    getDefaultSite,
-    getHoldCheckEnabled,
-    getTDev,
-    getThemeColor,
-    getVibrationEnabled,
-    getTabBarAuto,
-    initializeSettings,
+  getButtonPosition,
+  getDefaultSite,
+  getHoldCheckEnabled,
+  getTabBarAuto,
+  getThemeColor,
+  getVibrationEnabled,
+  initializeSettings
 } from '../common/SettingsStorage';
 
 interface SiteConfig {
@@ -70,12 +67,6 @@ struct Dashboard {
     @State isTDev: boolean = false;
     @State themeColor: string = "blue";
     @State siteMode: SiteMode = SiteMode.SSite;
-    private async getWebUrl(): Promise<URL> {
-        const isTDev = await getTDev();
-        return siteMapping[
-        isTDev && this.siteMode == SiteMode.TSite ? SiteMode.TDevSite : this.siteMode
-        ];
-    }
 
     //智感握持
     @State WVp: number = 376;
@@ -203,8 +194,6 @@ struct Dashboard {
                 this.buttonHideX = -45 - 10;
             }
             this.siteMode = this.defaultSiteT ? SiteMode.TSite : SiteMode.SSite;
-            const targetUrlObject = await this.getWebUrl();
-            this.url = targetUrlObject.toString();
             this.web_controller.loadUrl(this.url);
         } catch (error) {
             console.error("加载设置失败:", error);
@@ -244,6 +233,7 @@ struct Dashboard {
     @State isLoading: boolean = false;
 
     //==========================页面生命周期部分==========================
+    private shareManager?: WebShareManager;
     private context = getContext(this) as common.UIAbilityContext;
 
     async aboutToAppear() {
@@ -286,19 +276,17 @@ struct Dashboard {
             const error = err as BusinessError;
             console.error("订阅失败，错误码: " + error.code);
         }
+
         //分享
-        if (this.isNoListening()) {
-            this.shareListening();
-        }
-        const uiContext: UIContext = this.getUIContext();
-        const context: Context = uiContext.getHostContext() as Context;
-        context.eventHub.on("onFocus", () => {
-            if (this.isNoListening()) {
-                this.shareListening(); //启用两种监听
-            }
+        const context = getContext(this) as common.UIAbilityContext;
+        this.shareManager = WebShareManager.getInstance(context, this.web_controller);
+        this.shareManager.enablePassiveShare();
+        this.context.eventHub.on("onFocus", () => {
+            this.shareManager?.enablePassiveShare();
         });
-        context.eventHub.on("onBackGround", () => {
+        this.context.eventHub.on("onBackGround", () => {
             this.onBackGround();
+            this.shareManager?.disablePassiveShare();
         });
     }
 
@@ -322,26 +310,23 @@ struct Dashboard {
     }
 
     aboutToDisappear() {
-        this.shareDisablingListening(); //关闭监听
-        const uiContext: UIContext = this.getUIContext();
-        const context: Context = uiContext.getHostContext() as Context;
-        context.eventHub.off("onFocus");
-        context.eventHub.off("onBackGround");
-        this.shareDisablingListening();
+        this.shareManager?.disablePassiveShare();
+        const hostContext = this.context;
+        hostContext.eventHub.off("onFocus");
+        hostContext.eventHub.off("onBackGround");
         harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
             sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
         });
-        //握持监听
         try {
             motion.off("holdingHandChanged", this.holdingHandCallback);
         } catch (err) {
             const error = err as BusinessError;
-            console.error("取消订阅失败，错误码: " + error.code);
+            console.error("Motion off failed: " + error.code);
         }
+        this.buttonOnPageShow = false;
     }
 
-    private onBackGround() {
-        this.shareDisablingListening();
+    onBackGround() {
         harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
             sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
         });
@@ -373,119 +358,6 @@ struct Dashboard {
             return false;
         }
     }
-
-    //==========================分享部分==========================
-    //开启关闭监听方法
-    private shareListening() {
-        if (this.isNoListening()) {
-            harmonyShare.on("knockShare", this.purityCallback);
-            harmonyShare.on("gesturesShare", this.immersiveCallback);
-            this.ShareStatus = true;
-        } else {
-            try {
-                const uiContext: UIContext = this.getUIContext();
-                uiContext.getPromptAction().showToast({ message: "Disable other knock events." });
-            } catch (error) {
-                Logger.error(`showToast error. Code: ${error?.code}, message: ${error?.message}`);
-            }
-        }
-    }
-
-    private shareDisablingListening() {
-        harmonyShare.off("knockShare", this.purityCallback);
-        harmonyShare.off("gesturesShare", this.immersiveCallback);
-        this.ShareStatus = false;
-    }
-
-    //监听状态控制
-    @State ShareStatus: boolean = false;
-    @State rejectStatus: boolean = false;
-    @State updateStatus: boolean = false;
-
-    private isNoListening() {
-        return !this.ShareStatus && !this.rejectStatus && !this.updateStatus;
-    }
-
-    //获得页面URL
-    @State currentUrl: string = ""; //分享URL注册
-    public async getCurrentWebUrl(): Promise<string> {
-        try {
-            return this.web_controller.getUrl();
-        } catch (err) {
-            Logger.error("WebView", "获取 WebView URL 失败: " + (err as BusinessError).message);
-            return "";
-        }
-    }
-
-    //按钮分享URL方法
-    private async shareUrl() {
-        const uiContext: UIContext = this.getUIContext();
-        const contextFaker: Context = uiContext.getHostContext() as Context;
-        const resourceMgr: resourceManager.ResourceManager = contextFaker.resourceManager;
-        this.currentUrl = await this.getCurrentWebUrl();
-        let fileData: Uint8Array | undefined = undefined;
-        try {
-            fileData = await resourceMgr.getMediaContent($r("app.media.app_icon").id);
-        } catch (error) {
-            Logger.error(`getMediaContent error. Code: ${error?.code}, message: ${error?.message}`);
-        }
-        let shareData: systemShare.SharedData = new systemShare.SharedData({
-            utd: utd.UniformDataType.HYPERLINK,
-            content: `${this.currentUrl}`,
-            title: "应用看板链接分享",
-            description: `${this.currentUrl}`,
-            thumbnail: fileData,
-        });
-        let controller: systemShare.ShareController = new systemShare.ShareController(shareData);
-        const context: common.UIAbilityContext =
-            uiContext.getHostContext() as common.UIAbilityContext;
-        controller
-            .show(context, {
-                previewMode: systemShare.SharePreviewMode.DEFAULT,
-                selectionMode: systemShare.SelectionMode.SINGLE,
-            })
-            .then(() => {
-                Logger.info("ShareController show success.");
-            })
-            .catch((error: BusinessError) => {
-                Logger.error(
-                    `ShareController show error. code: ${error?.code}, message: ${error?.message}`,
-                );
-            });
-    }
-
-    //碰一碰分享方法
-    private purityCallback = async (sharableTarget: harmonyShare.SharableTarget) => {
-        this.currentUrl = await this.getCurrentWebUrl();
-        let shareData: systemShare.SharedData = new systemShare.SharedData({
-            utd: utd.UniformDataType.HYPERLINK,
-            content: `${this.currentUrl}`,
-            title: "应用看板链接分享",
-            description: this.currentUrl,
-        });
-        sharableTarget.share(shareData);
-    };
-    //隔空抓取方法
-    private immersiveCallback = async (sharableTarget: harmonyShare.SharableTarget) => {
-        const uiContext: UIContext = this.getUIContext();
-        const contextFaker: Context = uiContext.getHostContext() as Context;
-        const resourceMgr: resourceManager.ResourceManager = contextFaker.resourceManager;
-        this.currentUrl = await this.getCurrentWebUrl();
-        let fileData: Uint8Array | undefined = undefined;
-        try {
-            fileData = await resourceMgr.getMediaContent($r("app.media.app_icon").id);
-        } catch (error) {
-            Logger.error(`getMediaContent error. Code: ${error?.code}, message: ${error?.message}`);
-        }
-        let shareData: systemShare.SharedData = new systemShare.SharedData({
-            utd: utd.UniformDataType.HYPERLINK,
-            content: `${this.currentUrl}`,
-            title: "应用看板链接分享",
-            description: this.currentUrl,
-            thumbnail: fileData,
-        });
-        sharableTarget.share(shareData);
-    };
 
     @Builder Web(site: SiteConfig){
         Stack(){
@@ -936,8 +808,8 @@ struct Dashboard {
                                 icon: $r("sys.symbol.share"),
                                 isEnabled: true,
                                 action: () => {
+                                    this.shareManager?.showSystemShare();
                                     this.triggerVibration();
-                                    this.shareUrl();
                                 },
                             },
                         },
@@ -947,8 +819,8 @@ struct Dashboard {
                                 icon: $r("sys.symbol.person"),
                                 isEnabled: true,
                                 action: () => {
-                                    this.triggerVibration();
                                     router.pushUrl({ url: "pages/user" });
+                                    this.triggerVibration();
                                 },
                             },
                         },
