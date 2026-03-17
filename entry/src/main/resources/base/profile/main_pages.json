@@ -1,7 +1,7 @@
 {
   "src": [
-    "pages/Dashboard",
     "pages/user",
+    "pages/Dashboard",
     "pages/complex_share",
     "pages/user/web_log",
     "pages/user/web_api",
