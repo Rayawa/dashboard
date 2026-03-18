@@ -262,7 +262,7 @@ export struct tutorial {
                 .height("44%")
                 .justifyContent(FlexAlign.SpaceBetween)
             }
-            .height("90%")
+            .height("85%")
             .width("95%")
             .borderRadius(16)
             .padding(20)
@@ -289,49 +289,5 @@ export struct tutorial {
                 .selectedColor($r("sys.color.comp_background_emphasize")),
         )
         .index(this.currentIndex);
-
-        // .customContentTransition({
-        //   timeout: 1000,
-        //   transition: (proxy: SwiperContentTransitionProxy) => {
-        //     // 1. 从代理对象获取动画参数
-        //     const index = proxy.index;           // 当前页面索引
-        //     const progress = proxy.progress;     // 动画进度 (0 -> 1)
-        //     const rect = proxy.rect;             // Swiper尺寸
-        //     const nextIndex = proxy.nextIndex;   // 下一个页面索引
-        //
-        //     // 2. 判断滑动方向
-        //     let direction = 1;
-        //     if (nextIndex > index) {
-        //       direction = 1;  // 向左滑动
-        //     } else if (nextIndex < index) {
-        //       direction = -1; // 向右滑动
-        //     }
-        //
-        //     // 3. 计算滑动距离
-        //     const translateX = rect.width * (1 - progress);
-        //
-        //     // 4. 使用代理对象为当前页面设置动画
-        //     if (index === proxy.currentIndex) {
-        //       // 当前活动页：向左滑出 + 淡出
-        //       proxy.setPage(index, {
-        //         opacity: progress,  // 从1到0
-        //         transform: {
-        //           translate: { x: -translateX * direction }
-        //         }
-        //       } as ContentTransition);
-        //     }
-        //
-        //     // 5. 为新页面设置动画
-        //     if (index === nextIndex) {
-        //       // 新页面：从右侧滑入 + 淡入
-        //       proxy.setPage(nextIndex, {
-        //         opacity: progress,  // 从0到1
-        //         transform: {
-        //           translate: { x: translateX * direction }
-        //         }
-        //       } as ContentTransition);
-        //     }
-        //   }
-        // })
     }
 }
