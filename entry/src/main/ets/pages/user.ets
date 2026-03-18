@@ -2,6 +2,8 @@ import { curves, LengthMetrics, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
+import { APP_VERSION, isTSiteDev } from '../common/constants';
+import { settings } from "../component/settings";
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
@@ -56,6 +58,10 @@ export struct user {
             });
         }
     }
+    @Builder Settings(){
+        settings()
+    }
+    @State showSettings: boolean = false ;
 
     @State showTutorial: boolean = false;
     @State showSubmit: boolean = false;
@@ -442,26 +448,26 @@ export struct user {
                             offsetY: 2,
                         })
                         .width("90%")
-                        // Divider()
-                        //     .margin({ top: 20, bottom: 20 })
-                        //     .color($r("app.color.border"))
-                        // Text(`Version ${APP_VERSION}`)
-                        //     .fontColor("#888")
-                        //     .fontSize(12)
-                        //     .margin(5)
-                        // Text("本应用备案域名：rayawa.top")
-                        //     .fontSize(12)
-                        //     .fontColor("#888")
-                        //     .margin(5)
-                        // Column() {
-                        //     Text("京ICP备2025153453号")
-                        //         .fontSize(12)
-                        //         .fontColor($r("app.color.diff_content"))
-                        //         .onClick(() => {
-                        //             this.triggerVibration();
-                        //             this.openLink();
-                        //         })
-                        // }.margin(5)
+                        Divider()
+                            .margin({ top: 20, bottom: 20 })
+                            .color($r("app.color.border"))
+                        Text(`Version ${APP_VERSION}`)
+                            .fontColor("#888")
+                            .fontSize(12)
+                            .margin(5)
+                        Text("本应用备案域名：rayawa.top")
+                            .fontSize(12)
+                            .fontColor("#888")
+                            .margin(5)
+                        Column() {
+                            Text("京ICP备2025153453号")
+                                .fontSize(12)
+                                .fontColor($r("app.color.diff_content"))
+                                .onClick(() => {
+                                    this.triggerVibration();
+                                    this.openLink();
+                                })
+                        }.margin(5)
                     }
                     .width("100%")
                     .alignItems(HorizontalAlign.Center)
@@ -589,6 +595,12 @@ export struct user {
             .height("100%")
         }
         .navBarWidth("100%")
+        .bindSheet($$this.showSettings, this.Settings(), {
+            title: { title: '设置' },
+            height: 400,
+            showClose: true,
+            backgroundColor: $r('app.color.backcolor'),
+        })
         .titleMode(HdsNavigationTitleMode.MINI)
         .titleBar({
             style: {
@@ -653,8 +665,8 @@ export struct user {
                                 icon: $r("sys.symbol.gearshape"),
                                 isEnabled: true,
                                 action: () => {
+                                    this.showSettings = true;
                                     this.triggerVibration();
-                                    router.pushUrl({ url: "pages/user/settings" });
                                 },
                             },
                         },
@@ -662,8 +674,8 @@ export struct user {
                 },
                 backIcon: {
                     action: () => {
-                        this.triggerVibration();
                         router.back();
+                        this.triggerVibration();
                     },
                 },
             },

@@ -344,13 +344,15 @@ struct Dashboard {
             this.buttonOnPageShow = true;
         }, 500);
         console.log("currentusername",this.userName)
-        if(this.userName == '' || this.userName == deviceInfo.productModel){
-            console.info("currentusername_pop!!")
-            setTimeout(() => {
-                this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
-            },3000)
-        } else {
-            console.info("currentusername_set")
+        if(!this.showTutorial){
+            if(this.userName == '' || this.userName == deviceInfo.productModel){
+                console.info("currentusername_pop!!")
+                setTimeout(() => {
+                    this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
+                },3000)
+            } else {
+                console.info("currentusername_set")
+            }
         }
     }
 
@@ -772,7 +774,7 @@ struct Dashboard {
                                 duration: 1000,
                             }),
                         )
-                        tutorial()
+                        tutorial().margin({ top: 120 }).height("95%")
                     }
                     .zIndex(999)
                     .gesture(
