@@ -19,7 +19,7 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
-import { customUserAgent, RBaseURL, SBaseURL, TBaseURL } from '../common/constants';
+import { customUserAgent, RBaseURL, SBaseURL, TBaseURL, NBaseURL, OBaseURL } from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
@@ -243,9 +243,11 @@ struct Dashboard {
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
-        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') }
+        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'O', url: OBaseURL.toString(), label: 'O站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'N', url: NBaseURL.toString(), label: 'N站', icon: $r('sys.media.wifi_router_fill') },
     ];
     @State private currentIndex: number = 0;
     @LocalStorageProp('migratedUrl') mUrl: string = "";
@@ -506,6 +508,7 @@ struct Dashboard {
                         yOffset: 0,
                         animation: { duration: 300, curve: Curve.Ease },
                     });
+                    this.web_controller.refresh()
                     this.triggerVibration();
                 })
                 .animation({ curve: curves.springMotion(0.8, 0.8), duration: 400 })
