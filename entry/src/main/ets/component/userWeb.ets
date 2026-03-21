@@ -219,36 +219,44 @@ export struct userWeb {
             .zIndex(99);
         }
         Scroll(this.scroller) {
-
-          Web({
-            src: this.url,
-            controller: this.web_controller,
-            renderMode: RenderMode.SYNC_RENDER,
-          })
-            .id(`HmDashboard_web_user`)
-            .onControllerAttached(() => {
-              if (this.url !== "") {
-                this.web_controller.loadUrl(this.url);
-              }
+          Column() {
+            Blank()
+              .height(80)
+              .width("100%")
+              .expandSafeArea(
+                [SafeAreaType.SYSTEM],
+                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
+              )
+            Web({
+              src: this.url,
+              controller: this.web_controller,
+              renderMode: RenderMode.SYNC_RENDER,
             })
-            .layoutMode(WebLayoutMode.FIT_CONTENT)
-            .nestedScroll({
-              scrollForward: NestedScrollMode.SELF_FIRST,
-              scrollBackward: NestedScrollMode.SELF_FIRST,
-            })
-            .expandSafeArea(
-              [SafeAreaType.SYSTEM],
-              [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
-            )
-            .domStorageAccess(true)
-            .darkMode(this.mode)
-            .forceDarkAccess(true)
-            .width("100%")
-            .backgroundColor($r("app.color.backcolor"))
-            .onProgressChange((p) => (this.progress = p.newProgress))
-            .onPageBegin(() => (this.isLoading = true))
-            .onPageEnd(() => (this.isLoading = false))
-            .metaViewport(true)
+              .id(`HmDashboard_web_user`)
+              .onControllerAttached(() => {
+                if (this.url !== "") {
+                  this.web_controller.loadUrl(this.url);
+                }
+              })
+              .layoutMode(WebLayoutMode.FIT_CONTENT)
+              .nestedScroll({
+                scrollForward: NestedScrollMode.SELF_FIRST,
+                scrollBackward: NestedScrollMode.SELF_FIRST,
+              })
+              .expandSafeArea(
+                [SafeAreaType.SYSTEM],
+                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
+              )
+              .domStorageAccess(true)
+              .darkMode(this.mode)
+              .forceDarkAccess(true)
+              .width("100%")
+              .backgroundColor($r("app.color.backcolor"))
+              .onProgressChange((p) => (this.progress = p.newProgress))
+              .onPageBegin(() => (this.isLoading = true))
+              .onPageEnd(() => (this.isLoading = false))
+              .metaViewport(true)
+          }
 
         }
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
