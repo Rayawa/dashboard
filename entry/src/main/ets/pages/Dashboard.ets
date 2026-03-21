@@ -19,7 +19,7 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
-import { customUserAgent, SBaseURL, EguiBaseURL, TBaseURL, HapStoreURL, AGstatisticsURL, dztapURL, OpenStoreURL,NEXTStoreURL } from '../common/constants';
+import { customUserAgent, EguiBaseURL, SBaseURL, TBaseURL } from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
@@ -47,39 +47,6 @@ interface SiteConfig {
 @Entry
 @Component
 struct Dashboard {
-    @Builder Menu() {
-        MenuItemGroup() {
-            MenuItem({ startIcon: $r('app.media.app_log'), content: "AppGallery统计数据" })
-                .onClick(() => { router.pushUrl({ url: 'pages/friend/AG' }); this.triggerVibration() });
-            MenuItem({ startIcon: $r('app.media.app_log'), content: "小刘的站点" })
-                .onClick(() => { router.pushUrl({ url: 'pages/friend/dztap' }); this.triggerVibration() });
-            MenuItem({ startIcon: $r('app.media.app_log'), content: "HAP资源站" })
-                .onClick(() => { router.pushUrl({ url: 'pages/friend/Hap' }); this.triggerVibration() });
-            MenuItem({ startIcon: $r('app.media.app_log'), content: "NEXT Store" })
-                .onClick(() => { router.pushUrl({ url: 'pages/friend/NEXTStore' }); this.triggerVibration() });
-            MenuItem({ startIcon: $r('app.media.app_log'), content: "Open Store" })
-                .onClick(() => { router.pushUrl({ url: 'pages/friend/OpenStore' }); this.triggerVibration() });
-        }
-    }
-
-    //==========================状态声明部分==========================
-    uiContext: UIContext = this.getUIContext();
-    hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
-    icon: SnackBarIconOptions = {
-        icon: $r('sys.symbol.rename')
-    }
-    message: SnackBarMessageOptions = {
-        title: "您还未设置用户名",
-        content: "前往我的页面设置用户名"
-    }
-    operation: SnackBarOperationOptions = {
-        operationType: SnackBarOperationType.TEXT_WITH_CLOSE,
-    }
-    style: SnackBarStyleOptions = {
-        backgroundBlurStyle: BlurStyle.Thin,
-        nextFocusId: 'button',
-        duration: 7999
-    }
     //控制相关
     @State showButton: boolean = true;
     @State barMargin: number = 28;
@@ -95,7 +62,6 @@ struct Dashboard {
     @State touchY: number = 0;
     @State isTouching: boolean = false;
     private controller: HdsTabsController = new HdsTabsController();
-
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("tabBarAuto") tabBarAuto: boolean = true;
@@ -105,6 +71,24 @@ struct Dashboard {
     @State isTDev: boolean = false;
     @State themeColor: string = "blue";
     @State siteMode: SiteMode = SiteMode.SSite;
+
+    //Web控制
+    @State private sitesList: SiteConfig[] = [
+        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'Egui', url: EguiBaseURL.toString(), label: 'Egui (开发中)', icon: $r('sys.media.wifi_router_fill') },
+    ];
+    @State private currentIndex: number = 0;
+    @LocalStorageProp('migratedUrl') mUrl: string = "";
+    @LocalStorageProp('migratedIndex') mIndex: number = 0;
+    @State private url: string = Array.from(this.sitesList.values())[0].url;
+    @State DashboardHeight: number = 2100;
+    @State progress: number = 0;
+    scroller: Scroller = new Scroller();
+    private web_controller: webview.WebviewController = new webview.WebviewController();
+    @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
+    @State mode: WebDarkMode = WebDarkMode.Auto;
+    @State isLoading: boolean = false;
 
     //智感握持
     @State WVp: number = 376;
@@ -180,9 +164,10 @@ struct Dashboard {
         }
     }
 
+
+    //==========================页面生命周期部分==========================
     //entry
     private IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
-
     private async checkFirstLaunch(): Promise<void> {
         try {
             let context = getContext(this) as common.UIAbilityContext;
@@ -214,6 +199,18 @@ struct Dashboard {
             console.error("Index", "检查首选项失败: %{public}s", JSON.stringify(error));
         }
     }
+    @StorageLink("userName") userName: string = "";
+    async loadUserName() {
+        initializeUserStorage();
+        this.userName = await getUsername();
+    }
+    async saveUserName() {
+        await setUsername(this.userName);
+    }
+    async resetToDeviceName() {
+        await setUsername(undefined);
+        await this.loadUserName();
+    }
     // 加载所有设置
     private async loadSettings() {
         try {
@@ -241,44 +238,9 @@ struct Dashboard {
             console.error("加载设置失败:", error);
         }
     }
-
-    //用户名初始化(防止小天才模式）
-    @StorageLink("userName") userName: string = "";
-    async loadUserName() {
-        initializeUserStorage();
-        this.userName = await getUsername();
-    }
-    async saveUserName() {
-        await setUsername(this.userName);
-    }
-    async resetToDeviceName() {
-        await setUsername(undefined);
-        await this.loadUserName();
-    }
-
-    //Web控制
-    @State private sitesList: SiteConfig[] = [
-        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'Egui', url: EguiBaseURL.toString(), label: 'Egui (开发中)', icon: $r('sys.media.wifi_router_fill') },
-    ];
-    @State private currentIndex: number = 0;
-    @LocalStorageProp('migratedUrl') mUrl: string = "";
-    @LocalStorageProp('migratedIndex') mIndex: number = 0;
-    @State private url: string = Array.from(this.sitesList.values())[0].url;
-    @State DashboardHeight: number = 2100;
-    @State progress: number = 0;
-    scroller: Scroller = new Scroller();
-    private web_controller: webview.WebviewController = new webview.WebviewController();
-    @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
-    @State mode: WebDarkMode = WebDarkMode.Auto;
-    @State isLoading: boolean = false;
-
-    //==========================页面生命周期部分==========================
     private shareManager?: WebShareManager;
     private context = getContext(this) as common.UIAbilityContext;
     @State isContinuation: boolean = false;
-
     async aboutToAppear() {
         this.buttonOnPageShow = false;
         if (this.mUrl) {
@@ -392,10 +354,9 @@ struct Dashboard {
             sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
         });
     }
-
+    //自定义返回逻辑
     @State firstBackTime: number = 0;
     private waitTime: number = 2000;
-
     onBackPress(): boolean | void {
         if (this.showTutorial) {
             this.showTutorial = false;
@@ -420,6 +381,25 @@ struct Dashboard {
         }
     }
 
+
+    //==========================主程序部分==========================
+    uiContext: UIContext = this.getUIContext();
+    hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
+    icon: SnackBarIconOptions = {
+        icon: $r('sys.symbol.rename')
+    }
+    message: SnackBarMessageOptions = {
+        title: "您还未设置用户名",
+        content: "前往我的页面设置用户名"
+    }
+    operation: SnackBarOperationOptions = {
+        operationType: SnackBarOperationType.TEXT_WITH_CLOSE,
+    }
+    style: SnackBarStyleOptions = {
+        backgroundBlurStyle: BlurStyle.Thin,
+        nextFocusId: 'button',
+        duration: 7999
+    }
     @Builder Web(site: SiteConfig) {
         Stack() {
             if (this.isLoading) {
@@ -502,12 +482,10 @@ struct Dashboard {
             })
         }
     }
-
-    //==========================主程序部分==========================
     build() {
         HdsNavigation() {
             Stack() {
-                //==========================网页嵌套滚动==========================
+                //==========================HdsTabs携带web==========================
                 HdsTabs({ controller: this.controller }) {
                     ForEach(this.sitesList, (site: SiteConfig) => {
                         TabContent() { this.Web(site) }
@@ -873,21 +851,22 @@ struct Dashboard {
                     value: [
                         {
                             content: {
-                                label: "friend",
-                                icon: $r("sys.symbol.list_bullet"),
+                                label: "share",
+                                icon: $r("sys.symbol.share"),
                                 isEnabled: true,
                                 action: () => {
+                                    this.shareManager?.showSystemShare();
                                     this.triggerVibration();
                                 },
                             },
                         },
                         {
                             content: {
-                                label: "share",
-                                icon: $r("sys.symbol.share"),
+                                label: "friend",
+                                icon: $r("sys.symbol.list_bullet"),
                                 isEnabled: true,
                                 action: () => {
-                                    this.shareManager?.showSystemShare();
+                                    router.pushUrl({ url: "pages/friend" });
                                     this.triggerVibration();
                                 },
                             },

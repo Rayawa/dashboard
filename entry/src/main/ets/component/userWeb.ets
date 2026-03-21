@@ -6,13 +6,15 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { WebShareManager } from '../common/shareControl';
 
 @Component
-export struct arkWeb {
+export struct userWeb {
   @Prop url: string = '';
   @Prop title: string = '';
 
   @StorageLink("vibrationON") vibrationON: boolean = true;
+  private shareManager?: WebShareManager;
   @State progress: number = 0;
   scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();
@@ -177,6 +179,17 @@ export struct arkWeb {
         },
         menu: {
           value: [
+            {
+              content: {
+                label: "share",
+                icon: $r("sys.symbol.share"),
+                isEnabled: true,
+                action: () => {
+                  this.shareManager?.showSystemShare();
+                  this.triggerVibration();
+                },
+              },
+            },
             {
               content: {
                 label: "refresh",
