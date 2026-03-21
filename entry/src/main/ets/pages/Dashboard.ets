@@ -47,6 +47,21 @@ interface SiteConfig {
 @Entry
 @Component
 struct Dashboard {
+    @Builder Menu() {
+        MenuItemGroup() {
+            MenuItem({ startIcon: $r('app.media.app_log'), content: "AppGallery统计数据" })
+                .onClick(() => { router.pushUrl({ url: 'pages/friend/AG' }); this.triggerVibration() });
+            MenuItem({ startIcon: $r('app.media.app_log'), content: "小刘的站点" })
+                .onClick(() => { router.pushUrl({ url: 'pages/friend/dztap' }); this.triggerVibration() });
+            MenuItem({ startIcon: $r('app.media.app_log'), content: "HAP资源站" })
+                .onClick(() => { router.pushUrl({ url: 'pages/friend/Hap' }); this.triggerVibration() });
+            MenuItem({ startIcon: $r('app.media.app_log'), content: "NEXT Store" })
+                .onClick(() => { router.pushUrl({ url: 'pages/friend/NEXTStore' }); this.triggerVibration() });
+            MenuItem({ startIcon: $r('app.media.app_log'), content: "Open Store" })
+                .onClick(() => { router.pushUrl({ url: 'pages/friend/OpenStore' }); this.triggerVibration() });
+        }
+    }
+
     //==========================状态声明部分==========================
     uiContext: UIContext = this.getUIContext();
     hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
@@ -243,9 +258,9 @@ struct Dashboard {
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
+        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'Egui', url: EguiBaseURL.toString(), label: 'Egui (开发中)', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
     ];
     @State private currentIndex: number = 0;
     @LocalStorageProp('migratedUrl') mUrl: string = "";
@@ -525,7 +540,7 @@ struct Dashboard {
                     systemMaterialEffect: {
                         materialType: hdsMaterial.MaterialType.IMMERSIVE,
                         materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                    },
+                    }
                 })
 
                 // ==========================悬浮按钮==========================
@@ -856,6 +871,16 @@ struct Dashboard {
                 },
                 menu: {
                     value: [
+                        {
+                            content: {
+                                label: "friend",
+                                icon: $r("sys.symbol.list_bullet"),
+                                isEnabled: true,
+                                action: () => {
+                                    this.triggerVibration();
+                                },
+                            },
+                        },
                         {
                             content: {
                                 label: "share",

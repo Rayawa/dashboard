@@ -1,5 +1,7 @@
 import { webview } from '@kit.ArkWeb';
-import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType, } from '@kit.UIDesignKit';
+import {
+  HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
+} from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';

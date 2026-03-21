@@ -5,6 +5,11 @@
     "pages/complex_share",
     "pages/user/web_log",
     "pages/user/web_api",
-    "pages/user/app_log"
+    "pages/user/app_log",
+    "pages/friend/AG",
+    "pages/friend/dztap",
+    "pages/friend/Hap",
+    "pages/friend/NEXTStore",
+    "pages/friend/OpenStore"
   ]
 }
