@@ -75,7 +75,7 @@ struct friend {
     }
     .onClick(() => {
       router.pushUrl({
-        url: 'pages/CommonWebPage',
+        url: 'pages/friendWeb',
         params: {
           url: site.url,
           title: site.title

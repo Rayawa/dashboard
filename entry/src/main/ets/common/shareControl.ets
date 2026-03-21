@@ -38,7 +38,7 @@ export class WebShareManager {
       try {
         iconData = await this.context.resourceManager.getMediaContent($r("app.media.share_icon").id);
       } catch (e) {
-        Logger.error(TAG, "Get icon failed");
+        Logger.error(TAG, "HarmonyShare: Get icon failed");
       }
 
       let shareData: systemShare.SharedData = new systemShare.SharedData({
@@ -54,9 +54,9 @@ export class WebShareManager {
         previewMode: systemShare.SharePreviewMode.DEFAULT,
         selectionMode: systemShare.SelectionMode.SINGLE,
       });
-      Logger.info(TAG, "System share panel showed.");
+      Logger.info(TAG, "HarmonyShare: System share panel showed.");
     } catch (err) {
-      Logger.error(TAG, `System share error: ${(err as BusinessError).message}`);
+      Logger.error(TAG, `HarmonyShare: System share error: ${(err as BusinessError).message}`);
     }
   }
 
@@ -78,9 +78,9 @@ export class WebShareManager {
       });
 
       this.isListening = true;
-      Logger.info(TAG, "Knock and Gesture sharing enabled.");
+      Logger.info(TAG, "HarmonyShare: Knock and Gesture sharing enabled.");
     } catch (err) {
-      Logger.error(TAG, `Enable sharing failed: ${(err as BusinessError).message}`);
+      Logger.error(TAG, `HarmonyShare: Enable sharing failed: ${(err as BusinessError).message}`);
     }
   }
 
@@ -97,7 +97,7 @@ export class WebShareManager {
     harmonyShare.off('gesturesShare', { windowId: windowId });
 
     this.isListening = false;
-    Logger.info(TAG, "Passive sharing disabled.");
+    Logger.info(TAG, "HarmonyShare: Passive sharing disabled.");
   }
 
   /**
@@ -112,9 +112,9 @@ export class WebShareManager {
     });
 
     target.share(shareData).then(() => {
-      Logger.info(TAG, "Passive share success.");
+      Logger.info(TAG, "HarmonyShare: Passive share success.");
     }).catch((err: BusinessError) => {
-      Logger.error(TAG, `Passive share failed: ${err.message}`);
+      Logger.error(TAG, `HarmonyShare: Passive share failed: ${err.message}`);
     });
   }
 }
