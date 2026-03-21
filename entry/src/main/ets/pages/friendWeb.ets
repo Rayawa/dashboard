@@ -1,4 +1,5 @@
 import { webview } from '@kit.ArkWeb';
+import { common } from '@kit.AbilityKit';
 import {
   HdsNavigation,
   HdsNavigationTitleMode,
@@ -15,14 +16,15 @@ import { LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { WebShareManager } from '../common/shareControl';
+import { harmonyShare } from '@kit.ShareKit';
 
+@Entry
 @Component
 export struct friendWeb {
   @Prop url: string = '';
   @Prop title: string = '';
 
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  private shareManager?: WebShareManager;
   @State progress: number = 0;
   scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();
@@ -83,10 +85,36 @@ export struct friendWeb {
     nextFocusId: 'button',
     duration: 7000
   }
+  private shareManager?: WebShareManager;
+  private context = getContext(this) as common.UIAbilityContext;
+  @State isContinuation: boolean = false;
+  aboutToAppear() {
+    const params = router.getParams() as Record<string, string>;
+    if (params) {
+      this.url = params.url;
+      this.title = params.title;
+    }
+    //分享
+    const context = getContext(this) as common.UIAbilityContext;
+    this.shareManager = WebShareManager.getInstance(context, this.web_controller);
+    this.shareManager.enablePassiveShare();
+    this.context.eventHub.on("onFocus", () => {
+      this.shareManager?.enablePassiveShare();
+    });
+    this.context.eventHub.on("onBackGround", () => {
+      this.onBackGround();
+      this.shareManager?.disablePassiveShare();
+    });
+  }
   onPageShow(): void {
     setTimeout(() => {
       this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
     },1000)
+  }
+  onBackGround() {
+    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
   }
 
   onBackPress(): boolean | void {

@@ -75,8 +75,8 @@ struct Dashboard {
     //Web控制
     @State private sitesList: SiteConfig[] = [
         { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'Egui', url: EguiBaseURL.toString(), label: 'Egui (开发中)', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
     ];
     @State private currentIndex: number = 0;
     @LocalStorageProp('migratedUrl') mUrl: string = "";

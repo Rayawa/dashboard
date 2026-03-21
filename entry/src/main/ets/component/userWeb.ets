@@ -1,12 +1,22 @@
 import { webview } from '@kit.ArkWeb';
+import { common } from '@kit.AbilityKit';
 import {
-  HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
+  HdsNavigation,
+  HdsNavigationTitleMode,
+  HdsSnackBar,
+  ScrollEffectType,
+  SnackBarIconOptions,
+  SnackBarMessageOptions,
+  SnackBarOperationOptions,
+  SnackBarOperationType,
+  SnackBarStyleOptions
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { WebShareManager } from '../common/shareControl';
+import { harmonyShare } from '@kit.ShareKit';
 
 @Component
 export struct userWeb {
@@ -14,7 +24,6 @@ export struct userWeb {
   @Prop title: string = '';
 
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  private shareManager?: WebShareManager;
   @State progress: number = 0;
   scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();
@@ -57,6 +66,28 @@ export struct userWeb {
         }
       });
     }
+  }
+  private shareManager?: WebShareManager;
+  private context = getContext(this) as common.UIAbilityContext;
+  @State isContinuation: boolean = false;
+  aboutToAppear() {
+    //分享
+    const context = getContext(this) as common.UIAbilityContext;
+    this.shareManager = WebShareManager.getInstance(context, this.web_controller);
+    this.shareManager.enablePassiveShare();
+    this.context.eventHub.on("onFocus", () => {
+      this.shareManager?.enablePassiveShare();
+    });
+    this.context.eventHub.on("onBackGround", () => {
+      this.onBackGround();
+      this.shareManager?.disablePassiveShare();
+    });
+  }
+
+  onBackGround() {
+    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
   }
 
   onBackPress(): boolean | void {
