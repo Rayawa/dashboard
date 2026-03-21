@@ -19,7 +19,7 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
-import { customUserAgent, RBaseURL, SBaseURL, TBaseURL, NBaseURL, OBaseURL } from '../common/constants';
+import { customUserAgent, SBaseURL, EguiBaseURL, TBaseURL, HapStoreURL, AGstatisticsURL, dztapURL, OpenStoreURL,NEXTStoreURL } from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
@@ -244,10 +244,8 @@ struct Dashboard {
     //Web控制
     @State private sitesList: SiteConfig[] = [
         { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'Egui', url: EguiBaseURL.toString(), label: 'Egui (开发中)', icon: $r('sys.media.wifi_router_fill') },
         { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'O', url: OBaseURL.toString(), label: 'O站', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'N', url: NBaseURL.toString(), label: 'N站', icon: $r('sys.media.wifi_router_fill') },
     ];
     @State private currentIndex: number = 0;
     @LocalStorageProp('migratedUrl') mUrl: string = "";
@@ -407,8 +405,8 @@ struct Dashboard {
         }
     }
 
-    @Builder Web(site: SiteConfig){
-        Stack(){
+    @Builder Web(site: SiteConfig) {
+        Stack() {
             if (this.isLoading) {
                 Progress({ value: this.progress, total: 100 })
                     .width("100%")
@@ -417,7 +415,7 @@ struct Dashboard {
                     .zIndex(99);
             }
             Scroll(this.scroller) {
-                Column(){
+                Column() {
                     Blank()
                         .height(80)
                         .width("100%")
@@ -437,7 +435,8 @@ struct Dashboard {
                             }
                             try {
                                 this.web_controller.setCustomUserAgent(customUserAgent);
-                            } catch {}
+                            } catch {
+                            }
                         })
                         .onPageBegin((event) => {
                             this.isLoading = true;
@@ -466,7 +465,7 @@ struct Dashboard {
                 }
             }
             .onWillScroll(() => {
-                if(this.tabBarAuto) {
+                if (this.tabBarAuto) {
                     const currentOffset = this.scroller.currentOffset().yOffset;
                     if (currentOffset > this.lastOffset && currentOffset > 50) {
                         if (this.isTabsBarVisible && !this.lockBar) {
