@@ -1,10 +1,8 @@
-// ets/ability/query.ets
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from "@kit.AbilityKit";
 import { systemShare } from "@kit.ShareKit";
 import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 
-// 定义接口以消除 any 报错
 interface FullInfo {
   alliance_app_id: string;
 }
@@ -47,7 +45,6 @@ export class QueryAbility extends ShareExtensionAbility {
       await this.context.startAbility(wantForUI);
 
     } catch (err) {
-      // 这里的 err 需要断言为 Error 类型以访问 message
       const error = err as Error;
       console.error(`queryResult [QueryAbility] Error: ${error.message}`);
     } finally {
@@ -66,7 +63,6 @@ export class QueryAbility extends ShareExtensionAbility {
       http.createHttp().request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
         if (!err && data.responseCode === 200) {
           try {
-            // 【关键修改】使用 as ApiResponse 进行类型断言
             const res = JSON.parse(data.result.toString()) as ApiResponse;
             const id = res.data?.full_info?.alliance_app_id;
             if (id) {

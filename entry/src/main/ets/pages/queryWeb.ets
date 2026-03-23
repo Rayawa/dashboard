@@ -41,6 +41,8 @@ struct queryEntry {
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
+
+  //动画与振动
   private triggerVibration(): void {
     if (this.vibrationON) {
       vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
@@ -78,8 +80,7 @@ struct queryEntry {
       });
     }
   }
-
-  //动画与振动
+  
   private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
       .combine(TransitionEffect.scale({ x: 0, y: 0 }))
