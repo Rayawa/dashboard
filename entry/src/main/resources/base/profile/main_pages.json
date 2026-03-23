@@ -3,6 +3,7 @@
     "pages/user",
     "pages/friend",
     "pages/friendWeb",
+    "pages/queryWeb",
     "pages/Dashboard",
     "pages/complex_share",
     "pages/user/web_log",

@@ -1,8 +1,9 @@
-import { vibrator } from "@kit.SensorServiceKit";
-import { BusinessError } from "@kit.BasicServicesKit";
-import { prompt } from "@kit.ArkUI";
-import type { FormData } from "../common/types";
-import { submit_app } from "../common/api";
+import { vibrator } from '@kit.SensorServiceKit';
+import { http } from '@kit.NetworkKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { prompt, router } from '@kit.ArkUI';
+import type { FormData } from '../common/types';
+import { submit_app } from '../common/api';
 
 interface Scale {
     x: number;
@@ -15,8 +16,24 @@ interface ButtonAnimationState {
     delayOpacity: number;
     delayScale: Scale;
 }
+interface FullInfo {
+    alliance_app_id: string;
+}
+
+interface AppData {
+    full_info: FullInfo;
+}
+
+interface ApiResponse {
+    success: boolean;
+    data: AppData;
+    message?: string;
+}
 @Component
 export struct submitButtons {
+    @State appId: string = '';
+    @State isLoading: boolean = false;
+
     @StorageLink("userName") userName: string = "";
     @StorageLink("inputText") inputText: string = "";
     @StorageLink("formData") formData: FormData = {
@@ -25,6 +42,104 @@ export struct submitButtons {
         appId: "",
         remark: "",
     };
+
+
+    extractBundleName(url: string): string | null {
+        const regex = /[?&]id=([^&]+)/;
+        const match = url.match(regex);
+        const pkg = match ? match[1] : null;
+        console.info(`queryResult [Extract] 包名结果: ${pkg}`);
+        return pkg;
+    }
+
+    // 获取AppID
+    async getAppIdByPackage(pkgName: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            let httpRequest = http.createHttp();
+            let apiUrl = `http://shenjack.top:10003/api/v0/apps/pkg_name/${pkgName}`;
+            httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
+                if (!err && data.responseCode === 200) {
+                    const res = JSON.parse(data.result.toString()) as ApiResponse;
+                    if (res.success && res.data?.full_info?.alliance_app_id) {
+                        const rawId = res.data.full_info.alliance_app_id;
+                        resolve(rawId.startsWith('C') ? rawId : `C${rawId}`);
+                    } else { reject(new Error("包名转换失败")); }
+                } else { reject(new Error("网络请求失败")); }
+                httpRequest.destroy();
+            });
+        });
+    }
+
+    //校验AppID是否真实存在
+    async verifyAppIdExists(appId: string): Promise<boolean> {
+        console.info(`queryResult [Verify Start] 正在校验 AppID 真实性: ${appId}`);
+        return new Promise((resolve) => {
+            let httpRequest = http.createHttp();
+            let apiUrl = `http://shenjack.top:10003/api/v0/apps/app_id/${appId}`;
+            httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
+                if (!err && data.responseCode === 200) {
+                    try {
+                        const res = JSON.parse(data.result.toString()) as ApiResponse;
+                        console.info(`queryResult [Verify Response] success: ${res.success}`);
+                        resolve(res.success);
+                    } catch (e) { resolve(false); }
+                } else { resolve(false); }
+                httpRequest.destroy();
+            });
+        });
+    }
+
+    async queryForm(): Promise<void> {
+        if (this.isSearching) return;
+        this.isSearching = true;
+        this.startSearchRippleLoop();
+
+        let tempAppId = "";
+
+        try {
+            //获取AppID
+            if (this.formData.appId && this.formData.appId.trim().startsWith('C')) {
+                tempAppId = this.formData.appId.trim();
+                console.info(`queryResult [Phase 1] 直接使用 ID: ${tempAppId}`);
+            }
+            else if (this.formData.packageName && this.formData.packageName.trim().length > 0) {
+                tempAppId = await this.getAppIdByPackage(this.formData.packageName.trim());
+                console.info(`queryResult [Phase 1] 包名转换结果: ${tempAppId}`);
+            }
+            else if (this.formData.appLink && this.formData.appLink.trim().length > 0) {
+                const pkg = this.extractBundleName(this.formData.appLink);
+                if (pkg) {
+                    tempAppId = await this.getAppIdByPackage(pkg);
+                    console.info(`queryResult [Phase 1] 链接提取并转换结果: ${tempAppId}`);
+                } else { throw new Error("无法解析链接"); }
+            } else { throw new Error("输入为空"); }
+
+            //校验AppID是否存在
+            const isExists = await this.verifyAppIdExists(tempAppId);
+
+            if (isExists) {
+                console.info(`queryResult [Final] 校验通过，准备跳转`);
+                this.formData.appId = tempAppId;
+                const finalUrl = `https://hmos.txit.top/app/${tempAppId}`;
+
+                this.isSearching = false;
+                this.stopSearchRippleLoop();
+
+                router.pushUrl({
+                    url: 'pages/queryWeb',
+                    params: { url: finalUrl }
+                });
+            } else {
+                throw new Error("该应用中不存在");
+            }
+
+        } catch (error) {
+            this.isSearching = false;
+            this.stopSearchRippleLoop();
+            console.error(`queryResult [Error] ${error.message}`);
+            prompt.showToast({ message: `查询失败！${error.message}` });
+        }
+    }
 
     async clearForm(): Promise<void> {
         if (this.isCleaning) {
@@ -79,57 +194,6 @@ export struct submitButtons {
             });
             prompt.showToast({
                 message: "表单已清空",
-                duration: 1500,
-            });
-        }, 700);
-    }
-
-    async queryForm(): Promise<void> {
-        if (this.isSearching) {
-            return;
-        }
-
-        this.isSearching = true;
-        this.startSearchRippleLoop();
-
-        setTimeout(() => {
-            this.isSearching = false;
-            this.stopSearchRippleLoop();
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (err) {
-                    console.error(
-                        `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                    );
-                    return;
-                }
-                console.info("Succeed in querying effect");
-                if (state) {
-                    try {
-                        vibrator.startVibration(
-                            {
-                                type: "preset",
-                                effectId: "haptic.effect.hard",
-                                count: 5,
-                                intensity: 100,
-                            },
-                            { usage: "touch" },
-                            (error: BusinessError) => {
-                                if (error) {
-                                    console.error(
-                                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                    );
-                                } else {
-                                    console.info("Succeed in starting vibration");
-                                }
-                            },
-                        );
-                    } catch (tryError) {
-                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                    }
-                }
-            });
-            prompt.showToast({
-                message: "敬请期待！",
                 duration: 1500,
             });
         }, 700);

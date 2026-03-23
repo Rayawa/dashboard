@@ -39,29 +39,60 @@
         "srcEntry": "./ets/ability/shareEntry.ets",
         "description": "$string:shareEntryAbility_desc",
         "icon": "$media:layered_image",
-        "label": "$string:shareEntryAbility_lable",
+        "label": "$string:shareEntryAbility_label",
+        "startWindowIcon": "$media:startIcon",
+        "startWindowBackground": "$color:start_window_background"
+      },
+      {
+        "name": "queryEntryAbility",
+        "srcEntry": "./ets/ability/queryEntry.ets",
+        "description": "$string:queryEntryAbility_desc",
+        "icon": "$media:layered_image",
+        "label": "$string:queryEntryAbility_label",
         "startWindowIcon": "$media:startIcon",
         "startWindowBackground": "$color:start_window_background"
       }
     ],
     "extensionAbilities": [
-//      {
-//        "name": "EntryBackupAbility",
-//        "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ets",
-//        "type": "backup",
-//        "exported": false,
-//        "metadata": [
-//          {
-//            "name": "ohos.extension.backup",
-//            "resource": "$profile:backup_config"
-//          }
-//        ],
-//      },
+      {
+        "name": "query_ability",
+        "srcEntry": "./ets/ability/query.ets",
+        "description": "查看应用数据",
+        "label": "$string:query_label",
+        "metadata": [
+          {
+            "name": "ohos.extension.short_label",
+            "value": "$string:query_label"
+          }
+        ],
+        "type": "share",
+        "exported": true,
+        "skills": [
+          {
+            "actions": [
+              "ohos.want.action.sendData"
+            ],
+            "uris": [
+              {
+                "scheme": "file",
+                "utd": "general.hyperlink",
+                "maxFileSupported": 1
+              }
+            ]
+          }
+        ]
+      },
       {
         "name": "simple_share_ability",
         "srcEntry": "./ets/ability/simple_share.ets",
         "description": "简单分享详细页面",
         "label": "$string:simple_share_label",
+        "metadata": [
+          {
+            "name": "ohos.extension.short_label",
+            "value": "$string:simple_share_label"
+          }
+        ],
         "type": "share",
         "exported": true,
         "skills": [
@@ -84,6 +115,12 @@
         "srcEntry": "./ets/ability/complex_share.ets",
         "description": "复杂分享详细页面",
         "label": "$string:complex_share_label",
+        "metadata": [
+          {
+            "name": "ohos.extension.short_label",
+            "value": "$string:complex_share_label"
+          }
+        ],
         "type": "share",
         "exported": true,
         "skills": [

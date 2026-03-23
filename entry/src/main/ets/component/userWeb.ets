@@ -220,13 +220,6 @@ export struct userWeb {
         }
         Scroll(this.scroller) {
           Column() {
-            Blank()
-              .height(80)
-              .width("100%")
-              .expandSafeArea(
-                [SafeAreaType.SYSTEM],
-                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
-              )
             Web({
               src: this.url,
               controller: this.web_controller,

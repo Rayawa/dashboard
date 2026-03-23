@@ -17,8 +17,20 @@
       "value": "应用市场发起投稿界面"
     },
     {
-      "name": "shareEntryAbility_lable",
+      "name": "queryEntryAbility_desc",
+      "value": "查询应用界面"
+    },
+    {
+      "name": "shareEntryAbility_label",
       "value": "投稿应用至看板"
+    },
+    {
+      "name": "queryEntryAbility_label",
+      "value": "在看板内查询应用"
+    },
+    {
+      "name": "query_label",
+      "value": "查询该应用数据"
     },
     {
       "name": "simple_share_label",
