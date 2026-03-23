@@ -15,7 +15,7 @@ export default class shareEntryAbility extends UIAbility {
             if (err.code) {
                 hilog.error(
                     DOMAIN,
-                    "dashboard",
+                    "shareEntry",
                     "Failed to load the content. Cause: %{public}s",
                     JSON.stringify(err),
                 );

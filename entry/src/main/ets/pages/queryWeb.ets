@@ -17,11 +17,10 @@ import {
   initializeSettings
 } from '../common/SettingsStorage';
 
-
+@Entry
 @Component
-export struct userWeb {
+struct queryEntry {
   @Prop url: string = '';
-  @Prop title: string = '';
 
   @State progress: number = 0;
   @State showButton: boolean = true;
@@ -131,9 +130,15 @@ export struct userWeb {
   }
   async aboutToAppear() {
     const params = router.getParams() as Record<string, string>;
-    if (params) {
+    if (params && params.url) {
       this.url = params.url;
-      this.title = params.title;
+    }
+    else {
+      const storageUrl = AppStorage.get<string>('queryUrlFromAbility');
+      if (storageUrl) {
+        this.url = storageUrl;
+        AppStorage.setOrCreate('queryUrlFromAbility', '');
+      }
     }
     //获取屏幕右边位置
     const displayInfo = display.getDefaultDisplaySync();
@@ -516,7 +521,7 @@ export struct userWeb {
       },
       content: {
         title: {
-          mainTitle: this.title,
+          mainTitle: "查询结果",
         },
         menu: {
           value: [
