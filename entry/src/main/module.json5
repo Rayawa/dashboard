@@ -35,7 +35,7 @@
         ]
       },
       {
-        "name": "shareEntry",
+        "name": "submitEntryAbility",
         "srcEntry": "./ets/ability/submitEntry.ets",
         "description": "$string:shareEntryAbility_desc",
         "icon": "$media:layered_image",
@@ -50,7 +50,8 @@
         "icon": "$media:layered_image",
         "label": "$string:queryEntryAbility_label",
         "startWindowIcon": "$media:startIcon",
-        "startWindowBackground": "$color:start_window_background"
+        "startWindowBackground": "$color:start_window_background",
+        "exported": true
       }
     ],
     "extensionAbilities": [
@@ -85,7 +86,7 @@
       {
         "name": "simple_share_ability",
         "srcEntry": "./ets/ability/simpleSubmit.ets",
-        "description": "简单分享详细页面",
+        "description": "简单投稿页面",
         "label": "$string:simple_share_label",
         "metadata": [
           {
@@ -113,7 +114,7 @@
       {
         "name": "complex_share_ability",
         "srcEntry": "./ets/ability/complexSubmit.ets",
-        "description": "复杂分享详细页面",
+        "description": "复杂投稿页面",
         "label": "$string:complex_share_label",
         "metadata": [
           {

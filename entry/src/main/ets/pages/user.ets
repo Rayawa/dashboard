@@ -10,8 +10,8 @@ import { tutorial } from '../component/tutorial';
 import { contact } from '../component/contact';
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { app_submit } from '../component/app_submit';
-import { app_query } from '../component/app_query';
+import { appSubmit } from '../component/appSubmit';
+import { appQuery } from '../component/appQuery';
 
 @Entry
 @Component
@@ -95,6 +95,12 @@ export struct user {
             this.showTutorial = false;
             this.triggerVibration();
             console.info("关闭教程页面");
+            return true;
+        }
+        if (this.showQuery) {
+            this.showQuery = false;
+            this.triggerVibration();
+            console.info("关闭查询页面");
             return true;
         }
         if (this.showSubmit) {
@@ -530,7 +536,7 @@ export struct user {
                                 duration: 1000,
                             }),
                         )
-                        app_submit()
+                        appSubmit()
                     }
                     .transition(this.effect)
                     .gesture(
@@ -567,7 +573,7 @@ export struct user {
                                 duration: 1000,
                             }),
                         )
-                        app_query()
+                        appQuery()
                     }
                     .transition(this.effect)
                     .gesture(

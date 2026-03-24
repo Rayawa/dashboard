@@ -7,7 +7,7 @@ import { queryButtons } from "./queryButtons";
 import type { FormData } from "../common/types";
 @Entry
 @Component
-export struct app_query {
+export struct appQuery {
   @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
   @StorageLink("userName") userName: string = "";
   @StorageLink("inputText") inputText: string = "";
