@@ -81,26 +81,6 @@ struct complexSubmit {
         this.formData.packageName = this.shareParams.shareAppId;
     }
 
-    private closePage() {
-
-        const context = getContext(this) as common.UIAbilityContext;
-
-        const want: Want = {
-            bundleName: 'top.rayawa.dashboard',
-            abilityName: 'EntryAbility',
-        };
-
-        context.startAbility(want)
-            .then(() => {
-                console.info('成功拉起 EntryAbility');
-            })
-            .catch((err: Error) => {
-                console.error('拉起失败：' + JSON.stringify(err));
-            });
-
-        this.triggerVibration();
-
-    }
     onPageHide(): void {
         let uiAbilityContext = getContext(this) as common.UIAbilityContext;
         uiAbilityContext.terminateSelf();
@@ -108,6 +88,16 @@ struct complexSubmit {
 
     @State firstBackTime: number = 0;
     private waitTime: number = 2000;
+    private closePage() {
+        const context = getContext(this) as common.UIAbilityContext;
+        context.terminateSelf((err) => {
+            if (err.code) {
+                console.error(`终止失败: ${err.code}, ${err.message}`);
+                return;
+            }
+            console.info('Ability 已成功销毁');
+        });
+    }
     onBackPress(): boolean | void {
         const currentTime = new Date().getTime();
         if (currentTime - this.firstBackTime > this.waitTime) {
@@ -116,6 +106,7 @@ struct complexSubmit {
             this.triggerVibration()
             return true;
         } else {
+            this.triggerVibration()
             this.closePage()
             return false;
         }

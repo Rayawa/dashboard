@@ -13,6 +13,7 @@ import { submit_app } from '../common/api';
  */
 export class ShareAbility extends ShareExtensionAbility {
     onSessionCreate(want: Want, session: UIExtensionContentSession): void {
+        session.loadContent('abilityPages/loading');
         initializeUserStorage(this.context);
         systemShare
             .getSharedData(want)

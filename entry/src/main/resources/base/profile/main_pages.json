@@ -5,7 +5,8 @@
     "pages/friendWeb",
     "pages/queryWeb",
     "pages/Dashboard",
-    "pages/complexSubmit",
+    "abilityPages/complexSubmit",
+    "abilityPages/loading",
     "pages/user/webApi",
     "pages/user/webLog",
     "pages/user/appLog"
