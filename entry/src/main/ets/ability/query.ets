@@ -1,3 +1,4 @@
+// src/main/ets/shareability/QueryAbility.ts
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from "@kit.AbilityKit";
 import { systemShare } from "@kit.ShareKit";
 import { http } from '@kit.NetworkKit';
@@ -18,23 +19,26 @@ interface ApiResponse {
 
 export class QueryAbility extends ShareExtensionAbility {
   async onSessionCreate(want: Want, session: UIExtensionContentSession): Promise<void> {
+    session.loadContent('abilityPages/loading');
+
     try {
       const data = await systemShare.getSharedData(want);
       const records = data.getRecords();
-      if (records.length === 0) return;
+      if (records.length === 0) {
+        session.terminateSelfWithResult({ resultCode: 0 });
+        return;
+      }
 
       const rawContent = records[0].content?.toString() || "";
-
       const pkgName = this.extractPkg(rawContent);
       if (!pkgName) throw new Error("无法解析包名");
 
       const appId = await this.getAppIdByPackage(pkgName);
-
       const exists = await this.verifyAppIdExists(appId);
+
       if (!exists) throw new Error("市场未收录此应用");
 
       const finalUrl = `https://hmos.txit.top/app/${appId}`;
-
       const wantForUI: Want = {
         bundleName: "top.rayawa.dashboard",
         abilityName: "queryEntryAbility",
@@ -42,6 +46,7 @@ export class QueryAbility extends ShareExtensionAbility {
           targetUrl: finalUrl
         }
       };
+
       await this.context.startAbility(wantForUI);
 
     } catch (err) {
@@ -52,15 +57,16 @@ export class QueryAbility extends ShareExtensionAbility {
     }
   }
 
-  extractPkg(url: string): string | null {
+  private extractPkg(url: string): string | null {
     const match = url.match(/[?&]id=([^&]+)/);
     return match ? match[1] : null;
   }
 
-  async getAppIdByPackage(pkg: string): Promise<string> {
+  private async getAppIdByPackage(pkg: string): Promise<string> {
     return new Promise((resolve, reject) => {
       let apiUrl = `http://shenjack.top:10003/api/v0/apps/pkg_name/${pkg}`;
-      http.createHttp().request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
+      let httpRequest = http.createHttp();
+      httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
         if (!err && data.responseCode === 200) {
           try {
             const res = JSON.parse(data.result.toString()) as ApiResponse;
@@ -76,14 +82,16 @@ export class QueryAbility extends ShareExtensionAbility {
         } else {
           reject(new Error("网络请求失败"));
         }
+        httpRequest.destroy();
       });
     });
   }
 
-  async verifyAppIdExists(appId: string): Promise<boolean> {
+  private async verifyAppIdExists(appId: string): Promise<boolean> {
     return new Promise((resolve) => {
       let apiUrl = `http://shenjack.top:10003/api/v0/apps/app_id/${appId}`;
-      http.createHttp().request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
+      let httpRequest = http.createHttp();
+      httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
         if (!err && data.responseCode === 200) {
           try {
             const res = JSON.parse(data.result.toString()) as ApiResponse;
@@ -94,6 +102,7 @@ export class QueryAbility extends ShareExtensionAbility {
         } else {
           resolve(false);
         }
+        httpRequest.destroy();
       });
     });
   }
