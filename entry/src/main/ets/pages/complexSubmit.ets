@@ -13,7 +13,7 @@ interface ShareParams {
 
 @Entry
 @Component
-struct complex_share {
+struct complexSubmit {
     @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
     @StorageLink("userName") userName: string = "";
     @StorageLink("inputText") inputText: string = "";
@@ -71,7 +71,7 @@ struct complex_share {
     private readonly DEBOUNCE_DELAY: number = 800;
 
     aboutToAppear() {
-        console.log("complex_share接受取到的所有参数:", JSON.stringify(this.shareParams));
+        console.log("complexSubmit接受取到的所有参数:", JSON.stringify(this.shareParams));
         this.inputText = this.shareParams.shareUrl;
         this.formData.appLink = this.shareParams.shareUrl.replace(
             /&channelId=SHARE&source=appshare$/,
@@ -522,7 +522,7 @@ struct complex_share {
         }
 
         // 填充备注（如果有日期信息）
-        if (app.date && !this.formData.remark.includes(app.date)) {
+        if (app.date && !this.formData.remark?.includes(app.date)) {
             if (this.formData.remark) {
                 this.formData.remark = `提取日期: ${app.date}\n${this.formData.remark}`;
             } else {

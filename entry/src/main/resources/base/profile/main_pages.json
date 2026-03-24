@@ -5,9 +5,9 @@
     "pages/friendWeb",
     "pages/queryWeb",
     "pages/Dashboard",
-    "pages/complex_share",
-    "pages/user/web_log",
-    "pages/user/web_api",
-    "pages/user/app_log"
+    "pages/complexSubmit",
+    "pages/user/webApi",
+    "pages/user/webLog",
+    "pages/user/appLog"
   ]
 }

@@ -7,7 +7,7 @@ import { submitButtons } from "./submitButtons";
 import type { FormData } from "../common/types";
 @Entry
 @Component
-export struct app_share {
+export struct app_submit {
     @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
     @StorageLink("userName") userName: string = "";
     @StorageLink("inputText") inputText: string = "";

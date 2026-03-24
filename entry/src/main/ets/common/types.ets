@@ -91,10 +91,11 @@ export interface AppDetailInfo {
 }
 
 export interface FormData {
+    appName?: string,
     appLink: string;
     packageName: string;
     appId: string;
-    remark: string;
+    remark?: string;
 }
 
 export enum SiteMode {

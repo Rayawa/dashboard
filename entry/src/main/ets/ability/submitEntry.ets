@@ -11,11 +11,11 @@ export default class shareEntryAbility extends UIAbility {
     onWindowStageCreate(windowStage: window.WindowStage): void {
         hilog.info(DOMAIN, "dashboard", "%{public}s", "dashboard Ability onWindowStageCreate");
         this.setGlobalImmersive(windowStage);
-        windowStage.loadContent("pages/complex_share", (err) => {
+        windowStage.loadContent("pages/complexSubmit", (err) => {
             if (err.code) {
                 hilog.error(
                     DOMAIN,
-                    "shareEntry",
+                    "submitEntry",
                     "Failed to load the content. Cause: %{public}s",
                     JSON.stringify(err),
                 );
