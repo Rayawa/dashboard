@@ -1,6 +1,6 @@
-import KnockShareGuideCard, { CardRes } from "./KnockShareGuideCard";
-import { vibrator } from "@kit.SensorServiceKit";
-import { BusinessError } from "@kit.BasicServicesKit";
+import KnockShareGuideCard, { CardRes } from './KnockShareGuideCard';
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 @Component
 export struct tutorial {
     @StorageLink("vibrationON") vibrationON: boolean = true;
@@ -262,7 +262,6 @@ export struct tutorial {
                 .height("44%")
                 .justifyContent(FlexAlign.SpaceBetween)
             }
-            .height("85%")
             .width("95%")
             .borderRadius(16)
             .padding(20)
@@ -274,8 +273,8 @@ export struct tutorial {
             offsetY: 4,
         })
         .loop(false)
+        .height(650)
         .effectMode(EdgeEffect.Spring)
-        .margin({ top: 30, bottom: 10 })
         .width(339)
         .borderRadius(20)
         .backgroundColor($r("app.color.backcolor"))

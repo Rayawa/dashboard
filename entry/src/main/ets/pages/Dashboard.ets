@@ -1,19 +1,19 @@
 import { webview } from '@kit.ArkWeb';
 import { motion, userStatus } from '@kit.MultimodalAwarenessKit';
 import {
-  BlurStrategy,
-  hdsEffect,
-  HdsNavigation,
-  HdsNavigationTitleMode,
-  HdsSnackBar,
-  HdsTabs,
-  HdsTabsController,
-  ScrollEffectType,
-  SnackBarIconOptions,
-  SnackBarMessageOptions,
-  SnackBarOperationOptions,
-  SnackBarOperationType,
-  SnackBarStyleOptions
+    BlurStrategy,
+    hdsEffect,
+    HdsNavigation,
+    HdsNavigationTitleMode,
+    HdsSnackBar,
+    HdsTabs,
+    HdsTabsController,
+    ScrollEffectType,
+    SnackBarIconOptions,
+    SnackBarMessageOptions,
+    SnackBarOperationOptions,
+    SnackBarOperationType,
+    SnackBarStyleOptions
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
@@ -28,14 +28,15 @@ import { getUsername, initialize as initializeUserStorage, setUsername as setUse
 import { tutorial } from '../component/tutorial';
 import { SiteMode } from '../common/types';
 import {
-  getButtonPosition,
-  getDefaultSite,
-  getHoldCheckEnabled,
-  getTabBarAuto,
-  getThemeColor,
-  getVibrationEnabled,
-  initializeSettings
+    getButtonPosition,
+    getDefaultSite,
+    getHoldCheckEnabled,
+    getTabBarAuto,
+    getThemeColor,
+    getVibrationEnabled,
+    initializeSettings
 } from '../common/SettingsStorage';
+import { blurPopup } from '../component/blurPopup';
 
 interface SiteConfig {
     key: string;
@@ -114,11 +115,6 @@ struct Dashboard {
         }
     };
     //动画与振动
-    private pageEffect: TransitionEffect = TransitionEffect.OPACITY.combine(
-        TransitionEffect.move(TransitionEdge.BOTTOM),
-    )
-        .combine(TransitionEffect.scale({ x: 0, y: 1 }))
-        .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
     private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
         TransitionEffect.OPACITY
             .combine(TransitionEffect.scale({ x: 0, y: 0 }))
@@ -231,7 +227,6 @@ struct Dashboard {
             if (!this.isContinuation) {
                 this.web_controller.loadUrl(this.url);
             } else {
-                // 如果是接续，确保控制器加载的是接续的 URL
                 this.web_controller.loadUrl(this.mUrl);
             }
         } catch (error) {
@@ -251,6 +246,7 @@ struct Dashboard {
                 this.sitesList[this.mIndex].url = this.mUrl;
             }
         }
+        //年龄分级
         let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
             console.info('callback succeeded, ageGroup:' + data.ageGroup + ", confidence:" + data.confidence);
         };
@@ -267,6 +263,7 @@ struct Dashboard {
         const screenHeightVp = px2vp(displayInfo.height);
         this.WVp = screenWidthVp;
         this.HVp = screenHeightVp;
+        //初始化设置内容
         initializeSettings();
         await this.loadSettings();
         //UA
@@ -748,42 +745,7 @@ struct Dashboard {
                 }
 
                 //==========================教程==========================
-                if (this.showTutorial) {
-                    Stack() {
-                        Column() {
-                            Text("* 点击外部区域或向下滑动关闭页面")
-                                .fontSize(14)
-                                .margin({ bottom: 10 })
-                                .position({ x: "40%", y: "65.3%" })
-                                .fontColor(Color.Grey)
-                        }
-                        .backgroundColor(Color.Transparent)
-                        .height("300%")
-                        .width("300%")
-                        .onClick(() => {
-                            this.showTutorial = !this.showTutorial;
-                        })
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .transition(
-                            TransitionEffect.OPACITY.animation({
-                                curve: curves.springMotion(0, 1),
-                                duration: 1000,
-                            }),
-                        )
-                        tutorial().margin({ top: 120 }).height("95%")
-                    }
-                    .zIndex(999)
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(
-                            (move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showTutorial = !this.showTutorial;
-                                }
-                            },
-                        ),
-                    )
-                    .transition(this.pageEffect);
-                }
+                blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 37 }) }
             }
             .width("100%")
             .backgroundColor($r("app.color.backcolor"))

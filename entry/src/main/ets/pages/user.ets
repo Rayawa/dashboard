@@ -1,4 +1,4 @@
-import { curves, display, LengthMetrics, router } from '@kit.ArkUI';
+import { display, LengthMetrics, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
@@ -12,16 +12,11 @@ import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UI
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { appSubmit } from '../component/appSubmit';
 import { appQuery } from '../component/appQuery';
+import { blurPopup } from '../component/blurPopup';
 
 @Entry
 @Component
 export struct user {
-    private effect: TransitionEffect = TransitionEffect.OPACITY.combine(
-        TransitionEffect.move(TransitionEdge.BOTTOM),
-    )
-        .combine(TransitionEffect.scale({ x: 0, y: 1 }))
-        .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
-
     @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
@@ -522,155 +517,10 @@ export struct user {
                 .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                 .width("100%")
                 .height("100%")
-
-                if (this.showSubmit) {
-                    Stack() {
-                        Column() {
-                            Text("* 点击外部区域或向下滑动关闭页面")
-                                .fontSize(14)
-                                .margin({ bottom: 10 })
-                                .position({ x: "40%", y: "65%" })
-                                .fontColor(Color.Grey)
-                        }
-                        .backgroundColor(Color.Transparent)
-                        .height("300%")
-                        .width("300%")
-                        .onClick(() => {
-                            this.showSubmit = !this.showSubmit;
-                        })
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .transition(
-                            TransitionEffect.OPACITY.animation({
-                                curve: curves.springMotion(0, 1),
-                                duration: 1000,
-                            }),
-                        )
-                        appSubmit()
-                    }
-                    .transition(this.effect)
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(
-                            (move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showSubmit = !this.showSubmit;
-                                }
-                            },
-                        ),
-                    )
-                    .height("100%")
-                    .width("100%");
-                }
-                if (this.showQuery) {
-                    Stack() {
-                        Column() {
-                            Text("* 点击外部区域或向下滑动关闭页面")
-                                .fontSize(14)
-                                .margin({ bottom: 10 })
-                                .position({ x: "40%", y: "65%" })
-                                .fontColor(Color.Grey)
-                        }
-                        .backgroundColor(Color.Transparent)
-                        .height("300%")
-                        .width("300%")
-                        .onClick(() => {
-                            this.showSubmit = !this.showSubmit;
-                        })
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .transition(
-                            TransitionEffect.OPACITY.animation({
-                                curve: curves.springMotion(0, 1),
-                                duration: 1000,
-                            }),
-                        )
-                        appQuery()
-                    }
-                    .transition(this.effect)
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(
-                            (move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showQuery = !this.showQuery;
-                                }
-                            },
-                        ),
-                    )
-                    .height("100%")
-                    .width("100%");
-                }
-                if (this.showTutorial) {
-                    Stack() {
-                        Column() {
-                            Text("* 点击外部区域或向下滑动关闭页面")
-                                .fontSize(14)
-                                .margin({ bottom: 10 })
-                                .position({ x: "40%", y: "65.3%" })
-                                .fontColor(Color.Grey)
-                        }
-                        .backgroundColor(Color.Transparent)
-                        .height("300%")
-                        .width("300%")
-                        .onClick(() => {
-                            this.showTutorial = !this.showTutorial;
-                        })
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .transition(
-                            TransitionEffect.OPACITY.animation({
-                                curve: curves.springMotion(0, 1),
-                                duration: 1000,
-                            }),
-                        )
-                        tutorial()
-                    }
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(
-                            (move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showTutorial = !this.showTutorial;
-                                }
-                            },
-                        ),
-                    )
-                    .transition(this.effect)
-                    .height("100%")
-                    .width("100%");
-                }
-                if (this.showContact) {
-                    Stack() {
-                        Column() {
-                            Text("* 点击外部区域或向下滑动关闭页面")
-                                .fontSize(14)
-                                .margin({ bottom: 10 })
-                                .position({ x: "40%", y: "65%" })
-                                .fontColor(Color.Grey)
-                        }
-                        .backgroundColor(Color.Transparent)
-                        .height("300%")
-                        .width("300%")
-                        .onClick(() => {
-                            this.showContact = !this.showContact;
-                        })
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .transition(
-                            TransitionEffect.OPACITY.animation({
-                                curve: curves.springMotion(0, 1),
-                                duration: 1000,
-                            }),
-                        )
-                        contact()
-                    }
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(
-                            (move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showContact = !this.showContact;
-                                }
-                            },
-                        ),
-                    )
-                    .transition(this.effect)
-                    .height("100%")
-                    .width("100%");
-                }
+                blurPopup({ isShow: $showSubmit }) { appSubmit() }
+                blurPopup({ isShow: $showQuery }) { appQuery() }
+                blurPopup({ isShow: $showTutorial }) { tutorial() }
+                blurPopup({ isShow: $showContact }) { contact() }
             }
             .backgroundColor($r("app.color.backcolor"))
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
