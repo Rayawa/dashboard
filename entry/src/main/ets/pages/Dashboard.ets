@@ -375,6 +375,7 @@ struct Dashboard {
         if (currentTime - this.firstBackTime > this.waitTime) {
             this.firstBackTime = currentTime;
             prompt.showToast({ message: "再按一次退出应用", duration: this.waitTime });
+            this.triggerVibration()
             return true;
         } else {
             return false;

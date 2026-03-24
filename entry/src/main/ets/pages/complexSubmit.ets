@@ -1,10 +1,11 @@
 import { AppInfo, NaturalLanguageExtractor } from '../common/NaturalLanguageExtract';
 import { hdsEffect } from '@kit.UIDesignKit';
-import { common } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { submitButtons } from '../component/submitButtons';
 import { FormData } from '../common/types';
+import { prompt } from '@kit.ArkUI';
 
 interface ShareParams {
     shareAppId: string;
@@ -81,12 +82,43 @@ struct complexSubmit {
     }
 
     private closePage() {
-        let uiAbilityContext = getContext(this) as common.UIAbilityContext;
-        uiAbilityContext.terminateSelf();
+
+        const context = getContext(this) as common.UIAbilityContext;
+
+        const want: Want = {
+            bundleName: 'top.rayawa.dashboard',
+            abilityName: 'EntryAbility',
+        };
+
+        context.startAbility(want)
+            .then(() => {
+                console.info('成功拉起 EntryAbility');
+            })
+            .catch((err: Error) => {
+                console.error('拉起失败：' + JSON.stringify(err));
+            });
+
+        this.triggerVibration();
+
     }
     onPageHide(): void {
         let uiAbilityContext = getContext(this) as common.UIAbilityContext;
         uiAbilityContext.terminateSelf();
+    }
+
+    @State firstBackTime: number = 0;
+    private waitTime: number = 2000;
+    onBackPress(): boolean | void {
+        const currentTime = new Date().getTime();
+        if (currentTime - this.firstBackTime > this.waitTime) {
+            this.firstBackTime = currentTime;
+            prompt.showToast({ message: "再按一次返回主页", duration: this.waitTime });
+            this.triggerVibration()
+            return true;
+        } else {
+            this.closePage()
+            return false;
+        }
     }
 
     build() {
