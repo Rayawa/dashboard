@@ -62,6 +62,7 @@ struct Dashboard {
     @State touchX: number = 0;
     @State touchY: number = 0;
     @State isTouching: boolean = false;
+    @State isSnackBarShow: boolean = false;
     private controller: HdsTabsController = new HdsTabsController();
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
@@ -71,7 +72,6 @@ struct Dashboard {
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
     @State isTDev: boolean = false;
     @State themeColor: string = "blue";
-    @State siteMode: SiteMode = SiteMode.SSite;
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
@@ -323,7 +323,9 @@ struct Dashboard {
                 console.info("currentusername_pop!!")
                 setTimeout(() => {
                     this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
+                    this.isSnackBarShow = true;
                 },3000)
+                this.isSnackBarShow = false;
             } else {
                 console.info("currentusername_set")
             }
@@ -331,6 +333,7 @@ struct Dashboard {
     }
 
     aboutToDisappear() {
+        this.hdsSnackBar.dismiss();
         this.shareManager?.disablePassiveShare();
         const hostContext = this.context;
         hostContext.eventHub.off("onFocus");
@@ -346,6 +349,7 @@ struct Dashboard {
         }
     }
 
+
     onBackGround() {
         harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
             sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
@@ -355,6 +359,9 @@ struct Dashboard {
     @State firstBackTime: number = 0;
     private waitTime: number = 2000;
     onBackPress(): boolean | void {
+        if (this.isSnackBarShow) {
+            this.hdsSnackBar.dismiss();
+        }
         if (this.showTutorial) {
             this.showTutorial = false;
             this.triggerVibration();
@@ -745,6 +752,24 @@ struct Dashboard {
                 }
 
                 //==========================教程==========================
+                if (this.showTutorial) {
+                    Column()
+                        .width('100%')
+                        .height('100%')
+                        .backgroundColor(Color.Transparent)
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                        .transition(
+                            TransitionEffect.OPACITY.animation({
+                                curve: curves.springMotion(0, 1),
+                                duration: 1000,
+                            }),
+                        )
+                        .onClick(() => {
+                            this.showTutorial = false;
+                            this.triggerVibration();
+                        })
+                }
                 blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 37 }) }
             }
             .width("100%")

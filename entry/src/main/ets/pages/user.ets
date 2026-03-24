@@ -1,4 +1,4 @@
-import { display, LengthMetrics, router } from '@kit.ArkUI';
+import { curves, display, LengthMetrics, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
@@ -517,6 +517,30 @@ export struct user {
                 .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                 .width("100%")
                 .height("100%")
+                if (this.showSubmit || this.showQuery || this.showTutorial || this.showContact) {
+                    Column()
+                        .width('100%')
+                        .height('100%')
+                        .backgroundColor(Color.Transparent)
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                        .transition(
+                            TransitionEffect.OPACITY.animation({
+                                curve: curves.springMotion(0, 1),
+                                duration: 1000,
+                            }),
+                        )
+                        .onClick(() => {
+                            this.showSubmit = false;
+                            this.showQuery = false;
+                            this.showTutorial = false;
+                            this.showContact = false;
+                            this.triggerVibration();
+                        })
+                }
+
+                // 3. 顶层：具体的弹窗组件内容
+                // 记得确保你的 blurPopup 组件内部已经删除了原有的第一个 Column 背景层
                 blurPopup({ isShow: $showSubmit }) { appSubmit() }
                 blurPopup({ isShow: $showQuery }) { appQuery() }
                 blurPopup({ isShow: $showTutorial }) { tutorial() }
