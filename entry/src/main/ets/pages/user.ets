@@ -1,9 +1,9 @@
-import { curves, LengthMetrics, router } from '@kit.ArkUI';
+import { curves, display, LengthMetrics, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
-import { APP_VERSION, isTSiteDev } from '../common/constants';
-import { settings } from "../component/settings";
+import { APP_VERSION } from '../common/constants';
+import { settings } from '../component/settings';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
@@ -73,8 +73,17 @@ export struct user {
     @State customPopup: boolean = false;
     @StorageLink("userName") userName: string = "";
     @State deviceName: string = "";
+
+    @State WVp: number = 376;
+    @State HVp: number = 376;
     aboutToAppear() {
         this.loadUserName();
+        //获取屏幕尺寸
+        const displayInfo = display.getDefaultDisplaySync();
+        const screenWidthVp = px2vp(displayInfo.width);
+        const screenHeightVp = px2vp(displayInfo.height);
+        this.WVp = screenWidthVp;
+        this.HVp = screenHeightVp;
     }
     async loadUserName() {
         initializeUserStorage();
@@ -520,7 +529,7 @@ export struct user {
                             Text("* 点击外部区域或向下滑动关闭页面")
                                 .fontSize(14)
                                 .margin({ bottom: 10 })
-                                .position({ x: "40%", y: "64%" })
+                                .position({ x: "40%", y: "65%" })
                                 .fontColor(Color.Grey)
                         }
                         .backgroundColor(Color.Transparent)
@@ -557,7 +566,7 @@ export struct user {
                             Text("* 点击外部区域或向下滑动关闭页面")
                                 .fontSize(14)
                                 .margin({ bottom: 10 })
-                                .position({ x: "40%", y: "64%" })
+                                .position({ x: "40%", y: "65%" })
                                 .fontColor(Color.Grey)
                         }
                         .backgroundColor(Color.Transparent)

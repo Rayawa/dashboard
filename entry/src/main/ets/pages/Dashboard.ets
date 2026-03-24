@@ -261,7 +261,7 @@ struct Dashboard {
             let error = err as BusinessError;
             console.error("Failed on and err code is " + error.code);
         }
-        //获取屏幕右边位置
+        //获取屏幕尺寸
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
         const screenHeightVp = px2vp(displayInfo.height);

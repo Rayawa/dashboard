@@ -29,7 +29,7 @@ export struct appSubmit {
                 Image($r("app.media.submit"))
                     .height(25)
                     .width(25)
-                Text("投稿/查询应用")
+                Text("投稿/更新应用")
                     .fontSize(21)
                     .fontWeight(FontWeight.Bold)
             }
@@ -37,6 +37,8 @@ export struct appSubmit {
             .justifyContent(FlexAlign.Start)
             .alignItems(VerticalAlign.Center)
             .padding({ bottom: 16 })
+
+            Text("填写应用信息投稿至数据库：\n已有应用将同步更新，新应用将新增至数据库。").width("95%").fontSize(14).fontColor($r('app.color.diff_content')).margin({ bottom:10 })
 
             // 智能提取
             Column({ space: 6 }) {

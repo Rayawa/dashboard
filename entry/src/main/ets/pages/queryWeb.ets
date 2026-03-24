@@ -219,6 +219,13 @@ struct queryEntry {
         }
         Scroll(this.scroller) {
           Column() {
+            Blank()
+              .height(10)
+              .width("100%")
+              .expandSafeArea(
+                [SafeAreaType.SYSTEM],
+                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
+              )
             Web({
               src: this.url,
               controller: this.web_controller,
