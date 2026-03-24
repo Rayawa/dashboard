@@ -1,171 +1,101 @@
-import { prompt } from "@kit.ArkUI";
-import { BusinessError, pasteboard } from "@kit.BasicServicesKit";
-import { common, Want } from "@kit.AbilityKit";
-import { vibrator } from "@kit.SensorServiceKit";
+import { prompt } from '@kit.ArkUI';
+import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
+import { common, Want } from '@kit.AbilityKit';
+import { vibrator } from '@kit.SensorServiceKit';
+
 @Component
 export struct contact {
     @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
             vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (err) {
-                    console.error(
-                        `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                    );
-                    return;
-                }
-                console.info("Succeed in querying effect");
-                if (state) {
+                if (!err && state) {
                     try {
                         vibrator.startVibration(
-                            {
-                                type: "preset",
-                                effectId: "haptic.effect.hard",
-                                count: 1,
-                                intensity: 50,
-                            },
-                            { usage: "touch" },
-                            (error: BusinessError) => {
-                                if (error) {
-                                    console.error(
-                                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                    );
-                                } else {
-                                    console.info("Succeed in starting vibration");
-                                }
-                            },
+                            { type: "preset", effectId: "haptic.effect.hard", count: 1, intensity: 50 },
+                            { usage: "touch" }
                         );
-                    } catch (tryError) {
-                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                    }
+                    } catch (e) { console.error(e); }
                 }
             });
         }
     }
 
+    @Builder ContactItem(title: string, name: string, detail: string, copyContent: string, toastLabel: string) {
+        Column({ space: 4 }) {
+            Text(title).fontSize(17).fontWeight(FontWeight.Bold)
+            Text(name).fontSize(14).fontColor($r("app.color.diff_content"))
+            Text(detail).fontSize(13).fontColor(Color.Gray).opacity(0.8)
+        }
+        .alignItems(HorizontalAlign.Center)
+        .width("90%")
+        .backgroundColor($r("app.color.background"))
+        .padding(14)
+        .borderRadius(16)
+        .onClick(async () => {
+            this.triggerVibration();
+            await this.copyToClipboard(copyContent, toastLabel);
+        })
+    }
+
     build() {
         Column() {
-            Column() {
-                Text("联系我们")
-                    .fontSize(24)
-                    .fontColor($r("app.color.diff_content"))
-                    .fontWeight(FontWeight.Bold)
-                    .margin({ top: 8, bottom: 20 })
-                Column({ space: 5 }) {
-                    Text("👥 主要负责人")
-                        .fontSize(18)
-                        .fontWeight(FontWeight.Bold)
-                    Text("shenjack").fontSize(14)
-                    Text("  邮箱：3695888@qq.com")
-                        .fontSize(14)
-                        .fontColor($r("app.color.diff_content"))
-                }
-                .width("95%")
-                .backgroundColor($r("app.color.background"))
+            Text("联系我们")
+                .fontSize(24)
+                .fontColor($r("app.color.diff_content"))
+                .fontWeight(FontWeight.Bold)
                 .margin({ bottom: 10 })
-                .padding(12)
-                .borderRadius(16)
-                .onClick(async () => {
-                    this.triggerVibration();
-                    await this.copyToClipboard("3695888@qq.com", "邮箱：3695888@qq.com");
-                })
-                Column({ space: 5 }) {
-                    Text("🌐 T站网页负责人")
-                        .fontSize(18)
-                        .fontWeight(FontWeight.Bold)
-                    Text("tianxiu2b2t").fontSize(14)
-                    Text("  邮箱：administrator@ttb-network.top")
-                        .fontSize(14)
-                        .fontColor($r("app.color.diff_content"))
+
+            Column({ space: 10 }) {
+                this.ContactItem("👥 主要负责人", "shenjack", "邮箱：3695888@qq.com", "3695888@qq.com", "邮箱")
+                this.ContactItem("🌐 T站网页负责人", "tianxiu2b2t", "邮箱：administrator@ttb-network.top", "administrator@ttb-network.top", "邮箱")
+                this.ContactItem("📱 鸿蒙应用开发", "清霁·Rayawa", "邮箱：rayawa.work@outlook.com", "rayawa.work@outlook.com", "邮箱")
+                this.ContactItem("💬 QQ群", "Harmony Gallery 官方交流群", "群号：757273833", "757273833", "群号")
+
+                Column({ space: 4 }) {
+                    Text("❤️ 赞助我们").fontSize(17).fontWeight(FontWeight.Bold)
+                    Text("支持项目发展").fontSize(14).fontColor($r("app.color.diff_content"))
+                    Text("点击跳转到爱发电赞助页面").fontSize(13).fontColor(Color.Gray).opacity(0.8)
                 }
-                .width("95%")
+                .alignItems(HorizontalAlign.Center)
+                .width("100%")
                 .backgroundColor($r("app.color.background"))
-                .margin({ bottom: 10 })
-                .padding(12)
-                .borderRadius(16)
-                .onClick(async () => {
-                    this.triggerVibration();
-                    await this.copyToClipboard(
-                        "administrator@ttb-network.top",
-                        "邮箱：administrator@ttb-network.top",
-                    );
-                })
-                Column({ space: 5 }) {
-                    Text("📱 鸿蒙应用开发")
-                        .fontSize(18)
-                        .fontWeight(FontWeight.Bold)
-                    Text("清霁·Rayawa").fontSize(14)
-                    Text("  邮箱：rayawa.work@outlook.com")
-                        .fontSize(14)
-                        .fontColor($r("app.color.diff_content"))
-                }
-                .width("95%")
-                .backgroundColor($r("app.color.background"))
-                .margin({ bottom: 10 })
-                .padding(12)
-                .borderRadius(16)
-                .onClick(async () => {
-                    this.triggerVibration();
-                    await this.copyToClipboard(
-                        "rayawa.work@outlook.com",
-                        "邮箱：rayawa.work@outlook.com",
-                    );
-                })
-                Column({ space: 5 }) {
-                    Text("💬 QQ群")
-                        .fontSize(18)
-                        .fontWeight(FontWeight.Bold)
-                    Text("Harmony Gallery 官方交流群").fontSize(14)
-                    Text("  群号：757273833")
-                        .fontSize(14)
-                        .fontColor($r("app.color.diff_content"))
-                }
-                .width("95%")
-                .backgroundColor($r("app.color.background"))
-                .margin({ bottom: 10 })
-                .padding(12)
-                .borderRadius(16)
-                .onClick(async () => {
-                    this.triggerVibration();
-                    await this.copyToClipboard("757273833", "QQ群号：757273833");
-                })
-                Column({ space: 5 }) {
-                    Text("❤️ 赞助我们")
-                        .fontSize(18)
-                        .fontWeight(FontWeight.Bold)
-                    Text("支持项目发展").fontSize(14)
-                    Text("  点击跳转到爱发电赞助页面")
-                        .fontSize(14)
-                        .fontColor($r("app.color.diff_content"))
-                }
-                .width("95%")
-                .backgroundColor($r("app.color.background"))
-                .margin({ bottom: 5 })
-                .padding(12)
+                .padding(14)
                 .borderRadius(16)
                 .onClick(() => {
                     this.triggerVibration();
                     this.openLink();
                 })
-            }.padding(12)
+
+
+            }
+            .width("100%")
+            .margin({ bottom: 20 })
+
             Column() {
                 Divider()
-                    .strokeWidth(1)
+                    .strokeWidth(0.5)
                     .color($r("app.color.border"))
-                    .margin({ bottom: 10 })
+                    .margin({ bottom: 12 })
                     .width("100%")
                 Text("我们将尽快回复您的消息")
                     .fontSize(12)
+                    .fontColor(Color.Gray)
                     .margin({ bottom: 4 })
-                Text("感谢您的支持！").fontSize(12)
+                Text("感谢您的支持！")
+                    .fontSize(12)
+                    .fontColor(Color.Gray)
             }
             .width("100%")
-            .alignItems(HorizontalAlign.Center)
-            .margin({ top: 8 })
+            .margin({ bottom: 20 })
         }
-        .height("85%")
-        .margin({ top: 20, bottom: 10 })
         .width("90%")
+        .padding({
+            top: 20,
+            bottom: 20,
+            left: 10,
+            right: 10,
+        })
         .borderRadius(20)
         .backgroundColor($r("app.color.backcolor"))
         .shadow({
@@ -176,57 +106,40 @@ export struct contact {
         });
     }
 
+
     async openLink() {
         const url = "https://afdian.com/a/shenjack";
         const ui_content = this.getUIContext();
-        const prompt_action = ui_content.getPromptAction();
         ui_content.showAlertDialog({
-            title: "是否跳转到浏览器",
-            message: "即将访问爱发电",
-            primaryButton: {
-                value: "取消",
-                fontColor: Color.Red,
-                action: () => {
-                    console.log("点击了取消按钮");
-                },
-            },
+            title: "提示",
+            message: "即将跳转到爱发电页面",
+            primaryButton: { value: "取消", fontColor: Color.Red, action: () => {} },
             secondaryButton: {
                 value: "确定",
                 fontColor: Color.Blue,
-                action: async (): Promise<void> => {
+                action: async () => {
                     try {
-                        prompt_action.showToast({ message: "正在跳转...", duration: 500 });
                         let context = ui_content.getHostContext() as common.UIAbilityContext;
                         await context.startAbility({
                             action: "ohos.want.action.viewData",
                             entities: ["entity.system.browsable"],
                             uri: url,
                         } as Want);
-                    } catch (error) {
-                        console.error("打开链接失败:", (error as BusinessError).message);
-                        prompt_action.showToast({ message: "打开链接失败", duration: 1000 });
+                    } catch (e) {
+                        prompt.showToast({ message: "跳转失败" });
                     }
                 },
             },
         });
     }
 
-    async copyToClipboard(text: string, message: string): Promise<void> {
+    async copyToClipboard(text: string, label: string): Promise<void> {
         try {
             let pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text);
-            let systemPasteboard = pasteboard.getSystemPasteboard();
-            await systemPasteboard.setData(pasteData);
-            prompt.showToast({
-                message: `已复制${message}`,
-                duration: 2000,
-            });
+            await pasteboard.getSystemPasteboard().setData(pasteData);
+            prompt.showToast({ message: `已复制${label}`, duration: 2000 });
         } catch (error) {
-            const err: BusinessError = error as BusinessError;
-            console.error(`复制失败，错误码：${err.code}, 信息：${err.message}`);
-            prompt.showToast({
-                message: "复制失败，请重试",
-                duration: 2000,
-            });
+            prompt.showToast({ message: "复制失败" });
         }
     }
 }
