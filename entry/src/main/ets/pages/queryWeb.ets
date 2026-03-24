@@ -1,15 +1,11 @@
 import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
-import {
-  hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
-} from '@kit.UIDesignKit';
+import { common, Want } from '@kit.AbilityKit';
+import { hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { common } from '@kit.AbilityKit';
-import { harmonyShare } from '@kit.ShareKit';
-import { WebShareManager } from '../common/shareControl';
 import {
   getButtonPosition,
   getHoldCheckEnabled,
@@ -80,7 +76,7 @@ struct queryEntry {
       });
     }
   }
-  
+
   private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
       .combine(TransitionEffect.scale({ x: 0, y: 0 }))
@@ -111,8 +107,6 @@ struct queryEntry {
     }
   };
 
-  private shareManager?: WebShareManager;
-  private context = getContext(this) as common.UIAbilityContext;
   private async loadSettings() {
     try {
       this.vibrationON = await getVibrationEnabled();
@@ -168,32 +162,9 @@ struct queryEntry {
     setTimeout(() => {
       this.buttonOnPageShow = true;
     }, 500);
-    //分享
-    const context = getContext(this) as common.UIAbilityContext;
-    this.shareManager = WebShareManager.getInstance(context, this.web_controller);
-    this.shareManager.enablePassiveShare();
-    this.context.eventHub.on("onFocus", () => {
-      this.shareManager?.enablePassiveShare();
-    });
-    this.context.eventHub.on("onBackGround", () => {
-      this.onBackGround();
-      this.shareManager?.disablePassiveShare();
-    });
   }
 
-  onBackGround() {
-    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
-      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
-    });
-  }
   aboutToDisappear() {
-    this.shareManager?.disablePassiveShare();
-    const hostContext = this.context;
-    hostContext.eventHub.off("onFocus");
-    hostContext.eventHub.off("onBackGround");
-    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
-      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
-    });
     try {
       motion.off("holdingHandChanged", this.holdingHandCallback);
     } catch (err) {
@@ -202,6 +173,8 @@ struct queryEntry {
     }
   }
 
+  @State firstBackTime: number = 0;
+  private waitTime: number = 2000;
   onBackPress(): boolean | void {
     if (this.web_controller.accessStep(-1)) {
       console.info("网页可以返回，执行后退");
@@ -209,9 +182,38 @@ struct queryEntry {
       this.triggerVibration();
       prompt.showToast({ message: "返回上一页", duration: 1000 });
       return true;
+    }
+    const currentTime = new Date().getTime();
+    if (currentTime - this.firstBackTime > this.waitTime) {
+      this.firstBackTime = currentTime;
+      prompt.showToast({ message: "再按一次返回主页", duration: this.waitTime });
+      this.triggerVibration()
+      return true;
     } else {
+      this.closePage()
       return false;
     }
+  }
+
+  private closePage() {
+
+    const context = getContext(this) as common.UIAbilityContext;
+
+    const want: Want = {
+      bundleName: 'top.rayawa.dashboard',
+      abilityName: 'EntryAbility',
+    };
+
+    context.startAbility(want)
+      .then(() => {
+        console.info('成功拉起 EntryAbility');
+      })
+      .catch((err: Error) => {
+        console.error('拉起失败：' + JSON.stringify(err));
+      });
+
+    this.triggerVibration();
+
   }
 
   build() {
@@ -524,29 +526,28 @@ struct queryEntry {
         title: {
           mainTitle: "查询结果",
         },
-        menu: {
-          value: [
-            {
-              content: {
-                label: "share",
-                icon: $r("sys.symbol.share"),
-                isEnabled: true,
-                action: () => {
-                  this.shareManager?.showSystemShare();
-                  this.triggerVibration();
-                },
-              },
-            },
-          ],
-        },
         backIcon: {
           action: () => {
-            router.back();
-            this.triggerVibration();
+            const context = getContext(this) as common.UIAbilityContext;
 
+            const want: Want = {
+              bundleName: 'top.rayawa.dashboard',
+              abilityName: 'EntryAbility',
+            };
+
+            context.startAbility(want)
+              .then(() => {
+                console.info('成功拉起 EntryAbility');
+              })
+              .catch((err: Error) => {
+                console.error('拉起失败：' + JSON.stringify(err));
+              });
+
+            this.triggerVibration();
           },
         },
       },
     });
   }
+
 }

@@ -60,12 +60,6 @@
         "srcEntry": "./ets/ability/query.ets",
         "description": "查看应用数据",
         "label": "$string:query_label",
-        "metadata": [
-          {
-            "name": "ohos.extension.short_label",
-            "value": "$string:query_label"
-          }
-        ],
         "type": "share",
         "exported": true,
         "skills": [
@@ -88,12 +82,6 @@
         "srcEntry": "./ets/ability/simpleSubmit.ets",
         "description": "简单投稿页面",
         "label": "$string:simple_share_label",
-        "metadata": [
-          {
-            "name": "ohos.extension.short_label",
-            "value": "$string:simple_share_label"
-          }
-        ],
         "type": "share",
         "exported": true,
         "skills": [
@@ -116,12 +104,6 @@
         "srcEntry": "./ets/ability/complexSubmit.ets",
         "description": "复杂投稿页面",
         "label": "$string:complex_share_label",
-        "metadata": [
-          {
-            "name": "ohos.extension.short_label",
-            "value": "$string:complex_share_label"
-          }
-        ],
         "type": "share",
         "exported": true,
         "skills": [
