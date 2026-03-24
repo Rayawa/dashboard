@@ -38,6 +38,8 @@ export struct appQuery {
       .alignItems(VerticalAlign.Center)
       .padding({ bottom: 16 })
 
+      Text("填写应用信息以查询数据库信息。").width("95%").fontSize(14).fontColor($r('app.color.diff_content')).margin({ bottom:10 })
+
       // 智能提取
       Column({ space: 6 }) {
         Row({ space: 20 }) {

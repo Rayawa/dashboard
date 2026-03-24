@@ -10,8 +10,9 @@ struct loading {
           .color($r('app.color.diff_content'))
 
         Text('正在与数据库建立通信...')
-          .fontSize(20)
-          .fontColor($r('sys.color.ohos_id_color_text_secondary'))
+          .fontSize(18)
+          .fontColor($r('app.color.diff_content'))
+          .margin({ top: 10 })
       }
       .justifyContent(FlexAlign.Center)
     }
