@@ -14,6 +14,8 @@ export const dztapURL = new URL("https://dztap.com/app.html");
 export const OpenStoreURL = new URL("https://next.betahub.tech/");
 export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
 
+export const accountDL = new URL("https://appgallery.huawei.com/app/detail?id=com.xxtstudio.accountDL&channelId=SHARE&source=appshare");
+
 //dev
 export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
 export const TBaseURLDev = new URL("http://192.168.2.9:50000/");

@@ -14,7 +14,7 @@ interface UpdateLog {
 
 @Entry
 @Component
-struct app_log {
+struct appLog {
     private updateLogs: UpdateLog[] = [
         {
             version: "V2.0.0-rc.1",

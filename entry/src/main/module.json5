@@ -36,7 +36,7 @@
       },
       {
         "name": "shareEntry",
-        "srcEntry": "./ets/ability/shareEntry.ets",
+        "srcEntry": "./ets/ability/submitEntry.ets",
         "description": "$string:shareEntryAbility_desc",
         "icon": "$media:layered_image",
         "label": "$string:shareEntryAbility_label",
@@ -84,7 +84,7 @@
       },
       {
         "name": "simple_share_ability",
-        "srcEntry": "./ets/ability/simple_share.ets",
+        "srcEntry": "./ets/ability/simpleSubmit.ets",
         "description": "简单分享详细页面",
         "label": "$string:simple_share_label",
         "metadata": [
@@ -112,7 +112,7 @@
       },
       {
         "name": "complex_share_ability",
-        "srcEntry": "./ets/ability/complex_share.ets",
+        "srcEntry": "./ets/ability/complexSubmit.ets",
         "description": "复杂分享详细页面",
         "label": "$string:complex_share_label",
         "metadata": [

@@ -1,7 +1,6 @@
 import { vibrator } from '@kit.SensorServiceKit';
-import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { prompt, router } from '@kit.ArkUI';
+import { prompt } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
 import { submit_app } from '../common/api';
 
@@ -16,19 +15,7 @@ interface ButtonAnimationState {
     delayOpacity: number;
     delayScale: Scale;
 }
-interface FullInfo {
-    alliance_app_id: string;
-}
 
-interface AppData {
-    full_info: FullInfo;
-}
-
-interface ApiResponse {
-    success: boolean;
-    data: AppData;
-    message?: string;
-}
 @Component
 export struct submitButtons {
     @State appId: string = '';
@@ -43,103 +30,6 @@ export struct submitButtons {
         remark: "",
     };
 
-
-    extractBundleName(url: string): string | null {
-        const regex = /[?&]id=([^&]+)/;
-        const match = url.match(regex);
-        const pkg = match ? match[1] : null;
-        console.info(`queryResult [Extract] 包名结果: ${pkg}`);
-        return pkg;
-    }
-
-    // 获取AppID
-    async getAppIdByPackage(pkgName: string): Promise<string> {
-        return new Promise((resolve, reject) => {
-            let httpRequest = http.createHttp();
-            let apiUrl = `http://shenjack.top:10003/api/v0/apps/pkg_name/${pkgName}`;
-            httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
-                if (!err && data.responseCode === 200) {
-                    const res = JSON.parse(data.result.toString()) as ApiResponse;
-                    if (res.success && res.data?.full_info?.alliance_app_id) {
-                        const rawId = res.data.full_info.alliance_app_id;
-                        resolve(rawId.startsWith('C') ? rawId : `C${rawId}`);
-                    } else { reject(new Error("包名转换失败")); }
-                } else { reject(new Error("网络请求失败")); }
-                httpRequest.destroy();
-            });
-        });
-    }
-
-    //校验AppID是否真实存在
-    async verifyAppIdExists(appId: string): Promise<boolean> {
-        console.info(`queryResult [Verify Start] 正在校验 AppID 真实性: ${appId}`);
-        return new Promise((resolve) => {
-            let httpRequest = http.createHttp();
-            let apiUrl = `http://shenjack.top:10003/api/v0/apps/app_id/${appId}`;
-            httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
-                if (!err && data.responseCode === 200) {
-                    try {
-                        const res = JSON.parse(data.result.toString()) as ApiResponse;
-                        console.info(`queryResult [Verify Response] success: ${res.success}`);
-                        resolve(res.success);
-                    } catch (e) { resolve(false); }
-                } else { resolve(false); }
-                httpRequest.destroy();
-            });
-        });
-    }
-
-    async queryForm(): Promise<void> {
-        if (this.isSearching) return;
-        this.isSearching = true;
-        this.startSearchRippleLoop();
-
-        let tempAppId = "";
-
-        try {
-            //获取AppID
-            if (this.formData.appId && this.formData.appId.trim().startsWith('C')) {
-                tempAppId = this.formData.appId.trim();
-                console.info(`queryResult [Phase 1] 直接使用 ID: ${tempAppId}`);
-            }
-            else if (this.formData.packageName && this.formData.packageName.trim().length > 0) {
-                tempAppId = await this.getAppIdByPackage(this.formData.packageName.trim());
-                console.info(`queryResult [Phase 1] 包名转换结果: ${tempAppId}`);
-            }
-            else if (this.formData.appLink && this.formData.appLink.trim().length > 0) {
-                const pkg = this.extractBundleName(this.formData.appLink);
-                if (pkg) {
-                    tempAppId = await this.getAppIdByPackage(pkg);
-                    console.info(`queryResult [Phase 1] 链接提取并转换结果: ${tempAppId}`);
-                } else { throw new Error("无法解析链接"); }
-            } else { throw new Error("输入为空"); }
-
-            //校验AppID是否存在
-            const isExists = await this.verifyAppIdExists(tempAppId);
-
-            if (isExists) {
-                console.info(`queryResult [Final] 校验通过，准备跳转`);
-                this.formData.appId = tempAppId;
-                const finalUrl = `https://hmos.txit.top/app/${tempAppId}`;
-
-                this.isSearching = false;
-                this.stopSearchRippleLoop();
-
-                router.pushUrl({
-                    url: 'pages/queryWeb',
-                    params: { url: finalUrl }
-                });
-            } else {
-                throw new Error("该应用中不存在");
-            }
-
-        } catch (error) {
-            this.isSearching = false;
-            this.stopSearchRippleLoop();
-            console.error(`queryResult [Error] ${error.message}`);
-            prompt.showToast({ message: `查询失败！${error.message}` });
-        }
-    }
 
     async clearForm(): Promise<void> {
         if (this.isCleaning) {
@@ -354,7 +244,6 @@ export struct submitButtons {
     }
 
     @State isCleaning: boolean = false;
-    @State isSearching: boolean = false;
     @State isSubmitting: boolean = false;
     private readonly BUTTON_WIDTH: string = "30%";
     private readonly BUTTON_HEIGHT: number = 44;
@@ -363,7 +252,6 @@ export struct submitButtons {
     private readonly BORDER_RADIUS: number = 22;
     private readonly CLICK_INTERVAL = 800;
     private _cleanAnimationCompleted: boolean = false;
-    private _searchAnimationCompleted: boolean = false;
     private _submitAnimationCompleted: boolean = false;
 
     @Styles
@@ -372,14 +260,6 @@ export struct submitButtons {
         .height(this.BUTTON_HEIGHT)
         .borderRadius(this.BORDER_RADIUS)
         .backgroundColor(Color.Green);
-    }
-
-    @Styles
-    ripplesStyleSearch() {
-        .width(this.BUTTON_WIDTH)
-        .height(this.BUTTON_HEIGHT)
-        .borderRadius(this.BORDER_RADIUS)
-        .backgroundColor(Color.Blue);
     }
 
     @Styles
@@ -396,12 +276,7 @@ export struct submitButtons {
         delayOpacity: 0.4,
         delayScale: { x: 1, y: 1 },
     };
-    @State searchAnimation: ButtonAnimationState = {
-        immediatelyOpacity: 0.8,
-        immediatelyScale: { x: 1, y: 1 },
-        delayOpacity: 0.4,
-        delayScale: { x: 1, y: 1 },
-    };
+
     @State submitAnimation: ButtonAnimationState = {
         immediatelyOpacity: 0.8,
         immediatelyScale: { x: 1, y: 1 },
@@ -409,10 +284,8 @@ export struct submitButtons {
         delayScale: { x: 1, y: 1 },
     };
     private _cleanLoopRunning: boolean = false;
-    private _searchLoopRunning: boolean = false;
     private _submitLoopRunning: boolean = false;
     private _cleanLastClick: number = 0;
-    private _searchLastClick: number = 0;
     private _submitLastClick: number = 0;
 
     private startCleanRippleLoop() {
@@ -490,84 +363,6 @@ export struct submitButtons {
             this.cleanAnimation.delayOpacity = 0.8;
             this.cleanAnimation.immediatelyScale = { x: 1, y: 1 };
             this.cleanAnimation.delayScale = { x: 1, y: 1 };
-        }
-    }
-
-    private startSearchRippleLoop() {
-        if (this._searchLoopRunning) {
-            return;
-        }
-        this._searchLoopRunning = true;
-        this._searchAnimationCompleted = false;
-
-        const loop = () => {
-            if (!this._searchLoopRunning) {
-                return;
-            }
-
-            this.getUIContext().animateTo(
-                {
-                    duration: this.ANIMATION_DURATION,
-                    curve: Curve.EaseInOut,
-                },
-                () => {
-                    this.searchAnimation.immediatelyOpacity = 0;
-                    this.searchAnimation.immediatelyScale = { x: 4, y: 4 };
-                },
-            );
-
-            this.getUIContext().animateTo(
-                {
-                    duration: this.ANIMATION_DURATION,
-                    delay: 200,
-                    curve: Curve.EaseInOut,
-                },
-                () => {
-                    this.searchAnimation.delayOpacity = 0;
-                    this.searchAnimation.delayScale = { x: 4, y: 4 };
-                },
-            );
-
-            const total = this.ANIMATION_DURATION + 200 + 40;
-
-            setTimeout(() => {
-                this._searchAnimationCompleted = true;
-
-                if (!this._searchLoopRunning) {
-                    this.searchAnimation.immediatelyOpacity = 0.8;
-                    this.searchAnimation.delayOpacity = 0.8;
-                    this.searchAnimation.immediatelyScale = { x: 1, y: 1 };
-                    this.searchAnimation.delayScale = { x: 1, y: 1 };
-                    return;
-                }
-
-                this.searchAnimation.immediatelyOpacity = 0.8;
-                this.searchAnimation.delayOpacity = 0.8;
-                this.searchAnimation.immediatelyScale = { x: 1, y: 1 };
-                this.searchAnimation.delayScale = { x: 1, y: 1 };
-
-                loop();
-            }, total);
-        };
-
-        loop();
-    }
-
-    private stopSearchRippleLoop() {
-        if (!this._searchAnimationCompleted) {
-            setTimeout(() => {
-                this._searchLoopRunning = false;
-                this.searchAnimation.immediatelyOpacity = 0.8;
-                this.searchAnimation.delayOpacity = 0.8;
-                this.searchAnimation.immediatelyScale = { x: 1, y: 1 };
-                this.searchAnimation.delayScale = { x: 1, y: 1 };
-            }, 700);
-        } else {
-            this._searchLoopRunning = false;
-            this.searchAnimation.immediatelyOpacity = 0.8;
-            this.searchAnimation.delayOpacity = 0.8;
-            this.searchAnimation.immediatelyScale = { x: 1, y: 1 };
-            this.searchAnimation.delayScale = { x: 1, y: 1 };
         }
     }
 
@@ -678,35 +473,6 @@ export struct submitButtons {
                         this.clearForm();
                     })
             }
-
-            // 查询按钮
-            Stack() {
-                Stack()
-                    .ripplesStyleSearch()
-                    .opacity(this.searchAnimation.immediatelyOpacity)
-                    .scale(this.searchAnimation.immediatelyScale)
-                Stack()
-                    .ripplesStyleSearch()
-                    .opacity(this.searchAnimation.delayOpacity)
-                    .scale(this.searchAnimation.delayScale)
-                Button(this.isSearching ? "查询中..." : "查询", { type: ButtonType.Normal })
-                    .margin(2)
-                    .width(this.BUTTON_WIDTH)
-                    .height(this.BUTTON_HEIGHT)
-                    .backgroundColor(Color.Blue)
-                    .borderRadius(this.BORDER_RADIUS)
-                    .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
-                    .onClick(() => {
-                        const now = Date.now();
-                        if (now - this._searchLastClick < this.CLICK_INTERVAL) {
-                            return;
-                        }
-                        this._searchLastClick = now;
-                        this.triggerVibration();
-                        this.queryForm();
-                    })
-            }
-
             // 提交按钮
             Stack() {
                 Stack()
@@ -736,7 +502,7 @@ export struct submitButtons {
             }
         }
         .width("100%")
-        .justifyContent(FlexAlign.SpaceBetween)
+        .justifyContent(FlexAlign.SpaceEvenly)
         .margin({ top: 15 });
     }
 }

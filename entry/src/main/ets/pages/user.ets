@@ -8,9 +8,11 @@ import { deviceInfo } from '@kit.BasicServicesKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
 import { contact } from '../component/contact';
-import { app_share } from '../component/app_share';
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
+import { app_submit } from '../component/app_submit';
+import { app_query } from '../component/app_query';
+
 @Entry
 @Component
 export struct user {
@@ -64,6 +66,7 @@ export struct user {
     @State showSettings: boolean = false ;
 
     @State showTutorial: boolean = false;
+    @State showQuery: boolean = false;
     @State showSubmit: boolean = false;
     @State showContact: boolean = false;
     @State handlePopup: boolean = false;
@@ -262,6 +265,7 @@ export struct user {
                             }
                             .justifyContent(FlexAlign.Center)
                             .margin({ bottom: 8 })
+
                             Divider()
                                 .color($r("app.color.border"))
                                 .strokeWidth(0.5)
@@ -272,7 +276,7 @@ export struct user {
                                         .height(24)
                                         .width(24)
                                         .objectFit(ImageFit.Contain)
-                                    Text("投稿/查询应用")
+                                    Text("投稿/更新应用")
                                         .fontSize(16)
                                         .margin({ left: 12 })
                                 }
@@ -283,6 +287,33 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.showSubmit = !this.showSubmit;
+                                this.triggerVibration();
+                            })
+                            .height(56)
+                            .width("100%")
+                            .justifyContent(FlexAlign.SpaceBetween)
+                            .padding({ left: 16, right: 16 })
+                            Divider()
+                                .color($r("app.color.border"))
+                                .strokeWidth(0.5)
+                                .margin({ left: 16, right: 16 })
+                            Row() {
+                                Row() {
+                                    Image($r("app.media.search"))
+                                        .height(24)
+                                        .width(24)
+                                        .objectFit(ImageFit.Contain)
+                                    Text("查询应用")
+                                        .fontSize(16)
+                                        .margin({ left: 12 })
+                                }
+                                Image($r("app.media.right"))
+                                    .height(16)
+                                    .width(16)
+                                    .objectFit(ImageFit.Contain)
+                            }
+                            .onClick(() => {
+                                this.showQuery = !this.showQuery;
                                 this.triggerVibration();
                             })
                             .height(56)
@@ -321,7 +352,7 @@ export struct user {
                                     .objectFit(ImageFit.Contain)
                             }
                             .onClick(() => {
-                                router.pushUrl({ url: "pages/user/web_log" });
+                                router.pushUrl({ url: "pages/user/webLog" });
                                 this.triggerVibration();
                             })
                             .height(56)
@@ -348,7 +379,7 @@ export struct user {
                                     .objectFit(ImageFit.Contain)
                             }
                             .onClick(() => {
-                                router.pushUrl({ url: "pages/user/app_log" });
+                                router.pushUrl({ url: "pages/user/appLog" });
                                 this.triggerVibration();
                             })
                             .height(56)
@@ -375,7 +406,7 @@ export struct user {
                                     .objectFit(ImageFit.Contain)
                             }
                             .onClick(() => {
-                                router.pushUrl({ url: "pages/user/web_api" });
+                                router.pushUrl({ url: "pages/user/webApi" });
                                 this.triggerVibration();
                             })
                             .height(56)
@@ -499,7 +530,7 @@ export struct user {
                                 duration: 1000,
                             }),
                         )
-                        app_share()
+                        app_submit()
                     }
                     .transition(this.effect)
                     .gesture(
@@ -507,6 +538,43 @@ export struct user {
                             (move: GestureEvent | undefined) => {
                                 if (move) {
                                     this.showSubmit = !this.showSubmit;
+                                }
+                            },
+                        ),
+                    )
+                    .height("100%")
+                    .width("100%");
+                }
+                if (this.showQuery) {
+                    Stack() {
+                        Column() {
+                            Text("* 点击外部区域或向下滑动关闭页面")
+                                .fontSize(14)
+                                .margin({ bottom: 10 })
+                                .position({ x: "40%", y: "64%" })
+                                .fontColor(Color.Grey)
+                        }
+                        .backgroundColor(Color.Transparent)
+                        .height("300%")
+                        .width("300%")
+                        .onClick(() => {
+                            this.showSubmit = !this.showSubmit;
+                        })
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                        .transition(
+                            TransitionEffect.OPACITY.animation({
+                                curve: curves.springMotion(0, 1),
+                                duration: 1000,
+                            }),
+                        )
+                        app_query()
+                    }
+                    .transition(this.effect)
+                    .gesture(
+                        SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(
+                            (move: GestureEvent | undefined) => {
+                                if (move) {
+                                    this.showQuery = !this.showQuery;
                                 }
                             },
                         ),

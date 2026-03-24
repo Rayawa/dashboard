@@ -40,7 +40,7 @@ export class ShareAbility extends ShareExtensionAbility {
                 if (contents.length > 0) {
                     const wantForPage: Want = {
                         bundleName: "top.rayawa.dashboard",
-                        abilityName: "shareEntry",
+                        abilityName: "submitEntry",
                         parameters: {
                             sharePackageName: parsedPackageName,
                             shareUrl: rawContent,
