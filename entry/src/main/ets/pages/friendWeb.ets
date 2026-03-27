@@ -16,7 +16,7 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { common } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
 import {
@@ -154,6 +154,40 @@ export struct friendWeb {
     } catch (error) {
       console.error("加载设置失败:", error);
     }
+  }
+  async openLink() {
+    const url = this.url;
+    const ui_content = this.getUIContext();
+    const prompt_action = ui_content.getPromptAction();
+    ui_content.showAlertDialog({
+      title: "是否跳转到浏览器",
+      message: `即将访问${this.title}`,
+      primaryButton: {
+        value: "取消",
+        fontColor: Color.Red,
+        action: () => {
+          console.log("点击了取消按钮");
+        },
+      },
+      secondaryButton: {
+        value: "确定",
+        fontColor: Color.Blue,
+        action: async (): Promise<void> => {
+          try {
+            prompt_action.showToast({ message: "正在跳转...", duration: 500 });
+            let context = ui_content.getHostContext() as common.UIAbilityContext;
+            await context.startAbility({
+              action: "ohos.want.action.viewData",
+              entities: ["entity.system.browsable"],
+              uri: url,
+            } as Want);
+          } catch (error) {
+            console.error("打开链接失败:", (error as BusinessError).message);
+            prompt_action.showToast({ message: "打开链接失败", duration: 1000 });
+          }
+        },
+      },
+    });
   }
   async aboutToAppear() {
     const params = router.getParams() as Record<string, string>;
@@ -557,7 +591,19 @@ export struct friendWeb {
           mainTitle: this.title,
         },
         menu: {
+
           value: [
+            {
+              content: {
+                label: "openlink",
+                icon: $r("sys.symbol.worldclock"),
+                isEnabled: true,
+                action: () => {
+                  this.triggerVibration();
+                  this.openLink();
+                },
+              },
+            },
             {
               content: {
                 label: "share",

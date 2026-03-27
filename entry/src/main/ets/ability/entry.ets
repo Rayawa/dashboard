@@ -39,7 +39,6 @@ export default class EntryAbility extends UIAbility {
         this.loadMainContent(windowStage, "onWindowStageRestore");
     }
 
-    // 提取重复的加载逻辑
     private loadMainContent(windowStage: window.WindowStage, tag: string) {
         windowStage.loadContent("pages/Dashboard", this.storage, (err) => {
             if (err.code) {

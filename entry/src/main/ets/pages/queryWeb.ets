@@ -191,20 +191,9 @@ struct queryEntry {
       return true;
     } else {
       this.triggerVibration();
-      this.closePage()
+      router.back()
       return false;
     }
-  }
-
-  private closePage() {
-    const context = getContext(this) as common.UIAbilityContext;
-    context.terminateSelf((err) => {
-      if (err.code) {
-        console.error(`终止失败: ${err.code}, ${err.message}`);
-        return;
-      }
-      console.info('Ability 已成功销毁');
-    });
   }
 
   build() {
@@ -526,21 +515,7 @@ struct queryEntry {
         },
         backIcon: {
           action: () => {
-            const context = getContext(this) as common.UIAbilityContext;
-
-            const want: Want = {
-              bundleName: 'top.rayawa.dashboard',
-              abilityName: 'EntryAbility',
-            };
-
-            context.startAbility(want)
-              .then(() => {
-                console.info('成功拉起 EntryAbility');
-              })
-              .catch((err: Error) => {
-                console.error('拉起失败：' + JSON.stringify(err));
-              });
-
+            router.back();
             this.triggerVibration();
           },
         },
