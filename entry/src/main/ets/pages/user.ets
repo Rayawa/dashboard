@@ -95,12 +95,12 @@ struct user {
     }
 
     onBackPress(): boolean | void {
-        if (this.showTutorial || this.showQuery || this.showSubmit || this.showContact) {
+        if (this.showTutorial || this.showQuery || this.showSubmit || this.showContact || this.showSettings) {
             this.showSubmit = false;
             this.showQuery = false;
             this.showTutorial = false;
             this.showContact = false;
-            this.triggerVibration();
+            this.showSettings = false;
             this.triggerVibration();
             return true;
         } else {
@@ -219,7 +219,7 @@ struct user {
                                     })
                                     .bindPopup(this.handlePopup, {
                                         message:
-                                        '用于您投稿应用时的默认用户名\n详情见请"使用教程-投稿功能"',
+                                        '用于您投稿应用时提交的用户名',
                                         placement: Placement.Top,
                                         showInSubWindow: false,
                                         onStateChange: (e) => {
@@ -504,6 +504,13 @@ struct user {
                 .height("100%")
                 if (this.showSubmit || this.showQuery || this.showTutorial || this.showContact) {
                     Column()
+                        .onClick(() => {
+                            this.showSubmit = false;
+                            this.showQuery = false;
+                            this.showTutorial = false;
+                            this.showContact = false;
+                            this.triggerVibration();
+                        })
                         .width('100%')
                         .height('100%')
                         .backgroundColor(Color.Transparent)
@@ -512,16 +519,9 @@ struct user {
                         .transition(
                             TransitionEffect.OPACITY.animation({
                                 curve: curves.springMotion(0, 1),
-                                duration: 1000,
+                                duration: 800,
                             }),
                         )
-                        .onClick(() => {
-                            this.showSubmit = false;
-                            this.showQuery = false;
-                            this.showTutorial = false;
-                            this.showContact = false;
-                            this.triggerVibration();
-                        })
                 }
 
                 blurPopup({ isShow: $showSubmit }) { appSubmit() }
