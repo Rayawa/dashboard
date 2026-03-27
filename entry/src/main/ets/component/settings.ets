@@ -194,10 +194,10 @@ export struct settings {
             // .width("100%")
             // .justifyContent(FlexAlign.SpaceBetween)
             // .padding({ left: 16, right: 16 })
-            Divider()
-                .color($r("app.color.border"))
-                .strokeWidth(0.5)
-                .margin({ left: 16, right: 16 })
+            // Divider()
+            //     .color($r("app.color.border"))
+            //     .strokeWidth(0.5)
+            //     .margin({ left: 16, right: 16 })
             Row() {
                 Row({ space: 12 }) {
                     Image($r("app.media.vibrate"))
