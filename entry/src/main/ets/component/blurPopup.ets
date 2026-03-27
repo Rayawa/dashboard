@@ -16,7 +16,7 @@ export struct blurPopup {
   build() {
     if (this.isShow) {
       Column() {
-        Blank().height(70)
+        Blank().height(60)
         this.content()
         Blank().height(15)
         Text(this.title)

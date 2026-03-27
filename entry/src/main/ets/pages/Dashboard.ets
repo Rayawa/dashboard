@@ -26,7 +26,6 @@ import { WebShareManager } from '../common/shareControl';
 import { preferences } from '@kit.ArkData';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
-import { SiteMode } from '../common/types';
 import {
     getButtonPosition,
     getDefaultSite,
@@ -317,17 +316,17 @@ struct Dashboard {
         setTimeout(() => {
             this.buttonOnPageShow = true;
         }, 500);
-        console.log("currentusername",this.userName)
+        console.log("currentUsername",this.userName)
         if(!this.showTutorial){
             if(this.userName == '' || this.userName == deviceInfo.productModel){
-                console.info("currentusername_pop!!")
+                console.info("currentUsername_pop!!")
                 setTimeout(() => {
                     this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
                     this.isSnackBarShow = true;
                 },3000)
                 this.isSnackBarShow = false;
             } else {
-                console.info("currentusername_set")
+                console.info("currentUsername_set")
             }
         }
     }
@@ -833,7 +832,7 @@ struct Dashboard {
             },
             content: {
                 title: {
-                    mainTitle: "HmDashboard",
+                    mainTitle: "鸿蒙应用看板",
                 },
                 menu: {
                     value: [

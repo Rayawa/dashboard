@@ -16,7 +16,7 @@ import { blurPopup } from '../component/blurPopup';
 
 @Entry
 @Component
-export struct user {
+struct user {
     @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
@@ -95,28 +95,13 @@ export struct user {
     }
 
     onBackPress(): boolean | void {
-        if (this.showTutorial) {
-            this.showTutorial = false;
-            this.triggerVibration();
-            console.info("关闭教程页面");
-            return true;
-        }
-        if (this.showQuery) {
-            this.showQuery = false;
-            this.triggerVibration();
-            console.info("关闭查询页面");
-            return true;
-        }
-        if (this.showSubmit) {
+        if (this.showTutorial || this.showQuery || this.showSubmit || this.showContact) {
             this.showSubmit = false;
-            this.triggerVibration();
-            console.info("关闭投稿页面");
-            return true;
-        }
-        if (this.showContact) {
+            this.showQuery = false;
+            this.showTutorial = false;
             this.showContact = false;
             this.triggerVibration();
-            console.info("关闭联系我们页面");
+            this.triggerVibration();
             return true;
         } else {
             return false;
@@ -168,7 +153,7 @@ export struct user {
                                 .height(100)
                                 .width(100)
                                 .borderRadius($r("sys.float.corner_radius_level6"))
-                            Text("应用看板")
+                            Text("鸿蒙应用看板")
                                 .fontWeight(800)
                                 .fontSize(30)
                                 .margin({ top: 20 })
@@ -539,8 +524,6 @@ export struct user {
                         })
                 }
 
-                // 3. 顶层：具体的弹窗组件内容
-                // 记得确保你的 blurPopup 组件内部已经删除了原有的第一个 Column 背景层
                 blurPopup({ isShow: $showSubmit }) { appSubmit() }
                 blurPopup({ isShow: $showQuery }) { appQuery() }
                 blurPopup({ isShow: $showTutorial }) { tutorial() }

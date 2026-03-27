@@ -130,51 +130,17 @@ export struct tutorial {
             .borderRadius(16)
             .padding(20)
 
-            // 分享功能git
+            // 分享功能与友情链接
             Column() {
-                Text("分享功能")
+                Text("友情链接与分享功能")
                     .fontSize(24)
                     .fontColor($r("app.color.diff_content"))
                     .fontWeight(FontWeight.Bold)
                     .margin({ bottom: 20 })
-                Text("* 目前分享功能仅支持手机设备")
-                    .fontSize(14)
-                    .margin({ bottom: 10 })
-                    .fontColor(Color.Grey)
-                Text("  1. 链接分享：在主界面或任意应用详情页点击分享按钮分享当前页面链接。\n")
-                    .fontSize(14)
-                Image($r("app.media.share"))
-                    .width(28)
-                    .height(28)
-                    .margin({ bottom: 20 })
-                    .onClick(() => {
-                        this.triggerVibration();
-                        this.handlePopupShareShare = !this.handlePopupShareShare;
-                    })
-                    .bindPopup(this.handlePopupShareShare, {
-                        message: "在主页面点击以分享当前页面链接",
-                        placement: Placement.Top,
-                        showInSubWindow: false,
-                        onStateChange: (e) => {
-                            if (!e.isVisible) {
-                                this.handlePopupShareShare = false;
-                            }
-                        },
-                        transition: TransitionEffect.asymmetric(
-                            TransitionEffect.OPACITY.animation({
-                                duration: 500,
-                                curve: Curve.Ease,
-                            }).combine(TransitionEffect.translate({ x: 0, y: 12 })),
-
-                            TransitionEffect.OPACITY.animation({
-                                duration: 300,
-                                curve: Curve.EaseOut,
-                            }).combine(TransitionEffect.translate({ x: 0, y: 12 })),
-                        ),
-                    })
-                Text(
-                    "  2. 碰一碰分享：在任意界面使用碰一碰分享将当前页面链接分享给其他HarmonyOS设备。\n",
-                ).fontSize(14)
+                Text("  您可以在主界面访问友情链接。友情链接页面内点击地球仪图标可以在浏览器内访问页面。\n").fontSize(14)
+                Text("  友情链接内网站展示的任何内容均与鸿蒙应用看板无关，Harmony Gallery项目组不负责维护友情链接内容。").fontSize(14).fontColor(Color.Red).margin({ bottom: 20 })
+                Text("  1. 链接分享：在主界面或任意应用详情页点击分享按钮分享当前页面链接。\n\n").fontSize(14)
+                Text("  2. 碰一碰分享：在任意界面使用碰一碰分享将当前页面链接分享给其他HarmonyOS设备。\n",).fontSize(14)
                 KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone })
                     .margin({ bottom: 20 })
                 Text("  3. 隔空传送：在任意界面隔空传送将当前页面链接分享给其他HarmonyOS设备。\n")
@@ -186,38 +152,26 @@ export struct tutorial {
                     .margin({ bottom: 10 })
                     .borderWidth(1)
                     .borderColor($r("app.color.border"))
-                Text(
-                    "    * 使用前，请确保两台设备均在设置中开启“隔空传送”功能。\n" +
-                        "    * 当前版本仅支持从手机抓取内容并分享至其他手机、平板、PC/2in1设备，暂不支持从平板、PC/2in1设备发起抓取。",
-                )
-                    .fontSize(10)
-                    .fontColor(Color.Grey)
+                Text("    * 使用前，请确保两台设备均在设置中开启“隔空传送”功能。\n").fontSize(10).fontColor(Color.Grey)
             }
             .height("90%")
             .width("95%")
             .borderRadius(16)
             .padding(20)
 
-            // 投稿功能
+            // 投稿与查询功能
             Column() {
-                Text("投稿功能")
+                Text("投稿与查询功能")
                     .fontSize(24)
                     .fontColor($r("app.color.diff_content"))
                     .fontWeight(FontWeight.Bold)
                     .margin({ bottom: 20 })
                 Text(
-                    "  通过投稿功能可以实现App的抓取与更新，您可以通过投稿应用至应用看板来帮助我们获取新的App或更新App信息。\n",
-                )
-                    .fontSize(14)
-                    .margin({ bottom: 10 })
-                Text(
-                    "  您可以在“我的”界面里面设置您的用户名，初始用户名默认为机型型号。\n" +
-                        "  您的用户名将作为投稿人标识，帮助我们准确记录并感谢您的每一次分享。\n",
-                ).fontSize(14)
+                    "  投稿功能可以触发应用抓取与更新，您可以通过【App内投稿】或【在应用市场中分享应用至看板】以投稿新的App或更新App信息。\n\n  在【查询页面】输入应用信息可以查询应用的具体数据，您还可以在应用市场里【分享应用链接至看板】查询信息！",
+                ).fontSize(14).margin({ bottom: 10 })
+
                 Row() {
-                    Text("  投稿功能支持AI智能提取，将应用信息输入或粘贴进文本框即可自动提取！\n")
-                        .fontSize(14)
-                        .blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)
+                    Text("  投稿与查询功能支持AI智能提取，将应用信息输入或粘贴进文本框即可自动提取！\n").fontSize(14).blendMode(BlendMode.DST_IN, BlendApplyType.OFFSCREEN)
                 }
                 .linearGradient({
                     direction: GradientDirection.LeftBottom,
@@ -230,8 +184,8 @@ export struct tutorial {
                 Row() {
                     Column() {
                         Text(
-                            "1. 应用商店投稿：\n" +
-                                "  在任意App详情页点击分享并选择应用看板进行投稿。\n",
+                            "1. 应用商店投稿与查询：\n" +
+                                "  在任意App详情页点击分享并选择应用看板进行投稿与查询。\n",
                         )
                             .fontSize(14)
                             .width("100%")
@@ -245,7 +199,7 @@ export struct tutorial {
                     .width("50%")
                     .padding(10)
                     Column() {
-                        Text("2. 应用内投稿：\n" + '  在"我的"界面内投稿。\n\n')
+                        Text("2. 应用内投稿与查询：\n" + '  在"我的"界面内投稿与查询。\n\n')
                             .fontSize(14)
                             .width("100%")
                         Image($r("app.media.submit_app"))

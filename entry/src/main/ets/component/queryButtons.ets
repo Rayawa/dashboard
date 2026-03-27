@@ -30,22 +30,20 @@ interface ApiResponse {
 }
 
 interface AppItem {
-  app_id: string;      // 对应日志中的 "app_id"
-  name: string;        // 对应日志中的 "name"
-  pkg_name: string;    // 对应日志中的 "pkg_name"
+  app_id: string;
+  name: string;
+  pkg_name: string;
 }
 
-// 匹配日志中第一层 data 包含的内容
 interface AppListData {
-  data: AppItem[];     // 这是一个数组
+  data: AppItem[];
   total_count: number;
   page: number;
 }
 
-// 匹配最外层响应
 interface SearchResponse {
   success: boolean;
-  data: AppListData;   // 第一层 data 是个对象
+  data: AppListData;
 }
 @Component
 export struct queryButtons {
@@ -73,8 +71,6 @@ export struct queryButtons {
     return new Promise((resolve, reject) => {
       const httpRequest = http.createHttp();
 
-      // 1. 构造 URL：page_count = 0, search_key = name
-      // 使用 encodeURIComponent 确保中文名称（如“豆包”）传输不乱码
       const baseUrl = "http://shenjack.top:10003/api/v0/apps/list/0";
       const params = `?page_size=5&detail=false&search_key=name&search_value=${encodeURIComponent(appName)}&search_exact=false`;
       const fullUrl = baseUrl + params;
@@ -91,21 +87,17 @@ export struct queryButtons {
         (err: BusinessError, data: http.HttpResponse) => {
           if (!err && data.responseCode === 200) {
             const rawResult = data.result.toString();
-            // 调试：观察原始 JSON 结构
             console.info(`queryResult [Name API] Raw Response: ${rawResult}`);
 
             try {
               const res = JSON.parse(rawResult) as SearchResponse;
 
-              // 2. 关键点：根据日志，层级是 res.data.data
-              // 第一层 data 是分页对象，第二层 data 才是 App 数组
               if (res.success && res.data && res.data.data && res.data.data.length > 0) {
                 const firstApp = res.data.data[0];
-                const rawId = firstApp.app_id; // 注意：字段名是 app_id
+                const rawId = firstApp.app_id;
 
                 console.info(`queryResult [Name API] Match Found: ${firstApp.name}, ID: ${rawId}`);
 
-                // 统一前缀检查
                 const finalId = rawId.startsWith('C') ? rawId : `C${rawId}`;
                 resolve(finalId);
               } else {

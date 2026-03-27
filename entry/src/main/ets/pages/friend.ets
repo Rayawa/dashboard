@@ -1,7 +1,7 @@
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { LengthMetrics, router, promptAction as prompt } from '@kit.ArkUI'; // 修复：引入 promptAction
+import { LengthMetrics, router, promptAction as prompt } from '@kit.ArkUI';
 import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } from '../common/constants';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
@@ -41,15 +41,35 @@ struct friend {
   private triggerVibration(): void {
     if (this.vibrationON) {
       vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
+        if (err) {
+          console.error(
+            `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
+          );
+          return;
+        }
+        console.info("Succeed in querying effect");
         if (state) {
           try {
-            vibrator.startVibration({
-              type: "preset",
-              effectId: "haptic.effect.hard",
-              count: 1,
-              intensity: 50,
-            }, { usage: "touch" });
-          } catch (e) {
+            vibrator.startVibration(
+              {
+                type: "preset",
+                effectId: "haptic.effect.hard",
+                count: 1,
+                intensity: 50,
+              },
+              { usage: "touch" },
+              (error: BusinessError) => {
+                if (error) {
+                  console.error(
+                    `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
+                  );
+                } else {
+                  console.info("Succeed in starting vibration");
+                }
+              },
+            );
+          } catch (tryError) {
+            console.error(`An unexpected error occurred in try block: ${tryError}`);
           }
         }
       });
@@ -146,8 +166,8 @@ struct friend {
               .fontSize(20)
               .width("90%").textAlign(TextAlign.Start)
               .fontColor($r("app.color.diff_content"))
-            Text("友情链接内网站展示的任何内容均与HmDashboard无关\n\n" +
-              "Harmony Gallery项目组不负责维护友情链接网站内容")
+            Text("友情链接内网站展示的任何内容均与鸿蒙应用看板无关\n\n" +
+              "Harmony Gallery项目组不负责维护友情链接内容")
               .fontWeight(600)
               .fontSize(15)
               .margin({ top: 20, bottom: 15 })
