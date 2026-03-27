@@ -28,7 +28,7 @@ export struct contact {
             Text(detail).fontSize(13).fontColor(Color.Gray).opacity(0.8)
         }
         .alignItems(HorizontalAlign.Center)
-        .width("90%")
+        .width("93%")
         .backgroundColor($r("app.color.background"))
         .padding(14)
         .borderRadius(16)
@@ -58,7 +58,7 @@ export struct contact {
                     Text("点击跳转到爱发电赞助页面").fontSize(13).fontColor(Color.Gray).opacity(0.8)
                 }
                 .alignItems(HorizontalAlign.Center)
-                .width("100%")
+                .width("93%")
                 .backgroundColor($r("app.color.background"))
                 .padding(14)
                 .borderRadius(16)
@@ -89,7 +89,7 @@ export struct contact {
             .width("100%")
             .margin({ bottom: 20 })
         }
-        .width("90%")
+        .width(350)
         .padding({
             top: 20,
             bottom: 20,

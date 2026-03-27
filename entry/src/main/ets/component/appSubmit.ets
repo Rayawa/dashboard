@@ -159,6 +159,7 @@ export struct appSubmit {
                         }, this.DEBOUNCE_DELAY);
                     })
             }
+            .alignItems(HorizontalAlign.End)
             .width("100%")
             .height(100)
             .padding(16)
@@ -307,7 +308,7 @@ export struct appSubmit {
             // 按钮区域
             submitButtons()
         }
-        .width("90%")
+        .width(350)
         .padding({
             top: 20,
             bottom: 20,

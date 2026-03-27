@@ -109,7 +109,7 @@ export struct tutorial {
 
                         Image($r("app.media.submit_store"))
                             .objectFit(ImageFit.Contain)
-                            .borderRadius(16)
+                            .borderRadius(7)
                             .borderWidth(1)
                             .borderColor($r("app.color.border"))
                             .width("100%")
@@ -128,7 +128,7 @@ export struct tutorial {
 
                         Image($r("app.media.submit_app"))
                             .objectFit(ImageFit.Contain)
-                            .borderRadius(16)
+                            .borderRadius(7)
                             .borderWidth(1)
                             .borderColor($r("app.color.border"))
                             .width("100%")
@@ -182,7 +182,7 @@ export struct tutorial {
         .loop(false)
         .height(650)
         .effectMode(EdgeEffect.Spring)
-        .width(339)
+        .width(350)
         .borderRadius(20)
         .backgroundColor($r("app.color.backcolor"))
         .indicator(
