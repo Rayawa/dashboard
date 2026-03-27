@@ -162,7 +162,6 @@ struct friend {
           Column(){
             Text("您正在访问友情链接")
               .fontWeight(700)
-              .margin({ top: 15 })
               .fontSize(20)
               .width("90%").textAlign(TextAlign.Start)
               .fontColor($r("app.color.diff_content"))
@@ -170,7 +169,7 @@ struct friend {
               "Harmony Gallery项目组不负责维护友情链接内容")
               .fontWeight(600)
               .fontSize(15)
-              .margin({ top: 20, bottom: 15 })
+              .margin({ top: 20 })
               .width("90%").textAlign(TextAlign.Start)
           }.borderWidth(0.5)
           .borderColor($r("app.color.border"))
@@ -178,8 +177,9 @@ struct friend {
           .borderRadius(16)
           .shadow({ radius: 8, color: "#1a000000", offsetX: 0, offsetY: 2 })
           .width("90%")
+          .alignItems(HorizontalAlign.Start).padding(20)
 
-          Text("使用Harmony Gallery数据的站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start)
+          Text("使用Harmony Gallery数据的站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
           List() {
             ForEach(this.friendSites, (site: SiteConfig) => {
@@ -193,7 +193,7 @@ struct friend {
           .borderRadius(16)
           .width("90%")
 
-          Text("使用Harmony Gallery数据的应用").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start)
+          Text("使用Harmony Gallery数据的应用").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
           List() {
             ForEach(this.friendApps, (app: AppConfig) => {
@@ -206,7 +206,7 @@ struct friend {
           .borderRadius(16)
           .width("90%")
 
-          Text("其他站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start)
+          Text("其他站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
           List() {
             ForEach(this.OtherSites, (site: SiteConfig) => {
