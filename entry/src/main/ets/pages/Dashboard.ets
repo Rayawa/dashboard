@@ -769,7 +769,7 @@ struct Dashboard {
                             this.triggerVibration();
                         })
                 }
-                blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 37 }) }
+                blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 40 }) }
             }
             .width("100%")
             .backgroundColor($r("app.color.backcolor"))

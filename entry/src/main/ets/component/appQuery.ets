@@ -159,6 +159,7 @@ export struct appQuery {
             }, this.DEBOUNCE_DELAY);
           })
       }
+      .alignItems(HorizontalAlign.End)
       .width("100%")
       .height(100)
       .padding(16)
@@ -301,7 +302,7 @@ export struct appQuery {
       // 按钮区域
       queryButtons()
     }
-    .width("90%")
+    .width(350)
     .padding({
       top: 20,
       bottom: 20,
