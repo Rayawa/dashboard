@@ -1,6 +1,8 @@
 import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
-import { hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { hdsEffect,
+  HdsNavDestination,
+  HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
@@ -186,8 +188,8 @@ struct queryEntry {
   }
 
   build() {
-    HdsNavigation() {
-      NavDestination(){
+    HdsNavDestination() {
+
         Stack(){
           if (this.isLoading) {
             Progress({ value: this.progress, total: 100 })
@@ -454,9 +456,7 @@ struct queryEntry {
           console.info("成功接收到 URL: " + this.url);
         }
       })
-    }
-    .navBarWidth("100%")
-    .titleMode(HdsNavigationTitleMode.MINI)
+
     .titleBar({
       style: {
         scrollEffectOpts: {

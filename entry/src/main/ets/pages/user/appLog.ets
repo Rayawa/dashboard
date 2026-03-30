@@ -1,7 +1,7 @@
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { HdsNavDestination, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 
 interface UpdateLog {
@@ -201,8 +201,8 @@ struct appLog {
     }
 
     build() {
-        NavDestination(){
-            HdsNavigation() {
+
+            HdsNavDestination() {
                 Scroll() {
                     Column() {
                         Column() {
@@ -295,8 +295,6 @@ struct appLog {
                 .height("100%")
                 .backgroundColor($r("app.color.backcolor"))
             }
-            .navBarWidth("100%")
-            .titleMode(HdsNavigationTitleMode.MINI)
             .titleBar({
                 style: {
                     scrollEffectOpts: {
@@ -414,7 +412,7 @@ struct appLog {
                     },
                 },
             });
-        }
+
     }
 
     @StorageLink("vibrationON") vibrationON: boolean = true;

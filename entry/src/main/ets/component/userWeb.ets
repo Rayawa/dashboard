@@ -1,7 +1,9 @@
 import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import {
-  hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
+  hdsEffect,
+  HdsNavDestination,
+  HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
@@ -210,7 +212,7 @@ export struct userWeb {
   }
 
   build() {
-    HdsNavigation() {
+    HdsNavDestination() {
       Stack(){
         if (this.isLoading) {
           Progress({ value: this.progress, total: 100 })
@@ -462,8 +464,6 @@ export struct userWeb {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
-    .navBarWidth("100%")
-    .titleMode(HdsNavigationTitleMode.MINI)
     .titleBar({
       style: {
         scrollEffectOpts: {

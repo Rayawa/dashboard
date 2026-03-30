@@ -238,6 +238,7 @@ struct Dashboard {
     private context = getContext(this) as common.UIAbilityContext;
     @State isContinuation: boolean = false;
     async aboutToAppear() {
+
         this.buttonOnPageShow = false;
         if (this.mUrl) {
             this.isContinuation = true;
@@ -489,8 +490,8 @@ struct Dashboard {
         }
     }
     build() {
-        Navigation(this.pageStack){
-            HdsNavigation() {
+
+            HdsNavigation(this.pageStack) {
                 Stack() {
                     //==========================HdsTabs携带web==========================
                     HdsTabs({ controller: this.controller }) {
@@ -779,7 +780,6 @@ struct Dashboard {
                 .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
             }
             .width("100%")
-            .navBarWidth("100%")
             .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
             .titleMode(HdsNavigationTitleMode.MODAL)
             .titleBar({
@@ -876,6 +876,6 @@ struct Dashboard {
                     },
                 },
             });
-        }
+
     }
 }

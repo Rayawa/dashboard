@@ -2,6 +2,7 @@ import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import {
   hdsEffect,
+  HdsNavDestination,
   HdsNavigation,
   HdsNavigationTitleMode,
   HdsSnackBar,
@@ -271,8 +272,8 @@ export struct friendWeb {
   }
 
   build() {
-    NavDestination(){
-      HdsNavigation() {
+
+      HdsNavDestination() {
         Stack(){
           if (this.isLoading) {
             Progress({ value: this.progress, total: 100 })
@@ -530,8 +531,7 @@ export struct friendWeb {
         .backgroundColor($r("app.color.backcolor"))
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       }
-      .navBarWidth("100%")
-      .titleMode(HdsNavigationTitleMode.MINI)
+
       .titleBar({
         style: {
           scrollEffectOpts: {
@@ -621,8 +621,8 @@ export struct friendWeb {
             },
           },
         },
-      });
-    }
+      })
+
     .onReady((context: NavDestinationContext) => {
       const params = context.pathInfo.param as Record<string, string>;
       if (params) {
