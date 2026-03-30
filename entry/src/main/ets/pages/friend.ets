@@ -1,4 +1,4 @@
-import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { HdsNavDestination, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
@@ -153,8 +153,7 @@ struct friend {
   }
 
   build() {
-    NavDestination(){
-      HdsNavigation() {
+      HdsNavDestination() {
         Scroll(){
           Column() {
             Blank().height(70)
@@ -229,8 +228,6 @@ struct friend {
         .backgroundColor($r("app.color.backcolor"))
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       }
-      .navBarWidth("100%")
-      .titleMode(HdsNavigationTitleMode.MINI)
       .titleBar({
         style: {
           scrollEffectOpts: {
@@ -270,7 +267,7 @@ struct friend {
           },
         },
       });
-    }
+
   }
 }
 

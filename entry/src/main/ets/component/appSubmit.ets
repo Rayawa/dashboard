@@ -5,7 +5,7 @@ import { BusinessError } from "@kit.BasicServicesKit";
 import { submitButtons } from "./submitButtons";
 
 import type { FormData } from "../common/types";
-@Entry
+
 @Component
 export struct appSubmit {
     @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();

@@ -8,7 +8,7 @@ import { deviceInfo } from '@kit.BasicServicesKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
 import { contact } from '../component/contact';
-import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { HdsNavDestination, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { appSubmit } from '../component/appSubmit';
 import { appQuery } from '../component/appQuery';
@@ -144,8 +144,7 @@ struct user {
     }
 
     build() {
-        NavDestination(){
-            HdsNavigation() {
+            HdsNavDestination() {
                 Stack() {
                     Scroll() {
                         Column() {
@@ -535,14 +534,12 @@ struct user {
                 .width("100%")
                 .height("100%")
             }
-            .navBarWidth("100%")
             .bindSheet($$this.showSettings, this.Settings(), {
                 title: { title: '设置' },
                 height: 400,
                 showClose: true,
                 backgroundColor: $r('app.color.backcolor'),
             })
-            .titleMode(HdsNavigationTitleMode.MINI)
             .titleBar({
                 style: {
                     scrollEffectOpts: {
@@ -621,8 +618,6 @@ struct user {
                     },
                 },
             });
-        }
-
     }
 }
 

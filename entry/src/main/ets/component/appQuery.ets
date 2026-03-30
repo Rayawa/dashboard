@@ -5,7 +5,7 @@ import { BusinessError } from "@kit.BasicServicesKit";
 import { queryButtons } from "./queryButtons";
 
 import type { FormData } from "../common/types";
-@Entry
+
 @Component
 export struct appQuery {
   @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
