@@ -57,7 +57,7 @@
 -   返回上级：backward()
 -   刷新/停止刷新：refresh() / stop()
 -   回到顶部动画：setInterval + cubic easing
--   切换页面：router.pushUrl
+-   切换页面：Navigation
 
 ## 状态字段说明
 

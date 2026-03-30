@@ -1,10 +1,15 @@
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { LengthMetrics, router, promptAction as prompt } from '@kit.ArkUI';
+import { LengthMetrics, promptAction as prompt } from '@kit.ArkUI';
 import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } from '../common/constants';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
+
+interface FriendWebParams {
+  url: string;
+  title: string;
+}
 
 interface SiteConfig {
   icon: Resource;
@@ -18,9 +23,9 @@ interface AppConfig {
   appID: string;
 }
 
-@Entry
 @Component
 struct friend {
+  @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink("vibrationON") vibrationON: boolean = true;
 
   private jumpToMarket(appId: string) {
@@ -106,14 +111,12 @@ struct friend {
         .objectFit(ImageFit.Contain)
     }
     .onClick(() => {
-      router.pushUrl({
-        url: 'pages/friendWeb',
-        params: {
-          url: site.url,
-          title: site.title
-        }
-      })
       this.triggerVibration();
+      let params :FriendWebParams = {
+        "url": site.url,
+        "title": site.title
+      }
+      this.pageStack.pushPathByName("FriendPageWeb", params);
     })
     .height(56)
     .width("100%")
@@ -149,121 +152,128 @@ struct friend {
   }
 
   build() {
-    HdsNavigation() {
-      Scroll(){
-        Column() {
-          Blank().height(70)
-          Text("重要提醒")
-            .fontWeight(800)
-            .fontSize(25)
-            .fontColor(Color.Red)
-            .margin({ bottom: 15 })
+    NavDestination(){
+      HdsNavigation() {
+        Scroll(){
+          Column() {
+            Blank().height(70)
+            Text("重要提醒")
+              .fontWeight(800)
+              .fontSize(25)
+              .fontColor(Color.Red)
+              .margin({ bottom: 15 })
 
-          Column(){
-            Text("您正在访问友情链接")
-              .fontWeight(700)
-              .fontSize(20)
-              .width("90%").textAlign(TextAlign.Start)
-              .fontColor($r("app.color.diff_content"))
-            Text("友情链接内网站展示的任何内容均与鸿蒙应用看板无关\n\n" +
-              "Harmony Gallery项目组不负责维护友情链接内容")
-              .fontWeight(600)
-              .fontSize(15)
-              .margin({ top: 20 })
-              .width("90%").textAlign(TextAlign.Start)
-          }.borderWidth(0.5)
-          .borderColor($r("app.color.border"))
-          .backgroundColor($r("app.color.background"))
-          .borderRadius(16)
-          .shadow({ radius: 8, color: "#1a000000", offsetX: 0, offsetY: 2 })
-          .width("90%")
-          .alignItems(HorizontalAlign.Start).padding(20)
+            Column(){
+              Text("您正在访问友情链接")
+                .fontWeight(700)
+                .fontSize(20)
+                .width("90%").textAlign(TextAlign.Start)
+                .fontColor($r("app.color.diff_content"))
+              Text("友情链接内网站展示的任何内容均与鸿蒙应用看板无关\n\n" +
+                "Harmony Gallery项目组不负责维护友情链接内容")
+                .fontWeight(600)
+                .fontSize(15)
+                .margin({ top: 20 })
+                .width("90%").textAlign(TextAlign.Start)
+            }.borderWidth(0.5)
+            .borderColor($r("app.color.border"))
+            .backgroundColor($r("app.color.background"))
+            .borderRadius(16)
+            .shadow({ radius: 8, color: "#1a000000", offsetX: 0, offsetY: 2 })
+            .width("90%")
+            .alignItems(HorizontalAlign.Start).padding(20)
 
-          Text("使用Harmony Gallery数据的站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
-          List() {
-            ForEach(this.friendSites, (site: SiteConfig) => {
-              ListItem() { this.webLists(site) }
-            }, (item: SiteConfig) => item.title + item.url)
-          }
-          .divider({ strokeWidth: 0.5, color: $r("app.color.border"), startMargin: 16, endMargin: 16 }) // 语法优化：使用自带分割线
-          .borderWidth(0.5)
-          .borderColor($r("app.color.border"))
-          .backgroundColor($r("app.color.background"))
-          .borderRadius(16)
-          .width("90%")
+            Text("使用Harmony Gallery数据的站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+            Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
+            List() {
+              ForEach(this.friendSites, (site: SiteConfig) => {
+                ListItem() { this.webLists(site) }
+              }, (item: SiteConfig) => item.title + item.url)
+            }
+            .divider({ strokeWidth: 0.5, color: $r("app.color.border"), startMargin: 16, endMargin: 16 }) // 语法优化：使用自带分割线
+            .borderWidth(0.5)
+            .borderColor($r("app.color.border"))
+            .backgroundColor($r("app.color.background"))
+            .borderRadius(16)
+            .width("90%")
 
-          Text("使用Harmony Gallery数据的应用").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
-          List() {
-            ForEach(this.friendApps, (app: AppConfig) => {
-              ListItem() { this.appLists(app) }
-            }, (item: AppConfig) => item.title + item.appID)
-          }
-          .borderWidth(0.5)
-          .borderColor($r("app.color.border"))
-          .backgroundColor($r("app.color.background"))
-          .borderRadius(16)
-          .width("90%")
+            Text("使用Harmony Gallery数据的应用").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+            Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
+            List() {
+              ForEach(this.friendApps, (app: AppConfig) => {
+                ListItem() { this.appLists(app) }
+              }, (item: AppConfig) => item.title + item.appID)
+            }
+            .borderWidth(0.5)
+            .borderColor($r("app.color.border"))
+            .backgroundColor($r("app.color.background"))
+            .borderRadius(16)
+            .width("90%")
 
-          Text("其他站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
-          List() {
-            ForEach(this.OtherSites, (site: SiteConfig) => {
-              ListItem() { this.webLists(site) }
-            }, (item: SiteConfig) => item.title + item.url)
-          }
-          .borderWidth(0.5)
-          .borderColor($r("app.color.border"))
-          .backgroundColor($r("app.color.background"))
-          .borderRadius(16)
-          .width("90%")
-        }.margin({ bottom: 30 })
+            Text("其他站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+            Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
+            List() {
+              ForEach(this.OtherSites, (site: SiteConfig) => {
+                ListItem() { this.webLists(site) }
+              }, (item: SiteConfig) => item.title + item.url)
+            }
+            .borderWidth(0.5)
+            .borderColor($r("app.color.border"))
+            .backgroundColor($r("app.color.background"))
+            .borderRadius(16)
+            .width("90%")
+          }.margin({ bottom: 30 })
+        }
+        .width("100%")
+        .backgroundColor($r("app.color.backcolor"))
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       }
-      .width("100%")
-      .backgroundColor($r("app.color.backcolor"))
-      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      .navBarWidth("100%")
+      .titleMode(HdsNavigationTitleMode.MINI)
+      .titleBar({
+        style: {
+          scrollEffectOpts: {
+            enableScrollEffect: true,
+            scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
+            blurEffectiveStartOffset: LengthMetrics.vp(0),
+            blurEffectiveEndOffset: LengthMetrics.vp(20),
+          },
+          originalStyle: {
+            backgroundStyle: { backgroundColor: $r("sys.color.ohos_id_color_background") },
+            contentStyle: {
+              titleStyle: { mainTitleColor: $r("sys.color.font_primary"), subTitleColor: $r("sys.color.font_secondary") },
+              menuStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
+              backIconStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
+            },
+          },
+          scrollEffectStyle: {
+            backgroundStyle: { backgroundColor: $r("sys.color.ohos_id_color_background_transparent") },
+            contentStyle: {
+              titleStyle: { mainTitleColor: $r("sys.color.font_primary"), subTitleColor: $r("sys.color.font_secondary") },
+              menuStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
+              backIconStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
+            },
+          },
+          systemMaterialEffect: {
+            materialType: hdsMaterial.MaterialType.IMMERSIVE,
+            materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+          },
+        },
+        content: {
+          title: { mainTitle: "友情链接" },
+          backIcon: {
+            action: () => {
+              this.triggerVibration();
+              this.pageStack.pop()
+            },
+          },
+        },
+      });
     }
-    .navBarWidth("100%")
-    .titleMode(HdsNavigationTitleMode.MINI)
-    .titleBar({
-      style: {
-        scrollEffectOpts: {
-          enableScrollEffect: true,
-          scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
-          blurEffectiveStartOffset: LengthMetrics.vp(0),
-          blurEffectiveEndOffset: LengthMetrics.vp(20),
-        },
-        originalStyle: {
-          backgroundStyle: { backgroundColor: $r("sys.color.ohos_id_color_background") },
-          contentStyle: {
-            titleStyle: { mainTitleColor: $r("sys.color.font_primary"), subTitleColor: $r("sys.color.font_secondary") },
-            menuStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
-            backIconStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
-          },
-        },
-        scrollEffectStyle: {
-          backgroundStyle: { backgroundColor: $r("sys.color.ohos_id_color_background_transparent") },
-          contentStyle: {
-            titleStyle: { mainTitleColor: $r("sys.color.font_primary"), subTitleColor: $r("sys.color.font_secondary") },
-            menuStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
-            backIconStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
-          },
-        },
-        systemMaterialEffect: {
-          materialType: hdsMaterial.MaterialType.IMMERSIVE,
-          materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-        },
-      },
-      content: {
-        title: { mainTitle: "友情链接" },
-        backIcon: {
-          action: () => {
-            this.triggerVibration();
-            router.back();
-          },
-        },
-      },
-    });
   }
+}
+
+@Builder
+export function FriendPageBuilder(){
+  friend()
 }
