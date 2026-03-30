@@ -214,7 +214,7 @@ export struct queryButtons {
     } catch (error) {
       this.isSearching = false;
       this.stopSearchRippleLoop();
-      prompt.showToast({ message: `查询失败：${error.message}` });
+      prompt.showToast({ message: `查询失败！${error.message}` });
     }
   }
   async clearForm(): Promise<void> {
