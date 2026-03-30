@@ -1,8 +1,12 @@
 import { vibrator } from '@kit.SensorServiceKit';
 import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { prompt, router } from '@kit.ArkUI';
+import { prompt } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
+
+interface QueryWebParams {
+  url: string;
+}
 
 interface Scale {
   x: number;
@@ -47,6 +51,7 @@ interface SearchResponse {
 }
 @Component
 export struct queryButtons {
+  @Consume('pageStack') pageStack: NavPathStack;
   @State appId: string = '';
   @State isLoading: boolean = false;
 
@@ -194,10 +199,11 @@ export struct queryButtons {
         this.isSearching = false;
         this.stopSearchRippleLoop();
 
-        router.pushUrl({
-          url: 'pages/queryWeb',
-          params: { url: finalUrl }
-        });
+        const pathParams: QueryWebParams = {
+          url: finalUrl
+        };
+
+        this.pageStack.pushPathByName("queryWeb", pathParams);
 
         this.formData = {
           appLink: "",

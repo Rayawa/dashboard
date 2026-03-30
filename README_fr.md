@@ -61,7 +61,7 @@ Utilise le composant Progress synchronisé avec la progression du chargement.
 - Retour : `backward()`
 - Actualiser/Arrêter l'actualisation : `refresh()` / `stop()`
 - Animation de retour en haut : `setInterval` + lissage cubique
-- Changement de page : `router.pushUrl`
+- Changement de page : `Navigation`
 
 ## Description des Champs d'État
 

@@ -1,14 +1,7 @@
 {
   "src": [
-    "pages/user",
-    "pages/friend",
-    "pages/friendWeb",
-    "pages/queryWeb",
     "pages/Dashboard",
     "abilityPages/complexSubmit",
-    "abilityPages/loading",
-    "pages/user/webApi",
-    "pages/user/webLog",
-    "pages/user/appLog"
+    "abilityPages/loading"
   ]
 }

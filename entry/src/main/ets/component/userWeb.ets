@@ -4,7 +4,7 @@ import {
   hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
+import { curves, display, LengthMetrics, prompt } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
@@ -17,9 +17,14 @@ import {
   initializeSettings
 } from '../common/SettingsStorage';
 
+interface QueryWebParams {
+  url: string;
+}
+
 
 @Component
 export struct userWeb {
+  @Consume('pageStack') pageStack: NavPathStack;
   @Prop url: string = '';
   @Prop title: string = '';
 
@@ -130,11 +135,6 @@ export struct userWeb {
     }
   }
   async aboutToAppear() {
-    const params = router.getParams() as Record<string, string>;
-    if (params) {
-      this.url = params.url;
-      this.title = params.title;
-    }
     //获取屏幕右边位置
     const displayInfo = display.getDefaultDisplaySync();
     const screenWidthVp = px2vp(displayInfo.width);
@@ -535,7 +535,7 @@ export struct userWeb {
         },
         backIcon: {
           action: () => {
-            router.back();
+            this.pageStack.pop()
             this.triggerVibration();
 
           },

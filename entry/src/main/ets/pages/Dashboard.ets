@@ -16,7 +16,7 @@ import {
     SnackBarStyleOptions
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
+import { curves, display, LengthMetrics, prompt } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
 import { customUserAgent, EguiBaseURL, SBaseURL, TBaseURL } from '../common/constants';
@@ -47,6 +47,7 @@ interface SiteConfig {
 @Entry
 @Component
 struct Dashboard {
+    @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
     //控制相关
     @State showButton: boolean = true;
     @State barMargin: number = 28;
@@ -487,391 +488,393 @@ struct Dashboard {
         }
     }
     build() {
-        HdsNavigation() {
-            Stack() {
-                //==========================HdsTabs携带web==========================
-                HdsTabs({ controller: this.controller }) {
-                    ForEach(this.sitesList, (site: SiteConfig) => {
-                        TabContent() { this.Web(site) }
-                        .tabBar(new BottomTabBarStyle(site.icon, site.label))
-                    }, (item: SiteConfig) => item.key + item.url)
+        Navigation(this.pageStack){
+            HdsNavigation() {
+                Stack() {
+                    //==========================HdsTabs携带web==========================
+                    HdsTabs({ controller: this.controller }) {
+                        ForEach(this.sitesList, (site: SiteConfig) => {
+                            TabContent() { this.Web(site) }
+                            .tabBar(new BottomTabBarStyle(site.icon, site.label))
+                        }, (item: SiteConfig) => item.key + item.url)
+                    }
+                    .onChange((index: number) => {
+                        this.currentIndex = index;
+                        AppStorage.setOrCreate('latestIndex', index);
+                        this.scroller.scrollTo({
+                            xOffset: 0,
+                            yOffset: 0,
+                            animation: { duration: 300, curve: Curve.Ease },
+                        });
+                        this.web_controller.refresh()
+                        this.triggerVibration();
+                    })
+                    .animation({ curve: curves.springMotion(0.8, 0.8), duration: 400 })
+                    .blurStrategy(BlurStrategy.ENABLE)
+                    .barOverlap(true)
+                    .barPosition(BarPosition.End)
+                    .vertical(false)
+                    .onAppear(() => {
+                        this.controller.bindScroller(0, this.scroller);
+                    })
+                    .barFloatingStyle({
+                        barBottomMargin: this.barMargin,
+                        lightColor: $r('app.color.light_color'),
+                        gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
+                        systemMaterialEffect: {
+                            materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                            materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+                        }
+                    })
+
+                    // ==========================悬浮按钮==========================
+                    if(this.buttonOnPageShow){
+                        Column({ space: 10 }) {
+                            Button() {
+                                Image($r("app.media.arrow_up"))
+                                    .width(24)
+                                    .height(24)
+                            }
+                            .onTouch((event: TouchEvent) => {
+                                if (event && event.touches[0]) {
+                                    if (event.type === TouchType.Down || event.type === TouchType.Move) {
+                                        this.isPressed1 = true;
+                                        this.touchX = event.touches[0].x;
+                                        this.touchY = event.touches[0].y;
+                                    } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                        this.isPressed1 = false;
+                                    }
+                                }
+                            })
+                            .onClick(() => {
+                                this.scroller.scrollTo({
+                                    xOffset: 0,
+                                    yOffset: 0,
+                                    animation: { duration: 300, curve: Curve.Ease },
+                                });
+                                this.triggerVibration();
+                                prompt.showToast({
+                                    message: "回到顶部",
+                                    duration: 500,
+                                });
+                            })
+                            .type(ButtonType.Circle)
+                            .width(45).height(45)
+                            .backgroundColor('rgba(255, 255, 255, 0.2)')
+                            .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
+                            .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
+                            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                                .pressShadow(this.isPressed1 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                                .pointLight({
+                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                    options: {
+                                        color: $r('app.color.light_color'),
+                                        intensity: this.isPressed1 ? 40.0 : 0.2,
+                                        height: 30.0,
+                                    } as hdsEffect.PointLightOptions
+                                })
+                                .buildEffect())
+                            .border({
+                                width: 1,
+                                color: $r('app.color.button_border')
+                            })
+                            .borderRadius(22.5)
+
+                            Button() {
+                                Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
+                                    .width(24)
+                                    .height(24)
+                            }
+                            .onTouch((event: TouchEvent) => {
+                                if (event && event.touches[0]) {
+                                    if (event.type === TouchType.Down || event.type === TouchType.Move) {
+                                        this.isPressed2 = true;
+                                        this.touchX = event.touches[0].x;
+                                        this.touchY = event.touches[0].y;
+                                    } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                        this.isPressed2 = false;
+                                    }
+                                }
+                            })
+                            .onClick(() => {
+                                if (this.isLoading) {
+                                    this.web_controller.stop();
+                                    this.isLoading = false;
+                                    this.triggerVibration();
+                                    prompt.showToast({
+                                        message: "已停止加载",
+                                        duration: 1000,
+                                    });
+                                } else {
+                                    this.web_controller.refresh();
+                                    try {
+                                        Promise.all([
+                                            this.web_controller.removeCache(true),
+                                            this.web_controller.removeCache(false),
+                                        ]);
+                                    } catch (error) {
+                                        // man! what can I say
+                                        console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
+                                    }
+                                    this.isLoading = true;
+                                    this.triggerVibration();
+                                    prompt.showToast({
+                                        message: "刷新中...",
+                                        duration: 1000,
+                                    });
+                                    setTimeout(() => {
+                                        if (this.isLoading) {
+                                            this.isLoading = false;
+                                            prompt.showToast({
+                                                message: "加载超时！",
+                                                duration: 1000,
+                                            });
+                                        }
+                                    }, 3000);
+                                }
+                            })
+                            .shadow(ShadowStyle.OUTER_DEFAULT_LG)
+                            .type(ButtonType.Circle)
+                            .width(45).height(45)
+                            .backgroundColor('rgba(255, 255, 255, 0.2)')
+                            .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
+                            .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
+                            .shadow(ShadowStyle.OUTER_DEFAULT_MD)
+                            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                                .pressShadow(this.isPressed2 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                                .pointLight({
+                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                    options: {
+                                        color: $r('app.color.light_color'),
+                                        intensity: this.isPressed2 ? 40.0 : 0.2,
+                                        height: 30.0,
+                                    } as hdsEffect.PointLightOptions
+                                })
+                                .buildEffect())
+                            .border({
+                                width: 1,
+                                color: $r('app.color.button_border')
+                            })
+                            .borderRadius(22.5)
+                        }
+                        .position({
+                            x: this.showButton ? this.buttonShowX : this.buttonHideX,
+                            y: this.buttonY,
+                        })
+                        .animation(
+                            this.showButtonAnimation
+                                ? { curve: curves.springMotion(0.8, 0.8), duration: 400 }
+                                : { duration: 0 },
+                        )
+                        .transition(this.buttonEffect)
+                        .gesture(
+                            SwipeGesture({ direction: SwipeDirection.Horizontal }).onAction(
+                                (move: GestureEvent | undefined) => {
+                                    if (move) {
+                                        this.showButton = false;
+                                        setTimeout(() => {
+                                            this.showButtonAnimation = false;
+                                        }, 300);
+                                    }
+                                },
+                            ),
+                        )
+                        .gesture(
+                            PanGesture({ direction: PanDirection.Vertical })
+                                .onActionStart(() => {
+                                    if(this.holdCheckON){ this.holdCheckON = false; this.holdCheckTMP = true; }
+                                    this.showButtonAnimation = false;
+                                    this.startY = this.buttonY;
+                                })
+                                .onActionUpdate((event: GestureEvent) => {
+                                    //判断实际位置
+                                    let nextY = this.startY + event.offsetY;
+                                    if (nextY > 660) {
+                                        nextY = 660;
+                                    } else if (nextY < 70) {
+                                        nextY = 70;
+                                    }
+                                    this.buttonY = nextY;
+                                })
+                                .onActionEnd(() => {
+                                    this.showButtonAnimation = true;
+                                    if(this.holdCheckTMP){ this.holdCheckON = true; }
+                                    if (this.buttonY >= 660) {
+                                        prompt.showToast({ message: "不能再往下啦", duration: 500 });
+                                    } else if (this.buttonY <= 70) {
+                                        prompt.showToast({ message: "不能再往上啦", duration: 500 });
+                                    }
+                                }),
+                        )
+                    }
+                    if (!this.showButton) {
+                        Column()
+                            .backgroundColor(Color.Transparent)
+                            .height("100%")
+                            .width(15)
+                            .zIndex(5)
+                            .position({ x: 0 })
+                            .onClick(() => {
+                                this.showButtonAnimation = true;
+                                this.showButton = true;
+                                this.triggerVibration();
+                            });
+                        Column()
+                            .backgroundColor(Color.Transparent)
+                            .height("100%")
+                            .width(15)
+                            .zIndex(5)
+                            .position({ x: this.WVp - 15 })
+                            .onClick(() => {
+                                this.showButtonAnimation = true;
+                                this.showButton = true;
+                                this.triggerVibration();
+                            });
+                    }
+                    if (this.tabBarAuto && !this.isTabsBarVisible) {
+                        Column()
+                            .backgroundColor(Color.Transparent)
+                            .height(50)
+                            .width("100%")
+                            .zIndex(5)
+                            .position({ y: this.HVp - 50 })
+                            .onClick(() => {
+                                if (this.lockBar) return;
+                                animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
+                                    this.barMargin = 28;
+                                    this.isTabsBarVisible = true;
+                                })
+                                this.triggerVibration()
+                                this.lockBar = true;
+                                setTimeout(() => {
+                                    this.lockBar = false;
+                                }, 1000);
+                            });
+                    }
+
+                    //==========================教程==========================
+                    if (this.showTutorial) {
+                        Column()
+                            .width('100%')
+                            .height('100%')
+                            .backgroundColor(Color.Transparent)
+                            .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                            .transition(
+                                TransitionEffect.OPACITY.animation({
+                                    curve: curves.springMotion(0, 1),
+                                    duration: 1000,
+                                }),
+                            )
+                            .onClick(() => {
+                                this.showTutorial = false;
+                                this.triggerVibration();
+                            })
+                    }
+                    blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 40 }) }
                 }
-                .onChange((index: number) => {
-                    this.currentIndex = index;
-                    AppStorage.setOrCreate('latestIndex', index);
-                    this.scroller.scrollTo({
-                        xOffset: 0,
-                        yOffset: 0,
-                        animation: { duration: 300, curve: Curve.Ease },
-                    });
-                    this.web_controller.refresh()
-                    this.triggerVibration();
-                })
-                .animation({ curve: curves.springMotion(0.8, 0.8), duration: 400 })
-                .blurStrategy(BlurStrategy.ENABLE)
-                .barOverlap(true)
-                .barPosition(BarPosition.End)
-                .vertical(false)
-                .onAppear(() => {
-                    this.controller.bindScroller(0, this.scroller);
-                })
-                .barFloatingStyle({
-                    barBottomMargin: this.barMargin,
-                    lightColor: $r('app.color.light_color'),
-                    gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
+                .width("100%")
+                .backgroundColor($r("app.color.backcolor"))
+                .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+            }
+            .width("100%")
+            .navBarWidth("100%")
+            .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+            .titleMode(HdsNavigationTitleMode.MODAL)
+            .titleBar({
+                style: {
+                    scrollEffectOpts: {
+                        enableScrollEffect: true,
+                        scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
+                        blurEffectiveStartOffset: LengthMetrics.vp(0),
+                        blurEffectiveEndOffset: LengthMetrics.vp(20),
+                    },
+                    originalStyle: {
+                        backgroundStyle: {
+                            backgroundColor: $r("sys.color.ohos_id_color_background"),
+                        },
+                        contentStyle: {
+                            titleStyle: {
+                                mainTitleColor: $r("sys.color.font_primary"),
+                                subTitleColor: $r("sys.color.font_secondary"),
+                            },
+                            menuStyle: {
+                                backgroundColor: $r("sys.color.comp_background_tertiary"),
+                                iconColor: $r("sys.color.icon_primary"),
+                            },
+                            backIconStyle: {
+                                backgroundColor: $r("sys.color.comp_background_tertiary"),
+                                iconColor: $r("sys.color.icon_primary"),
+                            },
+                        },
+                    },
+                    scrollEffectStyle: {
+                        backgroundStyle: {
+                            backgroundColor: $r("sys.color.ohos_id_color_background_transparent"),
+                        },
+                        contentStyle: {
+                            titleStyle: {
+                                mainTitleColor: $r("sys.color.font_primary"),
+                                subTitleColor: $r("sys.color.font_secondary"),
+                            },
+                            menuStyle: {
+                                backgroundColor: $r("sys.color.comp_background_tertiary"),
+                                iconColor: $r("sys.color.icon_primary"),
+                            },
+                            backIconStyle: {
+                                backgroundColor: $r("sys.color.comp_background_tertiary"),
+                                iconColor: $r("sys.color.icon_primary"),
+                            },
+                        },
+                    },
                     systemMaterialEffect: {
                         materialType: hdsMaterial.MaterialType.IMMERSIVE,
                         materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                    }
-                })
-
-                // ==========================悬浮按钮==========================
-                if(this.buttonOnPageShow){
-                    Column({ space: 10 }) {
-                        Button() {
-                            Image($r("app.media.arrow_up"))
-                                .width(24)
-                                .height(24)
-                        }
-                        .onTouch((event: TouchEvent) => {
-                            if (event && event.touches[0]) {
-                                if (event.type === TouchType.Down || event.type === TouchType.Move) {
-                                    this.isPressed1 = true;
-                                    this.touchX = event.touches[0].x;
-                                    this.touchY = event.touches[0].y;
-                                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                    this.isPressed1 = false;
-                                }
-                            }
-                        })
-                        .onClick(() => {
-                            this.scroller.scrollTo({
-                                xOffset: 0,
-                                yOffset: 0,
-                                animation: { duration: 300, curve: Curve.Ease },
-                            });
-                            this.triggerVibration();
-                            prompt.showToast({
-                                message: "回到顶部",
-                                duration: 500,
-                            });
-                        })
-                        .type(ButtonType.Circle)
-                        .width(45).height(45)
-                        .backgroundColor('rgba(255, 255, 255, 0.2)')
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
-                        .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
-                        .visualEffect(new hdsEffect.HdsEffectBuilder()
-                            .pressShadow(this.isPressed1 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                            .pointLight({
-                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                                options: {
-                                    color: $r('app.color.light_color'),
-                                    intensity: this.isPressed1 ? 40.0 : 0.2,
-                                    height: 30.0,
-                                } as hdsEffect.PointLightOptions
-                            })
-                            .buildEffect())
-                        .border({
-                            width: 1,
-                            color: $r('app.color.button_border')
-                        })
-                        .borderRadius(22.5)
-
-                        Button() {
-                            Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
-                                .width(24)
-                                .height(24)
-                        }
-                        .onTouch((event: TouchEvent) => {
-                            if (event && event.touches[0]) {
-                                if (event.type === TouchType.Down || event.type === TouchType.Move) {
-                                    this.isPressed2 = true;
-                                    this.touchX = event.touches[0].x;
-                                    this.touchY = event.touches[0].y;
-                                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                    this.isPressed2 = false;
-                                }
-                            }
-                        })
-                        .onClick(() => {
-                            if (this.isLoading) {
-                                this.web_controller.stop();
-                                this.isLoading = false;
-                                this.triggerVibration();
-                                prompt.showToast({
-                                    message: "已停止加载",
-                                    duration: 1000,
-                                });
-                            } else {
-                                this.web_controller.refresh();
-                                try {
-                                    Promise.all([
-                                        this.web_controller.removeCache(true),
-                                        this.web_controller.removeCache(false),
-                                    ]);
-                                } catch (error) {
-                                    // man! what can I say
-                                    console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
-                                }
-                                this.isLoading = true;
-                                this.triggerVibration();
-                                prompt.showToast({
-                                    message: "刷新中...",
-                                    duration: 1000,
-                                });
-                                setTimeout(() => {
-                                    if (this.isLoading) {
-                                        this.isLoading = false;
-                                        prompt.showToast({
-                                            message: "加载超时！",
-                                            duration: 1000,
-                                        });
-                                    }
-                                }, 3000);
-                            }
-                        })
-                        .shadow(ShadowStyle.OUTER_DEFAULT_LG)
-                        .type(ButtonType.Circle)
-                        .width(45).height(45)
-                        .backgroundColor('rgba(255, 255, 255, 0.2)')
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN, { colorMode: ThemeColorMode.SYSTEM, adaptiveColor: AdaptiveColor.AVERAGE, scale: 1.0 })
-                        .linearGradientBlur(60, { fractionStops: [[0, 0], [0.5, 0.8], [1, 0]], direction: GradientDirection.Bottom })
-                        .shadow(ShadowStyle.OUTER_DEFAULT_MD)
-                        .visualEffect(new hdsEffect.HdsEffectBuilder()
-                            .pressShadow(this.isPressed2 ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                            .pointLight({
-                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                                options: {
-                                    color: $r('app.color.light_color'),
-                                    intensity: this.isPressed2 ? 40.0 : 0.2,
-                                    height: 30.0,
-                                } as hdsEffect.PointLightOptions
-                            })
-                            .buildEffect())
-                        .border({
-                            width: 1,
-                            color: $r('app.color.button_border')
-                        })
-                        .borderRadius(22.5)
-                    }
-                    .position({
-                        x: this.showButton ? this.buttonShowX : this.buttonHideX,
-                        y: this.buttonY,
-                    })
-                    .animation(
-                        this.showButtonAnimation
-                            ? { curve: curves.springMotion(0.8, 0.8), duration: 400 }
-                            : { duration: 0 },
-                    )
-                    .transition(this.buttonEffect)
-                    .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Horizontal }).onAction(
-                            (move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showButton = false;
-                                    setTimeout(() => {
-                                        this.showButtonAnimation = false;
-                                    }, 300);
-                                }
+                    },
+                },
+                content: {
+                    title: {
+                        mainTitle: "鸿蒙应用看板",
+                    },
+                    menu: {
+                        value: [
+                            {
+                                content: {
+                                    label: "share",
+                                    icon: $r("sys.symbol.share"),
+                                    isEnabled: true,
+                                    action: () => {
+                                        this.shareManager?.showSystemShare();
+                                        this.triggerVibration();
+                                    },
+                                },
                             },
-                        ),
-                    )
-                    .gesture(
-                        PanGesture({ direction: PanDirection.Vertical })
-                            .onActionStart(() => {
-                                if(this.holdCheckON){ this.holdCheckON = false; this.holdCheckTMP = true; }
-                                this.showButtonAnimation = false;
-                                this.startY = this.buttonY;
-                            })
-                            .onActionUpdate((event: GestureEvent) => {
-                                //判断实际位置
-                                let nextY = this.startY + event.offsetY;
-                                if (nextY > 660) {
-                                    nextY = 660;
-                                } else if (nextY < 70) {
-                                    nextY = 70;
-                                }
-                                this.buttonY = nextY;
-                            })
-                            .onActionEnd(() => {
-                                this.showButtonAnimation = true;
-                                if(this.holdCheckTMP){ this.holdCheckON = true; }
-                                if (this.buttonY >= 660) {
-                                    prompt.showToast({ message: "不能再往下啦", duration: 500 });
-                                } else if (this.buttonY <= 70) {
-                                    prompt.showToast({ message: "不能再往上啦", duration: 500 });
-                                }
-                            }),
-                    )
-                }
-                if (!this.showButton) {
-                    Column()
-                        .backgroundColor(Color.Transparent)
-                        .height("100%")
-                        .width(15)
-                        .zIndex(5)
-                        .position({ x: 0 })
-                        .onClick(() => {
-                            this.showButtonAnimation = true;
-                            this.showButton = true;
-                            this.triggerVibration();
-                        });
-                    Column()
-                        .backgroundColor(Color.Transparent)
-                        .height("100%")
-                        .width(15)
-                        .zIndex(5)
-                        .position({ x: this.WVp - 15 })
-                        .onClick(() => {
-                            this.showButtonAnimation = true;
-                            this.showButton = true;
-                            this.triggerVibration();
-                        });
-                }
-                if (this.tabBarAuto && !this.isTabsBarVisible) {
-                    Column()
-                        .backgroundColor(Color.Transparent)
-                        .height(50)
-                        .width("100%")
-                        .zIndex(5)
-                        .position({ y: this.HVp - 50 })
-                        .onClick(() => {
-                            if (this.lockBar) return;
-                            animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
-                                this.barMargin = 28;
-                                this.isTabsBarVisible = true;
-                            })
-                            this.triggerVibration()
-                            this.lockBar = true;
-                            setTimeout(() => {
-                                this.lockBar = false;
-                            }, 1000);
-                        });
-                }
-
-                //==========================教程==========================
-                if (this.showTutorial) {
-                    Column()
-                        .width('100%')
-                        .height('100%')
-                        .backgroundColor(Color.Transparent)
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-                        .transition(
-                            TransitionEffect.OPACITY.animation({
-                                curve: curves.springMotion(0, 1),
-                                duration: 1000,
-                            }),
-                        )
-                        .onClick(() => {
-                            this.showTutorial = false;
-                            this.triggerVibration();
-                        })
-                }
-                blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 40 }) }
-            }
-            .width("100%")
-            .backgroundColor($r("app.color.backcolor"))
-            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                            {
+                                content: {
+                                    label: "friend",
+                                    icon: $r("sys.symbol.list_bullet"),
+                                    isEnabled: true,
+                                    action: () => {
+                                        this.pageStack.pushPathByName("FriendPage", null)
+                                        this.triggerVibration();
+                                    },
+                                },
+                            },
+                            {
+                                content: {
+                                    label: "user",
+                                    icon: $r("sys.symbol.person"),
+                                    isEnabled: true,
+                                    action: () => {
+                                        this.pageStack.pushPathByName("UserPage", null)
+                                        this.triggerVibration();
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            });
         }
-        .width("100%")
-        .navBarWidth("100%")
-        .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
-        .titleMode(HdsNavigationTitleMode.MODAL)
-        .titleBar({
-            style: {
-                scrollEffectOpts: {
-                    enableScrollEffect: true,
-                    scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
-                    blurEffectiveStartOffset: LengthMetrics.vp(0),
-                    blurEffectiveEndOffset: LengthMetrics.vp(20),
-                },
-                originalStyle: {
-                    backgroundStyle: {
-                        backgroundColor: $r("sys.color.ohos_id_color_background"),
-                    },
-                    contentStyle: {
-                        titleStyle: {
-                            mainTitleColor: $r("sys.color.font_primary"),
-                            subTitleColor: $r("sys.color.font_secondary"),
-                        },
-                        menuStyle: {
-                            backgroundColor: $r("sys.color.comp_background_tertiary"),
-                            iconColor: $r("sys.color.icon_primary"),
-                        },
-                        backIconStyle: {
-                            backgroundColor: $r("sys.color.comp_background_tertiary"),
-                            iconColor: $r("sys.color.icon_primary"),
-                        },
-                    },
-                },
-                scrollEffectStyle: {
-                    backgroundStyle: {
-                        backgroundColor: $r("sys.color.ohos_id_color_background_transparent"),
-                    },
-                    contentStyle: {
-                        titleStyle: {
-                            mainTitleColor: $r("sys.color.font_primary"),
-                            subTitleColor: $r("sys.color.font_secondary"),
-                        },
-                        menuStyle: {
-                            backgroundColor: $r("sys.color.comp_background_tertiary"),
-                            iconColor: $r("sys.color.icon_primary"),
-                        },
-                        backIconStyle: {
-                            backgroundColor: $r("sys.color.comp_background_tertiary"),
-                            iconColor: $r("sys.color.icon_primary"),
-                        },
-                    },
-                },
-                systemMaterialEffect: {
-                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
-                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                },
-            },
-            content: {
-                title: {
-                    mainTitle: "鸿蒙应用看板",
-                },
-                menu: {
-                    value: [
-                        {
-                            content: {
-                                label: "share",
-                                icon: $r("sys.symbol.share"),
-                                isEnabled: true,
-                                action: () => {
-                                    this.shareManager?.showSystemShare();
-                                    this.triggerVibration();
-                                },
-                            },
-                        },
-                        {
-                            content: {
-                                label: "friend",
-                                icon: $r("sys.symbol.list_bullet"),
-                                isEnabled: true,
-                                action: () => {
-                                    router.pushUrl({ url: "pages/friend" });
-                                    this.triggerVibration();
-                                },
-                            },
-                        },
-                        {
-                            content: {
-                                label: "user",
-                                icon: $r("sys.symbol.person"),
-                                isEnabled: true,
-                                action: () => {
-                                    router.pushUrl({ url: "pages/user" });
-                                    this.triggerVibration();
-                                },
-                            },
-                        },
-                    ],
-                },
-            },
-        });
     }
 }
