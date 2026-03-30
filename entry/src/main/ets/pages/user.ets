@@ -17,6 +17,7 @@ import { blurPopup } from '../component/blurPopup';
 @Component
 struct user {
     @Consume('pageStack') pageStack: NavPathStack;
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
@@ -126,7 +127,7 @@ struct user {
                 fontColor: Color.Blue,
                 action: async (): Promise<void> => {
                     try {
-                        PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                        this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
                         let context = ui_content.getHostContext() as common.UIAbilityContext;
                         await context.startAbility({
                             action: "ohos.want.action.viewData",
@@ -135,7 +136,7 @@ struct user {
                         } as Want);
                     } catch (error) {
                         console.error("打开链接失败:", (error as BusinessError).message);
-                        PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                        this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
                     }
                 },
             },

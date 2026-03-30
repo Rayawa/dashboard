@@ -15,6 +15,7 @@ import {
 @Component
 struct queryEntry {
   @Consume('pageStack') pageStack: NavPathStack;
+  PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @Prop url: string = '';
 
   @State progress: number = 0;
@@ -168,13 +169,13 @@ struct queryEntry {
       console.info("网页可以返回，执行后退");
       this.web_controller.backward();
       this.triggerVibration();
-      PromptAction.showToast({ message: "返回上一页", duration: 1000 });
+      this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
       return true;
     }
     const currentTime = new Date().getTime();
     if (currentTime - this.firstBackTime > this.waitTime) {
       this.firstBackTime = currentTime;
-      PromptAction.showToast({ message: "再按一次返回主页", duration: this.waitTime });
+      this.PromptAction.showToast({ message: "再按一次返回主页", duration: this.waitTime });
       this.triggerVibration()
       return true;
     } else {
@@ -263,7 +264,7 @@ struct queryEntry {
                   animation: { duration: 300, curve: Curve.Ease },
                 });
                 this.triggerVibration();
-                PromptAction.showToast({
+                this.PromptAction.showToast({
                   message: "回到顶部",
                   duration: 500,
                 });
@@ -311,7 +312,7 @@ struct queryEntry {
                   this.web_controller.stop();
                   this.isLoading = false;
                   this.triggerVibration();
-                  PromptAction.showToast({
+                  this.PromptAction.showToast({
                     message: "已停止加载",
                     duration: 1000,
                   });
@@ -328,14 +329,14 @@ struct queryEntry {
                   }
                   this.isLoading = true;
                   this.triggerVibration();
-                  PromptAction.showToast({
+                  this.PromptAction.showToast({
                     message: "刷新中...",
                     duration: 1000,
                   });
                   setTimeout(() => {
                     if (this.isLoading) {
                       this.isLoading = false;
-                      PromptAction.showToast({
+                      this.PromptAction.showToast({
                         message: "加载超时！",
                         duration: 1000,
                       });
@@ -410,9 +411,9 @@ struct queryEntry {
                   this.showButtonAnimation = true;
                   if(this.holdCheckTMP){ this.holdCheckON = true; }
                   if (this.buttonY >= 660) {
-                    PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
+                    this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
                   } else if (this.buttonY <= 70) {
-                    PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
+                    this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
                   }
                 }),
             )

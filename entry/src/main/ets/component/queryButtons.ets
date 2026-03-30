@@ -52,6 +52,7 @@ interface SearchResponse {
 @Component
 export struct queryButtons {
   @Consume('pageStack') pageStack: NavPathStack;
+  PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @State appId: string = '';
   @State isLoading: boolean = false;
 
@@ -220,7 +221,7 @@ export struct queryButtons {
     } catch (error) {
       this.isSearching = false;
       this.stopSearchRippleLoop();
-      PromptAction.showToast({ message: `查询失败！${error.message}` });
+      this.PromptAction.showToast({ message: `查询失败！${error.message}` });
     }
   }
   async clearForm(): Promise<void> {
@@ -274,7 +275,7 @@ export struct queryButtons {
           }
         }
       });
-      PromptAction.showToast({
+      this.PromptAction.showToast({
         message: "表单已清空",
         duration: 1500,
       });

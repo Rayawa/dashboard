@@ -29,6 +29,8 @@ import {
 @Component
 export struct friendWeb {
   @Consume('pageStack') pageStack: NavPathStack;
+  PromptAction: PromptAction = this.getUIContext().getPromptAction();
+
   @State url: string = '';
   @State title: string = '';
 
@@ -173,7 +175,7 @@ export struct friendWeb {
         fontColor: Color.Blue,
         action: async (): Promise<void> => {
           try {
-            PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+            this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
             let context = ui_content.getHostContext() as common.UIAbilityContext;
             await context.startAbility({
               action: "ohos.want.action.viewData",
@@ -182,7 +184,7 @@ export struct friendWeb {
             } as Want);
           } catch (error) {
             console.error("打开链接失败:", (error as BusinessError).message);
-            PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+            this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
           }
         },
       },
@@ -261,7 +263,7 @@ export struct friendWeb {
       console.info("网页可以返回，执行后退");
       this.web_controller.backward();
       this.triggerVibration();
-      PromptAction.showToast({ message: "返回上一页", duration: 1000 });
+      this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
       return true;
     } else {
       return false;
@@ -346,7 +348,7 @@ export struct friendWeb {
                   animation: { duration: 300, curve: Curve.Ease },
                 });
                 this.triggerVibration();
-                PromptAction.showToast({
+                this.PromptAction.showToast({
                   message: "回到顶部",
                   duration: 500,
                 });
@@ -394,7 +396,7 @@ export struct friendWeb {
                   this.web_controller.stop();
                   this.isLoading = false;
                   this.triggerVibration();
-                  PromptAction.showToast({
+                  this.PromptAction.showToast({
                     message: "已停止加载",
                     duration: 1000,
                   });
@@ -411,14 +413,14 @@ export struct friendWeb {
                   }
                   this.isLoading = true;
                   this.triggerVibration();
-                  PromptAction.showToast({
+                  this.PromptAction.showToast({
                     message: "刷新中...",
                     duration: 1000,
                   });
                   setTimeout(() => {
                     if (this.isLoading) {
                       this.isLoading = false;
-                      PromptAction.showToast({
+                      this.PromptAction.showToast({
                         message: "加载超时！",
                         duration: 1000,
                       });
@@ -493,9 +495,9 @@ export struct friendWeb {
                   this.showButtonAnimation = true;
                   if(this.holdCheckTMP){ this.holdCheckON = true; }
                   if (this.buttonY >= 660) {
-                    PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
+                    this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
                   } else if (this.buttonY <= 70) {
-                    PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
+                    this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
                   }
                 }),
             )

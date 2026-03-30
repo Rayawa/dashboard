@@ -16,6 +16,7 @@ interface UpdateLog {
 @Component
 struct appLog {
     @Consume('pageStack') pageStack: NavPathStack;
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     private updateLogs: UpdateLog[] = [
         {
             // "更新页面设计，增加了触感反馈与动效",
@@ -360,7 +361,7 @@ struct appLog {
                                     isEnabled: true,
                                     action: () => {
                                         this.toggleFilter("beta");
-                                        PromptAction.showToast({
+                                        this.PromptAction.showToast({
                                             message: this.showBeta
                                                 ? "打开Beta版本日志"
                                                 : "关闭Beta版本日志",
@@ -376,7 +377,7 @@ struct appLog {
                                     isEnabled: true,
                                     action: () => {
                                         this.toggleFilter("rc");
-                                        PromptAction.showToast({
+                                        this.PromptAction.showToast({
                                             message: this.showRc
                                                 ? "打开ReleaseCandidate版本日志"
                                                 : "关闭ReleaseCandidate版本日志",
@@ -394,7 +395,7 @@ struct appLog {
                                     isEnabled: true,
                                     action: () => {
                                         this.toggleFilter("release");
-                                        PromptAction.showToast({
+                                        this.PromptAction.showToast({
                                             message: this.showRelease
                                                 ? "打开正式版日志"
                                                 : "关闭正式版日志",
