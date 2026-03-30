@@ -1,7 +1,7 @@
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { LengthMetrics, promptAction as prompt } from '@kit.ArkUI';
+import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } from '../common/constants';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
@@ -39,7 +39,7 @@ struct friend {
       console.info(`queryResult [Market] 跳转成功: ${appId}`);
     }).catch((err: Error) => {
       console.error(`queryResult [Market] 跳转失败: ${err.message}`);
-      prompt.showToast({ message: "无法打开应用市场" });
+      PromptAction.showToast({ message: "无法打开应用市场" });
     });
   }
 

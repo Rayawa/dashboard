@@ -1,4 +1,4 @@
-import { prompt } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { vibrator } from '@kit.SensorServiceKit';
@@ -126,7 +126,7 @@ export struct contact {
                             uri: url,
                         } as Want);
                     } catch (e) {
-                        prompt.showToast({ message: "跳转失败" });
+                        PromptAction.showToast({ message: "跳转失败" });
                     }
                 },
             },
@@ -137,9 +137,9 @@ export struct contact {
         try {
             let pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text);
             await pasteboard.getSystemPasteboard().setData(pasteData);
-            prompt.showToast({ message: `已复制${label}`, duration: 2000 });
+            PromptAction.showToast({ message: `已复制${label}`, duration: 2000 });
         } catch (error) {
-            prompt.showToast({ message: "复制失败" });
+            PromptAction.showToast({ message: "复制失败" });
         }
     }
 }

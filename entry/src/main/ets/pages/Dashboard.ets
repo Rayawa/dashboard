@@ -16,7 +16,7 @@ import {
     SnackBarStyleOptions
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, prompt } from '@kit.ArkUI';
+import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
 import { customUserAgent, EguiBaseURL, SBaseURL, TBaseURL } from '../common/constants';
@@ -372,13 +372,13 @@ struct Dashboard {
             console.info("网页可以返回，执行后退");
             this.web_controller.backward();
             this.triggerVibration();
-            prompt.showToast({ message: "返回上一页", duration: 1000 });
+            PromptAction.showToast({ message: "返回上一页", duration: 1000 });
             return true;
         }
         const currentTime = new Date().getTime();
         if (currentTime - this.firstBackTime > this.waitTime) {
             this.firstBackTime = currentTime;
-            prompt.showToast({ message: "再按一次退出应用", duration: this.waitTime });
+            PromptAction.showToast({ message: "再按一次退出应用", duration: this.waitTime });
             this.triggerVibration()
             return true;
         } else {
@@ -553,7 +553,7 @@ struct Dashboard {
                                     animation: { duration: 300, curve: Curve.Ease },
                                 });
                                 this.triggerVibration();
-                                prompt.showToast({
+                                PromptAction.showToast({
                                     message: "回到顶部",
                                     duration: 500,
                                 });
@@ -601,7 +601,7 @@ struct Dashboard {
                                     this.web_controller.stop();
                                     this.isLoading = false;
                                     this.triggerVibration();
-                                    prompt.showToast({
+                                    PromptAction.showToast({
                                         message: "已停止加载",
                                         duration: 1000,
                                     });
@@ -618,14 +618,14 @@ struct Dashboard {
                                     }
                                     this.isLoading = true;
                                     this.triggerVibration();
-                                    prompt.showToast({
+                                    PromptAction.showToast({
                                         message: "刷新中...",
                                         duration: 1000,
                                     });
                                     setTimeout(() => {
                                         if (this.isLoading) {
                                             this.isLoading = false;
-                                            prompt.showToast({
+                                            PromptAction.showToast({
                                                 message: "加载超时！",
                                                 duration: 1000,
                                             });
@@ -700,9 +700,9 @@ struct Dashboard {
                                     this.showButtonAnimation = true;
                                     if(this.holdCheckTMP){ this.holdCheckON = true; }
                                     if (this.buttonY >= 660) {
-                                        prompt.showToast({ message: "不能再往下啦", duration: 500 });
+                                        PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
                                     } else if (this.buttonY <= 70) {
-                                        prompt.showToast({ message: "不能再往上啦", duration: 500 });
+                                        PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
                                     }
                                 }),
                         )

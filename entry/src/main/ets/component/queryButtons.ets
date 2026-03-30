@@ -1,7 +1,7 @@
 import { vibrator } from '@kit.SensorServiceKit';
 import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { prompt } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
 
 interface QueryWebParams {
@@ -220,7 +220,7 @@ export struct queryButtons {
     } catch (error) {
       this.isSearching = false;
       this.stopSearchRippleLoop();
-      prompt.showToast({ message: `查询失败！${error.message}` });
+      PromptAction.showToast({ message: `查询失败！${error.message}` });
     }
   }
   async clearForm(): Promise<void> {
@@ -274,7 +274,7 @@ export struct queryButtons {
           }
         }
       });
-      prompt.showToast({
+      PromptAction.showToast({
         message: "表单已清空",
         duration: 1500,
       });

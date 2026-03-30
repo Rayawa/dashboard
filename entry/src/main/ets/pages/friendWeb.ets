@@ -13,7 +13,7 @@ import {
   SnackBarStyleOptions
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, prompt } from '@kit.ArkUI';
+import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
@@ -158,7 +158,6 @@ export struct friendWeb {
   async openLink() {
     const url = this.url;
     const ui_content = this.getUIContext();
-    const prompt_action = ui_content.getPromptAction();
     ui_content.showAlertDialog({
       title: "是否跳转到浏览器",
       message: `即将访问${this.title}`,
@@ -174,7 +173,7 @@ export struct friendWeb {
         fontColor: Color.Blue,
         action: async (): Promise<void> => {
           try {
-            prompt_action.showToast({ message: "正在跳转...", duration: 500 });
+            PromptAction.showToast({ message: "正在跳转...", duration: 500 });
             let context = ui_content.getHostContext() as common.UIAbilityContext;
             await context.startAbility({
               action: "ohos.want.action.viewData",
@@ -183,7 +182,7 @@ export struct friendWeb {
             } as Want);
           } catch (error) {
             console.error("打开链接失败:", (error as BusinessError).message);
-            prompt_action.showToast({ message: "打开链接失败", duration: 1000 });
+            PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
           }
         },
       },
@@ -262,7 +261,7 @@ export struct friendWeb {
       console.info("网页可以返回，执行后退");
       this.web_controller.backward();
       this.triggerVibration();
-      prompt.showToast({ message: "返回上一页", duration: 1000 });
+      PromptAction.showToast({ message: "返回上一页", duration: 1000 });
       return true;
     } else {
       return false;
@@ -347,7 +346,7 @@ export struct friendWeb {
                   animation: { duration: 300, curve: Curve.Ease },
                 });
                 this.triggerVibration();
-                prompt.showToast({
+                PromptAction.showToast({
                   message: "回到顶部",
                   duration: 500,
                 });
@@ -395,7 +394,7 @@ export struct friendWeb {
                   this.web_controller.stop();
                   this.isLoading = false;
                   this.triggerVibration();
-                  prompt.showToast({
+                  PromptAction.showToast({
                     message: "已停止加载",
                     duration: 1000,
                   });
@@ -412,14 +411,14 @@ export struct friendWeb {
                   }
                   this.isLoading = true;
                   this.triggerVibration();
-                  prompt.showToast({
+                  PromptAction.showToast({
                     message: "刷新中...",
                     duration: 1000,
                   });
                   setTimeout(() => {
                     if (this.isLoading) {
                       this.isLoading = false;
-                      prompt.showToast({
+                      PromptAction.showToast({
                         message: "加载超时！",
                         duration: 1000,
                       });
@@ -494,9 +493,9 @@ export struct friendWeb {
                   this.showButtonAnimation = true;
                   if(this.holdCheckTMP){ this.holdCheckON = true; }
                   if (this.buttonY >= 660) {
-                    prompt.showToast({ message: "不能再往下啦", duration: 500 });
+                    PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
                   } else if (this.buttonY <= 70) {
-                    prompt.showToast({ message: "不能再往上啦", duration: 500 });
+                    PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
                   }
                 }),
             )
