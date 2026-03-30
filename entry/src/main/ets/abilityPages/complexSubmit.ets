@@ -15,6 +15,7 @@ interface ShareParams {
 @Entry
 @Component
 struct complexSubmit {
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
     @StorageLink("userName") userName: string = "";
     @StorageLink("inputText") inputText: string = "";
@@ -102,7 +103,7 @@ struct complexSubmit {
         const currentTime = new Date().getTime();
         if (currentTime - this.firstBackTime > this.waitTime) {
             this.firstBackTime = currentTime;
-            PromptAction.showToast({ message: "再按一次返回主页", duration: this.waitTime });
+            this.PromptAction.showToast({ message: "再按一次返回主页", duration: this.waitTime });
             this.triggerVibration()
             return true;
         } else {

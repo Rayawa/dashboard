@@ -5,6 +5,7 @@ import { vibrator } from '@kit.SensorServiceKit';
 
 @Component
 export struct contact {
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
@@ -126,7 +127,7 @@ export struct contact {
                             uri: url,
                         } as Want);
                     } catch (e) {
-                        PromptAction.showToast({ message: "跳转失败" });
+                        this.PromptAction.showToast({ message: "跳转失败" });
                     }
                 },
             },
@@ -137,9 +138,9 @@ export struct contact {
         try {
             let pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text);
             await pasteboard.getSystemPasteboard().setData(pasteData);
-            PromptAction.showToast({ message: `已复制${label}`, duration: 2000 });
+            this.PromptAction.showToast({ message: `已复制${label}`, duration: 2000 });
         } catch (error) {
-            PromptAction.showToast({ message: "复制失败" });
+            this.PromptAction.showToast({ message: "复制失败" });
         }
     }
 }

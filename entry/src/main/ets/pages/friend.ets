@@ -26,6 +26,7 @@ interface AppConfig {
 @Component
 struct friend {
   @Consume('pageStack') pageStack: NavPathStack;
+  PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("vibrationON") vibrationON: boolean = true;
 
   private jumpToMarket(appId: string) {
@@ -39,7 +40,7 @@ struct friend {
       console.info(`queryResult [Market] 跳转成功: ${appId}`);
     }).catch((err: Error) => {
       console.error(`queryResult [Market] 跳转失败: ${err.message}`);
-      PromptAction.showToast({ message: "无法打开应用市场" });
+      this.PromptAction.showToast({ message: "无法打开应用市场" });
     });
   }
 

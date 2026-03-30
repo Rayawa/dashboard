@@ -18,6 +18,7 @@ interface ButtonAnimationState {
 
 @Component
 export struct submitButtons {
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @State appId: string = '';
     @State isLoading: boolean = false;
 
@@ -82,7 +83,7 @@ export struct submitButtons {
                     }
                 }
             });
-            PromptAction.showToast({
+            this.PromptAction.showToast({
                 message: "表单已清空",
                 duration: 1500,
             });
@@ -95,7 +96,7 @@ export struct submitButtons {
         }
 
         if (!this.formData.packageName.trim()) {
-            PromptAction.showToast({
+            this.PromptAction.showToast({
                 message: "请输入包名",
                 duration: 2000,
             });
@@ -152,7 +153,7 @@ export struct submitButtons {
                     }
                 }
             });
-            PromptAction.showToast({
+            this.PromptAction.showToast({
                 message: "提交成功，感谢您的投稿！",
                 duration: 1500,
             });
@@ -192,7 +193,7 @@ export struct submitButtons {
                     `An unexpected error occurred. Code: ${e.code}, message: ${e.message}`,
                 );
             }
-            PromptAction.showToast({
+            this.PromptAction.showToast({
                 message: "提交失败，请稍后重试",
                 duration: 2000,
             });
