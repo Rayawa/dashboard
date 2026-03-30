@@ -1,4 +1,4 @@
-import { curves, display, LengthMetrics } from '@kit.ArkUI';
+import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
@@ -111,7 +111,6 @@ struct user {
     async openLink() {
         const url = "https://beian.miit.gov.cn/#/Integrated/index";
         const ui_content = this.getUIContext();
-        const prompt_action = ui_content.getPromptAction();
         ui_content.showAlertDialog({
             title: "是否跳转到浏览器",
             message: "即将访问\nICP/IP地址/域名信息备案管理系统",
@@ -127,7 +126,7 @@ struct user {
                 fontColor: Color.Blue,
                 action: async (): Promise<void> => {
                     try {
-                        prompt_action.showToast({ message: "正在跳转...", duration: 500 });
+                        PromptAction.showToast({ message: "正在跳转...", duration: 500 });
                         let context = ui_content.getHostContext() as common.UIAbilityContext;
                         await context.startAbility({
                             action: "ohos.want.action.viewData",
@@ -136,7 +135,7 @@ struct user {
                         } as Want);
                     } catch (error) {
                         console.error("打开链接失败:", (error as BusinessError).message);
-                        prompt_action.showToast({ message: "打开链接失败", duration: 1000 });
+                        PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
                     }
                 },
             },

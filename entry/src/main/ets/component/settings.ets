@@ -177,7 +177,7 @@ export struct settings {
             //             })
             //             .onChange(async (isOn: boolean) => {
             //                 await this.saveDefaultSite(isOn);
-            //                 prompt.showToast({
+            //                 PromptAction.showToast({
             //                     message: "重启应用后生效",
             //                     duration: 500,
             //                 });

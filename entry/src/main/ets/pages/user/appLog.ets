@@ -1,4 +1,4 @@
-import { LengthMetrics, prompt } from '@kit.ArkUI';
+import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
@@ -360,7 +360,7 @@ struct appLog {
                                     isEnabled: true,
                                     action: () => {
                                         this.toggleFilter("beta");
-                                        prompt.showToast({
+                                        PromptAction.showToast({
                                             message: this.showBeta
                                                 ? "打开Beta版本日志"
                                                 : "关闭Beta版本日志",
@@ -376,7 +376,7 @@ struct appLog {
                                     isEnabled: true,
                                     action: () => {
                                         this.toggleFilter("rc");
-                                        prompt.showToast({
+                                        PromptAction.showToast({
                                             message: this.showRc
                                                 ? "打开ReleaseCandidate版本日志"
                                                 : "关闭ReleaseCandidate版本日志",
@@ -394,7 +394,7 @@ struct appLog {
                                     isEnabled: true,
                                     action: () => {
                                         this.toggleFilter("release");
-                                        prompt.showToast({
+                                        PromptAction.showToast({
                                             message: this.showRelease
                                                 ? "打开正式版日志"
                                                 : "关闭正式版日志",
