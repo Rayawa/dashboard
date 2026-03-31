@@ -4,7 +4,7 @@ import {
   hdsEffect, HdsNavigation, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { curves, display, LengthMetrics, PromptAction, router } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import {
@@ -18,7 +18,6 @@ import { common } from '@kit.AbilityKit';
 @Entry
 @Component
 struct queryWeb {
-  @Consume('pageStack') pageStack: NavPathStack;
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @Prop url: string = '';
 
@@ -104,7 +103,17 @@ struct queryWeb {
     this.HVp = screenHeightVp;
     initializeSettings();
     await this.loadSettings();
-
+    const params = router.getParams() as Record<string, string>;
+    if (params && params.url) {
+      this.url = params.url;
+    }
+    else {
+      const storageUrl = AppStorage.get<string>('queryUrlFromAbility');
+      if (storageUrl) {
+        this.url = storageUrl;
+        AppStorage.setOrCreate('queryUrlFromAbility', '');
+      }
+    }
     //握持监听
     try {
       motion.on("holdingHandChanged", this.holdingHandCallback);
@@ -476,7 +485,7 @@ struct queryWeb {
         backIcon: {
           action: () => {
             this.triggerVibration();
-            this.pageStack.pop()
+            this.closePage()
           },
         },
       },
