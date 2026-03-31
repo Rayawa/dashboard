@@ -226,7 +226,6 @@ export struct friendWeb {
   }
 
   build() {
-
     HdsNavDestination() {
       Stack(){
         if (this.isLoading) {
