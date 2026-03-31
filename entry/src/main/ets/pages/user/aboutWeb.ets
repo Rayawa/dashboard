@@ -5,25 +5,21 @@ import {
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { vibration } from '../common/vibration';
+import { vibration } from '../../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
-import { WebShareManager } from '../common/shareControl';
+import { WebShareManager } from '../../common/shareControl';
 import {
   getButtonPosition,
   getHoldCheckEnabled,
   getVibrationEnabled,
   initializeSettings
-} from '../common/SettingsStorage';
-
-interface QueryWebParams {
-  url: string;
-}
-
+} from '../../common/SettingsStorage';
+import { WebViewParam } from './about';
 
 @Component
-export struct aboutWeb {
+struct aboutWeb {
   @Consume('pageStack') pageStack: NavPathStack;
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @Prop url: string = '';
@@ -103,7 +99,12 @@ export struct aboutWeb {
       console.error("加载设置失败:", error);
     }
   }
+  @State params: WebViewParam = new WebViewParam('', '');
   async aboutToAppear() {
+    const pathParams = this.pageStack.getParamByName("AboutWebPage") as Array<WebViewParam>;
+    if (pathParams && pathParams.length > 0) {
+      this.params = pathParams[0];
+    }
     //获取屏幕右边位置
     const displayInfo = display.getDefaultDisplaySync();
     const screenWidthVp = px2vp(displayInfo.width);
@@ -179,7 +180,7 @@ export struct aboutWeb {
         Scroll(this.scroller) {
           Column() {
             Web({
-              src: this.url,
+              src: this.params.url,
               controller: this.web_controller,
               renderMode: RenderMode.SYNC_RENDER,
             })
@@ -483,7 +484,7 @@ export struct aboutWeb {
       },
       content: {
         title: {
-          mainTitle: this.title,
+          mainTitle: this.params.title,
         },
         menu: {
           value: [
@@ -510,4 +511,9 @@ export struct aboutWeb {
       },
     });
   }
+}
+
+@Builder
+export function AboutWebBuilder(){
+  aboutWeb()
 }
