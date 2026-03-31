@@ -1,7 +1,7 @@
 import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import {
-  hdsEffect, HdsNavigation, ScrollEffectType
+  hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction, router } from '@kit.ArkUI';
@@ -427,6 +427,8 @@ struct queryWeb {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
+    .navBarWidth("100%")
+    .titleMode(HdsNavigationTitleMode.MINI)
     .titleBar({
       style: {
         scrollEffectOpts: {
