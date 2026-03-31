@@ -22,9 +22,13 @@ struct appLog {
             // "更新页面设计，增加了触感反馈与动效",
             // "applinking",
             // "为不同比例的设备增加了页面适配",
+
             // session terminate self
             // 接续
+            // query返回不统一
             // url get
+            // ability tag
+
             version: "V2.0.0-rc.1",
             date: "2026-3-30",
             type: "rc",
