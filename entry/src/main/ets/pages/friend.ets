@@ -204,6 +204,7 @@ struct friend {
           .width("90%")
         }.margin({ bottom: 30 })
       }
+      .height("100%")
       .width("100%")
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])

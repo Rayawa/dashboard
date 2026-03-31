@@ -11,8 +11,9 @@ import { vibration } from '../common/vibration';
 import { blurPopup } from '../component/blurPopup';
 
 @Component
-struct user {
+export struct user {
     @Consume('pageStack') pageStack: NavPathStack;
+    onCloseSplit?: () => void;
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
@@ -359,12 +360,15 @@ struct user {
         }
         .onBackPressed(() => {
             this.triggerVibration();
-            if ( this.showQuery || this.showSubmit || this.showContact) {
+            if (this.showQuery || this.showSubmit || this.showContact) {
                 this.showSubmit = false;
                 this.showQuery = false;
                 this.showContact = false;
                 return true;
             } else {
+                if (this.onCloseSplit) {
+                    this.onCloseSplit();
+                }
                 return false;
             }
         })
@@ -425,12 +429,16 @@ struct user {
                 },
                 backIcon: {
                     action: () => {
-                        this.pageStack.pop()
                         this.triggerVibration();
+                        if (this.onCloseSplit) {
+                            this.onCloseSplit();
+                        }
+                        this.pageStack.pop();
                     },
                 },
             },
         });
+
     }
 }
 

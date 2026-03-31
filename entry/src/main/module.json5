@@ -41,6 +41,7 @@
         "description": "$string:shareEntryAbility_desc",
         "icon": "$media:layered_image",
         "label": "$string:shareEntryAbility_label",
+        "excludeFromMissions": true,
         "startWindowIcon": "$media:startIcon",
         "startWindowBackground": "$color:start_window_background"
       },
@@ -50,6 +51,7 @@
         "description": "$string:queryEntryAbility_desc",
         "icon": "$media:layered_image",
         "label": "$string:queryEntryAbility_label",
+        "excludeFromMissions": true,
         "startWindowIcon": "$media:startIcon",
         "startWindowBackground": "$color:start_window_background",
         "exported": true

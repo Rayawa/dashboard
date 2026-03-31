@@ -13,7 +13,8 @@ import {
     SnackBarMessageOptions,
     SnackBarOperationOptions,
     SnackBarOperationType,
-    SnackBarStyleOptions
+    SnackBarStyleOptions,
+    TitleSize
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
@@ -37,6 +38,7 @@ import {
     initializeSettings
 } from '../common/SettingsStorage';
 import { blurPopup } from '../component/blurPopup';
+import { user } from './user';
 
 interface SiteConfig {
     key: string;
@@ -50,6 +52,16 @@ interface SiteConfig {
 struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    @State navBarWidth: string | number = '100%';
+
+    private toggleSplitMode(isSplit: boolean) {
+        animateTo({
+            curve: curves.springMotion(0.4, 0.8),
+            duration: 400
+        }, () => {
+            this.navBarWidth = isSplit ? (this.WVp - 390) : '100%';
+        })
+    }
     //控制相关
     @State showButton: boolean = true;
     @State barMargin: number = 28;
@@ -322,20 +334,27 @@ struct Dashboard {
     @State firstBackTime: number = 0;
     private waitTime: number = 2000;
     onBackPress(): boolean | void {
+        this.triggerVibration();
         if (this.isSnackBarShow) {
             this.hdsSnackBar.dismiss();
         }
         if (this.showTutorial) {
             this.showTutorial = false;
-            this.triggerVibration();
             console.info("关闭教程");
             return true;
         }
         if (this.web_controller.accessStep(-1)) {
             console.info("网页可以返回，执行后退");
             this.web_controller.backward();
-            this.triggerVibration();
             this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
+            return true;
+        }
+        if (this.pageStack.size() > 0) {
+            this.pageStack.pop();
+
+            if (this.pageStack.size() === 0) {
+                this.toggleSplitMode(false);
+            }
             return true;
         }
         const currentTime = new Date().getTime();
@@ -366,6 +385,21 @@ struct Dashboard {
         nextFocusId: 'button',
         duration: 7999
     }
+    @Builder
+    PageMap(name: string, param: object) {
+        if (name === "UserPage") {
+            user({
+                onCloseSplit: () => {
+                    animateTo({
+                        curve: curves.springMotion(0.4, 0.8),
+                        duration: 350
+                    }, () => {
+                        this.navBarWidth= '100%';
+                    })
+                }
+            })
+        }
+    }
     @Builder Web(site: SiteConfig) {
         Stack() {
             if (this.isLoading) {
@@ -389,6 +423,7 @@ struct Dashboard {
                         controller: this.web_controller,
                         renderMode: RenderMode.SYNC_RENDER,
                     })
+                        .backgroundColor($r("app.color.backcolor"))
                         .id(`HmDashboard_${site.key}`)
                         .onControllerAttached(() => {
                             if (this.url !== "") {
@@ -757,9 +792,15 @@ struct Dashboard {
             .backgroundColor($r("app.color.backcolor"))
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         }
+        .backgroundColor($r('app.color.backcolor'))
+        .mode(NavigationMode.Auto)
+        .navBarWidth(this.navBarWidth)
+        .navDestination(this.PageMap)
         .width("100%")
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
-        .titleMode(HdsNavigationTitleMode.MODAL)
+        .titleMode(HdsNavigationTitleMode.MINI)
+        .hideBackButton(true)
+        .divider({ color: $r('app.color.border')  })
         .titleBar({
             style: {
                 scrollEffectOpts: {
@@ -814,6 +855,7 @@ struct Dashboard {
             content: {
                 title: {
                     mainTitle: "鸿蒙应用看板",
+                    mainTitleSize: TitleSize.TITLE_S,
                 },
                 menu: {
                     value: [
@@ -839,15 +881,20 @@ struct Dashboard {
                                 },
                             },
                         },
-
                         {
                             content: {
                                 label: "user",
                                 icon: $r("sys.symbol.person"),
                                 isEnabled: true,
                                 action: () => {
-                                    this.pageStack.pushPathByName("UserPage", null)
                                     this.triggerVibration();
+                                    let index = this.pageStack.getIndexByName("UserPage");
+                                    if (index.length > 0) {
+                                        this.pageStack.moveToTop("UserPage");
+                                    } else {
+                                        this.pageStack.pushPathByName("UserPage", null);
+                                        this.toggleSplitMode(true);
+                                    }
                                 },
                             },
                         },
