@@ -18,4 +18,7 @@ export default class QueryEntryAbility extends UIAbility {
       }
     });
   }
+  onBackground() {
+    this.context.terminateSelf();
+  }
 }
