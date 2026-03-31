@@ -225,18 +225,6 @@ export struct friendWeb {
     }
   }
 
-  onBackPress(): boolean | void {
-    if (this.web_controller.accessStep(-1)) {
-      console.info("网页可以返回，执行后退");
-      this.web_controller.backward();
-      this.triggerVibration();
-      this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   build() {
 
     HdsNavDestination() {
@@ -497,6 +485,17 @@ export struct friendWeb {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
+    .onBackPressed(() => {
+      if (this.web_controller.accessStep(-1)) {
+        console.info("网页可以返回，执行后退");
+        this.web_controller.backward();
+        this.triggerVibration();
+        this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
+        return true;
+      } else {
+        return false;
+      }
+    })
 
     .titleBar({
       style: {
