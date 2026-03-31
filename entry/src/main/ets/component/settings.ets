@@ -18,10 +18,12 @@ import {
 } from '../common/SettingsStorage';
 import { PromptAction } from '@kit.ArkUI';
 import { webview } from '@kit.ArkWeb';
+import { common } from '@kit.AbilityKit';
 
 @Component
 export struct settings {
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private context = getContext(this) as common.UIAbilityContext;
     private triggerVibration(): void {
         if (this.vibrationON){
             vibration.dotVibration()
@@ -49,7 +51,7 @@ export struct settings {
                         await webview.WebCookieManager.deleteEntireCookie();
                         console.info('Web cache cleared successfully.');
 
-                        // process.exit(0);
+                        this.context.terminateSelf();
 
                     } catch (error) {
                         const err = error as BusinessError;
