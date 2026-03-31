@@ -2,6 +2,7 @@
   "src": [
     "pages/Dashboard",
     "abilityPages/complexSubmit",
+    "abilityPages/queryWeb",
     "abilityPages/loading"
   ]
 }

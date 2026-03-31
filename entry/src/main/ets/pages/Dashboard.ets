@@ -206,16 +206,7 @@ struct Dashboard {
     private context = getContext(this) as common.UIAbilityContext;
     @State isContinuation: boolean = false;
     async aboutToAppear() {
-
         this.buttonOnPageShow = false;
-        if (this.mUrl) {
-            this.isContinuation = true;
-            this.currentIndex = this.mIndex;
-            this.url = this.mUrl;
-            if (this.sitesList[this.mIndex]) {
-                this.sitesList[this.mIndex].url = this.mUrl;
-            }
-        }
         //年龄分级
         let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
             console.info('callback succeeded, ageGroup:' + data.ageGroup + ", confidence:" + data.confidence);

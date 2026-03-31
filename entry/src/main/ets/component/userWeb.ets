@@ -422,8 +422,8 @@ export struct userWeb {
     .onBackPressed(() => {
       if (this.web_controller.accessStep(-1)) {
         console.info("网页可以返回，执行后退");
-        this.web_controller.backward();
         this.triggerVibration();
+        this.web_controller.backward();
         this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
         return true;
       } else {
