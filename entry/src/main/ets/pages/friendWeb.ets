@@ -176,7 +176,7 @@ export struct friendWeb {
 
     //分享
     const context = getContext(this) as common.UIAbilityContext;
-    this.shareManager = WebShareManager.getInstance(context, this.web_controller);
+    this.shareManager = WebShareManager.getInstance(context);
     this.shareManager.enablePassiveShare();
     this.context.eventHub.on("onFocus", () => {
       this.shareManager?.enablePassiveShare();
@@ -571,8 +571,9 @@ export struct friendWeb {
                 icon: $r("sys.symbol.share"),
                 isEnabled: true,
                 action: () => {
-                  this.shareManager?.showSystemShare();
                   this.triggerVibration();
+                  const realUrl = this.web_controller.getUrl();
+                  this.shareManager?.showSystemShare(realUrl);
                 },
               },
             },
