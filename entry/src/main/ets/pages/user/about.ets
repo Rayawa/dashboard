@@ -8,10 +8,21 @@ import { vibration } from '../../common/vibration';
 import { warn } from '../../component/warn';
 import { blurPopup } from '../../component/blurPopup';
 
+export class WebViewParam {
+  url: string | Resource;
+  title: string;
+  constructor(url: string | Resource, title: string) {
+    this.url = url;
+    this.title = title;
+  }
+}
+
+
 @Component
 struct about {
   @Consume('pageStack') pageStack: NavPathStack;
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
+
   @StorageLink("vibrationON") vibrationON: boolean = true;
   private triggerVibration(): void {
     if (this.vibrationON) {
@@ -135,8 +146,9 @@ struct about {
                 .objectFit(ImageFit.Contain)
             }
             .onClick(() => {
-              this.pageStack.pushPathByName("WebApiPage", null)
               this.triggerVibration();
+              let param = new WebViewParam('http://shenjack.top:10003/docs', 'API文档说明');
+              this.pageStack.pushPathByName("AboutWebPage", param);
             })
             .height(52)
             .width("100%")
@@ -165,8 +177,9 @@ struct about {
                 .objectFit(ImageFit.Contain)
             }
             .onClick(() => {
-              this.pageStack.pushPathByName("WebLogPage", null)
               this.triggerVibration();
+              let param = new WebViewParam('https://hmos.txit.top/changelog', 'Web更新日志');
+              this.pageStack.pushPathByName("AboutWebPage", param);
             })
             .height(52)
             .width("100%")
@@ -220,6 +233,7 @@ struct about {
             }
             .onClick(() => {
               this.triggerVibration();
+              this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('approve.html'), "用户协议"));
             })
             .height(52)
             .width("100%")
@@ -235,7 +249,7 @@ struct about {
                   .height(24)
                   .width(24)
                   .objectFit(ImageFit.Contain)
-                Text("隐私协议")
+                Text("隐私政策")
                   .fontSize(16)
                   .margin({ left: 12 })
               }
@@ -246,6 +260,7 @@ struct about {
             }
             .onClick(() => {
               this.triggerVibration();
+              this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('privacy.html'), "隐私政策"));
             })
             .height(52)
             .width("100%")
@@ -277,7 +292,7 @@ struct about {
             .fontColor("#888")
             .fontSize(12)
             .margin(2)
-          Text('Copyright ©2026. All rights reserved.')
+          Text('Copyright ©️2026. All rights reserved.')
             .fontColor("#888")
             .fontSize(12)
             .margin(2)
@@ -295,8 +310,6 @@ struct about {
                 this.openLink();
               })
           }.margin(2)
-
-
 
         }
         .width("100%")
@@ -397,8 +410,8 @@ struct about {
         },
         backIcon: {
           action: () => {
-            this.pageStack.pop()
             this.triggerVibration();
+            this.pageStack.pop()
           },
         },
       },

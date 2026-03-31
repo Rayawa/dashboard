@@ -31,14 +31,14 @@
       "buildFunction": "AboutPageBuilder"
     },
     {
-      "name": "WebLogPage",
-      "pageSourceFile": "src/main/ets/pages/user/webLog.ets",
-      "buildFunction": "WebLogBuilder"
+      "name": "HTMLPage",
+      "pageSourceFile": "src/main/ets/pages/user/htmlPage.ets",
+      "buildFunction": "HTMLBuilder"
     },
     {
-      "name": "WebApiPage",
-      "pageSourceFile": "src/main/ets/pages/user/webApi.ets",
-      "buildFunction": "WebApiBuilder"
+      "name": "AboutWebPage",
+      "pageSourceFile": "src/main/ets/pages/user/aboutWeb.ets",
+      "buildFunction": "AboutWebBuilder"
     },
     {
       "name": "AppLogPage",
