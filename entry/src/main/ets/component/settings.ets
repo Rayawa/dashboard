@@ -17,6 +17,7 @@ import {
     setVibrationEnabled,
 } from '../common/SettingsStorage';
 import { PromptAction } from '@kit.ArkUI';
+import { webview } from '@kit.ArkWeb';
 
 @Component
 export struct settings {
@@ -26,6 +27,39 @@ export struct settings {
             vibration.dotVibration()
         }
     }
+
+    async trash() {
+        const ui_content = this.getUIContext();
+        ui_content.showAlertDialog({
+            title: "此操作需要关闭应用",
+            message: "是否继续\n",
+            primaryButton: {
+                value: "取消",
+                fontColor: Color.Red,
+                action: () => {
+                    console.log("点击了取消按钮");
+                },
+            },
+            secondaryButton: {
+                value: "确定",
+                fontColor: Color.Blue,
+                action: async () => {
+                    try {
+                        await webview.WebStorage.deleteAllData();
+                        await webview.WebCookieManager.deleteEntireCookie();
+                        console.info('Web cache cleared successfully.');
+
+                        // process.exit(0);
+
+                    } catch (error) {
+                        const err = error as BusinessError;
+                        console.error(`ErrorCode: ${err.code}, Message: ${err.message}`);
+                    }
+                },
+            },
+        });
+    }
+
 
     @State handlePopupTheme: boolean = false;
     @State handlePopupTrash: boolean = false;
@@ -416,7 +450,7 @@ export struct settings {
             }
             .onClick(() => {
                 this.triggerVibration();
-                this.handlePopupTrash = !this.handlePopupTrash;
+                this.trash();
             })
             .height(52)
             .width("100%")

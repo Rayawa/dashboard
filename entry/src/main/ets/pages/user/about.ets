@@ -37,7 +37,7 @@ struct about {
     const ui_content = this.getUIContext();
     ui_content.showAlertDialog({
       title: "是否跳转到浏览器",
-      message: "即将访问\nICP/IP地址/域名信息备案管理系统",
+      message: "即将访问\nICP/IP地址/域名信息备案管理系统\n",
       primaryButton: {
         value: "取消",
         fontColor: Color.Red,
@@ -219,7 +219,6 @@ struct about {
                 .objectFit(ImageFit.Contain)
             }
             .onClick(() => {
-              this.pageStack.pushPathByName("AppLogPage", null)
               this.triggerVibration();
             })
             .height(52)
@@ -246,7 +245,6 @@ struct about {
                 .objectFit(ImageFit.Contain)
             }
             .onClick(() => {
-              this.pageStack.pushPathByName("AppLogPage", null)
               this.triggerVibration();
             })
             .height(52)
