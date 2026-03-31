@@ -1,13 +1,11 @@
 import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import {
-  hdsEffect,
-  HdsNavDestination,
-  HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
+  hdsEffect, HdsNavDestination, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { vibrator } from '@kit.SensorServiceKit';
+import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
@@ -52,39 +50,7 @@ export struct userWeb {
   @State isLoading: boolean = false;
   private triggerVibration(): void {
     if (this.vibrationON) {
-      vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-        if (err) {
-          console.error(
-            `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-          );
-          return;
-        }
-        console.info("Succeed in querying effect");
-        if (state) {
-          try {
-            vibrator.startVibration(
-              {
-                type: "preset",
-                effectId: "haptic.effect.hard",
-                count: 1,
-                intensity: 50,
-              },
-              { usage: "touch" },
-              (error: BusinessError) => {
-                if (error) {
-                  console.error(
-                    `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                  );
-                } else {
-                  console.info("Succeed in starting vibration");
-                }
-              },
-            );
-          } catch (tryError) {
-            console.error(`An unexpected error occurred in try block: ${tryError}`);
-          }
-        }
-      });
+      vibration.dotVibration()
     }
   }
 

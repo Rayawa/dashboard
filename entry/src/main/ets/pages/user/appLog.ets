@@ -1,8 +1,8 @@
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { HdsNavDestination, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
+import { vibration } from '../../common/vibration';
 
 interface UpdateLog {
     version: string;
@@ -17,6 +17,7 @@ interface UpdateLog {
 struct appLog {
     @Consume('pageStack') pageStack: NavPathStack;
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    @StorageLink("vibrationON") vibrationON: boolean = true;
     private updateLogs: UpdateLog[] = [
         {
             // "更新页面设计，增加了触感反馈与动效",
@@ -202,255 +203,222 @@ struct appLog {
 
     build() {
 
-            HdsNavDestination() {
-                Scroll() {
+        HdsNavDestination() {
+            Scroll() {
+                Column() {
                     Column() {
-                        Column() {
-                            ForEach(this.filteredLogs, (log: UpdateLog) => {
-                                Column() {
-                                    Row() {
-                                        Column() {
-                                            Row() {
-                                                Text(log.version)
-                                                    .fontSize(18)
-                                                    .fontWeight(FontWeight.Medium)
-                                                if (log.isRelease) {
-                                                    Text("正式版")
-                                                        .fontSize(12)
-                                                        .padding({
-                                                            left: 6,
-                                                            right: 6,
-                                                            top: 2,
-                                                            bottom: 2,
-                                                        })
-                                                        .backgroundColor("#FF6A39")
-                                                        .fontColor("#fff")
-                                                        .borderRadius(6)
-                                                        .margin({ left: 8 });
-                                                }
-                                            }
-                                            Text(log.date)
-                                                .fontSize(13)
-                                                .fontColor("#999")
-                                                .margin({ top: 4 })
-                                        }
-                                    }
-                                    Column({ space: 5 }) {
-                                        ForEach(log.items, (item: string) => {
-                                            Row() {
-                                                Text("•")
-                                                    .fontSize(16)
-                                                    .fontWeight(600)
-                                                    .fontColor("#666")
-                                                Text(item)
-                                                    .margin({ left: 5 })
-                                                    .fontSize(15)
-                                                    .lineHeight(20)
-                                                    .flexShrink(1)
-                                            }
-                                            .justifyContent(FlexAlign.Start)
-                                            .width("100%")
-                                            .padding({ right: 5 });
-                                        })
-                                    }
-                                    .margin({ top: 10 })
-                                }
-                                .padding(16)
-                                .borderRadius(16)
-                                .backgroundColor($r("app.color.background"))
-                                .shadow({
-                                    radius: 8,
-                                    color: "#1a000000",
-                                    offsetX: 0,
-                                    offsetY: 2,
-                                })
-                                .width("90%")
-                                .margin({ bottom: 16 });
-                            })
-                        }
-                        .width("100%")
-                        .alignItems(HorizontalAlign.Center)
-
-                        if (this.filteredLogs.length === 0) {
+                        ForEach(this.filteredLogs, (log: UpdateLog) => {
                             Column() {
-                                Image($r("app.media.empty"))
-                                    .borderRadius($r("sys.float.corner_radius_level6"))
-                                Text("暂无符合条件的日志")
-                                    .fontWeight(800)
-                                    .fontSize(30)
-                                    .margin({ top: 10 })
-                                    .fontColor($r("app.color.diff_content"))
+                                Row() {
+                                    Column() {
+                                        Row() {
+                                            Text(log.version)
+                                                .fontSize(18)
+                                                .fontWeight(FontWeight.Medium)
+                                            if (log.isRelease) {
+                                                Text("正式版")
+                                                    .fontSize(12)
+                                                    .padding({
+                                                        left: 6,
+                                                        right: 6,
+                                                        top: 2,
+                                                        bottom: 2,
+                                                    })
+                                                    .backgroundColor("#FF6A39")
+                                                    .fontColor("#fff")
+                                                    .borderRadius(6)
+                                                    .margin({ left: 8 });
+                                            }
+                                        }
+                                        Text(log.date)
+                                            .fontSize(13)
+                                            .fontColor("#999")
+                                            .margin({ top: 4 })
+                                    }
+                                }
+                                Column({ space: 5 }) {
+                                    ForEach(log.items, (item: string) => {
+                                        Row() {
+                                            Text("•")
+                                                .fontSize(16)
+                                                .fontWeight(600)
+                                                .fontColor("#666")
+                                            Text(item)
+                                                .margin({ left: 5 })
+                                                .fontSize(15)
+                                                .lineHeight(20)
+                                                .flexShrink(1)
+                                        }
+                                        .justifyContent(FlexAlign.Start)
+                                        .width("100%")
+                                        .padding({ right: 5 });
+                                    })
+                                }
+                                .margin({ top: 10 })
                             }
-                            .width("100%")
-                            .justifyContent(FlexAlign.Center)
-                            .alignItems(HorizontalAlign.Center);
-                        }
+                            .padding(16)
+                            .borderRadius(16)
+                            .backgroundColor($r("app.color.background"))
+                            .shadow({
+                                radius: 8,
+                                color: "#1a000000",
+                                offsetX: 0,
+                                offsetY: 2,
+                            })
+                            .width("90%")
+                            .margin({ bottom: 16 });
+                        })
                     }
-                    .margin({ top: 60, bottom: 20 })
                     .width("100%")
                     .alignItems(HorizontalAlign.Center)
+
+                    if (this.filteredLogs.length === 0) {
+                        Column() {
+                            Image($r("app.media.empty"))
+                                .borderRadius($r("sys.float.corner_radius_level6"))
+                            Text("暂无符合条件的日志")
+                                .fontWeight(800)
+                                .fontSize(30)
+                                .margin({ top: 10 })
+                                .fontColor($r("app.color.diff_content"))
+                        }
+                        .width("100%")
+                        .justifyContent(FlexAlign.Center)
+                        .alignItems(HorizontalAlign.Center);
+                    }
                 }
-                .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                .margin({ top: 60, bottom: 20 })
                 .width("100%")
-                .height("100%")
-                .backgroundColor($r("app.color.backcolor"))
+                .alignItems(HorizontalAlign.Center)
             }
-            .titleBar({
-                style: {
-                    scrollEffectOpts: {
-                        enableScrollEffect: true,
-                        scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
-                        blurEffectiveStartOffset: LengthMetrics.vp(0),
-                        blurEffectiveEndOffset: LengthMetrics.vp(20),
-                    },
-                    originalStyle: {
-                        backgroundStyle: {
-                            backgroundColor: $r("sys.color.ohos_id_color_background"),
-                        },
-                        contentStyle: {
-                            titleStyle: {
-                                mainTitleColor: $r("sys.color.font_primary"),
-                                subTitleColor: $r("sys.color.font_secondary"),
-                            },
-                            menuStyle: {
-                                backgroundColor: $r("sys.color.comp_background_tertiary"),
-                                iconColor: $r("sys.color.icon_primary"),
-                            },
-                            backIconStyle: {
-                                backgroundColor: $r("sys.color.comp_background_tertiary"),
-                                iconColor: $r("sys.color.icon_primary"),
-                            },
-                        },
-                    },
-                    scrollEffectStyle: {
-                        backgroundStyle: {
-                            backgroundColor: $r("sys.color.ohos_id_color_background_transparent"),
-                        },
-                        contentStyle: {
-                            titleStyle: {
-                                mainTitleColor: $r("sys.color.font_primary"),
-                                subTitleColor: $r("sys.color.font_secondary"),
-                            },
-                            menuStyle: {
-                                backgroundColor: $r("sys.color.comp_background_tertiary"),
-                                iconColor: $r("sys.color.icon_primary"),
-                            },
-                            backIconStyle: {
-                                backgroundColor: $r("sys.color.comp_background_tertiary"),
-                                iconColor: $r("sys.color.icon_primary"),
-                            },
-                        },
-                    },
-                    systemMaterialEffect: {
-                        materialType: hdsMaterial.MaterialType.IMMERSIVE,
-                        materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                    },
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+            .width("100%")
+            .height("100%")
+            .backgroundColor($r("app.color.backcolor"))
+        }
+        .titleBar({
+            style: {
+                scrollEffectOpts: {
+                    enableScrollEffect: true,
+                    scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
+                    blurEffectiveStartOffset: LengthMetrics.vp(0),
+                    blurEffectiveEndOffset: LengthMetrics.vp(20),
                 },
-                content: {
-                    title: {
-                        mainTitle: "App更新日志",
+                originalStyle: {
+                    backgroundStyle: {
+                        backgroundColor: $r("sys.color.ohos_id_color_background"),
                     },
-                    menu: {
-                        value: [
-                            {
-                                content: {
-                                    label: "beta",
-                                    icon: this.showBeta ? $r("app.media.betaON") : $r("app.media.beta"),
-                                    isEnabled: true,
-                                    action: () => {
-                                        this.toggleFilter("beta");
-                                        this.PromptAction.showToast({
-                                            message: this.showBeta
-                                                ? "打开Beta版本日志"
-                                                : "关闭Beta版本日志",
-                                            duration: 500,
-                                        });
-                                    },
-                                },
-                            },
-                            {
-                                content: {
-                                    label: "rc",
-                                    icon: this.showRc ? $r("app.media.rcON") : $r("app.media.rc"),
-                                    isEnabled: true,
-                                    action: () => {
-                                        this.toggleFilter("rc");
-                                        this.PromptAction.showToast({
-                                            message: this.showRc
-                                                ? "打开ReleaseCandidate版本日志"
-                                                : "关闭ReleaseCandidate版本日志",
-                                            duration: 500,
-                                        });
-                                    },
-                                },
-                            },
-                            {
-                                content: {
-                                    label: "release",
-                                    icon: this.showRelease
-                                        ? $r("app.media.releaseON")
-                                        : $r("app.media.release"),
-                                    isEnabled: true,
-                                    action: () => {
-                                        this.toggleFilter("release");
-                                        this.PromptAction.showToast({
-                                            message: this.showRelease
-                                                ? "打开正式版日志"
-                                                : "关闭正式版日志",
-                                            duration: 500,
-                                        });
-                                    },
-                                },
-                            },
-                        ],
-                    },
-                    backIcon: {
-                        action: () => {
-                            this.triggerVibration();
-                            this.pageStack.pop()
+                    contentStyle: {
+                        titleStyle: {
+                            mainTitleColor: $r("sys.color.font_primary"),
+                            subTitleColor: $r("sys.color.font_secondary"),
+                        },
+                        menuStyle: {
+                            backgroundColor: $r("sys.color.comp_background_tertiary"),
+                            iconColor: $r("sys.color.icon_primary"),
+                        },
+                        backIconStyle: {
+                            backgroundColor: $r("sys.color.comp_background_tertiary"),
+                            iconColor: $r("sys.color.icon_primary"),
                         },
                     },
                 },
-            });
+                scrollEffectStyle: {
+                    backgroundStyle: {
+                        backgroundColor: $r("sys.color.ohos_id_color_background_transparent"),
+                    },
+                    contentStyle: {
+                        titleStyle: {
+                            mainTitleColor: $r("sys.color.font_primary"),
+                            subTitleColor: $r("sys.color.font_secondary"),
+                        },
+                        menuStyle: {
+                            backgroundColor: $r("sys.color.comp_background_tertiary"),
+                            iconColor: $r("sys.color.icon_primary"),
+                        },
+                        backIconStyle: {
+                            backgroundColor: $r("sys.color.comp_background_tertiary"),
+                            iconColor: $r("sys.color.icon_primary"),
+                        },
+                    },
+                },
+                systemMaterialEffect: {
+                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+                },
+            },
+            content: {
+                title: {
+                    mainTitle: "App更新日志",
+                },
+                menu: {
+                    value: [
+                        {
+                            content: {
+                                label: "beta",
+                                icon: this.showBeta ? $r("app.media.betaON") : $r("app.media.beta"),
+                                isEnabled: true,
+                                action: () => {
+                                    this.toggleFilter("beta");
+                                    this.PromptAction.showToast({
+                                        message: this.showBeta
+                                            ? "打开Beta版本日志"
+                                            : "关闭Beta版本日志",
+                                        duration: 500,
+                                    });
+                                },
+                            },
+                        },
+                        {
+                            content: {
+                                label: "rc",
+                                icon: this.showRc ? $r("app.media.rcON") : $r("app.media.rc"),
+                                isEnabled: true,
+                                action: () => {
+                                    this.toggleFilter("rc");
+                                    this.PromptAction.showToast({
+                                        message: this.showRc
+                                            ? "打开ReleaseCandidate版本日志"
+                                            : "关闭ReleaseCandidate版本日志",
+                                        duration: 500,
+                                    });
+                                },
+                            },
+                        },
+                        {
+                            content: {
+                                label: "release",
+                                icon: this.showRelease
+                                    ? $r("app.media.releaseON")
+                                    : $r("app.media.release"),
+                                isEnabled: true,
+                                action: () => {
+                                    this.toggleFilter("release");
+                                    this.PromptAction.showToast({
+                                        message: this.showRelease
+                                            ? "打开正式版日志"
+                                            : "关闭正式版日志",
+                                        duration: 500,
+                                    });
+                                },
+                            },
+                        },
+                    ],
+                },
+                backIcon: {
+                    action: () => {
+                        this.triggerVibration();
+                        this.pageStack.pop()
+                    },
+                },
+            },
+        });
 
     }
 
-    @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (err) {
-                    console.error(
-                        `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                    );
-                    return;
-                }
-                console.info("Succeed in querying effect");
-                if (state) {
-                    try {
-                        vibrator.startVibration(
-                            {
-                                type: "preset",
-                                effectId: "haptic.effect.hard",
-                                count: 1,
-                                intensity: 50,
-                            },
-                            { usage: "touch" },
-                            (error: BusinessError) => {
-                                if (error) {
-                                    console.error(
-                                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                    );
-                                } else {
-                                    console.info("Succeed in starting vibration");
-                                }
-                            },
-                        );
-                    } catch (tryError) {
-                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                    }
-                }
-            });
+            vibration.dotVibration()
         }
     }
 
