@@ -131,10 +131,6 @@ struct queryEntry {
       console.error("Motion off failed: " + error.code);
     }
   }
-
-  @State firstBackTime: number = 0;
-  private waitTime: number = 2000;
-
   build() {
     HdsNavDestination() {
       Stack(){
@@ -401,13 +397,6 @@ struct queryEntry {
         this.web_controller.backward();
         this.triggerVibration();
         this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
-        return true;
-      }
-      const currentTime = new Date().getTime();
-      if (currentTime - this.firstBackTime > this.waitTime) {
-        this.firstBackTime = currentTime;
-        this.PromptAction.showToast({ message: "再按一次返回主页", duration: this.waitTime });
-        this.triggerVibration()
         return true;
       } else {
         this.triggerVibration();

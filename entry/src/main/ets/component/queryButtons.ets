@@ -204,8 +204,7 @@ export struct queryButtons {
         const pathParams: QueryWebParams = {
           url: finalUrl
         };
-
-        this.pageStack.pushPathByName("queryWeb", pathParams);
+        this.pageStack.pushPathByName("QueryPage", pathParams);
 
         this.formData = {
           appLink: "",

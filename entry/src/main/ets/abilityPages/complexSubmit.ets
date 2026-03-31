@@ -58,19 +58,17 @@ struct complexSubmit {
     private waitTime: number = 2000;
     private closePage() {
         const context = getContext(this) as common.UIAbilityContext;
-        context.terminateSelf((err) => {
-            if (err.code) {
-                console.error(`终止失败: ${err.code}, ${err.message}`);
-                return;
-            }
-            console.info('Ability 已成功销毁');
+        context.terminateSelf().then(() => {
+            console.info('Ability 销毁指令发送成功');
+        }).catch((err: BusinessError) => {
+            console.error(`销毁失败: ${err.code}`);
         });
     }
     onBackPress(): boolean | void {
         const currentTime = new Date().getTime();
         if (currentTime - this.firstBackTime > this.waitTime) {
             this.firstBackTime = currentTime;
-            this.PromptAction.showToast({ message: "再按一次返回主页", duration: this.waitTime });
+            this.PromptAction.showToast({ message: "再按一次退出", duration: this.waitTime });
             this.triggerVibration()
             return true;
         } else {

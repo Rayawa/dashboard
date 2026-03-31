@@ -1,33 +1,26 @@
 import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import {
-  hdsEffect, HdsNavDestination, ScrollEffectType
+  hdsEffect, HdsNavigation, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { common } from '@kit.AbilityKit';
-import { harmonyShare } from '@kit.ShareKit';
-import { WebShareManager } from '../common/shareControl';
 import {
   getButtonPosition,
   getHoldCheckEnabled,
   getVibrationEnabled,
   initializeSettings
 } from '../common/SettingsStorage';
+import { common } from '@kit.AbilityKit';
 
-interface QueryWebParams {
-  url: string;
-}
-
-
+@Entry
 @Component
-export struct userWeb {
+struct queryWeb {
   @Consume('pageStack') pageStack: NavPathStack;
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @Prop url: string = '';
-  @Prop title: string = '';
 
   @State progress: number = 0;
   @State showButton: boolean = true;
@@ -48,13 +41,14 @@ export struct userWeb {
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
+
+  //动画与振动
   private triggerVibration(): void {
     if (this.vibrationON) {
       vibration.dotVibration()
     }
   }
 
-  //动画与振动
   private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
       .combine(TransitionEffect.scale({ x: 0, y: 0 }))
@@ -85,8 +79,6 @@ export struct userWeb {
     }
   };
 
-  private shareManager?: WebShareManager;
-  private context = getContext(this) as common.UIAbilityContext;
   private async loadSettings() {
     try {
       this.vibrationON = await getVibrationEnabled();
@@ -112,6 +104,7 @@ export struct userWeb {
     this.HVp = screenHeightVp;
     initializeSettings();
     await this.loadSettings();
+
     //握持监听
     try {
       motion.on("holdingHandChanged", this.holdingHandCallback);
@@ -131,32 +124,33 @@ export struct userWeb {
     setTimeout(() => {
       this.buttonOnPageShow = true;
     }, 500);
-    //分享
-    const context = getContext(this) as common.UIAbilityContext;
-    this.shareManager = WebShareManager.getInstance(context, this.web_controller);
-    this.shareManager.enablePassiveShare();
-    this.context.eventHub.on("onFocus", () => {
-      this.shareManager?.enablePassiveShare();
-    });
-    this.context.eventHub.on("onBackGround", () => {
-      this.onBackGround();
-      this.shareManager?.disablePassiveShare();
-    });
   }
 
-  onBackGround() {
-    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
-      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+  @State firstBackTime: number = 0;
+  private waitTime: number = 2000;
+  private closePage() {
+    const context = getContext(this) as common.UIAbilityContext;
+    context.terminateSelf().then(() => {
+      console.info('Ability 销毁指令发送成功');
+    }).catch((err: BusinessError) => {
+      console.error(`销毁失败: ${err.code}`);
     });
   }
+  onBackPress(): boolean | void {
+    const currentTime = new Date().getTime();
+    if (currentTime - this.firstBackTime > this.waitTime) {
+      this.firstBackTime = currentTime;
+      this.PromptAction.showToast({ message: "再按一次退出", duration: this.waitTime });
+      this.triggerVibration()
+      return true;
+    } else {
+      this.triggerVibration()
+      this.closePage()
+      return false;
+    }
+  }
+
   aboutToDisappear() {
-    this.shareManager?.disablePassiveShare();
-    const hostContext = this.context;
-    hostContext.eventHub.off("onFocus");
-    hostContext.eventHub.off("onBackGround");
-    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
-      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
-    });
     try {
       motion.off("holdingHandChanged", this.holdingHandCallback);
     } catch (err) {
@@ -164,10 +158,8 @@ export struct userWeb {
       console.error("Motion off failed: " + error.code);
     }
   }
-
-
   build() {
-    HdsNavDestination() {
+    HdsNavigation() {
       Stack(){
         if (this.isLoading) {
           Progress({ value: this.progress, total: 100 })
@@ -178,6 +170,13 @@ export struct userWeb {
         }
         Scroll(this.scroller) {
           Column() {
+            Blank()
+              .height(10)
+              .width("100%")
+              .expandSafeArea(
+                [SafeAreaType.SYSTEM],
+                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
+              )
             Web({
               src: this.url,
               controller: this.web_controller,
@@ -419,17 +418,6 @@ export struct userWeb {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
-    .onBackPressed(() => {
-      if (this.web_controller.accessStep(-1)) {
-        console.info("网页可以返回，执行后退");
-        this.triggerVibration();
-        this.web_controller.backward();
-        this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
-        return true;
-      } else {
-        return false;
-      }
-    })
     .titleBar({
       style: {
         scrollEffectOpts: {
@@ -483,31 +471,16 @@ export struct userWeb {
       },
       content: {
         title: {
-          mainTitle: this.title,
-        },
-        menu: {
-          value: [
-            {
-              content: {
-                label: "share",
-                icon: $r("sys.symbol.share"),
-                isEnabled: true,
-                action: () => {
-                  this.shareManager?.showSystemShare();
-                  this.triggerVibration();
-                },
-              },
-            },
-          ],
+          mainTitle: "查询结果",
         },
         backIcon: {
           action: () => {
-            this.pageStack.pop()
             this.triggerVibration();
-
+            this.pageStack.pop()
           },
         },
       },
     });
   }
+
 }
