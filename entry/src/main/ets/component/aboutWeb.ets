@@ -23,7 +23,7 @@ interface QueryWebParams {
 
 
 @Component
-export struct userWeb {
+export struct aboutWeb {
   @Consume('pageStack') pageStack: NavPathStack;
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @Prop url: string = '';
@@ -420,9 +420,9 @@ export struct userWeb {
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .onBackPressed(() => {
+      this.triggerVibration();
       if (this.web_controller.accessStep(-1)) {
         console.info("网页可以返回，执行后退");
-        this.triggerVibration();
         this.web_controller.backward();
         this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
         return true;
@@ -504,7 +504,6 @@ export struct userWeb {
           action: () => {
             this.pageStack.pop()
             this.triggerVibration();
-
           },
         },
       },

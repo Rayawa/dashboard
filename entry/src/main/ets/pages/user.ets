@@ -1,11 +1,7 @@
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { common, Want } from '@kit.AbilityKit';
-import { BusinessError } from '@ohos.base';
-import { APP_VERSION } from '../common/constants';
 import { settings } from '../component/settings';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
-import { tutorial } from '../component/tutorial';
 import { contact } from '../component/contact';
 import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
@@ -24,12 +20,7 @@ struct user {
             vibration.dotVibration()
         }
     }
-    @Builder Settings(){
-        settings()
-    }
-    @State showSettings: boolean = false ;
 
-    @State showTutorial: boolean = false;
     @State showQuery: boolean = false;
     @State showSubmit: boolean = false;
     @State showContact: boolean = false;
@@ -63,63 +54,13 @@ struct user {
         await this.loadUserName();
     }
 
-    async openLink() {
-        const url = "https://beian.miit.gov.cn/#/Integrated/index";
-        const ui_content = this.getUIContext();
-        ui_content.showAlertDialog({
-            title: "是否跳转到浏览器",
-            message: "即将访问\nICP/IP地址/域名信息备案管理系统",
-            primaryButton: {
-                value: "取消",
-                fontColor: Color.Red,
-                action: () => {
-                    console.log("点击了取消按钮");
-                },
-            },
-            secondaryButton: {
-                value: "确定",
-                fontColor: Color.Blue,
-                action: async (): Promise<void> => {
-                    try {
-                        this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
-                        let context = ui_content.getHostContext() as common.UIAbilityContext;
-                        await context.startAbility({
-                            action: "ohos.want.action.viewData",
-                            entities: ["entity.system.browsable"],
-                            uri: url,
-                        } as Want);
-                    } catch (error) {
-                        console.error("打开链接失败:", (error as BusinessError).message);
-                        this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
-                    }
-                },
-            },
-        });
-    }
-
     build() {
         HdsNavDestination() {
             Stack() {
                 Scroll() {
                     Column() {
-                        Column() {
-                            Image($r("app.media.app_icon"))
-                                .height(100)
-                                .width(100)
-                                .borderRadius($r("sys.float.corner_radius_level6"))
-                            Text("鸿蒙应用看板")
-                                .fontWeight(800)
-                                .fontSize(30)
-                                .margin({ top: 20 })
-                                .fontColor($r("app.color.diff_content"))
-                            Text("HmDashboard")
-                                .fontWeight(600)
-                                .fontSize(20)
-                                .margin({ top: 10 })
-                        }.margin({ top: 40 })
-                        Divider()
-                            .margin({ top: 20, bottom: 20 })
-                            .color($r("app.color.border"))
+                        Blank().height(40)
+                        Text("用户与应用").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
                         Column() {
                             Row() {
                                 Row() {
@@ -130,7 +71,6 @@ struct user {
                                     Text("用户名")
                                         .fontSize(16)
                                         .margin({ left: 12 })
-                                        .fontWeight(FontWeight.Medium)
                                 }
                                 .constraintSize({
                                     minWidth: 50,
@@ -194,7 +134,7 @@ struct user {
                                         ),
                                     })
                             }
-                            .height(56)
+                            .height(52)
                             .width("100%")
                             .justifyContent(FlexAlign.SpaceBetween)
                             .alignItems(VerticalAlign.Center)
@@ -238,7 +178,7 @@ struct user {
                                 this.showSubmit = !this.showSubmit;
                                 this.triggerVibration();
                             })
-                            .height(56)
+                            .height(52)
                             .width("100%")
                             .justifyContent(FlexAlign.SpaceBetween)
                             .padding({ left: 16, right: 16 })
@@ -265,7 +205,7 @@ struct user {
                                 this.showQuery = !this.showQuery;
                                 this.triggerVibration();
                             })
-                            .height(56)
+                            .height(52)
                             .width("100%")
                             .justifyContent(FlexAlign.SpaceBetween)
                             .padding({ left: 16, right: 16 })
@@ -284,14 +224,20 @@ struct user {
                         Divider()
                             .margin({ top: 20, bottom: 20 })
                             .color($r("app.color.border"))
+                        Text("设置").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+                        settings()
+                        Divider()
+                            .margin({ top: 20, bottom: 20 })
+                            .color($r("app.color.border"))
+                        Text("更多").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
                         Column() {
                             Row() {
                                 Row() {
-                                    Image($r("app.media.log"))
+                                    Image($r("app.media.menu"))
                                         .height(24)
                                         .width(24)
                                         .objectFit(ImageFit.Contain)
-                                    Text("Web更新日志")
+                                    Text("友情链接")
                                         .fontSize(16)
                                         .margin({ left: 12 })
                                 }
@@ -301,64 +247,10 @@ struct user {
                                     .objectFit(ImageFit.Contain)
                             }
                             .onClick(() => {
-                                this.pageStack.pushPathByName("WebLogPage", null)
                                 this.triggerVibration();
+                                this.pageStack.pushPathByName("FriendPage", null)
                             })
-                            .height(56)
-                            .width("100%")
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
-                            Divider()
-                                .color($r("app.color.border"))
-                                .strokeWidth(0.5)
-                                .margin({ left: 16, right: 16 })
-                            Row() {
-                                Row() {
-                                    Image($r("app.media.app_log"))
-                                        .height(24)
-                                        .width(24)
-                                        .objectFit(ImageFit.Contain)
-                                    Text("App更新日志")
-                                        .fontSize(16)
-                                        .margin({ left: 12 })
-                                }
-                                Image($r("app.media.right"))
-                                    .height(16)
-                                    .width(16)
-                                    .objectFit(ImageFit.Contain)
-                            }
-                            .onClick(() => {
-                                this.pageStack.pushPathByName("AppLogPage", null)
-                                this.triggerVibration();
-                            })
-                            .height(56)
-                            .width("100%")
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
-                            Divider()
-                                .strokeWidth(0.5)
-                                .color($r("app.color.border"))
-                                .margin({ left: 16, right: 16 })
-                            Row() {
-                                Row() {
-                                    Image($r("app.media.api"))
-                                        .height(24)
-                                        .width(24)
-                                        .objectFit(ImageFit.Contain)
-                                    Text("API文档说明")
-                                        .fontSize(16)
-                                        .margin({ left: 12 })
-                                }
-                                Image($r("app.media.right"))
-                                    .height(16)
-                                    .width(16)
-                                    .objectFit(ImageFit.Contain)
-                            }
-                            .onClick(() => {
-                                this.pageStack.pushPathByName("WebApiPage", null)
-                                this.triggerVibration();
-                            })
-                            .height(56)
+                            .height(52)
                             .width("100%")
                             .justifyContent(FlexAlign.SpaceBetween)
                             .padding({ left: 16, right: 16 })
@@ -382,24 +274,25 @@ struct user {
                                     .objectFit(ImageFit.Contain)
                             }
                             .onClick(() => {
-                                this.showContact = !this.showContact;
+                                this.showContact = true;
                                 this.triggerVibration();
                             })
-                            .height(56)
+                            .height(52)
                             .width("100%")
                             .justifyContent(FlexAlign.SpaceBetween)
                             .padding({ left: 16, right: 16 })
                             Divider()
-                                .color($r("app.color.border"))
                                 .strokeWidth(0.5)
+                                .color($r("app.color.border"))
                                 .margin({ left: 16, right: 16 })
+
                             Row() {
                                 Row() {
                                     Image($r("app.media.info"))
                                         .height(24)
                                         .width(24)
                                         .objectFit(ImageFit.Contain)
-                                    Text("使用教程")
+                                    Text("关于应用")
                                         .fontSize(16)
                                         .margin({ left: 12 })
                                 }
@@ -409,10 +302,10 @@ struct user {
                                     .objectFit(ImageFit.Contain)
                             }
                             .onClick(() => {
-                                this.showTutorial = !this.showTutorial;
+                                this.pageStack.pushPathByName("AboutPage", null)
                                 this.triggerVibration();
                             })
-                            .height(56)
+                            .height(52)
                             .width("100%")
                             .justifyContent(FlexAlign.SpaceBetween)
                             .padding({ left: 16, right: 16 })
@@ -428,40 +321,17 @@ struct user {
                             offsetY: 2,
                         })
                         .width("90%")
-                        Divider()
-                            .margin({ top: 20, bottom: 20 })
-                            .color($r("app.color.border"))
-                        Text(`Version ${APP_VERSION}`)
-                            .fontColor("#888")
-                            .fontSize(12)
-                            .margin(5)
-                        Text("本应用备案域名：rayawa.top")
-                            .fontSize(12)
-                            .fontColor("#888")
-                            .margin(5)
-                        Column() {
-                            Text("京ICP备2025153453号")
-                                .fontSize(12)
-                                .fontColor($r("app.color.diff_content"))
-                                .onClick(() => {
-                                    this.triggerVibration();
-                                    this.openLink();
-                                })
-                        }.margin(5)
+                        Blank().height(20)
                     }
                     .width("100%")
                     .alignItems(HorizontalAlign.Center)
                     .margin({ top: 30, bottom: 20 })
-                }
-                .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-                .width("100%")
-                .height("100%")
-                if (this.showSubmit || this.showQuery || this.showTutorial || this.showContact) {
+                }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM]).width("100%").height("100%")
+                if (this.showSubmit || this.showQuery || this.showContact) {
                     Column()
                         .onClick(() => {
                             this.showSubmit = false;
                             this.showQuery = false;
-                            this.showTutorial = false;
                             this.showContact = false;
                             this.triggerVibration();
                         })
@@ -477,10 +347,8 @@ struct user {
                             }),
                         )
                 }
-
                 blurPopup({ isShow: $showSubmit }) { appSubmit() }
                 blurPopup({ isShow: $showQuery }) { appQuery() }
-                blurPopup({ isShow: $showTutorial }) { tutorial() }
                 blurPopup({ isShow: $showContact }) { contact() }
             }
             .backgroundColor($r("app.color.backcolor"))
@@ -489,23 +357,15 @@ struct user {
             .height("100%")
         }
         .onBackPressed(() => {
-            if (this.showTutorial || this.showQuery || this.showSubmit || this.showContact || this.showSettings) {
+            this.triggerVibration();
+            if ( this.showQuery || this.showSubmit || this.showContact) {
                 this.showSubmit = false;
                 this.showQuery = false;
-                this.showTutorial = false;
                 this.showContact = false;
-                this.showSettings = false;
-                this.triggerVibration();
                 return true;
             } else {
                 return false;
             }
-        })
-        .bindSheet($$this.showSettings, this.Settings(), {
-            title: { title: '设置' },
-            height: 400,
-            showClose: true,
-            backgroundColor: $r('app.color.backcolor'),
         })
         .titleBar({
             style: {
@@ -561,21 +421,6 @@ struct user {
             content: {
                 title: {
                     mainTitle: "我的",
-                },
-                menu: {
-                    value: [
-                        {
-                            content: {
-                                label: "settings",
-                                icon: $r("sys.symbol.gearshape"),
-                                isEnabled: true,
-                                action: () => {
-                                    this.showSettings = true;
-                                    this.triggerVibration();
-                                },
-                            },
-                        },
-                    ],
                 },
                 backIcon: {
                     action: () => {

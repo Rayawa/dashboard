@@ -24,11 +24,21 @@ struct appLog {
             // "为不同比例的设备增加了页面适配",
 
             // session terminate self
+            // 主界面backpress
             // 接续
             // query返回不统一
             // url get
             // ability tag
 
+            version: "V2.0.0-rc.2",
+            date: "2026-3-30",
+            type: "rc",
+            items: [
+                "大幅重构我的页面逻辑，增加众多页面",
+                "改变使用说明逻辑，增加首次启动提示",
+            ],
+        },
+        {
             version: "V2.0.0-rc.1",
             date: "2026-3-30",
             type: "rc",
@@ -301,6 +311,10 @@ struct appLog {
             .height("100%")
             .backgroundColor($r("app.color.backcolor"))
         }
+        .onBackPressed(() => {
+            this.triggerVibration();
+            return false;
+        })
         .titleBar({
             style: {
                 scrollEffectOpts: {

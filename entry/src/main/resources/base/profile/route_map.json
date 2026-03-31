@@ -26,6 +26,11 @@
       "buildFunction": "UserPageBuilder"
     },
     {
+      "name": "AboutPage",
+      "pageSourceFile": "src/main/ets/pages/user/about.ets",
+      "buildFunction": "AboutPageBuilder"
+    },
+    {
       "name": "WebLogPage",
       "pageSourceFile": "src/main/ets/pages/user/webLog.ets",
       "buildFunction": "WebLogBuilder"
