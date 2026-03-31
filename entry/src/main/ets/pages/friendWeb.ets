@@ -129,7 +129,7 @@ export struct friendWeb {
     const ui_content = this.getUIContext();
     ui_content.showAlertDialog({
       title: "是否跳转到浏览器",
-      message: `即将访问${this.title}`,
+      message: `即将访问${this.title}`+'\n',
       primaryButton: {
         value: "取消",
         fontColor: Color.Red,

@@ -54,6 +54,7 @@ struct user {
         await this.loadUserName();
     }
 
+
     build() {
         HdsNavDestination() {
             Stack() {
