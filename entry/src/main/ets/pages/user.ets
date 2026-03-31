@@ -63,20 +63,6 @@ struct user {
         await this.loadUserName();
     }
 
-    onBackPress(): boolean | void {
-        if (this.showTutorial || this.showQuery || this.showSubmit || this.showContact || this.showSettings) {
-            this.showSubmit = false;
-            this.showQuery = false;
-            this.showTutorial = false;
-            this.showContact = false;
-            this.showSettings = false;
-            this.triggerVibration();
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     async openLink() {
         const url = "https://beian.miit.gov.cn/#/Integrated/index";
         const ui_content = this.getUIContext();
@@ -502,6 +488,19 @@ struct user {
             .width("100%")
             .height("100%")
         }
+        .onBackPressed(() => {
+            if (this.showTutorial || this.showQuery || this.showSubmit || this.showContact || this.showSettings) {
+                this.showSubmit = false;
+                this.showQuery = false;
+                this.showTutorial = false;
+                this.showContact = false;
+                this.showSettings = false;
+                this.triggerVibration();
+                return true;
+            } else {
+                return false;
+            }
+        })
         .bindSheet($$this.showSettings, this.Settings(), {
             title: { title: '设置' },
             height: 400,

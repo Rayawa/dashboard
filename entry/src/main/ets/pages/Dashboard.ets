@@ -355,8 +355,6 @@ struct Dashboard {
             return false;
         }
     }
-
-
     //==========================主程序部分==========================
     uiContext: UIContext = this.getUIContext();
     hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
@@ -458,7 +456,6 @@ struct Dashboard {
         }
     }
     build() {
-
         HdsNavigation(this.pageStack) {
             Stack() {
                 //==========================HdsTabs携带web==========================

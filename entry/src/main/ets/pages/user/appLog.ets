@@ -1,5 +1,4 @@
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { BusinessError } from '@kit.BasicServicesKit';
 import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
@@ -25,7 +24,7 @@ struct appLog {
             // "为不同比例的设备增加了页面适配",
             // "加入一镜到底的动效，使页面流转更加生动",
             version: "V2.0.0-rc.1",
-            date: "2026-3-24",
+            date: "2026-3-30",
             type: "rc",
             items: [
                 "上线了查询功能，现在可以在app内查询页面输入信息查询应用信息或在应用商店分享到看板查询应用信息！",
@@ -33,6 +32,8 @@ struct appLog {
                 "将设置弹出逻辑改为半模态",
                 "增加了友情链接",
                 "重新设置弹出页面统一体验",
+                "统一震感反馈，修复设置在部分页面不生效的问题。",
+                "修改页面导航逻辑，注册路由表",
                 "统一界面操作逻辑，统一悬浮按钮与顶部栏设计",
                 "修复了分享页面唤起应用的列表不显示文字的问题",
                 "将应用显示名称从HmDashboard更换至鸿蒙应用看板",
@@ -202,7 +203,6 @@ struct appLog {
     }
 
     build() {
-
         HdsNavDestination() {
             Scroll() {
                 Column() {

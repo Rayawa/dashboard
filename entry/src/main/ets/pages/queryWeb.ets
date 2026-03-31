@@ -134,30 +134,9 @@ struct queryEntry {
 
   @State firstBackTime: number = 0;
   private waitTime: number = 2000;
-  onBackPress(): boolean | void {
-    if (this.web_controller.accessStep(-1)) {
-      console.info("网页可以返回，执行后退");
-      this.web_controller.backward();
-      this.triggerVibration();
-      this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
-      return true;
-    }
-    const currentTime = new Date().getTime();
-    if (currentTime - this.firstBackTime > this.waitTime) {
-      this.firstBackTime = currentTime;
-      this.PromptAction.showToast({ message: "再按一次返回主页", duration: this.waitTime });
-      this.triggerVibration()
-      return true;
-    } else {
-      this.triggerVibration();
-      this.pageStack.pop()
-      return false;
-    }
-  }
 
   build() {
     HdsNavDestination() {
-
       Stack(){
         if (this.isLoading) {
           Progress({ value: this.progress, total: 100 })
@@ -416,6 +395,26 @@ struct queryEntry {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
+    .onBackPressed(() => {
+      if (this.web_controller.accessStep(-1)) {
+        console.info("网页可以返回，执行后退");
+        this.web_controller.backward();
+        this.triggerVibration();
+        this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
+        return true;
+      }
+      const currentTime = new Date().getTime();
+      if (currentTime - this.firstBackTime > this.waitTime) {
+        this.firstBackTime = currentTime;
+        this.PromptAction.showToast({ message: "再按一次返回主页", duration: this.waitTime });
+        this.triggerVibration()
+        return true;
+      } else {
+        this.triggerVibration();
+        this.pageStack.pop()
+        return false;
+      }
+    })
     .onReady((context: NavDestinationContext) => {
       // 从 context 中提取 pathInfo 里的 param
       const params = context.pathInfo.param as Record<string, string>;
