@@ -62,60 +62,73 @@ struct friend {
   ];
 
   @Builder webLists(site: SiteConfig){
-    Row() {
+    Column(){
       Row() {
-        Image(site.icon)
-          .height(24)
-          .width(24)
+        Row() {
+          Image(site.icon)
+            .height(24)
+            .width(24)
+            .objectFit(ImageFit.Contain)
+          Text(site.title)
+            .fontSize(16)
+            .margin({ left: 12 })
+        }
+        Image($r("app.media.right"))
+          .height(16)
+          .width(16)
           .objectFit(ImageFit.Contain)
-        Text(site.title)
-          .fontSize(16)
-          .margin({ left: 12 })
       }
-      Image($r("app.media.right"))
-        .height(16)
-        .width(16)
-        .objectFit(ImageFit.Contain)
+      .onClick(() => {
+        this.triggerVibration();
+        let params :FriendWebParams = {
+          "url": site.url,
+          "title": site.title
+        }
+        this.pageStack.pushPathByName("FriendPageWeb", params);
+      })
+      .height(50)
+      .width("100%")
+      .justifyContent(FlexAlign.SpaceBetween)
+      .padding({ left: 16, right: 16 })
+      Divider()
+        .strokeWidth(0.5)
+        .color($r("app.color.border"))
+        .margin({ left: 16, right: 16 })
     }
-    .onClick(() => {
-      this.triggerVibration();
-      let params :FriendWebParams = {
-        "url": site.url,
-        "title": site.title
-      }
-      this.pageStack.pushPathByName("FriendPageWeb", params);
-    })
-    .height(50)
-    .width("100%")
-    .justifyContent(FlexAlign.SpaceBetween)
-    .padding({ left: 16, right: 16 })
   }
   @Builder appLists(site: AppConfig) {
-    Row() {
+    Column(){
       Row() {
-        Image(site.icon)
-          .height(24)
-          .width(24)
+        Row() {
+          Image(site.icon)
+            .height(24)
+            .width(24)
+            .objectFit(ImageFit.Contain)
+          Text(site.title)
+            .fontSize(16)
+            .margin({ left: 12 })
+        }
+        Image($r("app.media.right"))
+          .height(16)
+          .width(16)
           .objectFit(ImageFit.Contain)
-        Text(site.title)
-          .fontSize(16)
-          .margin({ left: 12 })
       }
-      Image($r("app.media.right"))
-        .height(16)
-        .width(16)
-        .objectFit(ImageFit.Contain)
+      .onClick(() => {
+        this.triggerVibration();
+        if (site.appID) {
+          this.jumpToMarket(site.appID);
+        }
+      })
+      .height(50)
+      .width("100%")
+      .justifyContent(FlexAlign.SpaceBetween)
+      .padding({ left: 16, right: 16 })
+      Divider()
+        .strokeWidth(0.5)
+        .color($r("app.color.border"))
+        .margin({ left: 16, right: 16 })
     }
-    .onClick(() => {
-      this.triggerVibration();
-      if (site.appID) {
-        this.jumpToMarket(site.appID);
-      }
-    })
-    .height(50)
-    .width("100%")
-    .justifyContent(FlexAlign.SpaceBetween)
-    .padding({ left: 16, right: 16 })
+
   }
 
   build() {

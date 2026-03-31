@@ -27,7 +27,8 @@ export struct settings {
         }
     }
 
-    @State handlePopup: boolean = false;
+    @State handlePopupTheme: boolean = false;
+    @State handlePopupTrash: boolean = false;
     @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = true;
@@ -339,15 +340,15 @@ export struct settings {
                     .borderWidth(0.5)
                     .onClick(() => {
                         this.triggerVibration();
-                        this.handlePopup = !this.handlePopup;
+                        this.handlePopupTheme = !this.handlePopupTheme;
                     })
-                    .bindPopup(this.handlePopup, {
+                    .bindPopup(this.handlePopupTheme, {
                         message: "蓝",
                         placement: Placement.Top,
                         showInSubWindow: false,
                         onStateChange: (e) => {
                             if (!e.isVisible) {
-                                this.handlePopup = false;
+                                this.handlePopupTheme = false;
                             }
                         },
                         transition: TransitionEffect.asymmetric(
@@ -380,8 +381,43 @@ export struct settings {
                         .objectFit(ImageFit.Contain)
                     Text("清除缓存").fontSize(16)
                 }
+                Image($r("app.media.question"))
+                    .margin({ left: 12 })
+                    .height(24)
+                    .width(24)
+                    .objectFit(ImageFit.Contain)
+                    .onClick(() => {
+                        this.triggerVibration();
+                        this.handlePopupTrash = !this.handlePopupTrash;
+                    })
+                    .bindPopup(this.handlePopupTrash, {
+                        message:
+                        '如遇页面加载失败时可尝试清除缓存',
+                        placement: Placement.Top,
+                        showInSubWindow: false,
+                        onStateChange: (e) => {
+                            if (!e.isVisible) {
+                                this.handlePopupTrash = false;
+                            }
+                        },
+                        transition: TransitionEffect.asymmetric(
+                            TransitionEffect.OPACITY.animation({
+                                duration: 500,
+                                curve: Curve.Ease,
+                            }).combine(TransitionEffect.translate({ x: 0, y: 12 })),
+
+                            TransitionEffect.OPACITY.animation({
+                                duration: 300,
+                                curve: Curve.EaseOut,
+                            }).combine(TransitionEffect.translate({ x: 0, y: 12 })),
+                        ),
+                    })
 
             }
+            .onClick(() => {
+                this.triggerVibration();
+                this.handlePopupTrash = !this.handlePopupTrash;
+            })
             .height(52)
             .width("100%")
             .justifyContent(FlexAlign.SpaceBetween)
