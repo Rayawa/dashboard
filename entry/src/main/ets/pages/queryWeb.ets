@@ -392,14 +392,13 @@ struct queryEntry {
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .onBackPressed(() => {
+      this.triggerVibration();
       if (this.web_controller.accessStep(-1)) {
         console.info("网页可以返回，执行后退");
         this.web_controller.backward();
-        this.triggerVibration();
         this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
         return true;
       } else {
-        this.triggerVibration();
         this.pageStack.pop()
         return false;
       }

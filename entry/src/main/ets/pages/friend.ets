@@ -85,7 +85,7 @@ struct friend {
       }
       this.pageStack.pushPathByName("FriendPageWeb", params);
     })
-    .height(56)
+    .height(50)
     .width("100%")
     .justifyContent(FlexAlign.SpaceBetween)
     .padding({ left: 16, right: 16 })
@@ -112,7 +112,7 @@ struct friend {
         this.jumpToMarket(site.appID);
       }
     })
-    .height(56)
+    .height(50)
     .width("100%")
     .justifyContent(FlexAlign.SpaceBetween)
     .padding({ left: 16, right: 16 })
@@ -123,48 +123,46 @@ struct friend {
       Scroll(){
         Column() {
           Blank().height(70)
-          Text("重要提醒")
-            .fontWeight(800)
-            .fontSize(25)
-            .fontColor(Color.Red)
-            .margin({ bottom: 15 })
-
           Column(){
-            Text("您正在访问友情链接")
+            Text("重要提醒：\n您正在访问友情链接")
               .fontWeight(700)
               .fontSize(20)
-              .width("90%").textAlign(TextAlign.Start)
-              .fontColor($r("app.color.diff_content"))
-            Text("友情链接内网站展示的任何内容均与鸿蒙应用看板无关\n\n" +
-              "Harmony Gallery项目组不负责维护友情链接内容")
+              .fontColor(Color.Red)
+            Text("友情链接内网站展示的任何内容均与鸿蒙应用看板无关；\n" +
+              "Harmony Gallery项目组不负责维护友情链接内容。")
               .fontWeight(600)
               .fontSize(15)
-              .margin({ top: 20 })
-              .width("90%").textAlign(TextAlign.Start)
+              .margin({ top: 15 })
+              .textAlign(TextAlign.Start)
           }.borderWidth(0.5)
           .borderColor($r("app.color.border"))
           .backgroundColor($r("app.color.background"))
           .borderRadius(16)
           .shadow({ radius: 8, color: "#1a000000", offsetX: 0, offsetY: 2 })
           .width("90%")
-          .alignItems(HorizontalAlign.Start).padding(20)
+          .alignItems(HorizontalAlign.Start).padding(15)
 
-          Text("使用Harmony Gallery数据的站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
+          Divider()
+            .margin({ top: 20, bottom: 20 })
+            .color($r("app.color.border"))
+
+          Text("使用Harmony Gallery数据的站点").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(15).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           List() {
             ForEach(this.friendSites, (site: SiteConfig) => {
               ListItem() { this.webLists(site) }
             }, (item: SiteConfig) => item.title + item.url)
           }
-          .divider({ strokeWidth: 0.5, color: $r("app.color.border"), startMargin: 16, endMargin: 16 }) // 语法优化：使用自带分割线
           .borderWidth(0.5)
           .borderColor($r("app.color.border"))
           .backgroundColor($r("app.color.background"))
           .borderRadius(16)
           .width("90%")
 
-          Text("使用Harmony Gallery数据的应用").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
+          Divider()
+            .margin({ top: 20, bottom: 20 })
+            .color($r("app.color.border"))
+
+          Text("使用Harmony Gallery数据的应用").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           List() {
             ForEach(this.friendApps, (app: AppConfig) => {
               ListItem() { this.appLists(app) }
@@ -176,8 +174,11 @@ struct friend {
           .borderRadius(16)
           .width("90%")
 
-          Text("其他站点").margin({ top: 30, bottom: 10 }).fontWeight(600).fontSize(20).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          Divider().color($r("app.color.border")).margin({ bottom: 10 }).padding({ left: 16, right: 16})
+          Divider()
+            .margin({ top: 20, bottom: 20 })
+            .color($r("app.color.border"))
+
+          Text("其他站点").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           List() {
             ForEach(this.OtherSites, (site: SiteConfig) => {
               ListItem() { this.webLists(site) }
@@ -194,6 +195,10 @@ struct friend {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
+    .onBackPressed(() => {
+      this.triggerVibration();
+      return false;
+    })
     .titleBar({
       style: {
         scrollEffectOpts: {

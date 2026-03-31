@@ -16,9 +16,11 @@ import {
     setTDev,
     setVibrationEnabled,
 } from '../common/SettingsStorage';
+import { PromptAction } from '@kit.ArkUI';
 
 @Component
 export struct settings {
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     private triggerVibration(): void {
         if (this.vibrationON){
             vibration.dotVibration()
@@ -122,49 +124,49 @@ export struct settings {
 
     build() {
         Column() {
-            // Row() {
-            //     Row({ space: 12 }) {
-            //         Image($r("app.media.default"))
-            //             .height(24)
-            //             .width(24)
-            //             .objectFit(ImageFit.Contain)
-            //         Text("默认站点").fontSize(16)
-            //     }
-            //     //.fontColor('#888')
-            //     Row({ space: 8 }) {
-            //         Text("S站")
-            //             .fontSize(14)
-            //             .fontColor("#888")
-            //             .width(24)
-            //             .textAlign(TextAlign.Center)
-            //         Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
-            //             .selectedColor($r("app.color.diff_content"))
-            //             .switchStyle({
-            //                 unselectedColor: $r("app.color.diff_content"),
-            //             })
-            //             .onChange(async (isOn: boolean) => {
-            //                 await this.saveDefaultSite(isOn);
-            //                 PromptAction.showToast({
-            //                     message: "重启应用后生效",
-            //                     duration: 500,
-            //                 });
-            //                 this.triggerVibration();
-            //             })
-            //         Text("T站")
-            //             .fontSize(14)
-            //             .fontColor("#888")
-            //             .width(24)
-            //             .textAlign(TextAlign.Center)
-            //     }
-            // }
-            // .height(56)
-            // .width("100%")
-            // .justifyContent(FlexAlign.SpaceBetween)
-            // .padding({ left: 16, right: 16 })
-            // Divider()
-            //     .color($r("app.color.border"))
-            //     .strokeWidth(0.5)
-            //     .margin({ left: 16, right: 16 })
+            Row() {
+                Row({ space: 12 }) {
+                    Image($r("app.media.default"))
+                        .height(24)
+                        .width(24)
+                        .objectFit(ImageFit.Contain)
+                    Text("默认站点").fontSize(16)
+                }
+                //.fontColor('#888')
+                Row({ space: 8 }) {
+                    Text("S站")
+                        .fontSize(14)
+                        .fontColor("#888")
+                        .width(24)
+                        .textAlign(TextAlign.Center)
+                    Toggle({ type: ToggleType.Switch, isOn: this.defaultSiteT })
+                        .selectedColor($r("app.color.diff_content"))
+                        .switchStyle({
+                            unselectedColor: $r("app.color.diff_content"),
+                        })
+                        .onChange(async (isOn: boolean) => {
+                            await this.saveDefaultSite(isOn);
+                            this.PromptAction.showToast({
+                                message: "重启应用后生效",
+                                duration: 500,
+                            });
+                            this.triggerVibration();
+                        })
+                    Text("T站")
+                        .fontSize(14)
+                        .fontColor("#888")
+                        .width(24)
+                        .textAlign(TextAlign.Center)
+                }
+            }
+            .height(52)
+            .width("100%")
+            .justifyContent(FlexAlign.SpaceBetween)
+            .padding({ left: 16, right: 16 })
+            Divider()
+                .color($r("app.color.border"))
+                .strokeWidth(0.5)
+                .margin({ left: 16, right: 16 })
             Row() {
                 Row({ space: 12 }) {
                     Image($r("app.media.vibrate"))
@@ -193,7 +195,7 @@ export struct settings {
                         .textAlign(TextAlign.Center)
                 }
             }
-            .height(56)
+            .height(52)
             .width("100%")
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })
@@ -230,7 +232,7 @@ export struct settings {
                         .textAlign(TextAlign.Center)
                 }
             }
-            .height(56)
+            .height(52)
             .width("100%")
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })
@@ -274,7 +276,7 @@ export struct settings {
 
                 }
             }
-            .height(56)
+            .height(52)
             .width("100%")
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })
@@ -311,7 +313,7 @@ export struct settings {
                         .textAlign(TextAlign.Center)
                 }
             }
-            .height(56)
+            .height(52)
             .width("100%")
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })
@@ -361,10 +363,31 @@ export struct settings {
                         ),
                     })
             }
-            .height(56)
+            .height(52)
             .width("100%")
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })
+
+            Divider()
+                .color($r("app.color.border"))
+                .strokeWidth(0.5)
+                .margin({ left: 16, right: 16 })
+            Row() {
+                Row({ space: 12 }) {
+                    Image($r("app.media.trash"))
+                        .height(24)
+                        .width(24)
+                        .objectFit(ImageFit.Contain)
+                    Text("清除缓存").fontSize(16)
+                }
+
+            }
+            .height(52)
+            .width("100%")
+            .justifyContent(FlexAlign.SpaceBetween)
+            .padding({ left: 16, right: 16 })
+
+
 
             ///
 
@@ -402,7 +425,7 @@ export struct settings {
                         .textAlign(TextAlign.Center)
                 }
             }
-            .height(this.isTDev ? 56 : 0)
+            .height(this.isTDev ? 50 : 0)
             .width("100%")
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })

@@ -1,10 +1,9 @@
-import { userWeb } from '../../component/userWeb';
+import { aboutWeb } from '../../component/aboutWeb';
 
 @Component
 struct webLog {
   build() {
-    Column() { userWeb({ url: "https://hmos.txit.top/changelog", title: 'Web更新日志' }) }.width('100%').height('100%')
-
+    Column() { aboutWeb({ url: "https://hmos.txit.top/changelog", title: 'Web更新日志' }) }.width('100%').height('100%')
   }
 }
 @Builder

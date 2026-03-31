@@ -26,6 +26,7 @@ import { WebShareManager } from '../common/shareControl';
 import { preferences } from '@kit.ArkData';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
+import { warn } from '../component/warn'
 import {
     getButtonPosition,
     getDefaultSite,
@@ -57,6 +58,7 @@ struct Dashboard {
     private lastOffset: number = 0;
     @State isTabsBarVisible: boolean = true;
     @State showTutorial: boolean = false;
+    @State showWarn: boolean = false;
     @State startY: number = 0;
     @State isPressed1: boolean = false;
     @State isPressed2: boolean = false;
@@ -150,14 +152,14 @@ struct Dashboard {
                 isFirstLaunch = isFirstLaunchValue === 1;
             }
             if (isFirstLaunch) {
-                console.info("Index", "首次启动，显示引导页。");
-                this.showTutorial = true;
+                console.info("Index", "首次启动，显示。");
+                this.showWarn = true;
                 await prefs.put(this.IS_FIRST_LAUNCH_KEY, false);
                 await prefs.flush();
                 console.info("Index", "已更新首次启动标记。");
             } else {
-                console.info("Index", "非首次启动，不显示引导页。");
-                this.showTutorial = false;
+                console.info("Index", "非首次启动，不显示。");
+                this.showWarn = false;
             }
         } catch (err) {
             let error = err as BusinessError;
@@ -730,6 +732,26 @@ struct Dashboard {
                         })
                 }
                 blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 40 }) }
+
+                if (this.showWarn) {
+                    Column()
+                        .width('100%')
+                        .height('100%')
+                        .backgroundColor(Color.Transparent)
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                        .transition(
+                            TransitionEffect.OPACITY.animation({
+                                curve: curves.springMotion(0, 1),
+                                duration: 1000,
+                            }),
+                        )
+                        .onClick(() => {
+                            this.showWarn = false;
+                            this.triggerVibration();
+                        })
+                }
+                blurPopup({ isShow: this.showWarn }) { warn() }
             }
             .width("100%")
             .backgroundColor($r("app.color.backcolor"))
@@ -797,6 +819,17 @@ struct Dashboard {
                     value: [
                         {
                             content: {
+                                label: "tutorial",
+                                icon: $r("sys.symbol.questionmark_circle"),
+                                isEnabled: true,
+                                action: () => {
+                                    this.showTutorial = true;
+                                    this.triggerVibration();
+                                },
+                            },
+                        },
+                        {
+                            content: {
                                 label: "share",
                                 icon: $r("sys.symbol.share"),
                                 isEnabled: true,
@@ -806,17 +839,7 @@ struct Dashboard {
                                 },
                             },
                         },
-                        {
-                            content: {
-                                label: "friend",
-                                icon: $r("sys.symbol.list_bullet"),
-                                isEnabled: true,
-                                action: () => {
-                                    this.pageStack.pushPathByName("FriendPage", null)
-                                    this.triggerVibration();
-                                },
-                            },
-                        },
+
                         {
                             content: {
                                 label: "user",
