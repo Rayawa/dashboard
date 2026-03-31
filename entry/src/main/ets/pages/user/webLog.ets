@@ -1,4 +1,4 @@
-import { userWeb } from '../../component/userWeb'
+import { userWeb } from '../../component/userWeb';
 
 @Component
 struct webLog {

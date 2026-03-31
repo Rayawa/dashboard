@@ -1,7 +1,7 @@
 import { PromptAction } from '@kit.ArkUI';
-import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
+import { pasteboard } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
-import { vibrator } from '@kit.SensorServiceKit';
+import { vibration } from '../common/vibration';
 
 @Component
 export struct contact {
@@ -9,16 +9,7 @@ export struct contact {
     @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (!err && state) {
-                    try {
-                        vibrator.startVibration(
-                            { type: "preset", effectId: "haptic.effect.hard", count: 1, intensity: 50 },
-                            { usage: "touch" }
-                        );
-                    } catch (e) { console.error(e); }
-                }
-            });
+            vibration.dotVibration()
         }
     }
 
