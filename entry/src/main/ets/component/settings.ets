@@ -62,6 +62,7 @@ export struct settings {
                 icon: $r("app.media.button"),
                 title: "按钮默认位置",
                 isOn: this.buttonPositionRIGHT,
+                both: true,
                 offText: "左",
                 onText: "右",
                 onToggle: async (val) => { await setButtonPosition(val); this.buttonPositionRIGHT = val; }
@@ -132,6 +133,7 @@ struct SettingItem {
     @Prop icon: Resource;
     @Prop title: string;
     @Prop isOn: boolean;
+    @Prop both: boolean;
     @Prop onText: string = "开";
     @Prop offText: string = "关";
     @Prop promptMsg: string = "";
@@ -150,6 +152,9 @@ struct SettingItem {
                     Text(this.offText).fontSize(14).fontColor("#888").width(24).textAlign(TextAlign.Center)
                     Toggle({ type: ToggleType.Switch, isOn: this.isOn })
                         .selectedColor($r("app.color.diff_content"))
+                        .switchStyle({
+                            unselectedColor: this.both? $r("app.color.diff_content") : undefined
+                        })
                         .onChange(async (checked: boolean) => {
                             if (this.canVibrate) vibration.dotVibration();
                             await this.onToggle(checked);
