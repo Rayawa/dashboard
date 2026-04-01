@@ -30,10 +30,9 @@ import { tutorial } from '../component/tutorial';
 import { warn } from '../component/warn';
 import {
     getButtonPosition,
-    getDefaultSite,
     getHoldCheckEnabled,
+    getImmersiveTexture,
     getTabBarAuto,
-    getThemeColor,
     getVibrationEnabled,
     initializeSettings
 } from '../common/SettingsStorage';
@@ -79,14 +78,12 @@ struct Dashboard {
     @State isTouching: boolean = false;
     @State isSnackBarShow: boolean = false;
     private controller: HdsTabsController = new HdsTabsController();
-    @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    @StorageLink("tabBarAuto") tabBarAuto: boolean = true;
-    @StorageLink("holdCheckON") holdCheckON: boolean = true;
-    @State holdCheckTMP: boolean = false;
+    @StorageLink("holdCheckON") holdCheckON: boolean = false;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
-    @State isTDev: boolean = false;
-    @State themeColor: string = "blue";
+    @StorageLink("tabBarAutoON") tabBarAutoON: boolean = true;
+    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+    @State holdCheckTMP: boolean = false;
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
@@ -217,13 +214,11 @@ struct Dashboard {
     // 加载所有设置
     private async loadSettings() {
         try {
-            this.defaultSiteT = await getDefaultSite();
             this.vibrationON = await getVibrationEnabled();
             this.holdCheckON = await getHoldCheckEnabled();
             this.buttonPositionRIGHT = await getButtonPosition();
-            this.tabBarAuto = await getTabBarAuto();
-            this.themeColor = await getThemeColor();
-            // this.siteTDev = await getTDev();
+            this.tabBarAutoON = await getTabBarAuto();
+            this.immersiveTextureON = await getImmersiveTexture();
             if(this.buttonPositionRIGHT){
                 this.buttonShowX = this.WVp - 45 - 10;
                 this.buttonHideX = this.WVp + 10;
@@ -507,7 +502,7 @@ struct Dashboard {
                 }
             }
             .onWillScroll(() => {
-                if (this.tabBarAuto) {
+                if (this.tabBarAutoON) {
                     const currentOffset = this.scroller.currentOffset().yOffset;
                     if (currentOffset > this.lastOffset && currentOffset > 50) {
                         if (this.isTabsBarVisible && !this.lockBar) {
@@ -767,7 +762,7 @@ struct Dashboard {
                             this.triggerVibration();
                         });
                 }
-                if (this.tabBarAuto && !this.isTabsBarVisible) {
+                if (this.tabBarAutoON && !this.isTabsBarVisible) {
                     Column()
                         .backgroundColor(Color.Transparent)
                         .height(50)

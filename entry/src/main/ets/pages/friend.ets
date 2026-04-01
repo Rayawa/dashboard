@@ -49,16 +49,16 @@ struct friend {
   }
 
   @State private friendSites: SiteConfig[] = [
-    { icon: $r('sys.media.phone_arrow_down_left_circle_fill'), url: HapStoreURL.toString(), title: 'Hap资源站' },
-    { icon: $r('sys.media.phone_arrow_down_left_circle_fill'), url: NEXTStoreURL.toString(), title: 'NEXT Store' },
-    { icon: $r('sys.media.phone_arrow_down_left_circle_fill'), url: OpenStoreURL.toString(), title: 'Open Store' },
-    { icon: $r('sys.media.phone_arrow_down_left_circle_fill'), url: dztapURL.toString(), title: '小刘的站点' },
+    { icon: $r('app.media.HapStore'), url: HapStoreURL.toString(), title: 'Hap资源站' },
+    { icon: $r('app.media.NEXTStore'), url: NEXTStoreURL.toString(), title: 'NEXT Store' },
+    { icon: $r('app.media.OpenStore'), url: OpenStoreURL.toString(), title: 'Open Store' },
+    { icon: $r('app.media.dztap'), url: dztapURL.toString(), title: '小刘的站点' },
   ];
   @State private friendApps: AppConfig[] = [
-    { icon: $r('sys.media.phone_arrow_down_left_circle_fill'), appID: 'C6917594526782928388', title: '记得订阅' },
+    { icon: $r('app.media.subscription'), appID: 'C6917594526782928388', title: '记得订阅' },
   ];
   @State private OtherSites: SiteConfig[] = [
-    { icon: $r('sys.media.phone_arrow_down_left_circle_fill'), url: AGstatisticsURL.toString(), title: 'AppGallery统计数据' },
+    { icon: $r('app.media.AGstatistics'), url: AGstatisticsURL.toString(), title: 'AppGallery统计数据' },
   ];
 
   @Builder webLists(site: SiteConfig){

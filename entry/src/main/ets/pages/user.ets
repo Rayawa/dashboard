@@ -9,6 +9,7 @@ import { appSubmit } from '../component/appSubmit';
 import { appQuery } from '../component/appQuery';
 import { vibration } from '../common/vibration';
 import { blurPopup } from '../component/blurPopup';
+import { common } from '@kit.AbilityKit';
 
 @Component
 export struct user {
@@ -233,85 +234,47 @@ export struct user {
                             .color($r("app.color.border"))
                         Text("更多").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
                         Column() {
-                            Row() {
-                                Row() {
-                                    Image($r("app.media.menu"))
-                                        .height(24)
-                                        .width(24)
-                                        .objectFit(ImageFit.Contain)
-                                    Text("友情链接")
-                                        .fontSize(16)
-                                        .margin({ left: 12 })
+                            OtherItem({
+                                icon: $r("app.media.sponsor"),
+                                title: "友情链接",
+                                onClickAction: () => {
+                                    this.pageStack.pushPathByName("FriendPage", null);
                                 }
-                                Image($r("app.media.right"))
-                                    .height(16)
-                                    .width(16)
-                                    .objectFit(ImageFit.Contain)
-                            }
-                            .onClick(() => {
-                                this.triggerVibration();
-                                this.pageStack.pushPathByName("FriendPage", null)
                             })
-                            .height(52)
-                            .width("100%")
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
-                            Divider()
-                                .strokeWidth(0.5)
-                                .color($r("app.color.border"))
-                                .margin({ left: 16, right: 16 })
-                            Row() {
-                                Row() {
-                                    Image($r("app.media.contact"))
-                                        .height(24)
-                                        .width(24)
-                                        .objectFit(ImageFit.Contain)
-                                    Text("联系我们")
-                                        .fontSize(16)
-                                        .margin({ left: 12 })
-                                }
-                                Image($r("app.media.right"))
-                                    .height(16)
-                                    .width(16)
-                                    .objectFit(ImageFit.Contain)
-                            }
-                            .onClick(() => {
-                                this.showContact = true;
-                                this.triggerVibration();
-                            })
-                            .height(52)
-                            .width("100%")
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
-                            Divider()
-                                .strokeWidth(0.5)
-                                .color($r("app.color.border"))
-                                .margin({ left: 16, right: 16 })
 
-                            Row() {
-                                Row() {
-                                    Image($r("app.media.info"))
-                                        .height(24)
-                                        .width(24)
-                                        .objectFit(ImageFit.Contain)
-                                    Text("关于应用")
-                                        .fontSize(16)
-                                        .margin({ left: 12 })
+                            OtherItem({
+                                icon: $r("app.media.MeoW"),
+                                title: "订阅Meow频道",
+                                onClickAction: () => {
+                                    try {
+                                        const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+                                        context.openLink("https://www.chuckfang.com/MeoW/appLinking?channelId=8bbba7f53bf9458284a41d04f295450b")
+                                            .catch((err: BusinessError) => {
+                                                this.PromptAction.showToast({ message: "跳转失败: " + err.message });
+                                            });
+                                    } catch (e) {
+                                        this.PromptAction.showToast({ message: "跳转错误" });
+                                    }
                                 }
-                                Image($r("app.media.right"))
-                                    .height(16)
-                                    .width(16)
-                                    .objectFit(ImageFit.Contain)
-                            }
-                            .onClick(() => {
-                                this.pageStack.pushPathByName("AboutPage", null)
-                                this.triggerVibration();
                             })
-                            .height(52)
-                            .width("100%")
-                            .justifyContent(FlexAlign.SpaceBetween)
-                            .padding({ left: 16, right: 16 })
+
+                            OtherItem({
+                                icon: $r("app.media.contact"),
+                                title: "联系我们",
+                                onClickAction: () => {
+                                    this.showContact = true;
+                                }
+                            })
+
+                            OtherItem({
+                                icon: $r("app.media.info"),
+                                title: "关于应用",
+                                onClickAction: () => {
+                                    this.pageStack.pushPathByName("AboutPage", null);
+                                }
+                            })
                         }
+                        .width("90%")
                         .borderWidth(0.5)
                         .borderColor($r("app.color.border"))
                         .backgroundColor($r("app.color.background"))
@@ -322,7 +285,6 @@ export struct user {
                             offsetX: 0,
                             offsetY: 2,
                         })
-                        .width("90%")
                         Blank().height(20)
                     }
                     .width("100%")
@@ -445,4 +407,48 @@ export struct user {
 @Builder
 export function UserPageBuilder(){
     user()
+}
+
+@Component
+struct OtherItem {
+    @Prop icon: Resource;
+    @Prop title: string;
+    @StorageProp("vibrationON") canVibrate: boolean = true;
+
+    onClickAction: () => void = () => {};
+
+    build() {
+        Column() {
+            Row() {
+                Row() {
+                    Image(this.icon)
+                        .height(24)
+                        .width(24)
+                        .objectFit(ImageFit.Contain)
+                    Text(this.title)
+                        .fontSize(16)
+                        .margin({ left: 12 })
+                }
+
+                Image($r("app.media.right"))
+                    .height(16)
+                    .width(16)
+                    .objectFit(ImageFit.Contain)
+            }
+            .height(52)
+            .width("100%")
+            .justifyContent(FlexAlign.SpaceBetween)
+            .padding({ left: 16, right: 16 })
+            .onClick(() => {
+                if (this.canVibrate) {
+                    vibration.dotVibration();
+                }
+                this.onClickAction();
+            })
+            Divider()
+                .strokeWidth(0.5)
+                .color($r("app.color.border"))
+                .margin({ left: 16, right: 16 })
+        }
+    }
 }

@@ -54,9 +54,20 @@ export struct contact {
                 .backgroundColor($r("app.color.background"))
                 .padding(14)
                 .borderRadius(16)
-                .onClick(() => {
+                .onClick(async () => {
                     this.triggerVibration();
-                    this.openLink();
+                    const url = "https://afdian.com/a/shenjack";
+                    const ui_content = this.getUIContext();
+                    try {
+                        let context = ui_content.getHostContext() as common.UIAbilityContext;
+                        await context.startAbility({
+                            action: "ohos.want.action.viewData",
+                            entities: ["entity.system.browsable"],
+                            uri: url,
+                        } as Want);
+                    } catch (e) {
+                        this.PromptAction.showToast({ message: "跳转失败" });
+                    }
                 })
 
 
@@ -95,33 +106,6 @@ export struct contact {
             color: Color.Gray,
             offsetX: 0,
             offsetY: 4,
-        });
-    }
-
-
-    async openLink() {
-        const url = "https://afdian.com/a/shenjack";
-        const ui_content = this.getUIContext();
-        ui_content.showAlertDialog({
-            title: "提示",
-            message: "即将跳转到爱发电页面",
-            primaryButton: { value: "取消", fontColor: Color.Red, action: () => {} },
-            secondaryButton: {
-                value: "确定",
-                fontColor: Color.Blue,
-                action: async () => {
-                    try {
-                        let context = ui_content.getHostContext() as common.UIAbilityContext;
-                        await context.startAbility({
-                            action: "ohos.want.action.viewData",
-                            entities: ["entity.system.browsable"],
-                            uri: url,
-                        } as Want);
-                    } catch (e) {
-                        this.PromptAction.showToast({ message: "跳转失败" });
-                    }
-                },
-            },
         });
     }
 
