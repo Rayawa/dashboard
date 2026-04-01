@@ -1,5 +1,5 @@
-import { common } from "@kit.AbilityKit";
-import getDiskStorageInstance, { DiskStorageInstance } from "./DiskStorage";
+import { common } from '@kit.AbilityKit';
+import getDiskStorageInstance, { DiskStorageInstance } from './DiskStorage';
 
 let instance: DiskStorageInstance | undefined = undefined;
 

@@ -16,6 +16,7 @@ export struct user {
     @Consume('pageStack') pageStack: NavPathStack;
     onCloseSplit?: () => void;
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
     private triggerVibration(): void {
         if (this.vibrationON) {
@@ -63,7 +64,7 @@ export struct user {
                 Scroll() {
                     Column() {
                         Blank().height(40)
-                        Text("用户与应用").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+                        Text("用户与应用").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
                         Column() {
                             Row() {
                                 Row() {
@@ -227,12 +228,12 @@ export struct user {
                         Divider()
                             .margin({ top: 20, bottom: 20 })
                             .color($r("app.color.border"))
-                        Text("设置").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+                        Text("设置").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
                         settings()
                         Divider()
                             .margin({ top: 20, bottom: 20 })
                             .color($r("app.color.border"))
-                        Text("更多").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+                        Text("更多").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
                         Column() {
                             OtherItem({
                                 icon: $r("app.media.sponsor"),
@@ -285,7 +286,7 @@ export struct user {
                             offsetX: 0,
                             offsetY: 2,
                         })
-                        Blank().height(20)
+                        Blank().height(10)
                     }
                     .width("100%")
                     .alignItems(HorizontalAlign.Center)
@@ -380,10 +381,10 @@ export struct user {
                         },
                     },
                 },
-                systemMaterialEffect: {
+                systemMaterialEffect: this.immersiveTextureON ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                },
+                } : undefined
             },
             content: {
                 title: {

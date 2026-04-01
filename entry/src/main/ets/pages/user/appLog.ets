@@ -17,6 +17,7 @@ struct appLog {
     @Consume('pageStack') pageStack: NavPathStack;
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
+    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     private updateLogs: UpdateLog[] = [
         {
             // "更新页面设计，增加了触感反馈与动效",
@@ -362,10 +363,10 @@ struct appLog {
                         },
                     },
                 },
-                systemMaterialEffect: {
+                systemMaterialEffect: this.immersiveTextureON ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                },
+                } : undefined
             },
             content: {
                 title: {

@@ -27,6 +27,7 @@ struct friend {
   @Consume('pageStack') pageStack: NavPathStack;
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("vibrationON") vibrationON: boolean = true;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
 
   private jumpToMarket(appId: string) {
     const context = getContext(this) as common.UIAbilityContext;
@@ -159,7 +160,7 @@ struct friend {
             .margin({ top: 20, bottom: 20 })
             .color($r("app.color.border"))
 
-          Text("使用Harmony Gallery数据的站点").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(15).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+          Text("使用Harmony Gallery数据的站点").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           List() {
             ForEach(this.friendSites, (site: SiteConfig) => {
               ListItem() { this.webLists(site) }
@@ -175,7 +176,7 @@ struct friend {
             .margin({ top: 20, bottom: 20 })
             .color($r("app.color.border"))
 
-          Text("使用Harmony Gallery数据的应用").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+          Text("使用Harmony Gallery数据的应用").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           List() {
             ForEach(this.friendApps, (app: AppConfig) => {
               ListItem() { this.appLists(app) }
@@ -191,7 +192,7 @@ struct friend {
             .margin({ top: 20, bottom: 20 })
             .color($r("app.color.border"))
 
-          Text("其他站点").margin({ left: 15, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+          Text("其他站点").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           List() {
             ForEach(this.OtherSites, (site: SiteConfig) => {
               ListItem() { this.webLists(site) }
@@ -237,10 +238,10 @@ struct friend {
             backIconStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
           },
         },
-        systemMaterialEffect: {
+        systemMaterialEffect: this.immersiveTextureON ? {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-        },
+        } : { }
       },
       content: {
         title: { mainTitle: "友情链接" },
