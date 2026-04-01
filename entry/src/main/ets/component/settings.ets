@@ -2,6 +2,7 @@ import { vibration } from '../common/vibration';
 import { webview } from '@kit.ArkWeb';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { promptAction } from '@kit.ArkUI';
 import {
     initializeSettings,
     setButtonPosition,
@@ -72,6 +73,7 @@ export struct settings {
                 icon: $r("app.media.hand"),
                 title: "按钮智感握持",
                 isOn: this.holdCheckON,
+                promptMsg: "适人握持",
                 onToggle: async (val) => { await setHoldCheckEnabled(val); this.holdCheckON = val; }
             })
 
@@ -86,6 +88,7 @@ export struct settings {
                 icon: $r("app.media.immersive"),
                 title: "使用沉浸式材质",
                 isOn: this.immersiveTextureON,
+                promptMsg: "开启沉浸式材质将增加应用功耗，\n如遇卡顿建议关闭。",
                 onToggle: async (val) => { await setImmersiveTexture(val); this.immersiveTextureON = val; }
             })
 
@@ -126,7 +129,6 @@ export struct settings {
     }
 }
 
-
 @Component
 struct SettingItem {
     @Prop icon: Resource;
@@ -134,6 +136,7 @@ struct SettingItem {
     @Prop isOn: boolean;
     @Prop onText: string = "开";
     @Prop offText: string = "关";
+    @Prop promptMsg: string = "";
     @StorageProp("vibrationON") canVibrate: boolean = true;
 
     onToggle: (isOn: boolean) => Promise<void> = async () => {};
@@ -152,6 +155,12 @@ struct SettingItem {
                         .onChange(async (checked: boolean) => {
                             if (this.canVibrate) vibration.dotVibration();
                             await this.onToggle(checked);
+                            if (checked && this.promptMsg !== "") {
+                                promptAction.showToast({
+                                    message: this.promptMsg,
+                                    duration: 1000
+                                });
+                            }
                         })
                     Text(this.onText).fontSize(14).fontColor("#888").width(24).textAlign(TextAlign.Center)
                 }
@@ -160,6 +169,7 @@ struct SettingItem {
             .width("100%")
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })
+
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
         }
     }
