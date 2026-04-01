@@ -4,6 +4,7 @@ import {
     BlurStrategy,
     hdsEffect,
     HdsNavigation,
+    HdsNavigationMenuItemOptions,
     HdsNavigationTitleMode,
     HdsSnackBar,
     HdsTabs,
@@ -555,10 +556,10 @@ struct Dashboard {
                     barBottomMargin: this.barMargin,
                     lightColor: $r('app.color.light_color'),
                     gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
-                    systemMaterialEffect: {
+                    systemMaterialEffect: this.immersiveTextureON ? {
                         materialType: hdsMaterial.MaterialType.IMMERSIVE,
                         materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                    }
+                    } : undefined
                 })
 
                 // ==========================悬浮按钮==========================
@@ -883,10 +884,10 @@ struct Dashboard {
                         },
                     },
                 },
-                systemMaterialEffect: {
+                systemMaterialEffect: this.immersiveTextureON ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                },
+                } : undefined
             },
             content: {
                 title: {

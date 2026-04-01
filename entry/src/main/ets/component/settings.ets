@@ -31,12 +31,10 @@ export struct settings {
     private trash() {
         const ui_content = this.getUIContext();
         ui_content.showAlertDialog({
-            title: "此操作需要关闭应用",
-            message: "是否继续\n",
-            primaryButton: { value: "取消", fontColor: Color.Red, action: () => {} },
+            message: "此操作会关闭应用",
+            primaryButton: { value: "取消", action: () => {} },
             secondaryButton: {
-                value: "确定",
-                fontColor: Color.Blue,
+                value: "继续",
                 action: async () => {
                     try {
                         webview.WebStorage.deleteAllData();
@@ -55,7 +53,7 @@ export struct settings {
         Column() {
             SettingItem({
                 icon: $r("app.media.vibrate"),
-                title: "全局震感反馈",
+                title: "全局振动反馈",
                 isOn: this.vibrationON,
                 onToggle: async (val) => { await setVibrationEnabled(val); this.vibrationON = val; }
             })
@@ -73,7 +71,7 @@ export struct settings {
                 icon: $r("app.media.hand"),
                 title: "按钮智感握持",
                 isOn: this.holdCheckON,
-                promptMsg: "适人握持",
+                promptMsg: "󰗫适人握持󰗫",
                 onToggle: async (val) => { await setHoldCheckEnabled(val); this.holdCheckON = val; }
             })
 

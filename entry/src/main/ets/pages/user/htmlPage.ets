@@ -93,10 +93,10 @@ export struct HTML {
             },
           },
         },
-        systemMaterialEffect: {
+        systemMaterialEffect: this.immersiveTextureON ? {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-        },
+        } : undefined
       },
       content: {
         title: {
