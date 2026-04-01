@@ -43,9 +43,10 @@ export struct friendWeb {
   @State touchY: number = 0;
   @State isTouching: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("holdCheckON") holdCheckON: boolean = true;
+  @StorageLink("holdCheckON") holdCheckON: boolean = false;
   @State holdCheckTMP: boolean = false;
   @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
 
   scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();
@@ -124,39 +125,7 @@ export struct friendWeb {
       console.error("加载设置失败:", error);
     }
   }
-  async openLink() {
-    const url = this.url;
-    const ui_content = this.getUIContext();
-    ui_content.showAlertDialog({
-      title: "是否跳转到浏览器",
-      message: `即将访问${this.title}`+'\n',
-      primaryButton: {
-        value: "取消",
-        fontColor: Color.Red,
-        action: () => {
-          console.log("点击了取消按钮");
-        },
-      },
-      secondaryButton: {
-        value: "确定",
-        fontColor: Color.Blue,
-        action: async (): Promise<void> => {
-          try {
-            this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
-            let context = ui_content.getHostContext() as common.UIAbilityContext;
-            await context.startAbility({
-              action: "ohos.want.action.viewData",
-              entities: ["entity.system.browsable"],
-              uri: url,
-            } as Want);
-          } catch (error) {
-            console.error("打开链接失败:", (error as BusinessError).message);
-            this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
-          }
-        },
-      },
-    });
-  }
+
   async aboutToAppear() {
     //获取屏幕右边位置
     const displayInfo = display.getDefaultDisplaySync();
@@ -559,9 +528,22 @@ export struct friendWeb {
                 label: "openlink",
                 icon: $r("sys.symbol.worldclock"),
                 isEnabled: true,
-                action: () => {
+                action: async () => {
                   this.triggerVibration();
-                  this.openLink();
+                  const url = this.url;
+                  const ui_content = this.getUIContext();
+                  try {
+                    this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                    let context = ui_content.getHostContext() as common.UIAbilityContext;
+                    await context.startAbility({
+                      action: "ohos.want.action.viewData",
+                      entities: ["entity.system.browsable"],
+                      uri: url,
+                    } as Want);
+                  } catch (error) {
+                    console.error("打开链接失败:", (error as BusinessError).message);
+                    this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                  }
                 },
               },
             },

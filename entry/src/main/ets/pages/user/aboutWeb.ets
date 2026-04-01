@@ -35,9 +35,10 @@ struct aboutWeb {
   @State touchY: number = 0;
   @State isTouching: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("holdCheckON") holdCheckON: boolean = true;
+  @StorageLink("holdCheckON") holdCheckON: boolean = false;
   @State holdCheckTMP: boolean = false;
   @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
 
   scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();

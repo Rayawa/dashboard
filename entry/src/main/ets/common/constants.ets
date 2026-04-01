@@ -36,19 +36,3 @@ const device_model: string = `${deviceInfo.deviceType}|${deviceInfo.productModel
 export const customUserAgent: string = `top.rayawa.dashboard ${APP_VERSION} ${deviceInfo.osFullName} API:${deviceInfo.sdkApiVersion} ${device_model}`;
 
 export const SUBMIT_PLATFORM: string = `ray_dashboard/${APP_VERSION}-${deviceInfo.deviceType}`;
-
-export async function isTSiteDev(): Promise<boolean> {
-    const req = http.createHttp();
-    try {
-        await req.request(TBaseURLDev.toString(), {
-            usingCache: false,
-            readTimeout: 5000,
-        });
-        return true;
-    } finally {
-        req.destroy();
-    }
-    return false;
-}
-
-export const siteMapping = [SBaseURL, TBaseURL, TBaseURLDev];

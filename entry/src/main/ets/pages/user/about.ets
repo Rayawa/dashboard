@@ -43,40 +43,6 @@ struct about {
     this.HVp = screenHeightVp;
   }
 
-  async openLink() {
-    const url = "https://beian.miit.gov.cn/#/Integrated/index";
-    const ui_content = this.getUIContext();
-    ui_content.showAlertDialog({
-      title: "是否跳转到浏览器",
-      message: "即将访问\nICP/IP地址/域名信息备案管理系统\n",
-      primaryButton: {
-        value: "取消",
-        fontColor: Color.Red,
-        action: () => {
-          console.log("点击了取消按钮");
-        },
-      },
-      secondaryButton: {
-        value: "确定",
-        fontColor: Color.Blue,
-        action: async (): Promise<void> => {
-          try {
-            this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
-            let context = ui_content.getHostContext() as common.UIAbilityContext;
-            await context.startAbility({
-              action: "ohos.want.action.viewData",
-              entities: ["entity.system.browsable"],
-              uri: url,
-            } as Want);
-          } catch (error) {
-            console.error("打开链接失败:", (error as BusinessError).message);
-            this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
-          }
-        },
-      },
-    });
-  }
-
   build() {
     HdsNavDestination() {
       Stack() {
@@ -305,9 +271,22 @@ struct about {
             Text("京ICP备2025153453号")
               .fontSize(12)
               .fontColor($r("app.color.diff_content"))
-              .onClick(() => {
+              .onClick(async () => {
                 this.triggerVibration();
-                this.openLink();
+                const url = "https://beian.miit.gov.cn/#/Integrated/index";
+                const ui_content = this.getUIContext();
+                try {
+                  this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                  let context = ui_content.getHostContext() as common.UIAbilityContext;
+                  await context.startAbility({
+                    action: "ohos.want.action.viewData",
+                    entities: ["entity.system.browsable"],
+                    uri: url,
+                  } as Want);
+                } catch (error) {
+                  console.error("打开链接失败:", (error as BusinessError).message);
+                  this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                }
               })
           }.margin(2)
 

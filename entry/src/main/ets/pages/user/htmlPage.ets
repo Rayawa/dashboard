@@ -9,6 +9,7 @@ import { WebViewParam } from './about';
 export struct HTML {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink("vibrationON") vibrationON: boolean = true;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
   private triggerVibration(): void {
     if (this.vibrationON) {
       vibration.dotVibration()
