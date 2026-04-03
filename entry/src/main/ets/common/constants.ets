@@ -1,7 +1,6 @@
 import { URL } from "./url";
 import { deviceInfo } from "@kit.BasicServicesKit";
-import http from "@ohos.net.http";
-import { SiteMode } from "./types";
+
 //主
 export const SBaseURL = new URL("http://shenjack.top:10003/");
 export const EguiBaseURL = new URL("http://shenjack.top:10003/egui/");

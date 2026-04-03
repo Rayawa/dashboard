@@ -11,6 +11,7 @@ import {
     setTabBarAuto,
     setVibrationEnabled
 } from '../common/SettingsStorage';
+import { deviceInfo } from "@kit.BasicServicesKit";
 
 @Component
 export struct settings {
@@ -26,6 +27,11 @@ export struct settings {
 
     async aboutToAppear() {
         initializeSettings();
+        if(deviceInfo.sdkApiVersion >= 23){
+            console.info("settings, api23 true! API: ", deviceInfo.sdkApiVersion)
+        } else {
+            console.info("settings, api23 false! API: ", deviceInfo.sdkApiVersion)
+        }
     }
 
     private trash() {
@@ -83,13 +89,16 @@ export struct settings {
                 onToggle: async (val) => { await setTabBarAuto(val); this.tabBarAutoON = val; }
             })
 
-            SettingItem({
-                icon: $r("app.media.immersive"),
-                title: "使用沉浸式材质",
-                isOn: this.immersiveTextureON,
-                promptMsg: "开启沉浸式材质将增加应用功耗，\n如遇卡顿建议关闭。",
-                onToggle: async (val) => { await setImmersiveTexture(val); this.immersiveTextureON = val; }
-            })
+            if(deviceInfo.sdkApiVersion >= 23){
+                SettingItem({
+                    icon: $r("app.media.immersive"),
+                    title: "使用沉浸式材质",
+                    isOn: this.immersiveTextureON,
+                    promptMsg: "开启沉浸式材质将增加应用功耗，\n如遇卡顿建议关闭。",
+                    onToggle: async (val) => { await setImmersiveTexture(val); this.immersiveTextureON = val; }
+                })
+
+            }
 
             this.TrashItem()
 
