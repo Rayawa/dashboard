@@ -42,7 +42,7 @@ export struct HTML {
       .width('100%')
       .height('100%')
     }
-    .onBackPressed(() => {
+    .onBackPressed((e) => {
       this.triggerVibration();
       this.pageStack.pop();
       return true;

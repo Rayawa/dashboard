@@ -4,7 +4,6 @@ import {
     BlurStrategy,
     hdsEffect,
     HdsNavigation,
-    HdsNavigationMenuItemOptions,
     HdsNavigationTitleMode,
     HdsSnackBar,
     HdsTabs,
@@ -70,7 +69,6 @@ struct Dashboard {
     private lastOffset: number = 0;
     @State isTabsBarVisible: boolean = true;
     @State showTutorial: boolean = false;
-    @State showWarn: boolean = false;
     @State startY: number = 0;
     @State isPressed1: boolean = false;
     @State isPressed2: boolean = false;
@@ -84,6 +82,7 @@ struct Dashboard {
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
     @StorageLink("tabBarAutoON") tabBarAutoON: boolean = true;
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+    @StorageLink("showWarn") showWarn: boolean = false;
     @State holdCheckTMP: boolean = false;
 
     //Web控制
@@ -158,6 +157,11 @@ struct Dashboard {
             .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),
         TransitionEffect.IDENTITY
     );
+    private effect: TransitionEffect = TransitionEffect.OPACITY.combine(
+        TransitionEffect.move(TransitionEdge.BOTTOM),
+    )
+        .combine(TransitionEffect.scale({ x: 0, y: 1 }))
+        .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
 
     private triggerVibration(): void {
         if (this.vibrationON) {
@@ -168,36 +172,24 @@ struct Dashboard {
 
     //==========================页面生命周期部分==========================
     //entry
-    private IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
+    @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
     private async checkFirstLaunch(): Promise<void> {
         try {
             let context = getContext(this) as common.UIAbilityContext;
             let prefs = await preferences.getPreferences(context, "myAppSettings");
-            let isFirstLaunchValue: preferences.ValueType = await prefs.get(
-                this.IS_FIRST_LAUNCH_KEY,
-                true,
-            );
-            let isFirstLaunch: boolean = false;
-            if (typeof isFirstLaunchValue === "boolean") {
-                isFirstLaunch = isFirstLaunchValue;
-            } else if (typeof isFirstLaunchValue === "string") {
-                isFirstLaunch = isFirstLaunchValue === "true";
-            } else if (typeof isFirstLaunchValue === "number") {
-                isFirstLaunch = isFirstLaunchValue === 1;
-            }
-            if (isFirstLaunch) {
-                console.info("Index", "首次启动，显示。");
+
+            let isFirstLaunch = await prefs.get(this.IS_FIRST_LAUNCH_KEY, true);
+
+            if (isFirstLaunch === true) {
+                console.info("Index", "检测到首次启动，准备弹出协议。");
                 this.showWarn = true;
-                await prefs.put(this.IS_FIRST_LAUNCH_KEY, false);
-                await prefs.flush();
-                console.info("Index", "已更新首次启动标记。");
             } else {
-                console.info("Index", "非首次启动，不显示。");
+                console.info("Index", "非首次启动。");
                 this.showWarn = false;
             }
         } catch (err) {
             let error = err as BusinessError;
-            console.error("Index", "检查首选项失败: %{public}s", JSON.stringify(error));
+            console.error("Index", "检查失败", JSON.stringify(error));
         }
     }
     @StorageLink("userName") userName: string = "";
@@ -308,7 +300,7 @@ struct Dashboard {
             this.buttonOnPageShow = true;
         }, 500);
         console.log("currentUsername",this.userName)
-        if(!this.showTutorial){
+        if(!this.showTutorial || this.showWarn){
             if(this.userName == '' || this.userName == deviceInfo.productModel){
                 console.info("currentUsername_pop!!")
                 setTimeout(() => {
@@ -643,7 +635,7 @@ struct Dashboard {
                                 try {
                                     Promise.all([
                                         activeCtrl.removeCache(true),
-                                    activeCtrl.removeCache(false),
+                                        activeCtrl.removeCache(false),
                                     ]);
                                 } catch (error) {
                                     console.warn(`hm dashboard e: ${error}`);
@@ -818,12 +810,8 @@ struct Dashboard {
                                 duration: 1000,
                             }),
                         )
-                        .onClick(() => {
-                            this.showWarn = false;
-                            this.triggerVibration();
-                        })
+                    warn().transition(this.effect)
                 }
-                blurPopup({ isShow: this.showWarn }) { warn() }
             }
             .width("100%")
             .backgroundColor($r("app.color.backcolor"))
@@ -903,6 +891,11 @@ struct Dashboard {
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
+
+                                    if(this.showWarn){
+                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        return;
+                                    }
                                     this.showTutorial = true;
                                 },
                             },
@@ -914,6 +907,11 @@ struct Dashboard {
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
+
+                                    if(this.showWarn){
+                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        return;
+                                    }
                                     const activeCtrl = this.getActiveController();
                                     const realUrl = activeCtrl.getUrl();
                                     this.shareManager?.showSystemShare(realUrl);
@@ -927,6 +925,10 @@ struct Dashboard {
                                 isEnabled: true,
                                 action: () => {
                                     this.triggerVibration();
+                                    if(this.showWarn){
+                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        return;
+                                    }
                                     let index = this.pageStack.getIndexByName("UserPage");
                                     if (index.length > 0) {
                                         this.pageStack.moveToTop("UserPage");
