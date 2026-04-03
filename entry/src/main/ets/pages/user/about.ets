@@ -31,7 +31,7 @@ struct about {
     }
   }
 
-  @StorageLink("showWarn") showWarn: boolean = false;
+  @StorageProp("showWarn") showWarn: boolean = false;
 
   @State WVp: number = 376;
   @State HVp: number = 376;
