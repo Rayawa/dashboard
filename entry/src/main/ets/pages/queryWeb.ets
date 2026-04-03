@@ -42,11 +42,7 @@ struct queryEntry {
   @State isLoading: boolean = false;
 
   //动画与振动
-  private triggerVibration(): void {
-    if (this.vibrationON) {
-      vibration.dotVibration()
-    }
-  }
+
 
   private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
@@ -210,7 +206,7 @@ struct queryEntry {
                 yOffset: 0,
                 animation: { duration: 300, curve: Curve.Ease },
               });
-              this.triggerVibration();
+              if(this.vibrationON) vibration.dotVibration()
               this.PromptAction.showToast({
                 message: "回到顶部",
                 duration: 500,
@@ -258,7 +254,7 @@ struct queryEntry {
               if (this.isLoading) {
                 this.web_controller.stop();
                 this.isLoading = false;
-                this.triggerVibration();
+                if(this.vibrationON) vibration.dotVibration()
                 this.PromptAction.showToast({
                   message: "已停止加载",
                   duration: 1000,
@@ -275,7 +271,7 @@ struct queryEntry {
                   console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
                 }
                 this.isLoading = true;
-                this.triggerVibration();
+                if(this.vibrationON) vibration.dotVibration()
                 this.PromptAction.showToast({
                   message: "刷新中...",
                   duration: 1000,
@@ -375,7 +371,7 @@ struct queryEntry {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+              if(this.vibrationON) vibration.dotVibration()
             });
           Column()
             .backgroundColor(Color.Transparent)
@@ -386,7 +382,7 @@ struct queryEntry {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+              if(this.vibrationON) vibration.dotVibration()
             });
         }
       }
@@ -394,7 +390,7 @@ struct queryEntry {
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .onBackPressed(() => {
-      this.triggerVibration();
+      if(this.vibrationON) vibration.dotVibration()
       if (this.web_controller.accessStep(-1)) {
         console.info("网页可以返回，执行后退");
         this.web_controller.backward();
@@ -471,7 +467,7 @@ struct queryEntry {
         },
         backIcon: {
           action: () => {
-            this.triggerVibration();
+            if(this.vibrationON) vibration.dotVibration()
             this.pageStack.clear();
           },
         },

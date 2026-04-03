@@ -204,6 +204,9 @@ export struct queryButtons {
         const pathParams: QueryWebParams = {
           url: finalUrl
         };
+        if(this.vibrationON){
+          vibration.waveVibration()
+        }
         this.pageStack.pushPathByName("QueryPage", pathParams);
 
         this.formData = {
@@ -215,12 +218,18 @@ export struct queryButtons {
         this.inputText = "";
 
       } else {
+        if(this.vibrationON){
+          vibration.errorVibration()
+        }
         throw new Error("库中未找到该应用");
       }
 
     } catch (error) {
       this.isSearching = false;
       this.stopSearchRippleLoop();
+      if(this.vibrationON){
+        vibration.errorVibration()
+      }
       this.PromptAction.showToast({ message: `查询失败！${error.message}` });
     }
   }
@@ -252,11 +261,7 @@ export struct queryButtons {
     }, 700);
   }
 
-  private triggerVibration(): void {
-    if (this.vibrationON){
-      vibration.dotVibration()
-    }
-  }
+
 
   @State isSearching: boolean = false;
   @State isCleaning: boolean = false;
@@ -481,7 +486,7 @@ export struct queryButtons {
               return;
             }
             this._cleanLastClick = now;
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             this.clearForm();
           })
       }
@@ -507,7 +512,7 @@ export struct queryButtons {
               return;
             }
             this._searchLastClick = now;
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             this.queryForm();
           })
       }

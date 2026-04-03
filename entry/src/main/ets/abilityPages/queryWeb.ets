@@ -43,11 +43,7 @@ struct queryWeb {
   @State isLoading: boolean = false;
 
   //动画与振动
-  private triggerVibration(): void {
-    if (this.vibrationON) {
-      vibration.dotVibration()
-    }
-  }
+
 
   private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
@@ -151,10 +147,10 @@ struct queryWeb {
     if (currentTime - this.firstBackTime > this.waitTime) {
       this.firstBackTime = currentTime;
       this.PromptAction.showToast({ message: "再按一次退出", duration: this.waitTime });
-      this.triggerVibration()
+      if(this.vibrationON) vibration.dotVibration()
       return true;
     } else {
-      this.triggerVibration()
+      if(this.vibrationON) vibration.dotVibration()
       this.closePage()
       return false;
     }
@@ -245,7 +241,7 @@ struct queryWeb {
                 yOffset: 0,
                 animation: { duration: 300, curve: Curve.Ease },
               });
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
               this.PromptAction.showToast({
                 message: "回到顶部",
                 duration: 500,
@@ -293,7 +289,7 @@ struct queryWeb {
               if (this.isLoading) {
                 this.web_controller.stop();
                 this.isLoading = false;
-                this.triggerVibration();
+                        if(this.vibrationON) vibration.dotVibration()
                 this.PromptAction.showToast({
                   message: "已停止加载",
                   duration: 1000,
@@ -310,7 +306,7 @@ struct queryWeb {
                   console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
                 }
                 this.isLoading = true;
-                this.triggerVibration();
+                        if(this.vibrationON) vibration.dotVibration()
                 this.PromptAction.showToast({
                   message: "刷新中...",
                   duration: 1000,
@@ -410,7 +406,7 @@ struct queryWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
             });
           Column()
             .backgroundColor(Color.Transparent)
@@ -421,7 +417,7 @@ struct queryWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
             });
         }
       }
@@ -487,7 +483,7 @@ struct queryWeb {
         },
         backIcon: {
           action: () => {
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             this.closePage()
           },
         },

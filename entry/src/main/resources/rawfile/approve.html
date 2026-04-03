@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>基因工程实验室 V4.0 - 随机实战版</title>
+    <style>
+        :root { --gene: #2ecc71; --plasmid: #3498db; --site: #f1c40f; --highlight: #fff200; --error: #e74c3c; }
+        body { font-family: 'Consolas', 'Monaco', monospace; background: #1e272e; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .lab-panel { width: 1000px; background: #2f3542; padding: 25px; border-radius: 15px; box-shadow: 0 10px 50px rgba(0,0,0,0.5); }
+
+        .dna-container { background: #000; padding: 60px 20px; border-radius: 10px; margin: 20px 0; min-height: 360px; position: relative; border: 2px solid #444; overflow: hidden; }
+        .dna-row { display: flex; justify-content: center; align-items: center; gap: 2px; transition: all 0.6s ease; min-height: 60px; }
+
+        .base-unit { display: inline-flex; flex-direction: column; align-items: center; width: 19px; position: relative; transition: all 0.4s; }
+        .base-unit b { font-size: 15px; }
+        .label-tag { position: absolute; top: -35px; font-size: 10px; white-space: nowrap; padding: 2px 5px; border-radius: 3px; background: rgba(52, 152, 219, 0.8); }
+
+        .is-promoter { background: rgba(231, 76, 60, 0.2); border-top: 2px solid #e74c3c; }
+        .is-terminator { background: rgba(155, 89, 182, 0.2); border-top: 2px solid #9b59b6; }
+        .is-gene { background: rgba(46, 204, 113, 0.15); border-top: 2px solid var(--gene); }
+        .highlight-active { background: var(--highlight) !important; color: #000 !important; font-weight: bold; transform: scale(1.1); z-index: 30; }
+
+        /* 动画逻辑 */
+        .fragment { display: inline-flex; transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .target-left-fly { transform: translate(-180px, 60px) rotate(-20deg); opacity: 0; }
+        .target-right-fly { transform: translate(180px, 60px) rotate(20deg); opacity: 0; }
+        .plasmid-waste-fly { transform: translateY(-80px) rotate(180deg); opacity: 0; }
+
+        /* 拼合逻辑 */
+        .success-link { transform: translateY(145px) scale(1.0); color: var(--gene); filter: drop-shadow(0 0 8px var(--gene)); }
+        .fail-shake { animation: shake 0.5s linear; transform: translateY(100px); color: var(--error); }
+        @keyframes shake {
+            0%, 100% { transform: translateY(100px) translateX(0); }
+            20%, 60% { transform: translateY(100px) translateX(-10px); }
+            40%, 80% { transform: translateY(100px) translateX(10px); }
+        }
+
+        .controls { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 20px 0; }
+        .enzyme-chip { background: #57606f; border: 1px solid #747d8c; padding: 10px; border-radius: 6px; cursor: pointer; text-align: center; font-size: 13px; }
+        .enzyme-chip.active { background: var(--site); color: #000; font-weight: bold; border-color: #fff; }
+
+        .btn-group { display: flex; gap: 15px; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; }
+        .btn-cut { background: #f39c12; color: white; }
+        .btn-ligate { background: #27ae60; color: white; opacity: 0.4; }
+        .btn-random { background: #6c5ce7; width: 150px; }
+        .btn-reset { background: #7f8c8d; width: 100px; }
+        #ai-report { background: rgba(0,0,0,0.8); padding: 18px; border-radius: 8px; margin-top: 15px; border-left: 5px solid var(--site); font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="lab-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0">🔬 基因工程：智能出题模拟实验室 (V4.0)</h3>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-random" onclick="generateRandomProblem()">🎲 随机生成题目</button>
+            <button class="btn btn-reset" onclick="resetLab()">🔄 重置</button>
+        </div>
+    </div>
+
+    <div class="dna-container">
+        <div style="font-size: 11px; color: #aaa; margin-bottom: 10px;">目的基因片段 (Linear DNA)</div>
+        <div class="dna-row" id="target-dna"></div>
+
+        <div style="font-size: 11px; color: #aaa; margin: 90px 0 10px 0;">质粒载体 MCS 区 (Plasmid Vector)</div>
+        <div class="dna-row" id="plasmid-dna"></div>
+    </div>
+
+    <div class="controls" id="enzyme-pool"></div>
+
+    <div class="btn-group">
+        <button class="btn btn-cut" id="cut-btn" onclick="handleCut()">1. 切割片段</button>
+        <button class="btn btn-ligate" id="ligate-btn" onclick="handleLigate()" disabled>2. 尝试连接</button>
+    </div>
+
+    <div id="ai-report" style="display:none">
+        <div id="diagnostic-text"></div>
+    </div>
+</div>
+
+<script>
+    const enzymeLib = [
+        {n:"EcoRI", s:"GAATTC"}, {n:"BamHI", s:"GGATCC"}, {n:"HindIII", s:"AAGCTT"},
+        {n:"PstI", s:"CTGCAG"}, {n:"SmaI", s:"CCCGGG"}, {n:"XhoI", s:"CTCGAG"}
+    ];
+
+    let currentProblem = {};
+    let selected = new Set();
+    let isCut = false;
+
+    function generateRandomProblem() {
+        isCut = false;
+        selected.clear();
+        document.getElementById('ligate-btn').disabled = true;
+        document.getElementById('ligate-btn').style.opacity = "0.4";
+        document.getElementById('ai-report').style.display = "none";
+
+        // 随机选 3-4 个限制酶
+        const shuffled = [...enzymeLib].sort(() => 0.5 - Math.random());
+        const pool = shuffled.slice(0, 5);
+
+        // 确定正确答案（两个不同的酶）
+        const correctEnzymes = [pool[0], pool[1]];
+        const distractor = pool[2]; // 干扰项
+
+        currentProblem = {
+            target: [
+                {s:"AAA", type:"waste"},
+                {s:correctEnzymes[0].s, e:correctEnzymes[0].n, type:"site"},
+                {s:"CGTACGTAGCTAG", t:"is-gene", label:"抗虫基因", type:"core"},
+                {s:correctEnzymes[1].s, e:correctEnzymes[1].n, type:"site"},
+                {s:"TTT", type:"waste"}
+            ],
+            plasmid: [
+                {s:"TTA", t:"is-promoter", label:"启动子(P)", type:"stay"},
+                {s:correctEnzymes[0].s, e:correctEnzymes[0].n, type:"site"},
+                {s:distractor.s, e:distractor.n, type:"waste-mid"}, // 中间干扰
+                {s:correctEnzymes[1].s, e:correctEnzymes[1].n, type:"site"},
+                {s:"GGC", t:"is-terminator", label:"终止子(T)", type:"stay"}
+            ],
+            correct: [correctEnzymes[0].n, correctEnzymes[1].n]
+        };
+
+        renderDNA('target-dna', currentProblem.target);
+        renderDNA('plasmid-dna', currentProblem.plasmid);
+        initEnzymePool(pool.map(e => e.n));
+    }
+
+    function renderDNA(containerId, data) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        data.forEach((frag, fIdx) => {
+            const fragSpan = document.createElement('span');
+            fragSpan.className = 'fragment';
+            fragSpan.id = `${containerId}-f-${fIdx}`;
+            fragSpan.dataset.enzyme = frag.e || "";
+
+            frag.s.split('').forEach((base, bIdx) => {
+                const unit = document.createElement('div');
+                unit.className = `base-unit ${frag.t || ''} ${frag.e ? 'is-site' : ''}`;
+                if(frag.label && bIdx === 0) unit.innerHTML += `<span class="label-tag">${frag.label}</span>`;
+                unit.innerHTML += `<b>${base}</b><b>${getPair(base)}</b>`;
+                fragSpan.appendChild(unit);
+            });
+            container.appendChild(fragSpan);
+        });
+    }
+
+    function getPair(b) { return {A:'T', T:'A', G:'C', C:'G'}[b]; }
+
+    function initEnzymePool(names) {
+        const poolDiv = document.getElementById('enzyme-pool');
+        poolDiv.innerHTML = "";
+        names.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'enzyme-chip';
+            div.innerText = name;
+            div.onclick = function() {
+                if(isCut) return;
+                this.classList.toggle('active');
+                selected.has(name) ? selected.delete(name) : selected.add(name);
+                updateHighlights();
+            };
+            poolDiv.appendChild(div);
+        });
+    }
+
+    function updateHighlights() {
+        document.querySelectorAll('.base-unit.is-site').forEach(unit => {
+            const parent = unit.parentElement;
+            if(selected.has(parent.dataset.enzyme)) unit.classList.add('highlight-active');
+            else unit.classList.remove('highlight-active');
+        });
+    }
+
+    function handleCut() {
+        if(selected.size === 0) return alert("请先选择限制酶！");
+        isCut = true;
+
+        // 飞走动画
+        if(selected.has(currentProblem.target[1].e)) document.getElementById('target-dna-f-0').classList.add('target-left-fly');
+        if(selected.has(currentProblem.target[3].e)) document.getElementById('target-dna-f-4').classList.add('target-right-fly');
+
+        // 质粒中间碎片飞走判定
+        const selArr = Array.from(selected);
+        if(selArr.includes(currentProblem.correct[0]) && selArr.includes(currentProblem.correct[1])) {
+            document.getElementById('plasmid-dna-f-2').classList.add('plasmid-waste-fly');
+        }
+
+        document.getElementById('ligate-btn').disabled = false;
+        document.getElementById('ligate-btn').style.opacity = "1";
+        showReport("酶切完成。请观察末端序列，判断是否能进行拼合连接。");
+    }
+
+    function handleLigate() {
+        const sel = Array.from(selected);
+        const geneFrag = document.getElementById('target-dna-f-2');
+        geneFrag.classList.remove('success-link', 'fail-shake');
+
+        // 成功判断：双酶切且正确
+        if(sel.length === 2 && sel.includes(currentProblem.correct[0]) && sel.includes(currentProblem.correct[1])) {
+            geneFrag.classList.add('success-link');
+            showReport("<strong>✅ 定向连接完美成功！</strong><br>AI 诊断：末端完全互补，基因已成功嵌入质粒表达框架。");
+        }
+        // 失败判断：不匹配导致抖动
+        else {
+            setTimeout(() => geneFrag.classList.add('fail-shake'), 10);
+            showReport("<strong>❌ 连接失败：末端无法配对！</strong><br>AI 诊断：由于限制酶选择错误，DNA 末端无法形成互补配对，连接酶无法工作。请尝试重置并重新分析位点。");
+        }
+    }
+
+    function resetLab() { generateRandomProblem(); }
+
+    function showReport(txt) {
+        document.getElementById('ai-report').style.display = "block";
+        document.getElementById('diagnostic-text').innerHTML = txt;
+    }
+
+    generateRandomProblem();
+</script>
+
+</body>
+</html>

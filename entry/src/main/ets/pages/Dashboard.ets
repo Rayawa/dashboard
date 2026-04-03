@@ -163,11 +163,6 @@ struct Dashboard {
         .combine(TransitionEffect.scale({ x: 0, y: 1 }))
         .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
 
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibration.dotVibration()
-        }
-    }
 
 
     //==========================页面生命周期部分==========================
@@ -341,7 +336,7 @@ struct Dashboard {
     @State firstBackTime: number = 0;
     private waitTime: number = 2000;
     onBackPress(): boolean | void {
-        this.triggerVibration();
+                if(this.vibrationON) vibration.dotVibration()
         if (this.isSnackBarShow) {
             this.hdsSnackBar.dismiss();
         }
@@ -367,7 +362,7 @@ struct Dashboard {
         if (currentTime - this.firstBackTime > this.waitTime) {
             this.firstBackTime = currentTime;
             this.PromptAction.showToast({ message: "再按一次退出应用", duration: this.waitTime });
-            this.triggerVibration()
+            if(this.vibrationON) vibration.dotVibration()
             return true;
         } else {
             return false;
@@ -528,7 +523,7 @@ struct Dashboard {
                     }, (item: SiteConfig) => item.key + item.url)
                 }
                 .onChange((index: number) => {
-                    this.triggerVibration();
+                            if(this.vibrationON) vibration.dotVibration()
                     this.siteIndex = index;
                     preferences.getPreferences(this.context, 'myStore').then((pref) => {
                         pref.putSync('defaultSite', index);
@@ -579,7 +574,7 @@ struct Dashboard {
                                 yOffset: 0,
                                 animation: { duration: 300, curve: Curve.Ease },
                             });
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                             this.PromptAction.showToast({
                                 message: "回到顶部",
                                 duration: 500,
@@ -629,7 +624,7 @@ struct Dashboard {
                             if (this.isLoading) {
                                 activeCtrl.stop();
                                 this.isLoading = false;
-                                this.triggerVibration();
+                                        if(this.vibrationON) vibration.dotVibration()
                             } else {
                                 activeCtrl.refresh();
                                 try {
@@ -641,7 +636,7 @@ struct Dashboard {
                                     console.warn(`hm dashboard e: ${error}`);
                                 }
                                 this.isLoading = true;
-                                this.triggerVibration();
+                                        if(this.vibrationON) vibration.dotVibration()
                                 this.PromptAction.showToast({
                                     message: "刷新中...",
                                     duration: 1000,
@@ -741,7 +736,7 @@ struct Dashboard {
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                         });
                     Column()
                         .backgroundColor(Color.Transparent)
@@ -752,7 +747,7 @@ struct Dashboard {
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                         });
                 }
                 if (this.tabBarAutoON && !this.isTabsBarVisible) {
@@ -768,7 +763,7 @@ struct Dashboard {
                                 this.barMargin = 28;
                                 this.isTabsBarVisible = true;
                             })
-                            this.triggerVibration()
+                            if(this.vibrationON) vibration.dotVibration()
                             this.lockBar = true;
                             setTimeout(() => {
                                 this.lockBar = false;
@@ -792,7 +787,7 @@ struct Dashboard {
                         )
                         .onClick(() => {
                             this.showTutorial = false;
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                         })
                 }
                 blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 40 }) }
@@ -890,7 +885,7 @@ struct Dashboard {
                                 icon: $r("sys.symbol.questionmark_circle"),
                                 isEnabled: true,
                                 action: () => {
-                                    this.triggerVibration();
+                                            if(this.vibrationON) vibration.dotVibration()
 
                                     if(this.showWarn){
                                         this.PromptAction.showToast({ message: "请先阅读重要提示！" })
@@ -906,7 +901,7 @@ struct Dashboard {
                                 icon: $r("sys.symbol.share"),
                                 isEnabled: true,
                                 action: () => {
-                                    this.triggerVibration();
+                                            if(this.vibrationON) vibration.dotVibration()
 
                                     if(this.showWarn){
                                         this.PromptAction.showToast({ message: "请先阅读重要提示！" })
@@ -924,7 +919,7 @@ struct Dashboard {
                                 icon: $r("sys.symbol.person"),
                                 isEnabled: true,
                                 action: () => {
-                                    this.triggerVibration();
+                                            if(this.vibrationON) vibration.dotVibration()
                                     if(this.showWarn){
                                         this.PromptAction.showToast({ message: "请先阅读重要提示！" })
                                         return;

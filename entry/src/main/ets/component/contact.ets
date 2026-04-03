@@ -7,11 +7,6 @@ import { vibration } from '../common/vibration';
 export struct contact {
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibration.dotVibration()
-        }
-    }
 
     @Builder ContactItem(title: string, name: string, detail: string, copyContent: string, toastLabel: string) {
         Column({ space: 4 }) {
@@ -25,7 +20,7 @@ export struct contact {
         .padding(14)
         .borderRadius(16)
         .onClick(async () => {
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             await this.copyToClipboard(copyContent, toastLabel);
         })
     }
@@ -55,7 +50,7 @@ export struct contact {
                 .padding(14)
                 .borderRadius(16)
                 .onClick(async () => {
-                    this.triggerVibration();
+                            if(this.vibrationON) vibration.dotVibration()
                     const url = "https://afdian.com/a/shenjack";
                     const ui_content = this.getUIContext();
                     try {

@@ -27,11 +27,6 @@ struct complexSubmit {
 
     @StorageProp("shareParams") shareParams: ShareParams = { shareAppId: "", shareUrl: "" };
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibration.dotVibration()
-        }
-    }
 
     @State extractedApps: AppInfo[] = [];
     @State isProcessing: boolean = false;
@@ -50,8 +45,12 @@ struct complexSubmit {
     }
 
     onPageHide(): void {
-        let uiAbilityContext = getContext(this) as common.UIAbilityContext;
-        uiAbilityContext.terminateSelf();
+        const context = getContext(this) as common.UIAbilityContext;
+        context.terminateSelf().then(() => {
+            console.info('Ability 销毁指令发送成功');
+        }).catch((err: BusinessError) => {
+            console.error(`销毁失败: ${err.code}`);
+        });
     }
 
     @State firstBackTime: number = 0;
@@ -69,10 +68,10 @@ struct complexSubmit {
         if (currentTime - this.firstBackTime > this.waitTime) {
             this.firstBackTime = currentTime;
             this.PromptAction.showToast({ message: "再按一次退出", duration: this.waitTime });
-            this.triggerVibration()
+            if(this.vibrationON) vibration.dotVibration()
             return true;
         } else {
-            this.triggerVibration()
+            if(this.vibrationON) vibration.dotVibration()
             this.closePage()
             return false;
         }
@@ -86,7 +85,7 @@ struct complexSubmit {
                 .backgroundColor($r("app.color.backcolor"))
                 .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
                 .onClick(() => {
-                    this.triggerVibration();
+                            if(this.vibrationON) vibration.dotVibration()
                     this.closePage();
                 })
             Column() {
@@ -106,7 +105,7 @@ struct complexSubmit {
                         .width(26)
                         .margin({ right: 10 })
                         .onClick(() => {
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                             this.closePage();
                         })
                 }

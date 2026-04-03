@@ -53,11 +53,8 @@ export struct friendWeb {
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
-  private triggerVibration(): void {
-    if (this.vibrationON) {
-      vibration.dotVibration()
-    }
-  }
+
+
   uiContext: UIContext = this.getUIContext();
   hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
   icon: SnackBarIconOptions = {
@@ -270,7 +267,7 @@ export struct friendWeb {
                 yOffset: 0,
                 animation: { duration: 300, curve: Curve.Ease },
               });
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
               this.PromptAction.showToast({
                 message: "回到顶部",
                 duration: 500,
@@ -318,7 +315,7 @@ export struct friendWeb {
               if (this.isLoading) {
                 this.web_controller.stop();
                 this.isLoading = false;
-                this.triggerVibration();
+                        if(this.vibrationON) vibration.dotVibration()
                 this.PromptAction.showToast({
                   message: "已停止加载",
                   duration: 1000,
@@ -335,7 +332,7 @@ export struct friendWeb {
                   console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
                 }
                 this.isLoading = true;
-                this.triggerVibration();
+                        if(this.vibrationON) vibration.dotVibration()
                 this.PromptAction.showToast({
                   message: "刷新中...",
                   duration: 1000,
@@ -435,7 +432,7 @@ export struct friendWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
             });
           Column()
             .backgroundColor(Color.Transparent)
@@ -446,7 +443,7 @@ export struct friendWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
             });
         }
       }
@@ -454,7 +451,7 @@ export struct friendWeb {
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .onBackPressed(() => {
-      this.triggerVibration();
+              if(this.vibrationON) vibration.dotVibration()
       if (this.web_controller.accessStep(-1)) {
         console.info("网页可以返回，执行后退");
         this.web_controller.backward();
@@ -529,7 +526,7 @@ export struct friendWeb {
                 icon: $r("sys.symbol.worldclock"),
                 isEnabled: true,
                 action: async () => {
-                  this.triggerVibration();
+                          if(this.vibrationON) vibration.dotVibration()
                   const url = this.url;
                   const ui_content = this.getUIContext();
                   try {
@@ -553,7 +550,7 @@ export struct friendWeb {
                 icon: $r("sys.symbol.share"),
                 isEnabled: true,
                 action: () => {
-                  this.triggerVibration();
+                          if(this.vibrationON) vibration.dotVibration()
                   const realUrl = this.web_controller.getUrl();
                   this.shareManager?.showSystemShare(realUrl);
                 },
@@ -563,7 +560,7 @@ export struct friendWeb {
         },
         backIcon: {
           action: () => {
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             this.pageStack.pop()
           },
         },
