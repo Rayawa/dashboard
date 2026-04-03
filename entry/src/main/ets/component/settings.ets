@@ -30,6 +30,7 @@ export struct settings {
         if(deviceInfo.sdkApiVersion >= 23){
             console.info("settings, api23 true! API: ", deviceInfo.sdkApiVersion)
         } else {
+            this.immersiveTextureON = false;
             console.info("settings, api23 false! API: ", deviceInfo.sdkApiVersion)
         }
     }
