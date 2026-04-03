@@ -31,7 +31,7 @@ struct about {
     }
   }
 
-  @State showWarn: boolean = false;
+  @StorageLink("showWarn") showWarn: boolean = false;
 
   @State WVp: number = 376;
   @State HVp: number = 376;
@@ -48,7 +48,6 @@ struct about {
     HdsNavDestination() {
       Stack() {
         Scroll(){
-          Column(){
             Column() {
               Column() {
                 Image($r("app.media.app_icon"))
@@ -299,28 +298,26 @@ struct about {
             .margin({ top: 30, bottom: 20 })
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
             .height("100%")
-
-            if (this.showWarn) {
-              Column()
-                .width('100%')
-                .height('100%')
-                .backgroundColor(Color.Transparent)
-                .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-                .transition(
-                  TransitionEffect.OPACITY.animation({
-                    curve: curves.springMotion(0, 1),
-                    duration: 1000,
-                  }),
-                )
-                .onClick(() => {
-                  this.showWarn = false;
-                  this.triggerVibration();
-                })
-            }
-            blurPopup({ isShow: this.showWarn }) { warn() }
-          }
+        }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.END]).width("100%").height("100%")
+        if (this.showWarn) {
+          Column()
+            .width('100%')
+            .height('100%')
+            .backgroundColor(Color.Transparent)
+            .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+            .transition(
+              TransitionEffect.OPACITY.animation({
+                curve: curves.springMotion(0, 1),
+                duration: 1000,
+              }),
+            )
+            .onClick(() => {
+              this.showWarn = false;
+              this.triggerVibration();
+            })
         }
+        blurPopup({ isShow: this.showWarn }) { warn() }
       }
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])

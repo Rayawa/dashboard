@@ -472,7 +472,7 @@ struct queryEntry {
         backIcon: {
           action: () => {
             this.triggerVibration();
-            this.pageStack.pop()
+            this.pageStack.clear();
           },
         },
       },
