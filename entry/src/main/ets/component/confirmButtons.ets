@@ -3,6 +3,7 @@ import { PromptAction } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { preferences } from '@kit.ArkData';
+import { privacyManager } from '@kit.StoreKit';
 
 @Component
 export struct confirmButtons {
@@ -10,13 +11,6 @@ export struct confirmButtons {
     @StorageLink("showWarn") showWarn: boolean = false;
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
-
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibration.dotVibration()
-        }
-    }
-
     @State countDown: number = 5;
     @State isConfirmEnabled: boolean = false;
     @State isExiting: boolean = false;
@@ -56,7 +50,6 @@ export struct confirmButtons {
         } catch (err) {
             let error = err as BusinessError;
             console.error("Index", "检查失败", JSON.stringify(error));
-            // 兜底方案：如果读取失败，为了保险起见建议默认开启确认按钮
             this.isConfirmEnabled = true;
         }
     }
@@ -73,15 +66,20 @@ export struct confirmButtons {
 
             console.info("Index", "用户点击取消，标记位重置为true。");
         } catch (err) {
+            console.error("获取失败");
         }
-
         setTimeout(() => {
-            const context = getContext(this) as common.UIAbilityContext;
-            context.terminateSelf().then(() => {
-                console.info('Ability 销毁指令发送成功');
-            }).catch((err: BusinessError) => {
-                console.error(`销毁失败: ${err.code}`);
-            });
+            try {
+                privacyManager.disableService();
+                const context = getContext(this) as common.UIAbilityContext;
+                context.terminateSelf().then(() => {
+                    console.info('Ability 销毁指令发送成功');
+                }).catch((err: BusinessError) => {
+                    console.error(`销毁失败: ${err.code}`);
+                });
+            } catch (err) {
+                console.error(`撤回隐私协议失败: ${err.code}`);
+            }
         }, 500);
     }
 
@@ -116,7 +114,7 @@ export struct confirmButtons {
                 .borderRadius(this.BORDER_RADIUS)
                 .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
                 .onClick(() => {
-                    this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
                     this.handleCancel();
                 })
 
@@ -131,7 +129,7 @@ export struct confirmButtons {
                 .borderRadius(this.BORDER_RADIUS)
                 .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
                 .onClick(() => {
-                    this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
                     this.handleConfirm();
                 })
         }

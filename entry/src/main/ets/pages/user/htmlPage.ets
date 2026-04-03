@@ -1,28 +1,59 @@
-import { LengthMetrics } from '@kit.ArkUI';
+import { LengthMetrics, PromptAction, promptAction } from '@kit.ArkUI';
 import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { webview } from '@kit.ArkWeb';
 import { WebViewParam } from './about';
+import { common } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { preferences } from '@kit.ArkData';
+import { privacyManager } from '@kit.StoreKit';
 
 @Component
 export struct HTML {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
-  private triggerVibration(): void {
-    if (this.vibrationON) {
-      vibration.dotVibration()
-    }
-  }
   controller: webview.WebviewController = new webview.WebviewController();
   @State params: WebViewParam = new WebViewParam('', '');
 
   aboutToAppear() {
-    const pathInfo = this.pageStack.getParent()?.getParamByName('PrivacyPage') as Array<WebViewParam>;
+    const pathInfo = this.pageStack.getParamByName('HTMLPage') as Array<WebViewParam>;
     if (pathInfo && pathInfo.length > 0) {
       this.params = pathInfo[0];
     }
+  }
+  @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
+  PromptAction: PromptAction = this.getUIContext().getPromptAction();
+
+  private async closePage() {
+    this.PromptAction.showDialog({
+      title: `撤销${this.params.title}`,
+      message: '撤销后应用将清除本地缓存退出，确定要撤销吗？',
+      buttons: [
+        { text: '取消', color: '#1E6FCD' },
+        { text: '撤销', color: '#E60012' }
+      ]
+    }).then(async (result: promptAction.ShowDialogSuccessResponse) => {
+      if (result.index === 1) {
+        try {
+          let context = getContext(this) as common.UIAbilityContext;
+          let prefs = await preferences.getPreferences(context, "myAppSettings");
+          await prefs.put(this.IS_FIRST_LAUNCH_KEY, true);
+          await prefs.flush();
+          privacyManager.disableService();
+          this.PromptAction.showToast({ message: `${this.params.title}已撤销，即将退出` });
+          context.terminateSelf().then(() => {
+            console.info('Ability 销毁指令发送成功');
+          }).catch((err: BusinessError) => {
+            console.error(`销毁失败: ${err.code}`);
+          });
+        } catch (error) {
+          const err = error as BusinessError;
+          this.PromptAction.showToast({ message: `撤销失败: ${err.message} (Code: ${err.code})` });
+        }
+      }
+    });
   }
 
   build() {
@@ -35,15 +66,12 @@ export struct HTML {
           .width('100%')
           .layoutWeight(1)
       }
-      .expandSafeArea(
-        [SafeAreaType.SYSTEM],
-        [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
-      )
       .width('100%')
       .height('100%')
     }
-    .onBackPressed((e) => {
-      this.triggerVibration();
+    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+    .onBackPressed(() => {
+      if(this.vibrationON) vibration.dotVibration()
       this.pageStack.pop();
       return true;
     })
@@ -102,9 +130,24 @@ export struct HTML {
         title: {
           mainTitle: this.params.title,
         },
+        menu: {
+          value: [
+            {
+              content: {
+                label: "recall",
+                icon: $r("sys.symbol.xmark_circle"),
+                isEnabled: true,
+                action: () => {
+                  if(this.vibrationON) vibration.dotVibration()
+                  this.closePage();
+                },
+              },
+            },
+          ],
+        },
         backIcon: {
           action: () => {
-            this.triggerVibration();
+            if(this.vibrationON) vibration.dotVibration()
             this.pageStack.pop()
           },
         },
@@ -115,5 +158,7 @@ export struct HTML {
 
 @Builder
 export function HTMLBuilder() {
-  HTML()
+  HTML().expandSafeArea(
+    [SafeAreaType.SYSTEM],
+    [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],)
 }

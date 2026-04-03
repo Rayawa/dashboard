@@ -122,11 +122,6 @@ export struct submitButtons {
         }
     }
 
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibration.dotVibration()
-        }
-    }
 
     @State isCleaning: boolean = false;
     @State isSubmitting: boolean = false;
@@ -354,7 +349,7 @@ export struct submitButtons {
                             return;
                         }
                         this._cleanLastClick = now;
-                        this.triggerVibration();
+                                if(this.vibrationON) vibration.dotVibration()
                         this.clearForm();
                     })
             }
@@ -381,7 +376,7 @@ export struct submitButtons {
                             return;
                         }
                         this._submitLastClick = now;
-                        this.triggerVibration();
+                                if(this.vibrationON) vibration.dotVibration()
                         this.submitForm();
                     })
             }

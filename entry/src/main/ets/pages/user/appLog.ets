@@ -204,7 +204,7 @@ struct appLog {
     }
 
     toggleFilter(type: "beta" | "rc" | "release") {
-        this.triggerVibration();
+                if(this.vibrationON) vibration.dotVibration()
         switch (type) {
             case "beta":
                 this.showBeta = !this.showBeta;
@@ -314,7 +314,7 @@ struct appLog {
             .backgroundColor($r("app.color.backcolor"))
         }
         .onBackPressed(() => {
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             return false;
         })
         .titleBar({
@@ -428,19 +428,13 @@ struct appLog {
                 },
                 backIcon: {
                     action: () => {
-                        this.triggerVibration();
+                                if(this.vibrationON) vibration.dotVibration()
                         this.pageStack.pop()
                     },
                 },
             },
         });
 
-    }
-
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibration.dotVibration()
-        }
     }
 
     private updateFilteredLogs() {

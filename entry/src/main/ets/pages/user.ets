@@ -18,11 +18,7 @@ export struct user {
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibration.dotVibration()
-        }
-    }
+
 
     @State showQuery: boolean = false;
     @State showSubmit: boolean = false;
@@ -112,7 +108,7 @@ export struct user {
                                     .width(24)
                                     .objectFit(ImageFit.Contain)
                                     .onClick(() => {
-                                        this.triggerVibration();
+                                                if(this.vibrationON) vibration.dotVibration()
                                         this.handlePopup = !this.handlePopup;
                                     })
                                     .bindPopup(this.handlePopup, {
@@ -180,7 +176,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.showSubmit = !this.showSubmit;
-                                this.triggerVibration();
+                                        if(this.vibrationON) vibration.dotVibration()
                             })
                             .height(52)
                             .width("100%")
@@ -207,7 +203,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.showQuery = !this.showQuery;
-                                this.triggerVibration();
+                                        if(this.vibrationON) vibration.dotVibration()
                             })
                             .height(52)
                             .width("100%")
@@ -298,7 +294,7 @@ export struct user {
                             this.showSubmit = false;
                             this.showQuery = false;
                             this.showContact = false;
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                         })
                         .width('100%')
                         .height('100%')
@@ -322,7 +318,7 @@ export struct user {
             .height("100%")
         }
         .onBackPressed(() => {
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             if (this.showQuery || this.showSubmit || this.showContact) {
                 this.showSubmit = false;
                 this.showQuery = false;
@@ -392,7 +388,7 @@ export struct user {
                 },
                 backIcon: {
                     action: () => {
-                        this.triggerVibration();
+                                if(this.vibrationON) vibration.dotVibration()
                         if (this.onCloseSplit) {
                             this.onCloseSplit();
                         }

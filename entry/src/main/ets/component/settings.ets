@@ -46,7 +46,12 @@ export struct settings {
                     try {
                         webview.WebStorage.deleteAllData();
                         webview.WebCookieManager.deleteEntireCookie();
-                        this.context.terminateSelf();
+                        const context = getContext(this) as common.UIAbilityContext;
+                        context.terminateSelf().then(() => {
+                            console.info('Ability 销毁指令发送成功');
+                        }).catch((err: BusinessError) => {
+                            console.error(`销毁失败: ${err.code}`);
+                        });
                     } catch (error) {
                         const err = error as BusinessError;
                         console.error(`ErrorCode: ${err.code}, Message: ${err.message}`);

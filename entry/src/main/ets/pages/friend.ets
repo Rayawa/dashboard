@@ -44,10 +44,6 @@ struct friend {
     });
   }
 
-  private triggerVibration(): void {
-    if (this.vibrationON)
-      vibration.dotVibration()
-  }
 
   @State private friendSites: SiteConfig[] = [
     { icon: $r('app.media.HapStore'), url: HapStoreURL.toString(), title: 'Hap资源站' },
@@ -80,7 +76,7 @@ struct friend {
           .objectFit(ImageFit.Contain)
       }
       .onClick(() => {
-        this.triggerVibration();
+                if(this.vibrationON) vibration.dotVibration()
         let params :FriendWebParams = {
           "url": site.url,
           "title": site.title
@@ -115,7 +111,7 @@ struct friend {
           .objectFit(ImageFit.Contain)
       }
       .onClick(() => {
-        this.triggerVibration();
+        if(this.vibrationON) vibration.dotVibration()
         if (site.appID) {
           this.jumpToMarket(site.appID);
         }
@@ -211,7 +207,7 @@ struct friend {
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .onBackPressed(() => {
-      this.triggerVibration();
+              if(this.vibrationON) vibration.dotVibration()
       return false;
     })
     .titleBar({
@@ -247,7 +243,7 @@ struct friend {
         title: { mainTitle: "友情链接" },
         backIcon: {
           action: () => {
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             this.pageStack.pop()
           },
         },

@@ -25,11 +25,7 @@ struct about {
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
 
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  private triggerVibration(): void {
-    if (this.vibrationON) {
-      vibration.dotVibration()
-    }
-  }
+
 
   @StorageProp("showWarn") showWarn: boolean = false;
 
@@ -48,256 +44,256 @@ struct about {
     HdsNavDestination() {
       Stack() {
         Scroll(){
+          Column() {
             Column() {
-              Column() {
-                Image($r("app.media.app_icon"))
-                  .height(100)
-                  .width(100)
-                  .borderRadius($r("sys.float.corner_radius_level6"))
-                Text("鸿蒙应用看板")
-                  .fontWeight(800)
-                  .fontSize(30)
-                  .margin({ top: 20 })
-                  .fontColor($r("app.color.diff_content"))
-                Text("HmDashboard")
-                  .fontWeight(600)
-                  .fontSize(20)
-                  .margin({ top: 10 })
-              }.margin({ top: 60 })
-              Divider()
-                .margin({ top: 20, bottom: 20 })
-                .color($r("app.color.border"))
-              Column() {
+              Image($r("app.media.app_icon"))
+                .height(100)
+                .width(100)
+                .borderRadius($r("sys.float.corner_radius_level6"))
+              Text("鸿蒙应用看板")
+                .fontWeight(800)
+                .fontSize(30)
+                .margin({ top: 20 })
+                .fontColor($r("app.color.diff_content"))
+              Text("HmDashboard")
+                .fontWeight(600)
+                .fontSize(20)
+                .margin({ top: 10 })
+            }.margin({ top: 60 })
+            Divider()
+              .margin({ top: 20, bottom: 20 })
+              .color($r("app.color.border"))
+            Column() {
+              Row() {
                 Row() {
-                  Row() {
-                    Image($r("app.media.attention"))
-                      .height(24)
-                      .width(24)
-                      .objectFit(ImageFit.Contain)
-                    Text("重要提示")
-                      .fontSize(16)
-                      .margin({ left: 12 })
-                      .fontColor(Color.Red)
-                  }
-                  Image($r("app.media.right"))
-                    .height(16)
-                    .width(16)
+                  Image($r("app.media.attention"))
+                    .height(24)
+                    .width(24)
                     .objectFit(ImageFit.Contain)
+                  Text("重要提示")
+                    .fontSize(16)
+                    .margin({ left: 12 })
+                    .fontColor(Color.Red)
                 }
-                .onClick(() => {
-                  this.triggerVibration();
-                  this.showWarn = true;
-                })
-                .height(52)
-                .width("100%")
-                .justifyContent(FlexAlign.SpaceBetween)
-                .padding({ left: 16, right: 16 })
-
-                Divider()
-                  .color($r("app.color.border"))
-                  .strokeWidth(0.5)
-                  .margin({ left: 16, right: 16 })
-
-                Row() {
-                  Row() {
-                    Image($r("app.media.api"))
-                      .height(24)
-                      .width(24)
-                      .objectFit(ImageFit.Contain)
-                    Text("API文档说明")
-                      .fontSize(16)
-                      .margin({ left: 12 })
-                  }
-                  Image($r("app.media.right"))
-                    .height(16)
-                    .width(16)
-                    .objectFit(ImageFit.Contain)
-                }
-                .onClick(() => {
-                  this.triggerVibration();
-                  let param = new WebViewParam('http://shenjack.top:10003/docs', 'API文档说明');
-                  this.pageStack.pushPathByName("AboutWebPage", param);
-                })
-                .height(52)
-                .width("100%")
-                .justifyContent(FlexAlign.SpaceBetween)
-                .padding({ left: 16, right: 16 })
-
-
-                Divider()
-                  .color($r("app.color.border"))
-                  .strokeWidth(0.5)
-                  .margin({ left: 16, right: 16 })
-
-                Row() {
-                  Row() {
-                    Image($r("app.media.log"))
-                      .height(24)
-                      .width(24)
-                      .objectFit(ImageFit.Contain)
-                    Text("Web更新日志")
-                      .fontSize(16)
-                      .margin({ left: 12 })
-                  }
-                  Image($r("app.media.right"))
-                    .height(16)
-                    .width(16)
-                    .objectFit(ImageFit.Contain)
-                }
-                .onClick(() => {
-                  this.triggerVibration();
-                  let param = new WebViewParam('https://hmos.txit.top/changelog', 'Web更新日志');
-                  this.pageStack.pushPathByName("AboutWebPage", param);
-                })
-                .height(52)
-                .width("100%")
-                .justifyContent(FlexAlign.SpaceBetween)
-                .padding({ left: 16, right: 16 })
-                Divider()
-                  .color($r("app.color.border"))
-                  .strokeWidth(0.5)
-                  .margin({ left: 16, right: 16 })
-                Row() {
-                  Row() {
-                    Image($r("app.media.app_log"))
-                      .height(24)
-                      .width(24)
-                      .objectFit(ImageFit.Contain)
-                    Text("App更新日志")
-                      .fontSize(16)
-                      .margin({ left: 12 })
-                  }
-                  Image($r("app.media.right"))
-                    .height(16)
-                    .width(16)
-                    .objectFit(ImageFit.Contain)
-                }
-                .onClick(() => {
-                  this.pageStack.pushPathByName("AppLogPage", null)
-                  this.triggerVibration();
-                })
-                .height(52)
-                .width("100%")
-                .justifyContent(FlexAlign.SpaceBetween)
-                .padding({ left: 16, right: 16 })
-                Divider()
-                  .color($r("app.color.border"))
-                  .strokeWidth(0.5)
-                  .margin({ left: 16, right: 16 })
-                Row() {
-                  Row() {
-                    Image($r("app.media.approve"))
-                      .height(24)
-                      .width(24)
-                      .objectFit(ImageFit.Contain)
-                    Text("用户协议")
-                      .fontSize(16)
-                      .margin({ left: 12 })
-                  }
-                  Image($r("app.media.right"))
-                    .height(16)
-                    .width(16)
-                    .objectFit(ImageFit.Contain)
-                }
-                .onClick(() => {
-                  this.triggerVibration();
-                  this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('approve.html'), "用户协议"));
-                })
-                .height(52)
-                .width("100%")
-                .justifyContent(FlexAlign.SpaceBetween)
-                .padding({ left: 16, right: 16 })
-                Divider()
-                  .color($r("app.color.border"))
-                  .strokeWidth(0.5)
-                  .margin({ left: 16, right: 16 })
-                Row() {
-                  Row() {
-                    Image($r("app.media.privacy"))
-                      .height(24)
-                      .width(24)
-                      .objectFit(ImageFit.Contain)
-                    Text("隐私政策")
-                      .fontSize(16)
-                      .margin({ left: 12 })
-                  }
-                  Image($r("app.media.right"))
-                    .height(16)
-                    .width(16)
-                    .objectFit(ImageFit.Contain)
-                }
-                .onClick(() => {
-                  this.triggerVibration();
-                  this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('privacy.html'), "隐私政策"));
-                })
-                .height(52)
-                .width("100%")
-                .justifyContent(FlexAlign.SpaceBetween)
-                .padding({ left: 16, right: 16 })
-
+                Image($r("app.media.right"))
+                  .height(16)
+                  .width(16)
+                  .objectFit(ImageFit.Contain)
               }
-              .borderWidth(0.5)
-              .borderColor($r("app.color.border"))
-              .backgroundColor($r("app.color.background"))
-              .borderRadius(16)
-              .shadow({
-                radius: 8,
-                color: "#1a000000",
-                offsetX: 0,
-                offsetY: 2,
+              .onClick(() => {
+                if(this.vibrationON) vibration.dotVibration()
+                this.showWarn = true;
               })
-              .width("90%")
-              Divider()
-                .margin({ top: 20, bottom: 10 })
-                .color($r("app.color.border"))
+              .height(52)
+              .width("100%")
+              .justifyContent(FlexAlign.SpaceBetween)
+              .padding({ left: 16, right: 16 })
 
-              Text(`版本 ${APP_VERSION}`)
-                .fontColor("#888")
-                .fontSize(12)
-                .margin(2)
-              Blank().height(5)
-              Text('Designed & Developed by Ray Chen (Rayawa)')
-                .fontColor("#888")
-                .fontSize(12)
-                .margin(2)
-              Text('Copyright ©️2026. All rights reserved.')
-                .fontColor("#888")
-                .fontSize(12)
-                .margin(2)
-              Blank().height(5)
-              Text("本应用备案域名：rayawa.top")
-                .fontSize(12)
-                .fontColor("#888")
-                .margin(2)
-              Column() {
-                Text("京ICP备2025153453号")
-                  .fontSize(12)
-                  .fontColor($r("app.color.diff_content"))
-                  .onClick(async () => {
-                    this.triggerVibration();
-                    const url = "https://beian.miit.gov.cn/#/Integrated/index";
-                    const ui_content = this.getUIContext();
-                    try {
-                      this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
-                      let context = ui_content.getHostContext() as common.UIAbilityContext;
-                      await context.startAbility({
-                        action: "ohos.want.action.viewData",
-                        entities: ["entity.system.browsable"],
-                        uri: url,
-                      } as Want);
-                    } catch (error) {
-                      console.error("打开链接失败:", (error as BusinessError).message);
-                      this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
-                    }
-                  })
-              }.margin(2)
+              Divider()
+                .color($r("app.color.border"))
+                .strokeWidth(0.5)
+                .margin({ left: 16, right: 16 })
+
+              Row() {
+                Row() {
+                  Image($r("app.media.api"))
+                    .height(24)
+                    .width(24)
+                    .objectFit(ImageFit.Contain)
+                  Text("API文档说明")
+                    .fontSize(16)
+                    .margin({ left: 12 })
+                }
+                Image($r("app.media.right"))
+                  .height(16)
+                  .width(16)
+                  .objectFit(ImageFit.Contain)
+              }
+              .onClick(() => {
+                if(this.vibrationON) vibration.dotVibration()
+                let param = new WebViewParam('http://shenjack.top:10003/docs', 'API文档说明');
+                this.pageStack.pushPathByName("AboutWebPage", param);
+              })
+              .height(52)
+              .width("100%")
+              .justifyContent(FlexAlign.SpaceBetween)
+              .padding({ left: 16, right: 16 })
+
+
+              Divider()
+                .color($r("app.color.border"))
+                .strokeWidth(0.5)
+                .margin({ left: 16, right: 16 })
+
+              Row() {
+                Row() {
+                  Image($r("app.media.log"))
+                    .height(24)
+                    .width(24)
+                    .objectFit(ImageFit.Contain)
+                  Text("Web更新日志")
+                    .fontSize(16)
+                    .margin({ left: 12 })
+                }
+                Image($r("app.media.right"))
+                  .height(16)
+                  .width(16)
+                  .objectFit(ImageFit.Contain)
+              }
+              .onClick(() => {
+                if(this.vibrationON) vibration.dotVibration()
+                let param = new WebViewParam('https://hmos.txit.top/changelog', 'Web更新日志');
+                this.pageStack.pushPathByName("AboutWebPage", param);
+              })
+              .height(52)
+              .width("100%")
+              .justifyContent(FlexAlign.SpaceBetween)
+              .padding({ left: 16, right: 16 })
+              Divider()
+                .color($r("app.color.border"))
+                .strokeWidth(0.5)
+                .margin({ left: 16, right: 16 })
+              Row() {
+                Row() {
+                  Image($r("app.media.app_log"))
+                    .height(24)
+                    .width(24)
+                    .objectFit(ImageFit.Contain)
+                  Text("App更新日志")
+                    .fontSize(16)
+                    .margin({ left: 12 })
+                }
+                Image($r("app.media.right"))
+                  .height(16)
+                  .width(16)
+                  .objectFit(ImageFit.Contain)
+              }
+              .onClick(() => {
+                this.pageStack.pushPathByName("AppLogPage", null)
+                if(this.vibrationON) vibration.dotVibration()
+              })
+              .height(52)
+              .width("100%")
+              .justifyContent(FlexAlign.SpaceBetween)
+              .padding({ left: 16, right: 16 })
+              Divider()
+                .color($r("app.color.border"))
+                .strokeWidth(0.5)
+                .margin({ left: 16, right: 16 })
+              Row() {
+                Row() {
+                  Image($r("app.media.approve"))
+                    .height(24)
+                    .width(24)
+                    .objectFit(ImageFit.Contain)
+                  Text("用户协议")
+                    .fontSize(16)
+                    .margin({ left: 12 })
+                }
+                Image($r("app.media.right"))
+                  .height(16)
+                  .width(16)
+                  .objectFit(ImageFit.Contain)
+              }
+              .onClick(() => {
+                if(this.vibrationON) vibration.dotVibration()
+                this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('approve.html'), "用户协议"));
+              })
+              .height(52)
+              .width("100%")
+              .justifyContent(FlexAlign.SpaceBetween)
+              .padding({ left: 16, right: 16 })
+              Divider()
+                .color($r("app.color.border"))
+                .strokeWidth(0.5)
+                .margin({ left: 16, right: 16 })
+              Row() {
+                Row() {
+                  Image($r("app.media.privacy"))
+                    .height(24)
+                    .width(24)
+                    .objectFit(ImageFit.Contain)
+                  Text("隐私政策")
+                    .fontSize(16)
+                    .margin({ left: 12 })
+                }
+                Image($r("app.media.right"))
+                  .height(16)
+                  .width(16)
+                  .objectFit(ImageFit.Contain)
+              }
+              .onClick(() => {
+                if(this.vibrationON) vibration.dotVibration()
+                this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('privacy.html'), "隐私政策"));
+              })
+              .height(52)
+              .width("100%")
+              .justifyContent(FlexAlign.SpaceBetween)
+              .padding({ left: 16, right: 16 })
 
             }
-            .width("100%")
-            .alignItems(HorizontalAlign.Center)
-            .margin({ top: 30, bottom: 20 })
-            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-            .height("100%")
+            .borderWidth(0.5)
+            .borderColor($r("app.color.border"))
+            .backgroundColor($r("app.color.background"))
+            .borderRadius(16)
+            .shadow({
+              radius: 8,
+              color: "#1a000000",
+              offsetX: 0,
+              offsetY: 2,
+            })
+            .width("90%")
+            Divider()
+              .margin({ top: 20, bottom: 10 })
+              .color($r("app.color.border"))
+
+            Text(`版本 ${APP_VERSION}`)
+              .fontColor("#888")
+              .fontSize(12)
+              .margin(2)
+            Blank().height(5)
+            Text('Designed & Developed by Ray Chen (Rayawa)')
+              .fontColor("#888")
+              .fontSize(12)
+              .margin(2)
+            Text('Copyright ©️2026. All rights reserved.')
+              .fontColor("#888")
+              .fontSize(12)
+              .margin(2)
+            Blank().height(5)
+            Text("本应用备案域名：rayawa.top")
+              .fontSize(12)
+              .fontColor("#888")
+              .margin(2)
+            Column() {
+              Text("京ICP备2025153453号")
+                .fontSize(12)
+                .fontColor($r("app.color.diff_content"))
+                .onClick(async () => {
+                  if(this.vibrationON) vibration.dotVibration()
+                  const url = "https://beian.miit.gov.cn/#/Integrated/index";
+                  const ui_content = this.getUIContext();
+                  try {
+                    this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                    let context = ui_content.getHostContext() as common.UIAbilityContext;
+                    await context.startAbility({
+                      action: "ohos.want.action.viewData",
+                      entities: ["entity.system.browsable"],
+                      uri: url,
+                    } as Want);
+                  } catch (error) {
+                    console.error("打开链接失败:", (error as BusinessError).message);
+                    this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                  }
+                })
+            }.margin(2)
+
+          }
+          .width("100%")
+          .alignItems(HorizontalAlign.Center)
+          .margin({ top: 30, bottom: 20 })
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+          .height("100%")
         }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.END]).width("100%").height("100%")
         if (this.showWarn) {
           Column()
@@ -314,7 +310,7 @@ struct about {
             )
             .onClick(() => {
               this.showWarn = false;
-              this.triggerVibration();
+              if(this.vibrationON) vibration.dotVibration()
             })
         }
         blurPopup({ isShow: this.showWarn }) { warn() }
@@ -325,7 +321,7 @@ struct about {
       .height("100%")
     }
     .onBackPressed(() => {
-      this.triggerVibration();
+      if( this.vibrationON ) vibration.dotVibration()
       if ( this.showWarn ) {
         this.showWarn = false;
         return true;
@@ -390,7 +386,7 @@ struct about {
         },
         backIcon: {
           action: () => {
-            this.triggerVibration();
+            if(this.vibrationON) vibration.dotVibration()
             this.pageStack.pop()
           },
         },
