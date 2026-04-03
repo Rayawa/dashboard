@@ -47,7 +47,10 @@ export struct warn {
                     this.itemText(item)
                 })
 
-                Divider().margin({ top: 10, bottom: 10 }).color("#EEEEEE")
+                Divider()
+                    .color($r("app.color.border"))
+                    .strokeWidth(0.5)
+                    .margin({ left: 16, right: 16 })
 
                 Text("【法律声明】")
                     .fontSize(16)
