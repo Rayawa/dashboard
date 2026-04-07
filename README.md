@@ -1,45 +1,49 @@
-# 鸿蒙应用看板 / HmDashboard （鸿蒙应用）
+# 鸿蒙应用看板（HmDashboard）
 
 [![HarmonyOS API](https://img.shields.io/badge/HarmonyOS-API%2020%2B-blue)](#)
-[![Languages](https://img.shields.io/badge/主语言-ArkTS%2CRust-orange)](#)
+[![主语言: ArkTS, Rust](https://img.shields.io/badge/主语言-ArkTS%2C%20Rust-orange)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](#)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#)
 
 一句话简介
-------------
-基于 HarmonyOS 的实时分布式应用下载量看板 — 实时展示与可视化 HarmonyOS 应用的下载统计与趋势。
-项目背景与功能特性
-------------------
-本应用是由Harmony Gallery项目组直接参与编写的鸿蒙应用。应用收集华为应用市场的公开数据，转化为直观的图表与报告。
- " 1. 数据总览与图表分析：\n   通过榜单、饼图与折线图，直观查看应用下载量、评分趋势与市场分布。\n\n" +
-                        " 2. 搜索应用与查看详情：\n   支持按名称、评分等条件搜索排序、应用内搜索应用、分享链接搜索应用。您可查看各种应用数据与趋势图。\n\n" +
-                        " 3. 数据定时自动更新：\n    后台每30分钟同步一次数据，确保您始终获取最新数据。\n\n" +
-                        " 4. 交互式操作与分享：\n    点击图表可进行数据筛选，点击应用可进入详情页；您也可通过链接、隔空抓取或鸿蒙碰一碰便捷分享应用页面。\n\n" +
-                        " 5. 投稿更新应用信息：\n    您可通过应用市场分享与“我的”页面向应用看板投稿，协助投稿新应用或更新应用信息。\n\n",
+----------
+基于 HarmonyOS 的实时分布式应用下载量看板 —— 实时展示与可视化 HarmonyOS 应用的下载统计与趋势。
 
-主要功能：
-                    Text("• 数据统计 - 展示应用总数、元服务总数、开发者总数等关键指标的统计数据。\n",).fontSize(14)
-                    Text("• 下载榜 - 提供下载量排名前20的应用列表，以及排除华为系应用后的下载量排名。\n",).fontSize(14)
-                    Text("• 应用详情 - 点击任意应用相关图标查看应用的详细信息，包括下载量、评分、支持设备、版本信息等。\n",).fontSize(14)
-                    Text("• 趋势分析 - 展示应用下载量的变化趋势和增量趋势图表。\n").fontSize(14)
-                    Text("• 应用列表 - 详细应用信息表格，支持搜索、排序、筛选功能。\n").fontSize(14)
+目录
+----
+- [特性 / Features](#特性--features)
+- [架构概览 / Architecture](#架构概览--architecture)
+- [项目结构 / Project structure](#项目结构--project-structure)
+- [快速上手 / Quick start](#快速上手--quick-start)
+- [配置 / Configuration](#配置--configuration)
+- [权限说明 / Permissions](#权限说明--permissions)
+- [开发与维护建议 / Notes for contributors](#开发与维护建议--notes-for-contributors)
+- [许可证与鸣谢 / License & Acknowledgments](#许可证与鸣谢--license--acknowledgments)
 
-## 🏗 全栈架构 (Full-Stack Architecture)
+特性 / Features
+---------------
+- 数据总览：展示应用总数、元服务数、开发者数等关键指标。
+- 下载榜单：展示下载量排名（Top N），并支持排除特定厂商（如华为系）的统计。
+- 应用详情：查看单个应用的下载量、评分、支持设备、版本等信息。
+- 趋势分析：折线 / 柱状图展示下载量变化与增量趋势。
+- 搜索与筛选：按名称、评分、时间等条件搜索并排序。
+- 定时同步：后端每 30 分钟定时抓取并更新数据（可配置）。
+- 分享与交互：支持生成分享链接、快照、以及鸿蒙的分布式分享能力。
 
-项目采用“**统一后端逻辑 + 多端原生体验**”的架构设计，确保跨平台数据的一致性与极高的响应速度。
+架构概览 / Architecture
+-----------------------
+采用“统一后端逻辑 + 多端原生体验”设计，后端负责数据抓取与聚合，前端提供深度鸿蒙适配的原生界面。
 
-### 1. 后端服务 (The Engine)
-* **核心语言:** Rust (Edition 2024)
-* **网络框架:** `Axum 0.8` (高性能异步 REST API)
-* **运行时:** `Tokio 1.47`
-* **数据库:** `PostgreSQL 12+` (支持 JSONB 存储、触发器与索引优化)
-* **压缩方案:** 采用 `Tower-HTTP` 进行 Brotli/Zstd 实时压缩，显著降低移动端流量消耗。
+1. 后端（The Engine）
+    - 语言：Rust（Edition 2024）
+    - 网络：Axum 0.8（异步 REST API）
+    - 运行时：Tokio 1.47
+    - 数据库：PostgreSQL 12+（支持 JSONB）
+    - 传输优化：使用 tower-http 支持 Brotli / Zstd 压缩
 
-### 2. 鸿蒙前端 (This Repo)
-* **框架:** ArkTS + ArkUI (HarmonyOS 6.0 / API 12+)
-* **特色:** 深度适配鸿蒙原生分布式能力（分享、接续、快照）。
-entry/ets 页面概览（请把下面表格与实际文件名替换）
-- 主要说明：下面为模板，请将实际页面文件名及主变量替换进来（我可以帮你自动提取，如果你允许我读取仓库文件）。
+2. 鸿蒙前端（This repo）
+    - 技术：ArkTS + ArkUI（HarmonyOS 6.0 / API 12+）
+    - 特色：深度适配鸿蒙分布式能力（分享、接续、快照、碰一碰等）
 
 目录结构（概览）
 - entry/src/main/ets/
@@ -51,101 +55,75 @@ entry/ets 页面概览（请把下面表格与实际文件名替换）
     - pages/user/           — user 子页面（关于、日志、HTML 页面等）
   - utils/                  — 辅助工具（例如 Logger）
 
-下面按目录展开说明（含主要文件列表与职责）。
 
----
 
-## ability/ — Ability 相关页面（原生入口 / 流程）
-用途：承载直接由 Ability（或特定能力调用）的页面，通常和系统能力或较复杂的权限/流程有关（如提交、查询的原生流程）。
-主要文件：
-- complexSubmit.ets — 复杂提交流程页（多步/复杂表单、校验、提交逻辑）。
-- simpleSubmit.ets  — 简单提交流程页（单页/表单提交）。
-- submitEntry.ets   — 提交入口/包装，供外部 Ability 跳转使用。
-- query.ets         — 查询相关的 Ability 页面（原生查询流程）。
-- queryEntry.ets    — 查询入口的轻量封装。
-- entry.ets         — Ability 通用入口或引导页面（初始化/路由/权限入口）。
+entry/src/main/ets/
 
-适用场景：需要启动原生能力或希望将某些流程做成独立 Ability 来管理时使用。
+ability/
 
----
+职责：与系统 Ability 直接交互的页面或流程入口，通常用于原生流程、权限或复杂提交流程。
+关键文件：
+entry.ets — Ability 通用入口（路由初始化、权限检查）。
+submitEntry.ets — 提交流程的 Ability 包装入口（接收外部参数并跳转）。
+query.ets / queryEntry.ets — 原生查询流程入口与封装。
+约定：Ability 页面应尽量保持轻业务逻辑（交由 common 层处理），并只负责能力相关的原生调用与参数转换。
+abilityPages/
 
-## abilityPages/ — 能力/流程专用页面
-用途：把部分交互性强或流程特定的页面放在此目录，便于和主 pages 分离，同时它们可以作为 Ability 的内容页被引用。
-主要文件（示例）：
-- complexSubmit.ets — 与 ability/complexSubmit 功能类似，但用于页面化展示（冗长表单、验证、确认等）。
-- loading.ets       — 统一的加载/过渡页面组件（可用于页面切换时的 loading 效果）。
-- queryWeb.ets      — 在 Ability 流程中使用的 Web 查询/显示页（和 pages/queryWeb 相似但适配不同上下文）。
+职责：可被 Ability 或 pages 复用的独立流程页面（多步表单、确认流）。
+关键文件：
+complexSubmit.ets — 多步/复杂提交流程页面（含本地校验与回滚）。
+loading.ets — 统一过渡/加载页面（页面装饰组件）。
+queryWeb.ets — 内嵌 Web 查询页面（与 queryWeb.ets 功能相似但适配流程场景）。
+common/
 
----
+职责：全项目通用工具、网络封装、常量、类型、持久化与分享逻辑。
+关键文件与职责：
+api.ets — 后端 API 封装层，统一请求、重试、错误处理、分页封装。
+推荐导出：getAppList(params), getAppDetail(id), getTopDownloads(opts)
+返回格式统一：{ success: boolean, data: T, error?: { code, message } }
+url.ets — 各市场/站点 URL 管理与构造规则（集中修改入口）。
+constants.ets — 全局常量（缓存 key、默认分页、默认语言等）。
+types.ets — 公共类型/接口定义（App, AppSummary, ApiResponse 等）。
+DiskStorage.ets / SettingsStorage.ets — 本地存储抽象（带版本/迁移策略）。
+shareControl.ets — 分享/快照/剪贴板封装（处理分布式分享与权限）。
+utils.ets — 字符串/时间/格式化/防抖/节流等通用函数。
+约定：
+所有网络请求必须通过 api.ets，页面只处理展示逻辑。
+Storage 模块需支持版本号与迁移函数：migrate(oldVersion, newVersion)。
+component/
 
-## common/ — 通用库与工具（项目内共享逻辑）
-用途：放置项目中多处会复用的业务/工具模块，例如 API 调用包装、本地存储、常量、URL 配置、分享与剪贴板控制、NLP、profile 等。
-主要文件与职责：
-- api.ets             — 对后端/第三方 API 的封装与请求方法。
-- constants.ets       — 全项目常量（键名、默认值等）。
-- DiskStorage.ets     — 基于磁盘的持久化封装（文件/缓存读写）。
-- SettingsStorage.ets — 偏好/设置持久化封装。
-- NaturalLanguageExtract.ets — 与自然语言处理、提取相关的逻辑/封装（例如解析文本中的链接或关键字）。
-- got.ets             — HTTP 请求/工具函数（可能是网络请求或抓取的封装）。
-- profile.ets         — 用户 profile 管理（读取/写入/默认值）。
-- shareControl.ets    — 分享/快照/剪贴板 相关控制逻辑（shareManager 的封装）。
-- types.ets           — 类型定义（接口/类型别名，便于项目内部类型约束）。
-- url.ets             — 各类站点/市场 URL 管理与构造（非常重要，管理多个站点地址与构造规则）。
-- utils.ets           — 公共工具函数（字符串处理、格式化等）。
-- vibration.ets       — 震动/触感反馈封装（调用震动能力并做兼容处理）。
+职责：可复用 UI 组件集合（风格统一、低耦合）。
+关键组件：
+CardApp.ets — 应用卡片（图标、名称、评分、下载量摘要）。
+KnockShareGuideCard.ets — 分享引导卡片。
+appQuery.ets — 查询输入与站点选择控件（带快捷选择）。
+appSubmit.ets — 提交表单字段组合（校验 & 预览）。
+blurPopup.ets / confirmButtons.ets — 通用弹窗与操作按钮组合。
+tutorial.ets — 新手引导组件（步进指引）。
+约定：
+组件应尽量无状态或只维护 UI 状态（将数据与副作用委托给 common 层或页面）。
+组件导出：默认导出主组件并导出必要的 types/props 接口。
+pages/
 
-作用说明：
-- `common/url.ets` 是站点地址和构造规则的集中地（对多市场、多站点检索非常关键）。
-- `shareControl.ets` 与 `DiskStorage.ets`、`SettingsStorage.ets` 等配合用于用户设置、分享快照和本地缓存。
+职责：用户可见视图集合，包含主导航页面与路由逻辑。
+重要页面与职责：
+Dashboard.ets — 仪表盘首页，组合多个卡片、图表与筛选控件；初始化数据聚合请求。
+friend.ets / friendWeb.ets — 友链/外链列表与 WebView 浏览器封装。
+queryWeb.ets — 联合多个站点抓取并展示查询结果（支持分页与缓存）。
+user.ets — 用户主页：偏好、��稿入口、日志。
+pages/user/about.ets — 关于页面（版本、许可、贡献说明）。
+pages/user/appLog.ets — 应用事件/操作日志展示（便于 Debug）。
+约定：
+页面调用方式统一：PageStack.push({ name, params })，且 param 约定写在 types.ets。
+页面层只负责 state/交互与渲染，所有业务逻辑委托给 common/api + services。
+utils/
+职责：跨页面的小型工具与适配器。
+关键文件：
+Logger.ets — 日志记录器（支持等级/输出到文件/上传）。
+timeFormatter.ets — 时间格式化/相对时间工具。
 
----
 
-## component/ — 可复用 UI 组件集合
-用途：封装常用 UI 单元（卡片、按钮组、弹窗、表单域、教程、警告等），供 pages 与 abilityPages 调用，便于统一样式与行为。
-主要文件（示例）：
-- KnockShareGuideCard.ets — 分享引导卡片 / 指导组件。
-- appQuery.ets            — 应用查询相关组件（输入表单、站点选择、查询按钮）。
-- appSubmit.ets           — 应用信息提交相关组件（表单、校验、提交按钮组合）。
-- blurPopup.ets           — 带模糊背景的弹窗。
-- confirmButtons.ets      — 确认/取消按钮组合。
-- contact.ets             — 联系/反馈组件或卡片。
-- queryButtons.ets        — 查询相关按钮集合（多选/展开/切换）。
-- settings.ets            — 设置面板的封装组件（主题、偏好等）。
-- submitButtons.ets       — 提交用按钮的样式与行为封装（动画、loading 等）。
-- tutorial.ets            — 新手教程/引导组件（多步指引、覆盖层）。
-- warn.ets                — 警告/提示组件（常见于重要确认/删除等场景）。
 
-使用建议：
-- 对于页面中特有的交互，优先抽象到 component，以便在 Dashboard、friend、user 等页面复用。
-- 组件通常会依赖 common 中的 shareControl、profile、api 等模块。
-
----
-
-## pages/ — 应用主页面集合（用户可见视图）
-用途：项目的主视图集合，直接组成用户交互流程与导航。为最常改动与扩展的部分。
-主要文件与职责（已在前面摘要，此处完整列举）：
-- Dashboard.ets      — 应用主首页 / 仪表盘（导航、站点选择、卡片展示、WebView 嵌入、分享、快照等）。
-- friend.ets         — 友链/商店原生列表（图标 + 跳转）。
-- friendWeb.ets      — 友链的 WebView 浏览页（回退/前进/刷新/分享/快照）。
-- queryWeb.ets       — Web 查询/检索界面（构造多站点检索并展示）。
-- user.ets           — 用户主页（昵称、偏好、入口到 user 子页）。
-- pages/user/about.ets     — 关于页面（项目介绍、作者、版本、许可等）。
-- pages/user/aboutWeb.ets  — 关于页面的 Web 扩展（展示富网页内容）。
-- pages/user/appLog.ets    — 应用日志 / 操作记录页面（用于调试或展示历史记录）。
-- pages/user/htmlPage.ets  — 通用 HTML 展示页（公告、帮助文档等）。
-- pages/user/（其余子页面） — 其他用户相关子页（如隐私、许可、个人设置等，若有则放在此目录）。
-
-交互要点：
-- pages 下大量使用 Ark UI（NavBar、TabBar、Scroll、Popup、Button、Image 等）。
-- Dashboard 作为主入口协调其它页面（通过 PageStack、push/pop、params 传值）。
-- pages 内许多页面会调用 common/shareControl、common/url、component 中的复用组件。
-
----
-
-## utils/ — 辅助工具
-用途：放置一些小型的、跨页面使用的工具。
-主要文件：
-- Logger.ets — 日志记录器（标准输出/格式化/级别控制），供开发调试与日志收集使用。
 
 ---
 
