@@ -1,14 +1,14 @@
-import { AppInfo, NaturalLanguageExtractor } from "../common/NaturalLanguageExtract";
-import { hdsEffect } from "@kit.UIDesignKit";
-import { vibrator } from "@kit.SensorServiceKit";
-import { BusinessError } from "@kit.BasicServicesKit";
-import { queryButtons } from "./queryButtons";
+import { AppInfo, NaturalLanguageExtractor } from '../common/NaturalLanguageExtract';
+import { hdsEffect } from '@kit.UIDesignKit';
+import { vibration } from '../common/vibration';
+import { queryButtons } from './queryButtons';
 
-import type { FormData } from "../common/types";
-@Entry
+import type { FormData } from '../common/types';
+
 @Component
 export struct appQuery {
   @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
+  @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("userName") userName: string = "";
   @StorageLink("inputText") inputText: string = "";
   @StorageLink("formData") formData: FormData = {
@@ -333,44 +333,9 @@ export struct appQuery {
       this.extractedApps = apps;
 
       if (this.extractedApps.length > 0) {
-        vibrator.isSupportEffect(
-          "haptic.effect.hard",
-          (err: BusinessError, state: boolean) => {
-            if (err) {
-              console.error(
-                `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-              );
-              return;
-            }
-            console.info("Succeed in querying effect");
-            if (state) {
-              try {
-                vibrator.startVibration(
-                  {
-                    type: "preset",
-                    effectId: "haptic.effect.hard",
-                    count: 5,
-                    intensity: 100,
-                  },
-                  { usage: "touch" },
-                  (error: BusinessError) => {
-                    if (error) {
-                      console.error(
-                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                      );
-                    } else {
-                      console.info("Succeed in starting vibration");
-                    }
-                  },
-                );
-              } catch (tryError) {
-                console.error(
-                  `An unexpected error occurred in try block: ${tryError}`,
-                );
-              }
-            }
-          },
-        );
+        if(this.vibrationON){
+          vibration.waveVibration()
+        }
         this.autoFillForm();
       }
     } catch (error) {

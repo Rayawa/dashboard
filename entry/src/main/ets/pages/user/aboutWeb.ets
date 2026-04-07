@@ -1,25 +1,27 @@
 import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import {
-  hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
+  hdsEffect, HdsNavDestination, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
-import { vibrator } from '@kit.SensorServiceKit';
+import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { vibration } from '../../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
-import { WebShareManager } from '../common/shareControl';
+import { WebShareManager } from '../../common/shareControl';
 import {
   getButtonPosition,
   getHoldCheckEnabled,
   getVibrationEnabled,
   initializeSettings
-} from '../common/SettingsStorage';
-
+} from '../../common/SettingsStorage';
+import { WebViewParam } from './about';
 
 @Component
-export struct userWeb {
+struct aboutWeb {
+  @Consume('pageStack') pageStack: NavPathStack;
+  PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @Prop url: string = '';
   @Prop title: string = '';
 
@@ -33,52 +35,16 @@ export struct userWeb {
   @State touchY: number = 0;
   @State isTouching: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("holdCheckON") holdCheckON: boolean = true;
+  @StorageLink("holdCheckON") holdCheckON: boolean = false;
   @State holdCheckTMP: boolean = false;
   @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
 
   scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
-  private triggerVibration(): void {
-    if (this.vibrationON) {
-      vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-        if (err) {
-          console.error(
-            `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-          );
-          return;
-        }
-        console.info("Succeed in querying effect");
-        if (state) {
-          try {
-            vibrator.startVibration(
-              {
-                type: "preset",
-                effectId: "haptic.effect.hard",
-                count: 1,
-                intensity: 50,
-              },
-              { usage: "touch" },
-              (error: BusinessError) => {
-                if (error) {
-                  console.error(
-                    `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                  );
-                } else {
-                  console.info("Succeed in starting vibration");
-                }
-              },
-            );
-          } catch (tryError) {
-            console.error(`An unexpected error occurred in try block: ${tryError}`);
-          }
-        }
-      });
-    }
-  }
 
   //动画与振动
   private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
@@ -129,11 +95,11 @@ export struct userWeb {
       console.error("加载设置失败:", error);
     }
   }
+  @State params: WebViewParam = new WebViewParam('', '');
   async aboutToAppear() {
-    const params = router.getParams() as Record<string, string>;
-    if (params) {
-      this.url = params.url;
-      this.title = params.title;
+    const pathParams = this.pageStack.getParamByName("AboutWebPage") as Array<WebViewParam>;
+    if (pathParams && pathParams.length > 0) {
+      this.params = pathParams[0];
     }
     //获取屏幕右边位置
     const displayInfo = display.getDefaultDisplaySync();
@@ -164,7 +130,7 @@ export struct userWeb {
     }, 500);
     //分享
     const context = getContext(this) as common.UIAbilityContext;
-    this.shareManager = WebShareManager.getInstance(context, this.web_controller);
+    this.shareManager = WebShareManager.getInstance(context);
     this.shareManager.enablePassiveShare();
     this.context.eventHub.on("onFocus", () => {
       this.shareManager?.enablePassiveShare();
@@ -196,20 +162,9 @@ export struct userWeb {
     }
   }
 
-  onBackPress(): boolean | void {
-    if (this.web_controller.accessStep(-1)) {
-      console.info("网页可以返回，执行后退");
-      this.web_controller.backward();
-      this.triggerVibration();
-      prompt.showToast({ message: "返回上一页", duration: 1000 });
-      return true;
-    } else {
-      return false;
-    }
-  }
 
   build() {
-    HdsNavigation() {
+    HdsNavDestination() {
       Stack(){
         if (this.isLoading) {
           Progress({ value: this.progress, total: 100 })
@@ -221,7 +176,7 @@ export struct userWeb {
         Scroll(this.scroller) {
           Column() {
             Web({
-              src: this.url,
+              src: this.params.url,
               controller: this.web_controller,
               renderMode: RenderMode.SYNC_RENDER,
             })
@@ -278,8 +233,8 @@ export struct userWeb {
                 yOffset: 0,
                 animation: { duration: 300, curve: Curve.Ease },
               });
-              this.triggerVibration();
-              prompt.showToast({
+                      if(this.vibrationON) vibration.dotVibration()
+              this.PromptAction.showToast({
                 message: "回到顶部",
                 duration: 500,
               });
@@ -326,8 +281,8 @@ export struct userWeb {
               if (this.isLoading) {
                 this.web_controller.stop();
                 this.isLoading = false;
-                this.triggerVibration();
-                prompt.showToast({
+                        if(this.vibrationON) vibration.dotVibration()
+                this.PromptAction.showToast({
                   message: "已停止加载",
                   duration: 1000,
                 });
@@ -343,15 +298,15 @@ export struct userWeb {
                   console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
                 }
                 this.isLoading = true;
-                this.triggerVibration();
-                prompt.showToast({
+                        if(this.vibrationON) vibration.dotVibration()
+                this.PromptAction.showToast({
                   message: "刷新中...",
                   duration: 1000,
                 });
                 setTimeout(() => {
                   if (this.isLoading) {
                     this.isLoading = false;
-                    prompt.showToast({
+                    this.PromptAction.showToast({
                       message: "加载超时！",
                       duration: 1000,
                     });
@@ -426,9 +381,9 @@ export struct userWeb {
                 this.showButtonAnimation = true;
                 if(this.holdCheckTMP){ this.holdCheckON = true; }
                 if (this.buttonY >= 660) {
-                  prompt.showToast({ message: "不能再往下啦", duration: 500 });
+                  this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
                 } else if (this.buttonY <= 70) {
-                  prompt.showToast({ message: "不能再往上啦", duration: 500 });
+                  this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
                 }
               }),
           )
@@ -443,7 +398,7 @@ export struct userWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
             });
           Column()
             .backgroundColor(Color.Transparent)
@@ -454,15 +409,25 @@ export struct userWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
             });
         }
       }
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
-    .navBarWidth("100%")
-    .titleMode(HdsNavigationTitleMode.MINI)
+    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+    .onBackPressed(() => {
+              if(this.vibrationON) vibration.dotVibration()
+      if (this.web_controller.accessStep(-1)) {
+        console.info("网页可以返回，执行后退");
+        this.web_controller.backward();
+        this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
+        return true;
+      } else {
+        return false;
+      }
+    })
     .titleBar({
       style: {
         scrollEffectOpts: {
@@ -509,14 +474,14 @@ export struct userWeb {
             },
           },
         },
-        systemMaterialEffect: {
+        systemMaterialEffect: this.immersiveTextureON ? {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-        },
+        } : undefined
       },
       content: {
         title: {
-          mainTitle: this.title,
+          mainTitle: this.params.title,
         },
         menu: {
           value: [
@@ -526,8 +491,9 @@ export struct userWeb {
                 icon: $r("sys.symbol.share"),
                 isEnabled: true,
                 action: () => {
-                  this.shareManager?.showSystemShare();
-                  this.triggerVibration();
+                          if(this.vibrationON) vibration.dotVibration()
+                  const realUrl = this.web_controller.getUrl();
+                  this.shareManager?.showSystemShare(realUrl);
                 },
               },
             },
@@ -535,12 +501,16 @@ export struct userWeb {
         },
         backIcon: {
           action: () => {
-            router.back();
-            this.triggerVibration();
-
+                    if(this.vibrationON) vibration.dotVibration()
+            this.pageStack.pop()
           },
         },
       },
     });
   }
+}
+
+@Builder
+export function AboutWebBuilder(){
+  aboutWeb()
 }

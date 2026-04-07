@@ -11,28 +11,37 @@ const TAG = 'WebShareManager';
 export class WebShareManager {
   private static instance: WebShareManager;
   private context: common.UIAbilityContext;
-  private webController: webview.WebviewController;
   private isListening: boolean = false;
 
-  private constructor(context: common.UIAbilityContext, webController: webview.WebviewController) {
+  private currentUrl: string = "";
+
+  private constructor(context: common.UIAbilityContext) {
     this.context = context;
-    this.webController = webController;
   }
 
-  public static getInstance(context: common.UIAbilityContext, webController: webview.WebviewController): WebShareManager {
+  public updateShareData(url: string) {
+    this.currentUrl = url;
+    Logger.info(TAG, `URL 缓存已更新: ${url}`);
+  }
+
+  public static getInstance(context: common.UIAbilityContext): WebShareManager {
     if (!WebShareManager.instance) {
-      WebShareManager.instance = new WebShareManager(context, webController);
+      WebShareManager.instance = new WebShareManager(context);
     }
-    WebShareManager.instance.webController = webController;
     return WebShareManager.instance;
   }
 
   /**
-   * 1. 系统分享按钮触发方法 (主动调用)
+   * 1. 系统分享按钮触发方法 (使用注入的数据)
    */
-  public async showSystemShare() {
+  public async showSystemShare(url?: string) {
     try {
-      const currentUrl = this.webController.getUrl();
+      const finalUrl = url || this.currentUrl;
+
+      if (!finalUrl || finalUrl === "about:blank") {
+        Logger.error(TAG, "Share failed: URL is empty");
+        return;
+      }
 
       let iconData: Uint8Array | undefined = undefined;
       try {
@@ -43,9 +52,9 @@ export class WebShareManager {
 
       let shareData: systemShare.SharedData = new systemShare.SharedData({
         utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
-        content: currentUrl,
-        title: "应用看板链接分享",
-        description: `${currentUrl}`,
+        content: finalUrl,
+        title: "鸿蒙应用看板链接分享",
+        description: finalUrl,
         thumbnail: iconData
       });
 
@@ -54,9 +63,8 @@ export class WebShareManager {
         previewMode: systemShare.SharePreviewMode.DEFAULT,
         selectionMode: systemShare.SelectionMode.SINGLE,
       });
-      Logger.info(TAG, "HarmonyShare: System share panel showed.");
     } catch (err) {
-      Logger.error(TAG, `HarmonyShare: System share error: ${(err as BusinessError).message}`);
+      Logger.error(TAG, `System share error: ${(err as BusinessError).message}`);
     }
   }
 
@@ -101,14 +109,19 @@ export class WebShareManager {
   }
 
   /**
-   * 内部统一执行分享逻辑
+   * 内部统一执行被动分享逻辑 (碰一碰、隔空传送)
    */
   private executePassiveShare(target: harmonyShare.SharableTarget) {
+    if (!this.currentUrl || this.currentUrl === "about:blank") {
+      Logger.error(TAG, "Passive share failed: No URL cached");
+      return;
+    }
+
     const shareData = new systemShare.SharedData({
       utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
-      content: this.webController.getUrl(),
-      title: "应用看板链接分享",
-      description: `${this.webController.getUrl()}`,
+      content: this.currentUrl,
+      title: "鸿蒙应用看板链接分享",
+      description: this.currentUrl,
     });
 
     target.share(shareData).then(() => {

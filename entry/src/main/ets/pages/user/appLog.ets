@@ -1,8 +1,7 @@
-import { LengthMetrics, prompt, router } from '@kit.ArkUI';
-import { vibrator } from '@kit.SensorServiceKit';
-import { BusinessError } from '@kit.BasicServicesKit';
-import { HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
+import { vibration } from '../../common/vibration';
 
 interface UpdateLog {
     version: string;
@@ -12,17 +11,38 @@ interface UpdateLog {
     items: string[];
 }
 
-@Entry
+
 @Component
 struct appLog {
+    @Consume('pageStack') pageStack: NavPathStack;
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    @StorageLink("vibrationON") vibrationON: boolean = true;
+    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     private updateLogs: UpdateLog[] = [
         {
             // "更新页面设计，增加了触感反馈与动效",
             // "applinking",
             // "为不同比例的设备增加了页面适配",
-            // "加入一镜到底的动效，使页面流转更加生动",
+
+            // session terminate self
+            // 主界面backpress
+            // 接续
+            // query返回不统一
+            // url get
+            // ability tag
+
+            version: "V2.0.0-rc.2",
+            date: "2026-3-30",
+            type: "rc",
+            items: [
+                "大幅重构我的页面逻辑，增加众多页面",
+                "改变使用说明逻辑，增加首次启动提示",
+                "为平板、PC与折叠屏适配了分栏显示",
+            ],
+        },
+        {
             version: "V2.0.0-rc.1",
-            date: "2026-3-24",
+            date: "2026-3-30",
             type: "rc",
             items: [
                 "上线了查询功能，现在可以在app内查询页面输入信息查询应用信息或在应用商店分享到看板查询应用信息！",
@@ -30,10 +50,11 @@ struct appLog {
                 "将设置弹出逻辑改为半模态",
                 "增加了友情链接",
                 "重新设置弹出页面统一体验",
+                "修改页面导航逻辑，注册路由表",
+                "统一震感反馈，修复设置在部分页面不生效的问题。",
                 "统一界面操作逻辑，统一悬浮按钮与顶部栏设计",
                 "修复了分享页面唤起应用的列表不显示文字的问题",
                 "将应用显示名称从HmDashboard更换至鸿蒙应用看板",
-                // "修复了流转跳转页面异常的问题",
             ],
         },
         {
@@ -183,7 +204,7 @@ struct appLog {
     }
 
     toggleFilter(type: "beta" | "rc" | "release") {
-        this.triggerVibration();
+                if(this.vibrationON) vibration.dotVibration()
         switch (type) {
             case "beta":
                 this.showBeta = !this.showBeta;
@@ -199,7 +220,7 @@ struct appLog {
     }
 
     build() {
-        HdsNavigation() {
+        HdsNavDestination() {
             Scroll() {
                 Column() {
                     Column() {
@@ -292,8 +313,10 @@ struct appLog {
             .height("100%")
             .backgroundColor($r("app.color.backcolor"))
         }
-        .navBarWidth("100%")
-        .titleMode(HdsNavigationTitleMode.MINI)
+        .onBackPressed(() => {
+                    if(this.vibrationON) vibration.dotVibration()
+            return false;
+        })
         .titleBar({
             style: {
                 scrollEffectOpts: {
@@ -340,10 +363,10 @@ struct appLog {
                         },
                     },
                 },
-                systemMaterialEffect: {
+                systemMaterialEffect: this.immersiveTextureON ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                },
+                } : undefined
             },
             content: {
                 title: {
@@ -358,7 +381,7 @@ struct appLog {
                                 isEnabled: true,
                                 action: () => {
                                     this.toggleFilter("beta");
-                                    prompt.showToast({
+                                    this.PromptAction.showToast({
                                         message: this.showBeta
                                             ? "打开Beta版本日志"
                                             : "关闭Beta版本日志",
@@ -374,7 +397,7 @@ struct appLog {
                                 isEnabled: true,
                                 action: () => {
                                     this.toggleFilter("rc");
-                                    prompt.showToast({
+                                    this.PromptAction.showToast({
                                         message: this.showRc
                                             ? "打开ReleaseCandidate版本日志"
                                             : "关闭ReleaseCandidate版本日志",
@@ -392,7 +415,7 @@ struct appLog {
                                 isEnabled: true,
                                 action: () => {
                                     this.toggleFilter("release");
-                                    prompt.showToast({
+                                    this.PromptAction.showToast({
                                         message: this.showRelease
                                             ? "打开正式版日志"
                                             : "关闭正式版日志",
@@ -405,51 +428,13 @@ struct appLog {
                 },
                 backIcon: {
                     action: () => {
-                        this.triggerVibration();
-                        router.back();
+                                if(this.vibrationON) vibration.dotVibration()
+                        this.pageStack.pop()
                     },
                 },
             },
         });
-    }
 
-    @StorageLink("vibrationON") vibrationON: boolean = true;
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (err) {
-                    console.error(
-                        `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                    );
-                    return;
-                }
-                console.info("Succeed in querying effect");
-                if (state) {
-                    try {
-                        vibrator.startVibration(
-                            {
-                                type: "preset",
-                                effectId: "haptic.effect.hard",
-                                count: 1,
-                                intensity: 50,
-                            },
-                            { usage: "touch" },
-                            (error: BusinessError) => {
-                                if (error) {
-                                    console.error(
-                                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                    );
-                                } else {
-                                    console.info("Succeed in starting vibration");
-                                }
-                            },
-                        );
-                    } catch (tryError) {
-                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                    }
-                }
-            });
-        }
     }
 
     private updateFilteredLogs() {
@@ -466,4 +451,9 @@ struct appLog {
             }
         });
     }
+}
+
+@Builder
+export function AppLogBuilder(){
+    appLog()
 }

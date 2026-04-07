@@ -1,25 +1,12 @@
-import { prompt } from '@kit.ArkUI';
-import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
+import { PromptAction } from '@kit.ArkUI';
+import { pasteboard } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
-import { vibrator } from '@kit.SensorServiceKit';
+import { vibration } from '../common/vibration';
 
 @Component
 export struct contact {
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (!err && state) {
-                    try {
-                        vibrator.startVibration(
-                            { type: "preset", effectId: "haptic.effect.hard", count: 1, intensity: 50 },
-                            { usage: "touch" }
-                        );
-                    } catch (e) { console.error(e); }
-                }
-            });
-        }
-    }
 
     @Builder ContactItem(title: string, name: string, detail: string, copyContent: string, toastLabel: string) {
         Column({ space: 4 }) {
@@ -33,7 +20,7 @@ export struct contact {
         .padding(14)
         .borderRadius(16)
         .onClick(async () => {
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             await this.copyToClipboard(copyContent, toastLabel);
         })
     }
@@ -62,9 +49,20 @@ export struct contact {
                 .backgroundColor($r("app.color.background"))
                 .padding(14)
                 .borderRadius(16)
-                .onClick(() => {
-                    this.triggerVibration();
-                    this.openLink();
+                .onClick(async () => {
+                            if(this.vibrationON) vibration.dotVibration()
+                    const url = "https://afdian.com/a/shenjack";
+                    const ui_content = this.getUIContext();
+                    try {
+                        let context = ui_content.getHostContext() as common.UIAbilityContext;
+                        await context.startAbility({
+                            action: "ohos.want.action.viewData",
+                            entities: ["entity.system.browsable"],
+                            uri: url,
+                        } as Want);
+                    } catch (e) {
+                        this.PromptAction.showToast({ message: "跳转失败" });
+                    }
                 })
 
 
@@ -106,40 +104,13 @@ export struct contact {
         });
     }
 
-
-    async openLink() {
-        const url = "https://afdian.com/a/shenjack";
-        const ui_content = this.getUIContext();
-        ui_content.showAlertDialog({
-            title: "提示",
-            message: "即将跳转到爱发电页面",
-            primaryButton: { value: "取消", fontColor: Color.Red, action: () => {} },
-            secondaryButton: {
-                value: "确定",
-                fontColor: Color.Blue,
-                action: async () => {
-                    try {
-                        let context = ui_content.getHostContext() as common.UIAbilityContext;
-                        await context.startAbility({
-                            action: "ohos.want.action.viewData",
-                            entities: ["entity.system.browsable"],
-                            uri: url,
-                        } as Want);
-                    } catch (e) {
-                        prompt.showToast({ message: "跳转失败" });
-                    }
-                },
-            },
-        });
-    }
-
     async copyToClipboard(text: string, label: string): Promise<void> {
         try {
             let pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text);
             await pasteboard.getSystemPasteboard().setData(pasteData);
-            prompt.showToast({ message: `已复制${label}`, duration: 2000 });
+            this.PromptAction.showToast({ message: `已复制${label}`, duration: 2000 });
         } catch (error) {
-            prompt.showToast({ message: "复制失败" });
+            this.PromptAction.showToast({ message: "复制失败" });
         }
     }
 }

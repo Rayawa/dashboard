@@ -1,11 +1,10 @@
 import { AppInfo, NaturalLanguageExtractor } from '../common/NaturalLanguageExtract';
 import { hdsEffect } from '@kit.UIDesignKit';
-import { common, Want } from '@kit.AbilityKit';
-import { vibrator } from '@kit.SensorServiceKit';
-import { BusinessError } from '@kit.BasicServicesKit';
+import { common } from '@kit.AbilityKit';
 import { submitButtons } from '../component/submitButtons';
+import { vibration } from '../common/vibration'
 import { FormData } from '../common/types';
-import { prompt } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 
 interface ShareParams {
     shareAppId: string;
@@ -15,6 +14,7 @@ interface ShareParams {
 @Entry
 @Component
 struct complexSubmit {
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
     @StorageLink("userName") userName: string = "";
     @StorageLink("inputText") inputText: string = "";
@@ -27,43 +27,6 @@ struct complexSubmit {
 
     @StorageProp("shareParams") shareParams: ShareParams = { shareAppId: "", shareUrl: "" };
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (err) {
-                    console.error(
-                        `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                    );
-                    return;
-                }
-                console.info("Succeed in querying effect");
-                if (state) {
-                    try {
-                        vibrator.startVibration(
-                            {
-                                type: "preset",
-                                effectId: "haptic.effect.hard",
-                                count: 1,
-                                intensity: 50,
-                            },
-                            { usage: "touch" },
-                            (error: BusinessError) => {
-                                if (error) {
-                                    console.error(
-                                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                    );
-                                } else {
-                                    console.info("Succeed in starting vibration");
-                                }
-                            },
-                        );
-                    } catch (tryError) {
-                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                    }
-                }
-            });
-        }
-    }
 
     @State extractedApps: AppInfo[] = [];
     @State isProcessing: boolean = false;
@@ -82,31 +45,33 @@ struct complexSubmit {
     }
 
     onPageHide(): void {
-        let uiAbilityContext = getContext(this) as common.UIAbilityContext;
-        uiAbilityContext.terminateSelf();
+        const context = getContext(this) as common.UIAbilityContext;
+        context.terminateSelf().then(() => {
+            console.info('Ability 销毁指令发送成功');
+        }).catch((err: BusinessError) => {
+            console.error(`销毁失败: ${err.code}`);
+        });
     }
 
     @State firstBackTime: number = 0;
     private waitTime: number = 2000;
     private closePage() {
         const context = getContext(this) as common.UIAbilityContext;
-        context.terminateSelf((err) => {
-            if (err.code) {
-                console.error(`终止失败: ${err.code}, ${err.message}`);
-                return;
-            }
-            console.info('Ability 已成功销毁');
+        context.terminateSelf().then(() => {
+            console.info('Ability 销毁指令发送成功');
+        }).catch((err: BusinessError) => {
+            console.error(`销毁失败: ${err.code}`);
         });
     }
     onBackPress(): boolean | void {
         const currentTime = new Date().getTime();
         if (currentTime - this.firstBackTime > this.waitTime) {
             this.firstBackTime = currentTime;
-            prompt.showToast({ message: "再按一次返回主页", duration: this.waitTime });
-            this.triggerVibration()
+            this.PromptAction.showToast({ message: "再按一次退出", duration: this.waitTime });
+            if(this.vibrationON) vibration.dotVibration()
             return true;
         } else {
-            this.triggerVibration()
+            if(this.vibrationON) vibration.dotVibration()
             this.closePage()
             return false;
         }
@@ -120,7 +85,7 @@ struct complexSubmit {
                 .backgroundColor($r("app.color.backcolor"))
                 .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
                 .onClick(() => {
-                    this.triggerVibration();
+                            if(this.vibrationON) vibration.dotVibration()
                     this.closePage();
                 })
             Column() {
@@ -140,7 +105,7 @@ struct complexSubmit {
                         .width(26)
                         .margin({ right: 10 })
                         .onClick(() => {
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                             this.closePage();
                         })
                 }
@@ -474,50 +439,13 @@ struct complexSubmit {
 
             // 4. 自动填充到表单
             if (this.extractedApps.length > 0) {
-                vibrator.isSupportEffect(
-                    "haptic.effect.hard",
-                    (err: BusinessError, state: boolean) => {
-                        if (err) {
-                            console.error(
-                                `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                            );
-                            return;
-                        }
-                        console.info("Succeed in querying effect");
-                        if (state) {
-                            try {
-                                vibrator.startVibration(
-                                    {
-                                        type: "preset",
-                                        effectId: "haptic.effect.hard",
-                                        count: 5,
-                                        intensity: 100,
-                                    },
-                                    { usage: "touch" },
-                                    (error: BusinessError) => {
-                                        if (error) {
-                                            console.error(
-                                                `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                            );
-                                        } else {
-                                            console.info("Succeed in starting vibration");
-                                        }
-                                    },
-                                );
-                            } catch (tryError) {
-                                console.error(
-                                    `An unexpected error occurred in try block: ${tryError}`,
-                                );
-                            }
-                        }
-                    },
-                );
+                if(this.vibrationON){
+                    vibration.waveVibration()
+                }
                 this.autoFillForm();
             }
         } catch (error) {
             console.error("自动提取失败:", error);
-            // 可以在这里添加用户提示，例如：
-            // prompt.showToast({ message: '智能提取失败，请手动填写', duration: 2000 });
         } finally {
             // 5. 确保无论成功失败，都重置处理状态
             this.isProcessing = false;

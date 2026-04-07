@@ -117,4 +117,7 @@ export default class shareEntryAbility extends UIAbility {
     onForeground(): void {
         this.resetImmersiveMode();
     }
+    onBackground() {
+        this.context.terminateSelf();
+    }
 }

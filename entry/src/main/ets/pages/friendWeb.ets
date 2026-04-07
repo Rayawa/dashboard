@@ -2,8 +2,7 @@ import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import {
   hdsEffect,
-  HdsNavigation,
-  HdsNavigationTitleMode,
+  HdsNavDestination,
   HdsSnackBar,
   ScrollEffectType,
   SnackBarIconOptions,
@@ -13,8 +12,8 @@ import {
   SnackBarStyleOptions
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
-import { vibrator } from '@kit.SensorServiceKit';
+import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
@@ -26,9 +25,11 @@ import {
   initializeSettings
 } from '../common/SettingsStorage';
 
-@Entry
 @Component
 export struct friendWeb {
+  @Consume('pageStack') pageStack: NavPathStack;
+  PromptAction: PromptAction = this.getUIContext().getPromptAction();
+
   @State url: string = '';
   @State title: string = '';
 
@@ -42,52 +43,18 @@ export struct friendWeb {
   @State touchY: number = 0;
   @State isTouching: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("holdCheckON") holdCheckON: boolean = true;
+  @StorageLink("holdCheckON") holdCheckON: boolean = false;
   @State holdCheckTMP: boolean = false;
   @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
 
   scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
-  private triggerVibration(): void {
-    if (this.vibrationON) {
-      vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-        if (err) {
-          console.error(
-            `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-          );
-          return;
-        }
-        console.info("Succeed in querying effect");
-        if (state) {
-          try {
-            vibrator.startVibration(
-              {
-                type: "preset",
-                effectId: "haptic.effect.hard",
-                count: 1,
-                intensity: 50,
-              },
-              { usage: "touch" },
-              (error: BusinessError) => {
-                if (error) {
-                  console.error(
-                    `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                  );
-                } else {
-                  console.info("Succeed in starting vibration");
-                }
-              },
-            );
-          } catch (tryError) {
-            console.error(`An unexpected error occurred in try block: ${tryError}`);
-          }
-        }
-      });
-    }
-  }
+
+
   uiContext: UIContext = this.getUIContext();
   hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
   icon: SnackBarIconOptions = {
@@ -155,46 +122,8 @@ export struct friendWeb {
       console.error("加载设置失败:", error);
     }
   }
-  async openLink() {
-    const url = this.url;
-    const ui_content = this.getUIContext();
-    const prompt_action = ui_content.getPromptAction();
-    ui_content.showAlertDialog({
-      title: "是否跳转到浏览器",
-      message: `即将访问${this.title}`,
-      primaryButton: {
-        value: "取消",
-        fontColor: Color.Red,
-        action: () => {
-          console.log("点击了取消按钮");
-        },
-      },
-      secondaryButton: {
-        value: "确定",
-        fontColor: Color.Blue,
-        action: async (): Promise<void> => {
-          try {
-            prompt_action.showToast({ message: "正在跳转...", duration: 500 });
-            let context = ui_content.getHostContext() as common.UIAbilityContext;
-            await context.startAbility({
-              action: "ohos.want.action.viewData",
-              entities: ["entity.system.browsable"],
-              uri: url,
-            } as Want);
-          } catch (error) {
-            console.error("打开链接失败:", (error as BusinessError).message);
-            prompt_action.showToast({ message: "打开链接失败", duration: 1000 });
-          }
-        },
-      },
-    });
-  }
+
   async aboutToAppear() {
-    const params = router.getParams() as Record<string, string>;
-    if (params) {
-      this.url = params.url;
-      this.title = params.title;
-    }
     //获取屏幕右边位置
     const displayInfo = display.getDefaultDisplaySync();
     const screenWidthVp = px2vp(displayInfo.width);
@@ -213,7 +142,7 @@ export struct friendWeb {
 
     //分享
     const context = getContext(this) as common.UIAbilityContext;
-    this.shareManager = WebShareManager.getInstance(context, this.web_controller);
+    this.shareManager = WebShareManager.getInstance(context);
     this.shareManager.enablePassiveShare();
     this.context.eventHub.on("onFocus", () => {
       this.shareManager?.enablePassiveShare();
@@ -262,20 +191,8 @@ export struct friendWeb {
     }
   }
 
-  onBackPress(): boolean | void {
-    if (this.web_controller.accessStep(-1)) {
-      console.info("网页可以返回，执行后退");
-      this.web_controller.backward();
-      this.triggerVibration();
-      prompt.showToast({ message: "返回上一页", duration: 1000 });
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   build() {
-    HdsNavigation() {
+    HdsNavDestination() {
       Stack(){
         if (this.isLoading) {
           Progress({ value: this.progress, total: 100 })
@@ -350,8 +267,8 @@ export struct friendWeb {
                 yOffset: 0,
                 animation: { duration: 300, curve: Curve.Ease },
               });
-              this.triggerVibration();
-              prompt.showToast({
+                      if(this.vibrationON) vibration.dotVibration()
+              this.PromptAction.showToast({
                 message: "回到顶部",
                 duration: 500,
               });
@@ -398,8 +315,8 @@ export struct friendWeb {
               if (this.isLoading) {
                 this.web_controller.stop();
                 this.isLoading = false;
-                this.triggerVibration();
-                prompt.showToast({
+                        if(this.vibrationON) vibration.dotVibration()
+                this.PromptAction.showToast({
                   message: "已停止加载",
                   duration: 1000,
                 });
@@ -415,15 +332,15 @@ export struct friendWeb {
                   console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
                 }
                 this.isLoading = true;
-                this.triggerVibration();
-                prompt.showToast({
+                        if(this.vibrationON) vibration.dotVibration()
+                this.PromptAction.showToast({
                   message: "刷新中...",
                   duration: 1000,
                 });
                 setTimeout(() => {
                   if (this.isLoading) {
                     this.isLoading = false;
-                    prompt.showToast({
+                    this.PromptAction.showToast({
                       message: "加载超时！",
                       duration: 1000,
                     });
@@ -498,9 +415,9 @@ export struct friendWeb {
                 this.showButtonAnimation = true;
                 if(this.holdCheckTMP){ this.holdCheckON = true; }
                 if (this.buttonY >= 660) {
-                  prompt.showToast({ message: "不能再往下啦", duration: 500 });
+                  this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
                 } else if (this.buttonY <= 70) {
-                  prompt.showToast({ message: "不能再往上啦", duration: 500 });
+                  this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
                 }
               }),
           )
@@ -515,7 +432,7 @@ export struct friendWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
             });
           Column()
             .backgroundColor(Color.Transparent)
@@ -526,15 +443,25 @@ export struct friendWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-              this.triggerVibration();
+                      if(this.vibrationON) vibration.dotVibration()
             });
         }
       }
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
-    .navBarWidth("100%")
-    .titleMode(HdsNavigationTitleMode.MINI)
+    .onBackPressed(() => {
+              if(this.vibrationON) vibration.dotVibration()
+      if (this.web_controller.accessStep(-1)) {
+        console.info("网页可以返回，执行后退");
+        this.web_controller.backward();
+        this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
+        return true;
+      } else {
+        return false;
+      }
+    })
+
     .titleBar({
       style: {
         scrollEffectOpts: {
@@ -581,10 +508,10 @@ export struct friendWeb {
             },
           },
         },
-        systemMaterialEffect: {
+        systemMaterialEffect: this.immersiveTextureON ? {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-        },
+        } : undefined
       },
       content: {
         title: {
@@ -598,9 +525,22 @@ export struct friendWeb {
                 label: "openlink",
                 icon: $r("sys.symbol.worldclock"),
                 isEnabled: true,
-                action: () => {
-                  this.triggerVibration();
-                  this.openLink();
+                action: async () => {
+                          if(this.vibrationON) vibration.dotVibration()
+                  const url = this.url;
+                  const ui_content = this.getUIContext();
+                  try {
+                    this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                    let context = ui_content.getHostContext() as common.UIAbilityContext;
+                    await context.startAbility({
+                      action: "ohos.want.action.viewData",
+                      entities: ["entity.system.browsable"],
+                      uri: url,
+                    } as Want);
+                  } catch (error) {
+                    console.error("打开链接失败:", (error as BusinessError).message);
+                    this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                  }
                 },
               },
             },
@@ -610,8 +550,9 @@ export struct friendWeb {
                 icon: $r("sys.symbol.share"),
                 isEnabled: true,
                 action: () => {
-                  this.shareManager?.showSystemShare();
-                  this.triggerVibration();
+                          if(this.vibrationON) vibration.dotVibration()
+                  const realUrl = this.web_controller.getUrl();
+                  this.shareManager?.showSystemShare(realUrl);
                 },
               },
             },
@@ -619,12 +560,25 @@ export struct friendWeb {
         },
         backIcon: {
           action: () => {
-            router.back();
-            this.triggerVibration();
-
+                    if(this.vibrationON) vibration.dotVibration()
+            this.pageStack.pop()
           },
         },
       },
-    });
+    })
+
+    .onReady((context: NavDestinationContext) => {
+      const params = context.pathInfo.param as Record<string, string>;
+      if (params) {
+        this.url = params.url;
+        this.title = params.title;
+        console.info(`成功加载网页: ${this.title}, 地址: ${this.url}`);
+      }
+    })
   }
+}
+
+@Builder
+export function FriendPageWebBuilder(){
+  friendWeb()
 }
