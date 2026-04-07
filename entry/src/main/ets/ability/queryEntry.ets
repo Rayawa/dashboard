@@ -12,10 +12,13 @@ export default class QueryEntryAbility extends UIAbility {
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
-    windowStage.loadContent('pages/queryWeb', (err) => {
+    windowStage.loadContent('abilityPages/queryWeb', (err) => {
       if (err.code) {
         console.error('Failed to load content. Cause: ' + JSON.stringify(err));
       }
     });
+  }
+  onBackground() {
+    this.context.terminateSelf();
   }
 }

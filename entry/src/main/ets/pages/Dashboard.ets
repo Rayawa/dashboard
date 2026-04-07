@@ -13,11 +13,12 @@ import {
     SnackBarMessageOptions,
     SnackBarOperationOptions,
     SnackBarOperationType,
-    SnackBarStyleOptions
+    SnackBarStyleOptions,
+    TitleSize
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, prompt, router } from '@kit.ArkUI';
-import { vibrator } from '@kit.SensorServiceKit';
+import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { vibration } from '../common/vibration';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
 import { customUserAgent, EguiBaseURL, SBaseURL, TBaseURL } from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
@@ -26,16 +27,17 @@ import { WebShareManager } from '../common/shareControl';
 import { preferences } from '@kit.ArkData';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
+import { warn } from '../component/warn';
 import {
     getButtonPosition,
-    getDefaultSite,
     getHoldCheckEnabled,
+    getImmersiveTexture,
     getTabBarAuto,
-    getThemeColor,
     getVibrationEnabled,
     initializeSettings
 } from '../common/SettingsStorage';
 import { blurPopup } from '../component/blurPopup';
+import { user } from './user';
 
 interface SiteConfig {
     key: string;
@@ -47,6 +49,18 @@ interface SiteConfig {
 @Entry
 @Component
 struct Dashboard {
+    @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    @State navBarWidth: string | number = '100%';
+
+    private toggleSplitMode(isSplit: boolean) {
+        animateTo({
+            curve: curves.springMotion(0.4, 0.8),
+            duration: 400
+        }, () => {
+            this.navBarWidth = isSplit ? (this.WVp - 390) : '100%';
+        })
+    }
     //控制相关
     @State showButton: boolean = true;
     @State barMargin: number = 28;
@@ -63,14 +77,13 @@ struct Dashboard {
     @State isTouching: boolean = false;
     @State isSnackBarShow: boolean = false;
     private controller: HdsTabsController = new HdsTabsController();
-    @StorageLink("defaultSiteT") defaultSiteT: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    @StorageLink("tabBarAuto") tabBarAuto: boolean = true;
-    @StorageLink("holdCheckON") holdCheckON: boolean = true;
-    @State holdCheckTMP: boolean = false;
+    @StorageLink("holdCheckON") holdCheckON: boolean = false;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
-    @State isTDev: boolean = false;
-    @State themeColor: string = "blue";
+    @StorageLink("tabBarAutoON") tabBarAutoON: boolean = true;
+    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+    @StorageLink("showWarn") showWarn: boolean = false;
+    @State holdCheckTMP: boolean = false;
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
@@ -78,17 +91,41 @@ struct Dashboard {
         { key: 'Egui', url: EguiBaseURL.toString(), label: 'Egui (开发中)', icon: $r('sys.media.wifi_router_fill') },
         { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
     ];
-    @State private currentIndex: number = 0;
-    @LocalStorageProp('migratedUrl') mUrl: string = "";
-    @LocalStorageProp('migratedIndex') mIndex: number = 0;
+
     @State private url: string = Array.from(this.sitesList.values())[0].url;
     @State DashboardHeight: number = 2100;
     @State progress: number = 0;
     scroller: Scroller = new Scroller();
-    private web_controller: webview.WebviewController = new webview.WebviewController();
     @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
     @State mode: WebDarkMode = WebDarkMode.Auto;
     @State isLoading: boolean = false;
+
+    private controller_T: webview.WebviewController = new webview.WebviewController();
+    private controller_S: webview.WebviewController = new webview.WebviewController();
+    private controller_E: webview.WebviewController = new webview.WebviewController();
+    @State private siteIndex: number = 0;
+
+    private getActiveController(): webview.WebviewController {
+        if (this.siteIndex === 0) {
+            return this.controller_T;
+        } else if (this.siteIndex === 1) {
+            return this.controller_E;
+        } else {
+            return this.controller_S;
+        }
+    }
+
+    private syncShareData() {
+        try {
+            const activeCtrl = this.getActiveController();
+            const currentUrl = activeCtrl.getUrl();
+            if (currentUrl && currentUrl !== "about:blank") {
+                this.shareManager?.updateShareData(currentUrl);
+            }
+        } catch (e) {
+            console.error("SyncData", "Controller not ready yet");
+        }
+    }
 
     //智感握持
     @State WVp: number = 376;
@@ -120,78 +157,34 @@ struct Dashboard {
             .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),
         TransitionEffect.IDENTITY
     );
+    private effect: TransitionEffect = TransitionEffect.OPACITY.combine(
+        TransitionEffect.move(TransitionEdge.BOTTOM),
+    )
+        .combine(TransitionEffect.scale({ x: 0, y: 1 }))
+        .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
 
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (err) {
-                    console.error(
-                        `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                    );
-                    return;
-                }
-                console.info("Succeed in querying effect");
-                if (state) {
-                    try {
-                        vibrator.startVibration(
-                            {
-                                type: "preset",
-                                effectId: "haptic.effect.hard",
-                                count: 1,
-                                intensity: 50,
-                            },
-                            { usage: "touch" },
-                            (error: BusinessError) => {
-                                if (error) {
-                                    console.error(
-                                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                    );
-                                } else {
-                                    console.info("Succeed in starting vibration");
-                                }
-                            },
-                        );
-                    } catch (tryError) {
-                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                    }
-                }
-            });
-        }
-    }
 
 
     //==========================页面生命周期部分==========================
     //entry
-    private IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
+    @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
     private async checkFirstLaunch(): Promise<void> {
         try {
             let context = getContext(this) as common.UIAbilityContext;
             let prefs = await preferences.getPreferences(context, "myAppSettings");
-            let isFirstLaunchValue: preferences.ValueType = await prefs.get(
-                this.IS_FIRST_LAUNCH_KEY,
-                true,
-            );
-            let isFirstLaunch: boolean = false;
-            if (typeof isFirstLaunchValue === "boolean") {
-                isFirstLaunch = isFirstLaunchValue;
-            } else if (typeof isFirstLaunchValue === "string") {
-                isFirstLaunch = isFirstLaunchValue === "true";
-            } else if (typeof isFirstLaunchValue === "number") {
-                isFirstLaunch = isFirstLaunchValue === 1;
-            }
-            if (isFirstLaunch) {
-                console.info("Index", "首次启动，显示引导页。");
-                this.showTutorial = true;
-                await prefs.put(this.IS_FIRST_LAUNCH_KEY, false);
-                await prefs.flush();
-                console.info("Index", "已更新首次启动标记。");
+
+            let isFirstLaunch = await prefs.get(this.IS_FIRST_LAUNCH_KEY, true);
+
+            if (isFirstLaunch === true) {
+                console.info("Index", "检测到首次启动，准备弹出协议。");
+                this.showWarn = true;
             } else {
-                console.info("Index", "非首次启动，不显示引导页。");
-                this.showTutorial = false;
+                console.info("Index", "非首次启动。");
+                this.showWarn = false;
             }
         } catch (err) {
             let error = err as BusinessError;
-            console.error("Index", "检查首选项失败: %{public}s", JSON.stringify(error));
+            console.error("Index", "检查失败", JSON.stringify(error));
         }
     }
     @StorageLink("userName") userName: string = "";
@@ -209,24 +202,17 @@ struct Dashboard {
     // 加载所有设置
     private async loadSettings() {
         try {
-            this.defaultSiteT = await getDefaultSite();
             this.vibrationON = await getVibrationEnabled();
             this.holdCheckON = await getHoldCheckEnabled();
             this.buttonPositionRIGHT = await getButtonPosition();
-            this.tabBarAuto = await getTabBarAuto();
-            this.themeColor = await getThemeColor();
-            // this.siteTDev = await getTDev();
+            this.tabBarAutoON = await getTabBarAuto();
+            this.immersiveTextureON = await getImmersiveTexture();
             if(this.buttonPositionRIGHT){
                 this.buttonShowX = this.WVp - 45 - 10;
                 this.buttonHideX = this.WVp + 10;
             } else {
                 this.buttonShowX = 10;
                 this.buttonHideX = -45 - 10;
-            }
-            if (!this.isContinuation) {
-                this.web_controller.loadUrl(this.url);
-            } else {
-                this.web_controller.loadUrl(this.mUrl);
             }
         } catch (error) {
             console.error("加载设置失败:", error);
@@ -237,14 +223,6 @@ struct Dashboard {
     @State isContinuation: boolean = false;
     async aboutToAppear() {
         this.buttonOnPageShow = false;
-        if (this.mUrl) {
-            this.isContinuation = true;
-            this.currentIndex = this.mIndex;
-            this.url = this.mUrl;
-            if (this.sitesList[this.mIndex]) {
-                this.sitesList[this.mIndex].url = this.mUrl;
-            }
-        }
         //年龄分级
         let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
             console.info('callback succeeded, ageGroup:' + data.ageGroup + ", confidence:" + data.confidence);
@@ -288,7 +266,7 @@ struct Dashboard {
 
         //分享
         const context = getContext(this) as common.UIAbilityContext;
-        this.shareManager = WebShareManager.getInstance(context, this.web_controller);
+        this.shareManager = WebShareManager.getInstance(context);
         this.shareManager.enablePassiveShare();
         this.context.eventHub.on("onFocus", () => {
             this.shareManager?.enablePassiveShare();
@@ -317,7 +295,7 @@ struct Dashboard {
             this.buttonOnPageShow = true;
         }, 500);
         console.log("currentUsername",this.userName)
-        if(!this.showTutorial){
+        if(!this.showTutorial || this.showWarn){
             if(this.userName == '' || this.userName == deviceInfo.productModel){
                 console.info("currentUsername_pop!!")
                 setTimeout(() => {
@@ -358,34 +336,38 @@ struct Dashboard {
     @State firstBackTime: number = 0;
     private waitTime: number = 2000;
     onBackPress(): boolean | void {
+                if(this.vibrationON) vibration.dotVibration()
         if (this.isSnackBarShow) {
             this.hdsSnackBar.dismiss();
         }
         if (this.showTutorial) {
             this.showTutorial = false;
-            this.triggerVibration();
             console.info("关闭教程");
             return true;
         }
-        if (this.web_controller.accessStep(-1)) {
-            console.info("网页可以返回，执行后退");
-            this.web_controller.backward();
-            this.triggerVibration();
-            prompt.showToast({ message: "返回上一页", duration: 1000 });
+        let activeCtrl = this.getActiveController();
+        if (activeCtrl.accessStep(-1)) {
+            activeCtrl.backward();
+            return true;
+        }
+        if (this.pageStack.size() > 0) {
+            this.pageStack.pop();
+
+            if (this.pageStack.size() === 0) {
+                this.toggleSplitMode(false);
+            }
             return true;
         }
         const currentTime = new Date().getTime();
         if (currentTime - this.firstBackTime > this.waitTime) {
             this.firstBackTime = currentTime;
-            prompt.showToast({ message: "再按一次退出应用", duration: this.waitTime });
-            this.triggerVibration()
+            this.PromptAction.showToast({ message: "再按一次退出应用", duration: this.waitTime });
+            if(this.vibrationON) vibration.dotVibration()
             return true;
         } else {
             return false;
         }
     }
-
-
     //==========================主程序部分==========================
     uiContext: UIContext = this.getUIContext();
     hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
@@ -404,7 +386,23 @@ struct Dashboard {
         nextFocusId: 'button',
         duration: 7999
     }
+    @Builder
+    PageMap(name: string) {
+        if (name === "UserPage") {
+            user({
+                onCloseSplit: () => {
+                    animateTo({
+                        curve: curves.springMotion(0.4, 0.8),
+                        duration: 350
+                    }, () => {
+                        this.navBarWidth= '100%';
+                    })
+                }
+            })
+        }
+    }
     @Builder Web(site: SiteConfig) {
+
         Stack() {
             if (this.isLoading) {
                 Progress({ value: this.progress, total: 100 })
@@ -424,17 +422,45 @@ struct Dashboard {
                         )
                     Web({
                         src: site.url,
-                        controller: this.web_controller,
+                        controller: site.key === 'T' ? this.controller_T :
+                            (site.key === 'E' ? this.controller_E : this.controller_S),
                         renderMode: RenderMode.SYNC_RENDER,
                     })
+                        .backgroundColor($r("app.color.backcolor"))
                         .id(`HmDashboard_${site.key}`)
                         .onControllerAttached(() => {
+                            const currentCtrl = site.key === 'T' ? this.controller_T :
+                                (site.key === 'S' ? this.controller_S : this.controller_E);
+
                             if (this.url !== "") {
-                                this.web_controller.loadUrl(this.url);
+                                currentCtrl.loadUrl(this.url);
                             }
                             try {
-                                this.web_controller.setCustomUserAgent(customUserAgent);
-                            } catch {
+                                currentCtrl.setCustomUserAgent(customUserAgent);
+                            } catch (e) {}
+                        })
+                        .onPageEnd((event) => {
+                            if (event) {
+                                const currentCtrl = site.key === 'T' ? this.controller_T :
+                                    (site.key === 'S' ? this.controller_S : this.controller_E);
+                                const realUrl = currentCtrl.getUrl();
+                                this.shareManager?.updateShareData(realUrl);
+                            }
+                        })
+                        .onRefreshAccessedHistory(() => {
+                            try {
+                                const activeCtrl: webview.WebviewController = this.getActiveController();
+                                const realUrl: string = activeCtrl.getUrl();
+                                if (this.shareManager !== undefined && this.shareManager !== null) {
+                                    this.shareManager.updateShareData(realUrl);
+                                }
+                            } catch (err) {
+                                const error: BusinessError = err as BusinessError;
+                                if (error.code === 17100001) {
+                                    console.warn('WebviewController not yet attached, skipping URL update.');
+                                } else {
+                                    console.error(`Webview error: ${error.code} - ${error.message}`);
+                                }
                             }
                         })
                         .onPageBegin((event) => {
@@ -464,7 +490,7 @@ struct Dashboard {
                 }
             }
             .onWillScroll(() => {
-                if (this.tabBarAuto) {
+                if (this.tabBarAutoON) {
                     const currentOffset = this.scroller.currentOffset().yOffset;
                     if (currentOffset > this.lastOffset && currentOffset > 50) {
                         if (this.isTabsBarVisible && !this.lockBar) {
@@ -487,7 +513,7 @@ struct Dashboard {
         }
     }
     build() {
-        HdsNavigation() {
+        HdsNavigation(this.pageStack) {
             Stack() {
                 //==========================HdsTabs携带web==========================
                 HdsTabs({ controller: this.controller }) {
@@ -497,15 +523,13 @@ struct Dashboard {
                     }, (item: SiteConfig) => item.key + item.url)
                 }
                 .onChange((index: number) => {
-                    this.currentIndex = index;
-                    AppStorage.setOrCreate('latestIndex', index);
-                    this.scroller.scrollTo({
-                        xOffset: 0,
-                        yOffset: 0,
-                        animation: { duration: 300, curve: Curve.Ease },
+                            if(this.vibrationON) vibration.dotVibration()
+                    this.siteIndex = index;
+                    preferences.getPreferences(this.context, 'myStore').then((pref) => {
+                        pref.putSync('defaultSite', index);
+                        pref.flush();
                     });
-                    this.web_controller.refresh()
-                    this.triggerVibration();
+                    this.syncShareData();
                 })
                 .animation({ curve: curves.springMotion(0.8, 0.8), duration: 400 })
                 .blurStrategy(BlurStrategy.ENABLE)
@@ -519,10 +543,10 @@ struct Dashboard {
                     barBottomMargin: this.barMargin,
                     lightColor: $r('app.color.light_color'),
                     gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
-                    systemMaterialEffect: {
+                    systemMaterialEffect: this.immersiveTextureON ? {
                         materialType: hdsMaterial.MaterialType.IMMERSIVE,
                         materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                    }
+                    } : undefined
                 })
 
                 // ==========================悬浮按钮==========================
@@ -550,8 +574,8 @@ struct Dashboard {
                                 yOffset: 0,
                                 animation: { duration: 300, curve: Curve.Ease },
                             });
-                            this.triggerVibration();
-                            prompt.showToast({
+                                    if(this.vibrationON) vibration.dotVibration()
+                            this.PromptAction.showToast({
                                 message: "回到顶部",
                                 duration: 500,
                             });
@@ -595,35 +619,32 @@ struct Dashboard {
                             }
                         })
                         .onClick(() => {
+                            const activeCtrl = this.getActiveController();
+
                             if (this.isLoading) {
-                                this.web_controller.stop();
+                                activeCtrl.stop();
                                 this.isLoading = false;
-                                this.triggerVibration();
-                                prompt.showToast({
-                                    message: "已停止加载",
-                                    duration: 1000,
-                                });
+                                        if(this.vibrationON) vibration.dotVibration()
                             } else {
-                                this.web_controller.refresh();
+                                activeCtrl.refresh();
                                 try {
                                     Promise.all([
-                                        this.web_controller.removeCache(true),
-                                        this.web_controller.removeCache(false),
+                                        activeCtrl.removeCache(true),
+                                        activeCtrl.removeCache(false),
                                     ]);
                                 } catch (error) {
-                                    // man! what can I say
-                                    console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
+                                    console.warn(`hm dashboard e: ${error}`);
                                 }
                                 this.isLoading = true;
-                                this.triggerVibration();
-                                prompt.showToast({
+                                        if(this.vibrationON) vibration.dotVibration()
+                                this.PromptAction.showToast({
                                     message: "刷新中...",
                                     duration: 1000,
                                 });
                                 setTimeout(() => {
                                     if (this.isLoading) {
                                         this.isLoading = false;
-                                        prompt.showToast({
+                                        this.PromptAction.showToast({
                                             message: "加载超时！",
                                             duration: 1000,
                                         });
@@ -698,9 +719,9 @@ struct Dashboard {
                                 this.showButtonAnimation = true;
                                 if(this.holdCheckTMP){ this.holdCheckON = true; }
                                 if (this.buttonY >= 660) {
-                                    prompt.showToast({ message: "不能再往下啦", duration: 500 });
+                                    this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
                                 } else if (this.buttonY <= 70) {
-                                    prompt.showToast({ message: "不能再往上啦", duration: 500 });
+                                    this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
                                 }
                             }),
                     )
@@ -715,7 +736,7 @@ struct Dashboard {
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                         });
                     Column()
                         .backgroundColor(Color.Transparent)
@@ -726,10 +747,10 @@ struct Dashboard {
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                         });
                 }
-                if (this.tabBarAuto && !this.isTabsBarVisible) {
+                if (this.tabBarAutoON && !this.isTabsBarVisible) {
                     Column()
                         .backgroundColor(Color.Transparent)
                         .height(50)
@@ -742,7 +763,7 @@ struct Dashboard {
                                 this.barMargin = 28;
                                 this.isTabsBarVisible = true;
                             })
-                            this.triggerVibration()
+                            if(this.vibrationON) vibration.dotVibration()
                             this.lockBar = true;
                             setTimeout(() => {
                                 this.lockBar = false;
@@ -766,19 +787,40 @@ struct Dashboard {
                         )
                         .onClick(() => {
                             this.showTutorial = false;
-                            this.triggerVibration();
+                                    if(this.vibrationON) vibration.dotVibration()
                         })
                 }
                 blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 40 }) }
+
+                if (this.showWarn) {
+                    Column()
+                        .width('100%')
+                        .height('100%')
+                        .backgroundColor(Color.Transparent)
+                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                        .transition(
+                            TransitionEffect.OPACITY.animation({
+                                curve: curves.springMotion(0, 1),
+                                duration: 1000,
+                            }),
+                        )
+                    warn().transition(this.effect)
+                }
             }
             .width("100%")
             .backgroundColor($r("app.color.backcolor"))
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         }
+        .backgroundColor($r('app.color.backcolor'))
+        .mode(NavigationMode.Auto)
+        .navBarWidth(this.navBarWidth)
+        .navDestination(this.PageMap)
         .width("100%")
-        .navBarWidth("100%")
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
-        .titleMode(HdsNavigationTitleMode.MODAL)
+        .titleMode(HdsNavigationTitleMode.MINI)
+        .hideBackButton(true)
+        .divider({ color: $r('app.color.border')  })
         .titleBar({
             style: {
                 scrollEffectOpts: {
@@ -825,36 +867,49 @@ struct Dashboard {
                         },
                     },
                 },
-                systemMaterialEffect: {
+                systemMaterialEffect: this.immersiveTextureON ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-                },
+                } : undefined
             },
             content: {
                 title: {
                     mainTitle: "鸿蒙应用看板",
+                    mainTitleSize: TitleSize.TITLE_S,
                 },
                 menu: {
                     value: [
+                        {
+                            content: {
+                                label: "tutorial",
+                                icon: $r("sys.symbol.questionmark_circle"),
+                                isEnabled: true,
+                                action: () => {
+                                            if(this.vibrationON) vibration.dotVibration()
+
+                                    if(this.showWarn){
+                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        return;
+                                    }
+                                    this.showTutorial = true;
+                                },
+                            },
+                        },
                         {
                             content: {
                                 label: "share",
                                 icon: $r("sys.symbol.share"),
                                 isEnabled: true,
                                 action: () => {
-                                    this.shareManager?.showSystemShare();
-                                    this.triggerVibration();
-                                },
-                            },
-                        },
-                        {
-                            content: {
-                                label: "friend",
-                                icon: $r("sys.symbol.list_bullet"),
-                                isEnabled: true,
-                                action: () => {
-                                    router.pushUrl({ url: "pages/friend" });
-                                    this.triggerVibration();
+                                            if(this.vibrationON) vibration.dotVibration()
+
+                                    if(this.showWarn){
+                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        return;
+                                    }
+                                    const activeCtrl = this.getActiveController();
+                                    const realUrl = activeCtrl.getUrl();
+                                    this.shareManager?.showSystemShare(realUrl);
                                 },
                             },
                         },
@@ -864,8 +919,18 @@ struct Dashboard {
                                 icon: $r("sys.symbol.person"),
                                 isEnabled: true,
                                 action: () => {
-                                    router.pushUrl({ url: "pages/user" });
-                                    this.triggerVibration();
+                                            if(this.vibrationON) vibration.dotVibration()
+                                    if(this.showWarn){
+                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        return;
+                                    }
+                                    let index = this.pageStack.getIndexByName("UserPage");
+                                    if (index.length > 0) {
+                                        this.pageStack.moveToTop("UserPage");
+                                    } else {
+                                        this.pageStack.pushPathByName("UserPage", null);
+                                        this.toggleSplitMode(true);
+                                    }
                                 },
                             },
                         },
@@ -873,5 +938,6 @@ struct Dashboard {
                 },
             },
         });
+
     }
 }

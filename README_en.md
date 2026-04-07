@@ -61,7 +61,7 @@ Uses Progress component synchronized with loading progress.
 - Back: `backward()`
 - Refresh/Stop Refresh: `refresh()` / `stop()`
 - Back to top animation: `setInterval` + cubic easing
-- Page switching: `router.pushUrl`
+- Page switching: `Navigation`
 
 ## State Field Description
 

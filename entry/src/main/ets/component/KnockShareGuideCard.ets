@@ -2,10 +2,10 @@
  * Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
  */
 
-import { image } from "@kit.ImageKit";
-import { LengthMetrics } from "@kit.ArkUI";
-import { resourceManager } from "@kit.LocalizationKit";
-import { Logger } from "../utils/Logger";
+import { image } from '@kit.ImageKit';
+import { LengthMetrics } from '@kit.ArkUI';
+import { resourceManager } from '@kit.LocalizationKit';
+import { Logger } from '../utils/Logger';
 
 const GUIDE_CARD_MULTIPLE_MIN_HEIGHT = 90;
 const GUIDE_CARD_SINGLE_MIN_HEIGHT = 80;
@@ -169,12 +169,12 @@ export struct KnockShareSingleGuideCard {
         return {
             src: src,
             duration:
-                Math.floor(1000 / (this.res.fps ?? 30)) +
+            Math.floor(1000 / (this.res.fps ?? 30)) +
                 (index === 1
                     ? (this.res.startDelay ?? 0)
                     : index === this.res.framesCount
-                      ? (this.res.stopDelay ?? 0)
-                      : 0),
+                        ? (this.res.stopDelay ?? 0)
+                        : 0),
         };
     }
 

@@ -1,8 +1,12 @@
-import { vibrator } from '@kit.SensorServiceKit';
+import { vibration } from '../common/vibration';
 import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { prompt, router } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
+
+interface QueryWebParams {
+  url: string;
+}
 
 interface Scale {
   x: number;
@@ -47,11 +51,14 @@ interface SearchResponse {
 }
 @Component
 export struct queryButtons {
+  @Consume('pageStack') pageStack: NavPathStack;
+  PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @State appId: string = '';
   @State isLoading: boolean = false;
 
   @StorageLink("userName") userName: string = "";
   @StorageLink("inputText") inputText: string = "";
+  @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("formData") formData: FormData = {
     appName: "",
     appLink: "",
@@ -189,15 +196,18 @@ export struct queryButtons {
 
       if (isExists) {
         this.formData.appId = tempAppId;
-        const finalUrl = `https://hmos.txit.top/app/${tempAppId}`;
+        const finalUrl = `http://shenjack.top:10003/dashboard?app_id=${tempAppId}`;
 
         this.isSearching = false;
         this.stopSearchRippleLoop();
 
-        router.pushUrl({
-          url: 'pages/queryWeb',
-          params: { url: finalUrl }
-        });
+        const pathParams: QueryWebParams = {
+          url: finalUrl
+        };
+        if(this.vibrationON){
+          vibration.waveVibration()
+        }
+        this.pageStack.pushPathByName("QueryPage", pathParams);
 
         this.formData = {
           appLink: "",
@@ -208,13 +218,19 @@ export struct queryButtons {
         this.inputText = "";
 
       } else {
+        if(this.vibrationON){
+          vibration.errorVibration()
+        }
         throw new Error("库中未找到该应用");
       }
 
     } catch (error) {
       this.isSearching = false;
       this.stopSearchRippleLoop();
-      prompt.showToast({ message: `查询失败！${error.message}` });
+      if(this.vibrationON){
+        vibration.errorVibration()
+      }
+      this.PromptAction.showToast({ message: `查询失败！${error.message}` });
     }
   }
   async clearForm(): Promise<void> {
@@ -235,84 +251,17 @@ export struct queryButtons {
     setTimeout(() => {
       this.isCleaning = false;
       this.stopCleanRippleLoop();
-      vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-        if (err) {
-          console.error(
-            `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-          );
-          return;
-        }
-        console.info("Succeed in querying effect");
-        if (state) {
-          try {
-            vibrator.startVibration(
-              {
-                type: "preset",
-                effectId: "haptic.effect.hard",
-                count: 5,
-                intensity: 100,
-              },
-              { usage: "touch" },
-              (error: BusinessError) => {
-                if (error) {
-                  console.error(
-                    `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                  );
-                } else {
-                  console.info("Succeed in starting vibration");
-                }
-              },
-            );
-          } catch (tryError) {
-            console.error(`An unexpected error occurred in try block: ${tryError}`);
-          }
-        }
-      });
-      prompt.showToast({
+      if(this.vibrationON){
+        vibration.waveVibration()
+      }
+      this.PromptAction.showToast({
         message: "表单已清空",
         duration: 1500,
       });
     }, 700);
   }
 
-  @StorageLink("vibrationON") vibrationON: boolean = true;
-  private triggerVibration(): void {
-    if (this.vibrationON) {
-      vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-        if (err) {
-          console.error(
-            `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-          );
-          return;
-        }
-        console.info("Succeed in querying effect");
-        if (state) {
-          try {
-            vibrator.startVibration(
-              {
-                type: "preset",
-                effectId: "haptic.effect.hard",
-                count: 1,
-                intensity: 50,
-              },
-              { usage: "touch" },
-              (error: BusinessError) => {
-                if (error) {
-                  console.error(
-                    `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                  );
-                } else {
-                  console.info("Succeed in starting vibration");
-                }
-              },
-            );
-          } catch (tryError) {
-            console.error(`An unexpected error occurred in try block: ${tryError}`);
-          }
-        }
-      });
-    }
-  }
+
 
   @State isSearching: boolean = false;
   @State isCleaning: boolean = false;
@@ -537,7 +486,7 @@ export struct queryButtons {
               return;
             }
             this._cleanLastClick = now;
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             this.clearForm();
           })
       }
@@ -563,7 +512,7 @@ export struct queryButtons {
               return;
             }
             this._searchLastClick = now;
-            this.triggerVibration();
+                    if(this.vibrationON) vibration.dotVibration()
             this.queryForm();
           })
       }

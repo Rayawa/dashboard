@@ -1,0 +1,49 @@
+{
+  "routerMap": [
+
+    {
+      "name": "FriendPage",
+      "pageSourceFile": "src/main/ets/pages/friend.ets",
+      "buildFunction": "FriendPageBuilder"
+    },
+    {
+      "name": "FriendPageWeb",
+      "pageSourceFile": "src/main/ets/pages/friendWeb.ets",
+      "buildFunction": "FriendPageWebBuilder"
+    },
+
+    {
+      "name": "QueryPage",
+      "pageSourceFile": "src/main/ets/pages/queryWeb.ets",
+      "buildFunction": "QueryPageBuilder"
+    },
+
+
+
+    {
+      "name": "UserPage",
+      "pageSourceFile": "src/main/ets/pages/user.ets",
+      "buildFunction": "UserPageBuilder"
+    },
+    {
+      "name": "AboutPage",
+      "pageSourceFile": "src/main/ets/pages/user/about.ets",
+      "buildFunction": "AboutPageBuilder"
+    },
+    {
+      "name": "HTMLPage",
+      "pageSourceFile": "src/main/ets/pages/user/htmlPage.ets",
+      "buildFunction": "HTMLBuilder"
+    },
+    {
+      "name": "AboutWebPage",
+      "pageSourceFile": "src/main/ets/pages/user/aboutWeb.ets",
+      "buildFunction": "AboutWebBuilder"
+    },
+    {
+      "name": "AppLogPage",
+      "pageSourceFile": "src/main/ets/pages/user/appLog.ets",
+      "buildFunction": "AppLogBuilder"
+    }
+  ]
+}

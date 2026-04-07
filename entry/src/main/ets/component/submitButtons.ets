@@ -1,6 +1,5 @@
-import { vibrator } from '@kit.SensorServiceKit';
-import { BusinessError } from '@kit.BasicServicesKit';
-import { prompt } from '@kit.ArkUI';
+import { vibration } from '../common/vibration';
+import { PromptAction } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
 import { submit_app } from '../common/api';
 
@@ -18,11 +17,13 @@ interface ButtonAnimationState {
 
 @Component
 export struct submitButtons {
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @State appId: string = '';
     @State isLoading: boolean = false;
 
     @StorageLink("userName") userName: string = "";
     @StorageLink("inputText") inputText: string = "";
+    @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("formData") formData: FormData = {
         appLink: "",
         packageName: "",
@@ -49,40 +50,10 @@ export struct submitButtons {
         setTimeout(() => {
             this.isCleaning = false;
             this.stopCleanRippleLoop();
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (err) {
-                    console.error(
-                        `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                    );
-                    return;
-                }
-                console.info("Succeed in querying effect");
-                if (state) {
-                    try {
-                        vibrator.startVibration(
-                            {
-                                type: "preset",
-                                effectId: "haptic.effect.hard",
-                                count: 5,
-                                intensity: 100,
-                            },
-                            { usage: "touch" },
-                            (error: BusinessError) => {
-                                if (error) {
-                                    console.error(
-                                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                    );
-                                } else {
-                                    console.info("Succeed in starting vibration");
-                                }
-                            },
-                        );
-                    } catch (tryError) {
-                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                    }
-                }
-            });
-            prompt.showToast({
+            if(this.vibrationON){
+                vibration.waveVibration()
+            }
+            this.PromptAction.showToast({
                 message: "表单已清空",
                 duration: 1500,
             });
@@ -95,7 +66,7 @@ export struct submitButtons {
         }
 
         if (!this.formData.packageName.trim()) {
-            prompt.showToast({
+            this.PromptAction.showToast({
                 message: "请输入包名",
                 duration: 2000,
             });
@@ -119,40 +90,10 @@ export struct submitButtons {
                     note: this.formData.remark?.trim() || undefined,
                 },
             });
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (err) {
-                    console.error(
-                        `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                    );
-                    return;
-                }
-                console.info("Succeed in querying effect");
-                if (state) {
-                    try {
-                        vibrator.startVibration(
-                            {
-                                type: "preset",
-                                effectId: "haptic.effect.hard",
-                                count: 5,
-                                intensity: 100,
-                            },
-                            { usage: "touch" },
-                            (error: BusinessError) => {
-                                if (error) {
-                                    console.error(
-                                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                    );
-                                } else {
-                                    console.info("Succeed in starting vibration");
-                                }
-                            },
-                        );
-                    } catch (tryError) {
-                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                    }
-                }
-            });
-            prompt.showToast({
+            if(this.vibrationON){
+                vibration.waveVibration()
+            }
+            this.PromptAction.showToast({
                 message: "提交成功，感谢您的投稿！",
                 duration: 1500,
             });
@@ -166,33 +107,10 @@ export struct submitButtons {
             this.inputText = "";
         } catch (error) {
             console.error("提交失败:", error);
-            try {
-                vibrator.startVibration(
-                    {
-                        type: "time",
-                        duration: 500,
-                    },
-                    {
-                        id: 0,
-                        usage: "touch",
-                    },
-                    (error: BusinessError) => {
-                        if (error) {
-                            console.error(
-                                `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                            );
-                            return;
-                        }
-                        console.info("Succeed in starting vibration");
-                    },
-                );
-            } catch (err) {
-                let e: BusinessError = err as BusinessError;
-                console.error(
-                    `An unexpected error occurred. Code: ${e.code}, message: ${e.message}`,
-                );
+            if(this.vibrationON){
+                vibration.errorVibration()
             }
-            prompt.showToast({
+            this.PromptAction.showToast({
                 message: "提交失败，请稍后重试",
                 duration: 2000,
             });
@@ -204,44 +122,6 @@ export struct submitButtons {
         }
     }
 
-    @StorageLink("vibrationON") vibrationON: boolean = true;
-    private triggerVibration(): void {
-        if (this.vibrationON) {
-            vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
-                if (err) {
-                    console.error(
-                        `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-                    );
-                    return;
-                }
-                console.info("Succeed in querying effect");
-                if (state) {
-                    try {
-                        vibrator.startVibration(
-                            {
-                                type: "preset",
-                                effectId: "haptic.effect.hard",
-                                count: 1,
-                                intensity: 50,
-                            },
-                            { usage: "touch" },
-                            (error: BusinessError) => {
-                                if (error) {
-                                    console.error(
-                                        `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                                    );
-                                } else {
-                                    console.info("Succeed in starting vibration");
-                                }
-                            },
-                        );
-                    } catch (tryError) {
-                        console.error(`An unexpected error occurred in try block: ${tryError}`);
-                    }
-                }
-            });
-        }
-    }
 
     @State isCleaning: boolean = false;
     @State isSubmitting: boolean = false;
@@ -469,7 +349,7 @@ export struct submitButtons {
                             return;
                         }
                         this._cleanLastClick = now;
-                        this.triggerVibration();
+                                if(this.vibrationON) vibration.dotVibration()
                         this.clearForm();
                     })
             }
@@ -496,7 +376,7 @@ export struct submitButtons {
                             return;
                         }
                         this._submitLastClick = now;
-                        this.triggerVibration();
+                                if(this.vibrationON) vibration.dotVibration()
                         this.submitForm();
                     })
             }

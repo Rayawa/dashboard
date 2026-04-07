@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第五人格，启动！</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                // 第五人格主题配色
+                'idv-dark': '#1a1a2e',
+                'idv-primary': '#16213e',
+                'idv-secondary': '#0f3460',
+                'idv-accent': '#e94560',
+                'idv-highlight': '#f9a826',
+                'idv-bronze': '#cd7f32',
+                'idv-silver': '#c0c0c0',
+                'idv-gold': '#ffd700',
+                'rank-4': '#765d32', // 四阶
+                'rank-5': '#8a6d3b', // 五阶
+                'rank-6': '#f39c12', // 六阶
+                'rank-star': '#ffcc00', // 星星颜色
+                'rank-progress': '#3498db', // 进度条颜色
+                'rank-completed': '#2ecc71' // 已完成颜色
+              },
+              fontFamily: {
+                sans: ['Inter', 'system-ui', 'sans-serif']
+              },
+              animation: {
+                'bounce-slow': 'bounce 2s infinite',
+                'pulse-slow': 'pulse 3s infinite',
+                'fade-in': 'fadeIn 0.5s ease-in',
+                'slide-in': 'slideIn 0.3s ease-out',
+                'star-glow': 'starGlow 1.5s ease-in-out infinite'
+              },
+              keyframes: {
+                fadeIn: {
+                  '0%': { opacity: '0', transform: 'translateY(10px)' },
+                  '100%': { opacity: '1', transform: 'translateY(0)' }
+                },
+                slideIn: {
+                  '0%': { opacity: '0', transform: 'translateX(-10px)' },
+                  '100%': { opacity: '1', transform: 'translateX(0)' }
+                },
+                starGlow: {
+                  '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                  '50%': { opacity: 0.8, transform: 'scale(1.1)' }
+                }
+              }
+            }
+          }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+          .glass {
+            background: rgba(26, 26, 46, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(15, 52, 96, 0.3);
+          }
+
+          .card-shadow {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+          }
+
+          .btn-hover {
+            @apply transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95;
+          }
+
+          .input-focus {
+            @apply focus:ring-2 focus:ring-idv-accent focus:border-idv-accent transition-all duration-300;
+          }
+
+          .number-animation {
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          }
+
+          .progress-gradient {
+            background: linear-gradient(90deg, #0f3460 0%, #3498db 50%, #2ecc71 100%);
+          }
+
+          .history-item {
+            @apply transition-all duration-300 hover:bg-idv-primary;
+          }
+
+          /* 段位星星样式 */
+          .rank-star {
+            color: #ffcc00;
+            text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+          }
+
+          .star-empty {
+            color: #555;
+          }
+
+          /* 段位节点样式 */
+          .rank-node {
+            transition: all 0.3s ease;
+          }
+
+          .current-rank-node {
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
+            border: 2px solid #e94560;
+          }
+
+          .completed-rank-node {
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+          }
+
+          .rank-4 .rank-circle {
+            background: linear-gradient(135deg, #765d32, #d4a99a);
+          }
+
+          .rank-5 .rank-circle {
+            background: linear-gradient(135deg, #8a6d3b, #e2c46a);
+          }
+
+          .rank-6 .rank-circle {
+            background: linear-gradient(135deg, #f39c12, #f9a826);
+          }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-idv-dark to-idv-primary min-h-screen font-sans text-white">
+<div class="container mx-auto px-4 py-8 md:py-12">
+    <!-- 标题区域 -->
+    <div class="text-center mb-8 md:mb-12 animate-fade-in">
+        <h1 class="text-3xl md:text-5xl font-bold text-idv-highlight mb-2">第五人格，启动！</h1>
+        <p class="text-gray-300 max-w-md mx-auto">本赛季目标：从四阶V到六阶V (1250积分)</p>
+    </div>
+
+    <!-- 主卡片 -->
+    <div class="max-w-6xl mx-auto glass rounded-2xl card-shadow p-6 md:p-8 animate-fade-in">
+
+        <!-- 1. 顶部：结果展示区域 -->
+        <div class="space-y-6 mb-8">
+            <h2 class="text-xl font-semibold text-center mb-4 flex items-center justify-center">
+                <i class="fa fa-calculator mr-3 text-idv-accent"></i>计算结果
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+                <!-- 剩余天数 -->
+                <div class="bg-idv-primary/70 rounded-xl p-4 text-center hover:shadow-md transition-shadow duration-300">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-idv-secondary text-idv-highlight mb-2">
+                        <i class="fa fa-clock-o text-lg"></i>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-1">剩余天数</p>
+                    <p id="daysRemaining" class="text-2xl font-bold text-white number-animation">70</p>
+                </div>
+
+                <!-- 日均积分 -->
+                <div class="bg-idv-primary/70 rounded-xl p-4 text-center hover:shadow-md transition-shadow duration-300">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-idv-secondary text-rank-completed mb-2">
+                        <i class="fa fa-calendar text-lg"></i>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-1">日均所需积分</p>
+                    <p id="dailyPoints" class="text-2xl font-bold text-white number-animation">14</p>
+                </div>
+
+                <!-- 当前积分 -->
+                <div class="bg-idv-primary/70 rounded-xl p-4 text-center hover:shadow-md transition-shadow duration-300">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-idv-secondary text-idv-highlight mb-2">
+                        <i class="fa fa-star text-lg"></i>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-1">当前积分</p>
+                    <p id="currentPointsDisplay" class="text-2xl font-bold text-idv-highlight number-animation">0</p>
+                </div>
+
+                <!-- 目标积分 -->
+                <div class="bg-idv-primary/70 rounded-xl p-4 text-center hover:shadow-md transition-shadow duration-300">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-idv-secondary text-rank-progress mb-2">
+                        <i class="fa fa-flag text-lg"></i>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-1">目标积分</p>
+                    <p id="totalPoints" class="text-2xl font-bold text-white number-animation">1250</p>
+                </div>
+            </div>
+
+            <!-- 积分进度条 -->
+            <div class="bg-idv-primary/70 rounded-xl p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <span class="text-sm font-medium text-gray-300">积分进度</span>
+                        <span class="text-xs text-gray-400 ml-2">(当前积分/目标积分)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span id="progressPoints" class="text-sm font-medium text-gray-300 mr-2">0/1000</span>
+                        <span id="progressPercentage" class="text-sm font-medium text-idv-accent">0%</span>
+                    </div>
+                </div>
+                <div class="w-full bg-idv-secondary rounded-full h-4 overflow-hidden">
+                    <div id="progressBar" class="progress-gradient h-4 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between mt-2">
+                    <span class="text-xs text-gray-400">0</span>
+                    <span class="text-xs text-gray-400">目标积分 (1250)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 段位进度图 -->
+        <div class="bg-idv-primary/70 rounded-xl p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold text-gray-300">
+                    <i class="fa fa-trophy mr-3 text-idv-highlight"></i>当前段位进度
+                </h3>
+                <div class="text-right">
+                    <span id="currentRankDisplay" class="text-xl font-bold text-idv-highlight">四阶V</span>
+                    <div class="text-sm text-gray-400">当前积分: <span id="rankPointsDisplay" class="font-medium">0</span></div>
+                </div>
+            </div>
+
+            <!-- 段位进度条 -->
+            <div class="relative mb-8">
+                <!-- 进度条背景 -->
+                <div class="absolute top-1/2 left-0 right-0 h-2 bg-idv-secondary transform -translate-y-1/2 rounded-full"></div>
+
+                <!-- 进度条填充 -->
+                <div id="rankProgressBar" class="absolute top-1/2 left-0 h-2 bg-rank-progress transform -translate-y-1/2 rounded-full" style="width: 0%"></div>
+
+                <!-- 段位节点 -->
+                <div class="relative flex justify-between">
+                    <!-- 四阶V -->
+                    <div class="rank-node rank-4 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">4V</span>
+                            <div class="text-xs mt-1">
+                                <span class="rank-star">★</span>
+                                <span class="rank-star">★</span>
+                                <span class="rank-star">★</span>
+                                <span class="rank-star">★</span>
+                                <span class="rank-star">★</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">四阶V</span>
+                        <span class="text-xs text-gray-400">0-100</span>
+                    </div>
+
+                    <!-- 四阶IV -->
+                    <div class="rank-node rank-4 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">4IV</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">四阶IV</span>
+                        <span class="text-xs text-gray-400">101-200</span>
+                    </div>
+
+                    <!-- 四阶III -->
+                    <div class="rank-node rank-4 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">4III</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">四阶III</span>
+                        <span class="text-xs text-gray-400">201-300</span>
+                    </div>
+
+                    <!-- 四阶II -->
+                    <div class="rank-node rank-4 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">4II</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">四阶II</span>
+                        <span class="text-xs text-gray-400">301-400</span>
+                    </div>
+
+                    <!-- 四阶I -->
+                    <div class="rank-node rank-4 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">4I</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">四阶I</span>
+                        <span class="text-xs text-gray-400">401-500</span>
+                    </div>
+
+                    <!-- 五阶V -->
+                    <div class="rank-node rank-5 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">5V</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">五阶V</span>
+                        <span class="text-xs text-gray-400">501-650</span>
+                    </div>
+
+                    <!-- 五阶IV -->
+                    <div class="rank-node rank-5 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">5IV</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">五阶IV</span>
+                        <span class="text-xs text-gray-400">651-800</span>
+                    </div>
+
+                    <!-- 五阶III -->
+                    <div class="rank-node rank-5 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">5III</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">五阶III</span>
+                        <span class="text-xs text-gray-400">801-950</span>
+                    </div>
+
+                    <!-- 五阶II -->
+                    <div class="rank-node rank-5 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">5II</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">五阶II</span>
+                        <span class="text-xs text-gray-400">951-1100</span>
+                    </div>
+
+                    <!-- 五阶I -->
+                    <div class="rank-node rank-5 flex flex-col items-center w-20">
+                        <div class="rank-circle w-14 h-14 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-xs font-bold text-white">5I</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">五阶I</span>
+                        <span class="text-xs text-gray-400">1101-1250</span>
+                    </div>
+
+                    <!-- 六阶V (终点) -->
+                    <div class="rank-node rank-6 flex flex-col items-center w-20">
+                        <div class="rank-circle w-16 h-16 rounded-full flex flex-col items-center justify-center mb-2 relative">
+                            <span class="text-sm font-bold text-white">6V</span>
+                            <div class="text-xs mt-1">
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                                <span class="star-empty">☆</span>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">六阶V</span>
+                        <span class="text-xs text-gray-400">目标</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 段位说明 -->
+            <div class="text-center text-sm text-gray-400">
+                <p>每个段位需要100积分，每20积分点亮一颗星星 (共5星)</p>
+                <p>当前进度: <span id="currentRankProgress" class="text-idv-highlight font-medium">0% (0/100)</span></p>
+            </div>
+        </div>
+
+        <!-- 3. 积分调整区域 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- 左侧：积分调整 -->
+            <div class="bg-idv-primary/70 rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-gray-300 mb-4 flex items-center">
+                    <i class="fa fa-line-chart mr-3 text-idv-accent"></i>积分调整
+                </h3>
+
+                <!-- 当前积分显示 -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between bg-idv-secondary rounded-lg p-4">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-300 mb-1">
+                                <i class="fa fa-star mr-2 text-idv-highlight"></i>当前积分
+                            </h4>
+                            <p class="text-xs text-gray-400">手动调整当前积分</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold text-idv-highlight" id="manualPointsDisplay">0</div>
+                            <div class="text-xs text-gray-400">积分</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 积分调整操作 -->
+                <div class="space-y-4">
+                    <div class="space-y-3">
+                        <label for="adjustInput" class="block text-sm font-medium text-gray-300">段位分输入</label>
+                        <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                  <i class="fa fa-edit"></i>
+                </span>
+                            <input
+                                    type="number"
+                                    id="adjustInput"
+                                    class="w-full pl-10 pr-4 py-3 rounded-lg bg-idv-secondary border border-idv-secondary text-white input-focus"
+                                    placeholder="输入调整值，如 +10 或 -3"
+                                    value="+50"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- 快速调整按钮 -->
+
+
+                    <!-- 提交按钮 -->
+                    <div class="flex space-x-3 pt-2">
+                        <button
+                                id="applyAdjustBtn"
+                                class="flex-1 bg-idv-accent hover:bg-idv-accent/90 text-white px-4 py-3 rounded-lg btn-hover flex items-center justify-center"
+                        >
+                            <i class="fa fa-check mr-2"></i>提交调整
+                        </button>
+                        <button
+                                id="resetManualBtn"
+                                class="bg-idv-secondary hover:bg-idv-primary text-white px-4 py-3 rounded-lg btn-hover flex items-center justify-center"
+                        >
+                            <i class="fa fa-refresh"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：历史记录 -->
+            <div class="bg-idv-primary/70 rounded-xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-300 flex items-center">
+                        <i class="fa fa-history mr-3 text-idv-accent"></i>调整历史记录
+                    </h3>
+                    <div class="text-sm text-gray-400">
+                        共 <span id="historyCount">0</span> 条记录
+                    </div>
+                </div>
+
+                <div id="historyList" class="space-y-3 max-h-80 overflow-y-auto p-1">
+                    <!-- 历史记录将通过JavaScript动态添加 -->
+                    <div class="text-center py-8 text-gray-500" id="emptyHistoryMessage">
+                        <i class="fa fa-history text-3xl mb-3"></i>
+                        <p>暂无调整记录</p>
+                        <p class="text-xs mt-2">调整积分后，记录将显示在这里</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 底部：日期和目标设置 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- 开始日期选择 -->
+            <div class="space-y-4">
+                <label for="startDate" class="block text-sm font-medium text-gray-300">
+                    <i class="fa fa-calendar-check-o mr-2 text-rank-completed"></i>开始日期
+                </label>
+                <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <i class="fa fa-play-circle"></i>
+            </span>
+                    <input
+                            type="date"
+                            id="startDate"
+                            class="w-full pl-10 pr-4 py-3 rounded-lg bg-idv-secondary border border-idv-secondary text-white input-focus"
+                    >
+                </div>
+            </div>
+
+            <!-- 结束日期选择 -->
+            <div class="space-y-4">
+                <label for="endDate" class="block text-sm font-medium text-gray-300">
+                    <i class="fa fa-calendar-times-o mr-2 text-idv-accent"></i>结束日期
+                </label>
+                <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <i class="fa fa-flag-checkered"></i>
+            </span>
+                    <input
+                            type="date"
+                            id="endDate"
+                            class="w-full pl-10 pr-4 py-3 rounded-lg bg-idv-secondary border border-idv-secondary text-white input-focus"
+                    >
+                </div>
+            </div>
+
+            <!-- 目标积分输入 -->
+            <div class="space-y-4">
+                <label for="targetPoints" class="block text-sm font-medium text-gray-300">
+                    <i class="fa fa-bullseye mr-2 text-idv-highlight"></i>目标积分
+                </label>
+                <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <i class="fa fa-trophy"></i>
+            </span>
+                    <input
+                            type="number"
+                            id="targetPoints"
+                            class="w-full pl-10 pr-4 py-3 rounded-lg bg-idv-secondary border border-idv-secondary text-white input-focus"
+                            placeholder="输入目标积分"
+                            min="0"
+                            value="1250"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="mt-8 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <button
+                    id="resetBtn"
+                    class="bg-idv-secondary hover:bg-idv-primary text-white px-6 py-3 rounded-lg btn-hover flex items-center justify-center"
+            >
+                <i class="fa fa-refresh mr-2"></i>重置计算器
+            </button>
+        </div>
+    </div>
+
+    <!-- 通知信息 -->
+    <div id="notification" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-idv-primary rounded-lg shadow-lg px-6 py-3 hidden z-50 border-l-4">
+        <div class="flex items-center">
+            <i id="notificationIcon" class="fa fa-info-circle mr-3"></i>
+            <p id="notificationText" class="text-center"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // DOM 元素
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const targetPointsInput = document.getElementById('targetPoints');
+    const adjustInput = document.getElementById('adjustInput');
+    const applyAdjustBtn = document.getElementById('applyAdjustBtn');
+    const resetManualBtn = document.getElementById('resetManualBtn');
+    const historyList = document.getElementById('historyList');
+    const emptyHistoryMessage = document.getElementById('emptyHistoryMessage');
+    const historyCount = document.getElementById('historyCount');
+
+    const daysRemainingDisplay = document.getElementById('daysRemaining');
+    const dailyPointsDisplay = document.getElementById('dailyPoints');
+    const currentPointsDisplay = document.getElementById('currentPointsDisplay');
+    const manualPointsDisplay = document.getElementById('manualPointsDisplay');
+    const totalPointsDisplay = document.getElementById('totalPoints');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercentage = document.getElementById('progressPercentage');
+    const progressPoints = document.getElementById('progressPoints');
+    const resetBtn = document.getElementById('resetBtn');
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notificationText');
+    const notificationIcon = document.getElementById('notificationIcon');
+
+    // 段位相关元素
+    const currentRankDisplay = document.getElementById('currentRankDisplay');
+    const rankPointsDisplay = document.getElementById('rankPointsDisplay');
+    const rankProgressBar = document.getElementById('rankProgressBar');
+    const currentRankProgress = document.getElementById('currentRankProgress');
+
+    // 历史记录数据
+    let history = [];
+    // 当前积分（初始为0）
+    let currentPoints = 0;
+
+    // 段位定义
+    const rankDefinitions = [
+      { name: "四阶V", min: 0, max: 100, stars: 5, starValue: 20, color: "rank-4" },
+      { name: "四阶IV", min: 101, max: 200, stars: 5, starValue: 20, color: "rank-4" },
+      { name: "四阶III", min: 201, max: 300, stars: 5, starValue: 20, color: "rank-4" },
+      { name: "四阶II", min: 301, max: 400, stars: 5, starValue: 20, color: "rank-4" },
+      { name: "四阶I", min: 401, max: 500, stars: 5, starValue: 20, color: "rank-4" },
+      { name: "五阶V", min: 501, max: 650, stars: 5, starValue: 30, color: "rank-5" },
+      { name: "五阶IV", min: 651, max: 800, stars: 5, starValue: 30, color: "rank-5" },
+      { name: "五阶III", min: 801, max: 950, stars: 5, starValue: 30, color: "rank-5" },
+      { name: "五阶II", min: 951, max: 1100, stars: 5, starValue: 30, color: "rank-5" },
+      { name: "五阶I", min: 1101, max: 1250, stars: 5, starValue: 30, color: "rank-5" },
+      { name: "六阶V", min: 1251, max: Infinity, stars: 5, starValue: 30, color: "rank-6" }
+    ];
+
+    // 初始化日期和计算
+    initializeDates();
+    loadHistory();
+    calculatePoints();
+
+    // 事件监听器
+    startDateInput.addEventListener('change', calculatePoints);
+    endDateInput.addEventListener('change', calculatePoints);
+    targetPointsInput.addEventListener('input', calculatePoints);
+
+    // 提交调整按钮
+    applyAdjustBtn.addEventListener('click', applyAdjustment);
+
+    // 重置手动积分按钮
+    resetManualBtn.addEventListener('click', resetManualPoints);
+
+    // 重置按钮
+    resetBtn.addEventListener('click', resetCalculator);
+
+    // 输入框回车提交
+    adjustInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        applyAdjustment();
+      }
+    });
+
+    // 快速调整按钮
+    document.querySelectorAll('.adjust-quick-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        adjustInput.value = btn.getAttribute('data-value');
+      });
+    });
+
+    // 初始化日期
+    function initializeDates() {
+      // 设置开始日期为2025/11/27
+      const startDate = new Date('2025-11-27');
+      startDateInput.valueAsDate = startDate;
+
+      // 设置结束日期为2026/2/5
+      const endDate = new Date('2026-02-05');
+      endDateInput.valueAsDate = endDate;
+
+      // 设置目标积分为1250
+      targetPointsInput.value = 1250;
+    }
+
+    // 应用调整
+    function applyAdjustment() {
+      const adjustValue = parseInt(adjustInput.value) || 0;
+      const note = adjustValue > 0 ? '积分增加' : '积分减少';
+
+      if (adjustValue === 0) {
+        showNotification('请输入非零的调整值', 'error');
+        return;
+      }
+
+      // 计算新积分
+      const newPoints = Math.max(0, currentPoints + adjustValue);
+      const pointsChange = newPoints - currentPoints;
+
+      // 添加历史记录
+      addHistoryRecord(pointsChange, note, newPoints);
+
+      // 更新当前积分
+      currentPoints = newPoints;
+
+      // 更新显示
+      updatePointsDisplay();
+
+      // 重新计算
+      calculatePoints();
+
+      // 显示成功消息
+      const action = adjustValue > 0 ? '增加' : '减少';
+      showNotification(`成功${action} ${Math.abs(adjustValue)} 积分`, 'success');
+
+      // 清空输入框
+      adjustInput.value = adjustValue > 0 ? '+50' : '-30';
+
+      // 保存历史记录到本地存储
+      saveHistory();
+    }
+
+    // 添加历史记录
+    function addHistoryRecord(adjustValue, note, newTotal) {
+      const now = new Date();
+      const record = {
+        id: Date.now(),
+        timestamp: now,
+        adjustValue: adjustValue,
+        note: note,
+        newTotal: newTotal
+      };
+
+      // 添加到历史记录数组开头
+      history.unshift(record);
+
+      // 更新历史记录显示
+      updateHistoryDisplay();
+    }
+
+    // 更新历史记录显示
+    function updateHistoryDisplay() {
+      // 清空历史记录列表
+      historyList.innerHTML = '';
+
+      if (history.length === 0) {
+        historyList.appendChild(emptyHistoryMessage);
+        emptyHistoryMessage.classList.remove('hidden');
+        historyCount.textContent = '0';
+        return;
+      }
+
+      emptyHistoryMessage.classList.add('hidden');
+      historyCount.textContent = history.length;
+
+      // 显示所有记录
+      history.forEach(record => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item bg-idv-secondary/50 rounded-lg p-3 animate-slide-in';
+        historyItem.innerHTML = `
+          <div class="flex justify-between items-center">
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center ${record.adjustValue > 0 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'} mr-3">
+                <i class="fa ${record.adjustValue > 0 ? 'fa-plus' : 'fa-minus'}"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium ${record.adjustValue > 0 ? 'text-green-300' : 'text-red-300'}">
+                  ${record.adjustValue > 0 ? '+' : ''}${record.adjustValue} 积分
+                </p>
+                <p class="text-xs text-gray-400">${record.note}</p>
+              </div>
+            </div>
+            <div class="text-right flex items-center">
+              <div class="mr-3">
+                <p class="text-sm font-medium text-gray-300">${record.newTotal} 积分</p>
+                <p class="text-xs text-gray-500">${formatTime(record.timestamp)}</p>
+              </div>
+              <button class="delete-history-btn text-gray-400 hover:text-idv-accent p-1" data-id="${record.id}">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        historyList.appendChild(historyItem);
+      });
+
+      // 为删除按钮添加事件监听
+      document.querySelectorAll('.delete-history-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const recordId = parseInt(this.getAttribute('data-id'));
+          deleteHistoryRecord(recordId);
+        });
+      });
+    }
+
+    // 删除单条历史记录
+    function deleteHistoryRecord(recordId) {
+      if (!confirm('确定要删除这条记录吗？删除后积分将相应调整。')) {
+        return;
+      }
+
+      // 查找要删除的记录
+      const recordIndex = history.findIndex(record => record.id === recordId);
+      if (recordIndex === -1) return;
+
+      const record = history[recordIndex];
+      const adjustValue = record.adjustValue;
+
+      // 从历史记录中删除
+      history.splice(recordIndex, 1);
+
+      // 重新计算当前积分：从0开始，按剩余记录重新计算
+      let recalculatedPoints = 0;
+      history.forEach(r => {
+        recalculatedPoints += r.adjustValue;
+      });
+
+      // 更新当前积分
+      currentPoints = Math.max(0, recalculatedPoints);
+
+      // 更新显示
+      updatePointsDisplay();
+      updateHistoryDisplay();
+      calculatePoints();
+
+      // 显示通知
+      showNotification(`已删除记录，积分调整 ${adjustValue > 0 ? '减少' : '增加'} ${Math.abs(adjustValue)} 积分`, 'info');
+
+      // 保存历史记录到本地存储
+      saveHistory();
+    }
+
+    // 格式化时间显示
+    function formatTime(date) {
+      const now = new Date();
+      const recordDate = new Date(date);
+
+      // 如果是今天，显示时间
+      if (recordDate.toDateString() === now.toDateString()) {
+        return `今天 ${recordDate.getHours().toString().padStart(2, '0')}:${recordDate.getMinutes().toString().padStart(2, '0')}`;
+      }
+
+      // 如果是昨天，显示昨天
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (recordDate.toDateString() === yesterday.toDateString()) {
+        return `昨天 ${recordDate.getHours().toString().padStart(2, '0')}:${recordDate.getMinutes().toString().padStart(2, '0')}`;
+      }
+
+      // 否则显示日期
+      return `${recordDate.getMonth() + 1}/${recordDate.getDate()} ${recordDate.getHours().toString().padStart(2, '0')}:${recordDate.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    // 重置手动积分
+    function resetManualPoints() {
+      currentPoints = 0;
+      updatePointsDisplay();
+      calculatePoints();
+      showNotification('当前积分已重置为0', 'success');
+    }
+
+    // 保存历史记录到本地存储
+    function saveHistory() {
+      try {
+        localStorage.setItem('idvRankHistory', JSON.stringify(history));
+      } catch (e) {
+        console.error('无法保存历史记录:', e);
+      }
+    }
+
+    // 从本地存储加载历史记录
+    function loadHistory() {
+      try {
+        const savedHistory = localStorage.getItem('idvRankHistory');
+        if (savedHistory) {
+          history = JSON.parse(savedHistory);
+          // 转换日期字符串为Date对象
+          history.forEach(record => {
+            record.timestamp = new Date(record.timestamp);
+          });
+
+          // 重新计算当前积分
+          currentPoints = 0;
+          history.forEach(r => {
+            currentPoints += r.adjustValue;
+          });
+          currentPoints = Math.max(0, currentPoints);
+
+          updatePointsDisplay();
+          updateHistoryDisplay();
+        }
+      } catch (e) {
+        console.error('无法加载历史记录:', e);
+      }
+    }
+
+    // 更新积分显示
+    function updatePointsDisplay() {
+      animateNumber(currentPointsDisplay, currentPoints);
+      animateNumber(manualPointsDisplay, currentPoints);
+      rankPointsDisplay.textContent = currentPoints;
+    }
+
+    // 计算积分
+    function calculatePoints() {
+      const startDate = new Date(startDateInput.value);
+      const endDate = new Date(endDateInput.value);
+      const today = new Date();
+      const targetPoints = parseInt(targetPointsInput.value) || 1250;
+
+      // 验证日期
+      if (endDate <= startDate) {
+        showNotification('结束日期必须晚于开始日期', 'error');
+        return;
+      }
+
+      // 计算剩余天数（从今天到结束日期）
+      const timeDiff = endDate.getTime() - Math.max(startDate.getTime(), today.getTime());
+      const daysRemaining = Math.max(1, Math.ceil(timeDiff / (1000 * 3600 * 24)));
+
+      // 计算剩余积分
+      const remainingPoints = Math.max(0, targetPoints - currentPoints);
+
+      // 计算日均积分
+      const dailyPoints = Math.ceil(remainingPoints / daysRemaining);
+
+      // 计算积分进度百分比
+      let progressPercent = 0;
+      if (targetPoints > 0) {
+        progressPercent = Math.min(100, (currentPoints / targetPoints) * 100);
+      }
+
+      // 更新显示
+      animateNumber(daysRemainingDisplay, daysRemaining);
+      animateNumber(dailyPointsDisplay, dailyPoints);
+      animateNumber(totalPointsDisplay, targetPoints);
+      updatePointsDisplay();
+
+      // 更新进度条
+      progressBar.style.width = `${progressPercent}%`;
+      progressPercentage.textContent = `${Math.round(progressPercent)}%`;
+      progressPoints.textContent = `${currentPoints.toLocaleString()}/${targetPoints.toLocaleString()}`;
+
+      // 更新段位显示
+      updateRankDisplay(currentPoints);
+    }
+
+    // 数字动画
+    function animateNumber(element, targetNumber) {
+      const startNumber = parseInt(element.textContent.replace(/,/g, '')) || 0;
+      const duration = 800;
+      const startTime = performance.now();
+
+      function updateNumber(currentTime) {
+        const elapsedTime = currentTime - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+
+        // 使用缓动函数使动画更自然
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const currentNumber = Math.floor(startNumber + (targetNumber - startNumber) * easeOutQuart);
+
+        element.textContent = currentNumber.toLocaleString();
+
+        if (progress < 1) {
+          requestAnimationFrame(updateNumber);
+        }
+      }
+
+      requestAnimationFrame(updateNumber);
+    }
+
+    // 重置计算器
+    function resetCalculator() {
+      // 重置日期
+      initializeDates();
+
+      // 重置当前积分
+      currentPoints = 0;
+      updatePointsDisplay();
+
+      // 清空历史记录
+      history = [];
+      updateHistoryDisplay();
+      saveHistory();
+
+      // 重新计算
+      calculatePoints();
+      showNotification('计算器已重置', 'success');
+    }
+
+    // 计算当前段位
+    function calculateCurrentRank(points) {
+      for (const rank of rankDefinitions) {
+        if (points >= rank.min && points <= rank.max) {
+          return rank;
+        }
+      }
+      return rankDefinitions[0]; // 默认返回四阶V
+    }
+
+    // 更新段位显示
+    function updateRankDisplay(points) {
+      const currentRank = calculateCurrentRank(points);
+
+      // 更新当前段位显示
+      currentRankDisplay.textContent = currentRank.name;
+
+      // 计算当前段位内的进度
+      const rankRange = currentRank.max - currentRank.min;
+      const rankProgress = Math.min(100, Math.max(0, ((points - currentRank.min) / rankRange) * 100));
+      const starsToShow = Math.min(5, Math.floor(rankProgress / 20) + (rankProgress > 0 ? 1 : 0));
+
+      // 更新段位进度条
+      const totalProgressPercent = (points / 1000) * 100;
+      rankProgressBar.style.width = `${Math.min(100, totalProgressPercent)}%`;
+
+      // 更新当前段位进度文本
+      currentRankProgress.textContent = `${Math.round(rankProgress)}% (${points - currentRank.min}/${rankRange})`;
+
+      // 更新所有段位节点的星星显示
+      updateAllRankStars(points);
+
+      // 更新当前段位节点的特殊样式
+      updateCurrentRankNode(currentRank.name);
+    }
+
+    // 更新所有段位节点的星星
+    function updateAllRankStars(points) {
+      const rankNodes = document.querySelectorAll('.rank-node');
+
+      rankNodes.forEach(node => {
+        const rankName = node.querySelector('span.text-gray-300.font-medium').textContent;
+        const rank = rankDefinitions.find(r => r.name === rankName);
+
+        if (!rank) return;
+
+        // 获取星星容器
+        const starsContainer = node.querySelector('.text-xs.mt-1');
+
+        // 清除现有星星
+        starsContainer.innerHTML = '';
+
+        if (points >= rank.max) {
+          // 已完成的段位：显示5颗实心星星
+          for (let i = 0; i < 5; i++) {
+            const star = document.createElement('span');
+            star.className = 'rank-star animate-star-glow';
+            star.textContent = '★';
+            starsContainer.appendChild(star);
+          }
+
+          // 添加已完成样式
+          node.classList.add('completed-rank-node');
+        } else if (points >= rank.min) {
+          // 当前段位：根据进度显示星星
+          const rankRange = rank.max - rank.min;
+          const rankProgress = ((points - rank.min) / rankRange) * 100;
+          const starsToShow = Math.min(5, Math.floor(rankProgress / 20) + (rankProgress > 0 ? 1 : 0));
+
+          for (let i = 0; i < 5; i++) {
+            const star = document.createElement('span');
+            if (i < starsToShow) {
+              star.className = 'rank-star animate-star-glow';
+              star.textContent = '★';
+            } else {
+              star.className = 'star-empty';
+              star.textContent = '☆';
+            }
+            starsContainer.appendChild(star);
+          }
+
+          // 移除已完成样式
+          node.classList.remove('completed-rank-node');
+        } else {
+          // 未达到的段位：显示5颗空心星星
+          for (let i = 0; i < 5; i++) {
+            const star = document.createElement('span');
+            star.className = 'star-empty';
+            star.textContent = '☆';
+            starsContainer.appendChild(star);
+          }
+
+          // 移除已完成样式
+          node.classList.remove('completed-rank-node');
+        }
+      });
+    }
+
+    // 更新当前段位节点的特殊样式
+    function updateCurrentRankNode(rankName) {
+      const rankNodes = document.querySelectorAll('.rank-node');
+
+      rankNodes.forEach(node => {
+        node.classList.remove('current-rank-node');
+        const nodeRankName = node.querySelector('span.text-gray-300.font-medium').textContent;
+
+        if (nodeRankName === rankName) {
+          node.classList.add('current-rank-node');
+        }
+      });
+    }
+
+    // 显示通知
+    function showNotification(message, type = 'info') {
+      notificationText.textContent = message;
+
+      // 设置通知样式和图标
+      notification.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 rounded-lg shadow-lg px-6 py-3 transition-all duration-300 z-50 border-l-4';
+
+      if (type === 'error') {
+        notification.classList.add('bg-red-900/80', 'text-red-100', 'border-red-500');
+        notificationIcon.className = 'fa fa-exclamation-circle mr-3 text-red-300';
+      } else if (type === 'success') {
+        notification.classList.add('bg-green-900/80', 'text-green-100', 'border-green-500');
+        notificationIcon.className = 'fa fa-check-circle mr-3 text-green-300';
+      } else {
+        notification.classList.add('bg-idv-primary', 'text-white', 'border-idv-accent');
+        notificationIcon.className = 'fa fa-info-circle mr-3 text-idv-accent';
+      }
+
+      // 显示通知
+      notification.classList.remove('hidden', 'opacity-0', 'translate-y-4');
+      notification.classList.add('opacity-100');
+
+      // 3秒后隐藏通知
+      setTimeout(() => {
+        notification.classList.add('opacity-0', 'translate-y-4');
+        setTimeout(() => {
+          notification.classList.add('hidden');
+        }, 300);
+      }, 3000);
+    }
+
+    // 初始化段位显示
+    updateRankDisplay(currentPoints);
+</script>
+</body>
+</html>
