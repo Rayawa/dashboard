@@ -1,77 +1,99 @@
-# 应用看板 (Gallery Dashboard)
+# Rayawa / dashboard
 
-### [English README](README_en.md) | [README Français](README_fr.md)
+[![HarmonyOS API](https://img.shields.io/badge/HarmonyOS-API%2012%2B-blue)](#)
+[![Languages](https://img.shields.io/badge/主语言-ArkTS%2CRust-orange)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green)](#)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#)
 
-该项目基于 ArkTS 与 ArkWeb WebView 实现了一个带导航栏、菜单控制、页面加载状态与回到顶部动画的移动端嵌入式 Dashboard 页面。
+一句话简介
+------------
+基于 HarmonyOS 的实时分布式应用下载量看板 — 实时展示与可视化 HarmonyOS 应用的下载统计与趋势。
 
-核心功能包括： - WebView 页面加载、刷新、停止加载、返回 -
-自定义导航栏（标题 + 用户入口 + 菜单按钮） -
-顶部菜单功能（返回上级、刷新、停止刷新、回到顶部、页面切换） -
-页面加载进度条 - 滚动监听与回到顶部的动画效果 - 深色模式控制 - DOM
-存储授权与 WebView 相关配置
+项目背景与功能特性
+------------------
+为什么写这个项目
+- 我们需要一个轻量、高可视化、可跨设备实时查看应用下载量与趋势的看板，方便运营与开发快速定位问题与评估活动效果。
+- 希望利用鸿蒙的分布式能力将数据同步到手机/平板/车机等不同端，做到“一次采集，多端查看”。
 
-## ArkWeb内网站：[V2站](https://hmos.txit.top/dashboard) ｜ [V1站](http://shenjack.top:10003/dashboard)
-鸣谢：[shenjack](https://github.com/shenjackyuanjie)、[2b2ttianxiu](https://github.com/tianxiu2b2t)
+核心功能
+- 实时统计：展示各应用在不同时间窗口（小时/天/周）的下载量。
+- 多端分发：支持在鸿蒙不同终端上查看同一数据看板（分布式能力）。
+- 按应用分组与筛选：按应用、渠道、版本筛选并支持关键词搜索。
+- 历史趋势与可视化：折线/柱状/饼图展示不同维度数据。
+- 告警与标注：当下载量异常（上升/下降）时触发告警提醒（可配置阈值）。
 
-## 项目结构摘要
+鸿蒙特性（若已使用，请替换为实际用到的特性）
+- 分布式数据流转（Distributed Data）：把后端或云端统计数据推送到登录同一帐号的多端。
+- 一碰连/一碰分享：支持设备间快速连接并共享当前看板视图（须设备与系统支持）。
+- 元服务（Microservice / Ability）集成：统计后端以 Ability/Service 形式暴露接口，前端直接调用。
 
-主要页面文件：`entry/src/main/ets/pages/Index.ets`
+屏幕截图 / GIF
+- 请将截图放入 `assets/screenshots/` 目录，并在下方替换链接或图片。
+- GIF 演示比静态图更直观：推荐 5–15s 的短 GIF 展示数据交互与筛选流程。
 
-资源文件：`AppScope/resources/base/media` | `AppScope/resources/dark/media`（深色模式）
+技术架构
+---------
+总体架构（示例）
+- 前端（设备端）：ArkTS + ArkUI（位于 entry/ets/ 下）
+- 后端服务：Rust（异步 HTTP 框架，例如 axum 或 actix-web）
+- 数据存储：PostgreSQL（数据库函数 / 存储过程使用 PL/pgSQL）
+- 任务 / 脚本：Python 脚本用于离线数据 ETL / 调度（可选）
+- 部署：后端容器化（Docker）、DB 在云端或受控主机
+
+技术栈（示例）
+- 应用端：ArkTS、ArkUI、Ohos SDK（HarmonyOS 6.0+）
+- 后端：Rust (async runtime: tokio), PostgreSQL (PL/pgSQL)
+- 脚本/工具：Python、psql、Docker
+
+entry/ets 页面概览（请把下面表格与实际文件名替换）
+- 主要说明：下面为模板，请将实际页面文件名及主变量替换进来（我可以帮你自动提取，如果你允许我读取仓库文件）。
+
+页面清单（模板）
+| 页面文件 (entry/ets/...) | 用途简介 | 主要变量 / 数据源 | 导航关系（来自 / 去往） |
+|---|---:|---|---|
+| pages/Home/Home.ets | 主看板首页，显示总体概览 | totalDownloads, trendSeries, topApps | 启动页 -> Dashboard / AppDetail |
+| pages/Dashboard/Dashboard.ets | 多维筛选与图表展示 | filters, chartOptions, timeRange | Home -> Dashboard / Settings |
+| pages/AppDetail/AppDetail.ets | 单个 App 的历史与详情 | appId, appStats, versionList | Dashboard -> AppDetail |
+| pages/Settings/Settings.ets | 配置阈值、告警与同步设置 | alertThresholds, syncTargets | 全局入口 -> Settings |
+
+（把上表替换为真实文件名与变量名后，这里会成为项目文档的一部分）
+
+快速上手（Quick Start）
+---------------------
+前置要求（Prerequisites）
+- IDE：[DevEco Studio 6.0.0+](https://developer.huawei.com/consumer/cn/download/)
+- HarmonyOS SDK：HarmonyOS 6.0 Release（target API: 23）
+- 设备/模拟器：支持 HarmonyOS 的真机或模拟器
+
+本地跑通（示例步骤）
+1. 克隆仓库
+   git clone https://github.com/Rayawa/dashboard.git
+   cd dashboard
+
+2. 配置签名
 
 
 
-核心组件：
-
--   V2：Dashboard 主页面组件
--   WebviewController：用于控制ArkWeb行为为（刷新、停止、滚动、导航等）
--   TopNavBar：提供全局统一的导航栏视觉样式与功能，在高斯模糊之上显示页面标题，我的按钮和菜单栏。在保留全局功能的情况下增加页面沉浸感与美感。
--   Menu：TopNavBar的菜单栏统一管理组件，使用.bindMenu(this.Menu)调用，便于维护与增删内容。
+目录结构（Project Structure）
+------------------------------
 
 
-## 功能说明
+配置与环境变量（Configuration）
+--------------------------------
 
-### 1. 顶部导航栏
 
-包含： - 页面标题（应用看板） - 用户图标（跳转到用户页面） -
-菜单按钮（右上角）
+权限说明
+- 应用可能会请求的权限（示例）：
+    - ohos.permission.INTERNET
+    - ohos.permission.READ_EXTERNAL_STORAGE
+    - ohos.permission.WRITE_EXTERNAL_STORAGE
+    - ohos.permission.ACCESS_NETWORK_STATE
 
-导航栏具有： - 固定定位 - 模糊背景 - 滚动时与内容区分层
 
-### 2. WebView 容器
+许可证与致谢（License & Acknowledgments）
+----------------------------------------
+License
 
--   domStorageAccess(true)：允许 DOM Storage
--   darkMode(this.mode)：WebView 跟随应用深色模式
--   forceDarkAccess(this.access)：强制深色模式
--   onPageBegin：开始加载
--   onProgressChange：更新进度条
--   onPageEnd：加载完毕
--   onScroll：记录滚动距离
 
-### 3. 顶部进度条
+鸣谢
 
-使用 Progress 组件与加载进度联动。
-
-### 4. 菜单功能
-
--   返回上级：backward()
--   刷新/停止刷新：refresh() / stop()
--   回到顶部动画：setInterval + cubic easing
--   切换页面：Navigation
-
-## 状态字段说明
-
-url：加载网址\
-mode：深色模式\
-access：强制深色\
-isLoading：是否加载中\
-progress：加载百分比\
-scrollY：滚动位置\
-NAV_HEIGHT：导航栏高度
-
-## 回到顶部动画逻辑
-
-easing = 1 - (1 - progress)\^3\
-newY = startY \* (1 - easing)
-
-60 帧动画，每帧 8.33ms。
