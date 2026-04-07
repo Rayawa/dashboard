@@ -196,7 +196,7 @@ export struct queryButtons {
 
       if (isExists) {
         this.formData.appId = tempAppId;
-        const finalUrl = `https://hmos.txit.top/app/${tempAppId}`;
+        const finalUrl = `http://shenjack.top:10003/dashboard?app_id=${tempAppId}`;
 
         this.isSearching = false;
         this.stopSearchRippleLoop();
