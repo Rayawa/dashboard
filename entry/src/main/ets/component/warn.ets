@@ -1,10 +1,11 @@
-import { confirmButtons } from "./confirmButtons";
+import { confirmButtons } from './confirmButtons';
 
 @Component
 export struct warn {
     private limitations: string[] = [
         "1. 架构限制：数据内容仅覆盖HarmonyOS 5以上核心环境，不包含如侧载、企业定制版之类的应用",
-        "2. 更新延迟：数据采集与分析存在滞后，项目组不保证信息的即时性"
+        "2. 更新延迟：数据采集与分析存在滞后，项目组不保证信息的即时性",
+        "3. 网络环境：本应用依赖实时或异步网络通信，数据同步质量受限于用户端的网络带宽及服务稳定性"
     ]
 
     private disclaimers: string[] = [
@@ -12,7 +13,8 @@ export struct warn {
         "2. 免责申明：项目组不对数据来源的准确性、完整性与真实性作任何形式的法律担保",
         "3. 损益承担：用户因采信本统计结果而产生的直接或间接经济损失，本应用不承担赔偿责任",
         "4. 知识产权：本项统计算法为原创内容，未经授权严禁商用",
-        "5. 动态调整：为优化准确度，我们保留在不预先通知的情况下修正统计链路与算法逻辑的权利"
+        "5. 动态调整：为优化准确度，我们保留在不预先通知的情况下修正统计链路与算法逻辑的权利",
+        "6. 最终解释权：在法律允许的范围内，本项目组拥有对本统计方法论及数据口径的最终解释权"
     ]
 
     @Builder
@@ -50,7 +52,7 @@ export struct warn {
                 Divider()
                     .color($r("app.color.border"))
                     .strokeWidth(0.5)
-                    .margin({ left: 16, right: 16 })
+                    .margin({ top: 10, bottom: 10  })
 
                 Text("【法律声明】")
                     .fontSize(16)

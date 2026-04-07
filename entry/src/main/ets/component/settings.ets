@@ -15,8 +15,6 @@ import { deviceInfo } from "@kit.BasicServicesKit";
 
 @Component
 export struct settings {
-    private context = getContext(this) as common.UIAbilityContext;
-
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = false;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
@@ -69,6 +67,7 @@ export struct settings {
                 isOn: this.vibrationON,
                 onToggle: async (val) => { await setVibrationEnabled(val); this.vibrationON = val; }
             })
+            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
             SettingItem({
                 icon: $r("app.media.button"),
@@ -79,6 +78,7 @@ export struct settings {
                 onText: "右",
                 onToggle: async (val) => { await setButtonPosition(val); this.buttonPositionRIGHT = val; }
             })
+            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
             SettingItem({
                 icon: $r("app.media.hand"),
@@ -87,6 +87,7 @@ export struct settings {
                 promptMsg: "󰗫适人握持󰗫",
                 onToggle: async (val) => { await setHoldCheckEnabled(val); this.holdCheckON = val; }
             })
+            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
             SettingItem({
                 icon: $r("app.media.autoBar"),
@@ -94,6 +95,7 @@ export struct settings {
                 isOn: this.tabBarAutoON,
                 onToggle: async (val) => { await setTabBarAuto(val); this.tabBarAutoON = val; }
             })
+            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
             if(deviceInfo.sdkApiVersion >= 23){
                 SettingItem({
@@ -103,7 +105,7 @@ export struct settings {
                     promptMsg: "开启沉浸式材质将增加应用功耗，\n如遇卡顿建议关闭。",
                     onToggle: async (val) => { await setImmersiveTexture(val); this.immersiveTextureON = val; }
                 })
-
+                Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
             }
 
             this.TrashItem()
@@ -188,7 +190,6 @@ struct SettingItem {
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })
 
-            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
         }
     }
 }

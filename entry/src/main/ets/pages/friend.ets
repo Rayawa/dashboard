@@ -134,7 +134,7 @@ struct friend {
         Column() {
           Blank().height(70)
           Column(){
-            Text("重要提醒：\n您正在访问友情链接")
+            Text("重要提示：\n您正在访问友情链接")
               .fontWeight(700)
               .fontSize(20)
               .fontColor(Color.Red)

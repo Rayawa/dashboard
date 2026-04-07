@@ -238,6 +238,7 @@ export struct user {
                                     this.pageStack.pushPathByName("FriendPage", null);
                                 }
                             })
+                            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             OtherItem({
                                 icon: $r("app.media.MeoW"),
@@ -254,6 +255,7 @@ export struct user {
                                     }
                                 }
                             })
+                            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             OtherItem({
                                 icon: $r("app.media.contact"),
@@ -262,6 +264,7 @@ export struct user {
                                     this.showContact = true;
                                 }
                             })
+                            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             OtherItem({
                                 icon: $r("app.media.info"),
@@ -442,10 +445,6 @@ struct OtherItem {
                 }
                 this.onClickAction();
             })
-            Divider()
-                .strokeWidth(0.5)
-                .color($r("app.color.border"))
-                .margin({ left: 16, right: 16 })
         }
     }
 }
