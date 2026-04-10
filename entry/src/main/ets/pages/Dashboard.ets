@@ -20,7 +20,7 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
-import { customUserAgent, EguiBaseURL, SBaseURL, TBaseURL } from '../common/constants';
+import { customUserAgent, EguiBaseURL, RBaseURL, SBaseURL, TBaseURL } from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
@@ -87,9 +87,9 @@ struct Dashboard {
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
-        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'Egui', url: EguiBaseURL.toString(), label: 'Egui (开发中)', icon: $r('sys.media.wifi_router_fill') },
+        // { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
     ];
 
     @State private url: string = Array.from(this.sitesList.values())[0].url;

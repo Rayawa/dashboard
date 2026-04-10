@@ -320,7 +320,7 @@ struct about {
       .width("100%")
       .height("100%")
     }
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {
       if( this.vibrationON ) vibration.dotVibration()
       if ( this.showWarn ) {
