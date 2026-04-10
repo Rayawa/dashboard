@@ -2,6 +2,7 @@ import { URL } from "./url";
 import { deviceInfo } from "@kit.BasicServicesKit";
 
 //主
+export const RBaseURL = new URL("https://dashboard.rayawa.top/");
 export const SBaseURL = new URL("http://shenjack.top:10003/");
 export const EguiBaseURL = new URL("http://shenjack.top:10003/egui/");
 export const TBaseURL = new URL("https://hmos.txit.top/");
