@@ -1,6 +1,12 @@
 import KnockShareGuideCard, { CardRes } from './KnockShareGuideCard';
+import { vibration } from '../common/vibration';
+import { PromptAction } from '@kit.ArkUI';
+import { common, Want } from '@kit.AbilityKit';
+
 @Component
 export struct tutorial {
+    @StorageLink("vibrationON") vibrationON: boolean = true;
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
     private currentIndex: number = 0;
     private readonly cardSwiperResourcesPhone: CardRes[] = [
         {
@@ -21,13 +27,38 @@ export struct tutorial {
                     .fontColor($r("app.color.diff_content"))
                     .fontWeight(FontWeight.Bold)
                     .margin({ bottom: 20 })
+
+                Text("详情请查看：项目总网页")
+                    .margin({ bottom: 10 })
+                    .fontSize(14)
+                    .fontColor(Color.Blue)
+                    .margin({bottom: 10})
+                    .decoration({ type: TextDecorationType.Underline, color: Color.Blue })
+                    .onClick(async () => {
+                        if(this.vibrationON) vibration.dotVibration()
+                        const url = "https://rayawa.top/projects/dashboard.html";
+                        const ui_content = this.getUIContext();
+                        try {
+                            this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                            let context = ui_content.getHostContext() as common.UIAbilityContext;
+                            await context.startAbility({
+                                action: "ohos.want.action.viewData",
+                                entities: ["entity.system.browsable"],
+                                uri: url,
+                            } as Want);
+                        } catch (error) {
+                            console.error("打开链接失败:", (error as BusinessError).message);
+                            this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                        }
+                    })
+
                 Text(
-                    "本应用是由Harmony Gallery项目组直接参与编写的鸿蒙应用。应用收集华为应用市场的公开数据，转化为直观的图表与报告。简单来说，您能在这里查看几乎所有鸿蒙应用的动态。\n\n" +
-                        " 1. 数据总览与图表分析：\n   通过榜单、饼图与折线图，直观查看应用下载量、评分趋势与市场分布。\n\n" +
-                        " 2. 搜索应用与查看详情：\n   支持按名称、评分等条件搜索排序、应用内搜索应用、分享链接搜索应用。您可查看各种应用数据与趋势图。\n\n" +
-                        " 3. 数据定时自动更新：\n    后台每30分钟同步一次数据，确保您始终获取最新数据。\n\n" +
-                        " 4. 交互式操作与分享：\n    点击图表可进行数据筛选，点击应用可进入详情页；您也可通过链接、隔空抓取或鸿蒙碰一碰便捷分享应用页面。\n\n" +
-                        " 5. 投稿更新应用信息：\n    您可通过应用市场分享与“我的”页面向应用看板投稿，协助投稿新应用或更新应用信息。\n\n",
+                    "本应用是由Harmony Gallery项目组直接参与编写的鸿蒙应用。应用收集华为应用市场的公开数据，转化为直观的图表与报告。简单来说，您能在这里查看几乎所有鸿蒙应用的动态。\n" +
+                        " 1. 数据总览与图表分析：\n   通过榜单、饼图与折线图，直观查看应用下载量、评分趋势与市场分布。\n" +
+                        " 2. 搜索应用与查看详情：\n   支持按名称、评分等条件搜索排序、应用内搜索应用、分享链接搜索应用。您可查看各种应用数据与趋势图。\n" +
+                        " 3. 数据定时自动更新：\n    后台每30分钟同步一次数据，确保您始终获取最新数据。\n" +
+                        " 4. 交互式操作与分享：\n    点击图表可进行数据筛选，点击应用可进入详情页；您也可通过链接、隔空抓取或鸿蒙碰一碰便捷分享应用页面。\n" +
+                        " 5. 投稿更新应用信息：\n    您可通过应用市场分享与“我的”页面向应用看板投稿，协助投稿新应用或更新应用信息。\n",
                 )
                     .fontSize(14)
                     .margin({ bottom: 5 })
