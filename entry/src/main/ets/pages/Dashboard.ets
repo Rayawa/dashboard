@@ -87,33 +87,29 @@ struct Dashboard {
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
-        // { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') },
     ];
-
     @State private url: string = Array.from(this.sitesList.values())[0].url;
-    @State DashboardHeight: number = 2100;
+    @State private siteIndex: number = 0;
+    private controller_T: webview.WebviewController = new webview.WebviewController();
+    private controller_S: webview.WebviewController = new webview.WebviewController();
+    private controller_R: webview.WebviewController = new webview.WebviewController();
+    private controllers: webview.WebviewController[] = [
+        this.controller_S,
+        this.controller_T,
+        this.controller_R
+    ];
+    private getActiveController(): webview.WebviewController {
+        return this.controllers[this.siteIndex] || this.controller_S;
+    }
+
     @State progress: number = 0;
     scroller: Scroller = new Scroller();
     @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
     @State mode: WebDarkMode = WebDarkMode.Auto;
     @State isLoading: boolean = false;
-
-    private controller_T: webview.WebviewController = new webview.WebviewController();
-    private controller_S: webview.WebviewController = new webview.WebviewController();
-    private controller_E: webview.WebviewController = new webview.WebviewController();
-    @State private siteIndex: number = 0;
-
-    private getActiveController(): webview.WebviewController {
-        if (this.siteIndex === 0) {
-            return this.controller_T;
-        } else if (this.siteIndex === 1) {
-            return this.controller_E;
-        } else {
-            return this.controller_S;
-        }
-    }
 
     private syncShareData() {
         try {
@@ -345,10 +341,14 @@ struct Dashboard {
             console.info("关闭教程");
             return true;
         }
-        let activeCtrl = this.getActiveController();
-        if (activeCtrl.accessStep(-1)) {
-            activeCtrl.backward();
-            return true;
+        try {
+            let activeCtrl = this.getActiveController();
+            if (activeCtrl.accessStep(-1)) {
+                activeCtrl.backward();
+                return true;
+            }
+        } catch (e) {
+            console.warn("BackPress: Controller not attached");
         }
         if (this.pageStack.size() > 0) {
             this.pageStack.pop();
@@ -401,7 +401,7 @@ struct Dashboard {
             })
         }
     }
-    @Builder Web(site: SiteConfig) {
+    @Builder Web(site: SiteConfig, ctrl: webview.WebviewController) {
 
         Stack() {
             if (this.isLoading) {
@@ -422,29 +422,35 @@ struct Dashboard {
                         )
                     Web({
                         src: site.url,
-                        controller: site.key === 'T' ? this.controller_T :
-                            (site.key === 'E' ? this.controller_E : this.controller_S),
+                        controller: ctrl,
                         renderMode: RenderMode.SYNC_RENDER,
                     })
                         .backgroundColor($r("app.color.backcolor"))
                         .id(`HmDashboard_${site.key}`)
                         .onControllerAttached(() => {
-                            const currentCtrl = site.key === 'T' ? this.controller_T :
-                                (site.key === 'S' ? this.controller_S : this.controller_E);
-
-                            if (this.url !== "") {
-                                currentCtrl.loadUrl(this.url);
-                            }
                             try {
-                                currentCtrl.setCustomUserAgent(customUserAgent);
-                            } catch (e) {}
+                                if (this.url !== "") {
+                                    ctrl.loadUrl(this.url);
+                                }
+                                ctrl.setCustomUserAgent(customUserAgent);
+                            } catch (e) {
+                                console.error(`Attach error for ${site.key}: ${e.code}`);
+                            }
+                        })
+                        .onPageBegin((event) => {
+                            this.isLoading = true;
+                            if (event) {
+                                AppStorage.setOrCreate('latestWebUrl', event.url);
+                            }
                         })
                         .onPageEnd((event) => {
+                            this.isLoading = false
                             if (event) {
-                                const currentCtrl = site.key === 'T' ? this.controller_T :
-                                    (site.key === 'S' ? this.controller_S : this.controller_E);
-                                const realUrl = currentCtrl.getUrl();
-                                this.shareManager?.updateShareData(realUrl);
+                                try {
+                                    const realUrl = ctrl.getUrl();
+                                    this.shareManager?.updateShareData(realUrl);
+                                } catch (e) {
+                                }
                             }
                         })
                         .onRefreshAccessedHistory(() => {
@@ -463,12 +469,7 @@ struct Dashboard {
                                 }
                             }
                         })
-                        .onPageBegin((event) => {
-                            this.isLoading = true;
-                            if (event) {
-                                AppStorage.setOrCreate('latestWebUrl', event.url);
-                            }
-                        })
+
                         .layoutMode(WebLayoutMode.FIT_CONTENT)
                         .nestedScroll({
                             scrollForward: NestedScrollMode.SELF_FIRST,
@@ -484,8 +485,6 @@ struct Dashboard {
                         .width("100%")
                         .backgroundColor($r("app.color.backcolor"))
                         .onProgressChange((p) => (this.progress = p.newProgress))
-                        .onPageBegin(() => (this.isLoading = true))
-                        .onPageEnd(() => (this.isLoading = false))
                         .metaViewport(true)
                 }
             }
@@ -517,8 +516,8 @@ struct Dashboard {
             Stack() {
                 //==========================HdsTabs携带web==========================
                 HdsTabs({ controller: this.controller }) {
-                    ForEach(this.sitesList, (site: SiteConfig) => {
-                        TabContent() { this.Web(site) }
+                    ForEach(this.sitesList, (site: SiteConfig, index: number) => {
+                        TabContent() { this.Web(site, this.controllers[index]) }
                         .tabBar(new BottomTabBarStyle(site.icon, site.label))
                     }, (item: SiteConfig) => item.key + item.url)
                 }
