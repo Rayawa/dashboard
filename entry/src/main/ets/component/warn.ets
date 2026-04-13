@@ -1,73 +1,56 @@
+import { vibration } from '../common/vibration';
 import { confirmButtons } from './confirmButtons';
+import { PromptAction } from '@kit.ArkUI';
+import { common, Want } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 @Component
 export struct warn {
-    private limitations: string[] = [
-        "1. 架构限制：数据内容仅覆盖HarmonyOS 5以上核心环境，不包含如侧载、企业定制版之类的应用",
-        "2. 更新延迟：数据采集与分析存在滞后，项目组不保证信息的即时性",
-        "3. 网络环境：本应用依赖实时或异步网络通信，数据同步质量受限于用户端的网络带宽及服务稳定性"
-    ]
-
-    private disclaimers: string[] = [
-        "1. 权属说明：本数据由第三方通过公开技术接口独立测算，不代表华为官方立场",
-        "2. 免责申明：项目组不对数据来源的准确性、完整性与真实性作任何形式的法律担保",
-        "3. 损益承担：用户因采信本统计结果而产生的直接或间接经济损失，本应用不承担赔偿责任",
-        "4. 知识产权：本项统计算法为原创内容，未经授权严禁商用",
-        "5. 动态调整：为优化准确度，我们保留在不预先通知的情况下修正统计链路与算法逻辑的权利",
-        "6. 最终解释权：在法律允许的范围内，本项目组拥有对本统计方法论及数据口径的最终解释权"
-    ]
-
-    @Builder
-    itemText(content: string) {
-        Text(content)
-            .fontSize(14)
-            .lineHeight(20)
-            .margin({ bottom: 5 })
-    }
+    @StorageLink("vibrationON") vibrationON: boolean = true;
+    PromptAction: PromptAction = this.getUIContext().getPromptAction();
 
     build() {
         Column() {
-            Text("重要提示")
-                .fontSize(24)
-                .fontColor(Color.Red)
-                .fontWeight(FontWeight.Bold)
-                .margin({ bottom: 5 })
+            Text("重要提示").fontSize(24).fontColor(Color.Red).fontWeight(FontWeight.Bold).margin({ bottom: 5 })
 
             Column() {
-                Text("Harmony Gallery数据来源于网络\n不保证来源准确性、完整性和真实性，仅供参考")
-                    .fontSize(14)
-                    .fontWeight(FontWeight.Medium)
-                    .margin({ bottom: 12 })
+                Text("Harmony Gallery数据来源于网络。\n不保证来源准确性、完整性和真实性，仅供参考。").fontSize(14).fontColor(Color.Red).fontWeight(FontWeight.Medium).margin({ bottom: 12 })
+                Text("详情查看：项目总网页").fontSize(14).decoration({ type: TextDecorationType.Underline, color: Color.Blue }).fontColor(Color.Blue).margin({ left: 5 , top: 10 ,bottom: 20 })
+                    .onClick(async () => {
+                        if(this.vibrationON) vibration.dotVibration()
+                        const url = "https://rayawa.top/projects/dashboard.html";
+                        const ui_content = this.getUIContext();
+                        try {
+                            this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                            let context = ui_content.getHostContext() as common.UIAbilityContext;
+                            await context.startAbility({
+                                action: "ohos.want.action.viewData",
+                                entities: ["entity.system.browsable"],
+                                uri: url,
+                            } as Want);
+                        } catch (error) {
+                            console.error("打开链接失败:", (error as BusinessError).message);
+                            this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                        }
+                    })
 
-                Text("【数据局限性】")
-                    .fontSize(16)
-                    .fontColor($r('app.color.diff_content'))
-                    .fontWeight(FontWeight.Bold)
-                    .margin({ bottom: 8 })
+                Text("【架构限制】").fontSize(15).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 8 })
+                Text("数据内容仅覆盖HarmonyOS 5+核心环境，不含侧载或企业定制版应用。").fontSize(13).margin({ bottom: 5 })
+                Text("【更新延迟】").fontSize(15).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 8 })
+                Text("数据存在滞后性，同步质量受限于用户网络稳定性，项目组不保证信息的即时性。").fontSize(13)
 
-                ForEach(this.limitations, (item: string) => {
-                    this.itemText(item)
-                })
+                Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ top: 15, bottom: 15 })
 
-                Divider()
-                    .color($r("app.color.border"))
-                    .strokeWidth(0.5)
-                    .margin({ top: 10, bottom: 10  })
-
-                Text("【法律声明】")
-                    .fontSize(16)
-                    .fontColor($r('app.color.diff_content'))
-                    .fontWeight(FontWeight.Bold)
-                    .margin({ bottom: 8 })
-
-                ForEach(this.disclaimers, (item: string) => {
-                    this.itemText(item)
-                })
-
+                Text("【免责申明】").fontSize(15).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 8 })
+                Text("所有数据由第三方测算，不代表华为官方立场！").fontColor(Color.Red).fontWeight(FontWeight.Bold).fontSize(13).margin({ bottom: 5 })
+                Text("项目组不对数据来源的准确性、完整性与真实性做任何法律担保，不承担用户因采信结果产生的任何损失。").fontSize(13).margin({ bottom: 5 })
+                Text("【知识产权】").fontSize(15).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 8 })
+                Text("算法原创，严禁商用。使用API对接数据库前请先与我们取得联系。").fontSize(13).margin({ bottom: 5 })
+                Text("【动态调整】").fontSize(15).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 8 })
+                Text("本项目组拥有对本统计方法论及数据口径的最终解释权，保留在不预先通知的情况下修正算法逻辑的权利").fontSize(13)
             }
             .padding(10)
             .alignItems(HorizontalAlign.Start)
-
 
             confirmButtons()
 

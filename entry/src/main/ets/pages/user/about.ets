@@ -176,60 +176,60 @@ struct about {
               .width("100%")
               .justifyContent(FlexAlign.SpaceBetween)
               .padding({ left: 16, right: 16 })
-              Divider()
-                .color($r("app.color.border"))
-                .strokeWidth(0.5)
-                .margin({ left: 16, right: 16 })
-              Row() {
-                Row() {
-                  Image($r("app.media.approve"))
-                    .height(24)
-                    .width(24)
-                    .objectFit(ImageFit.Contain)
-                  Text("用户协议")
-                    .fontSize(16)
-                    .margin({ left: 12 })
-                }
-                Image($r("app.media.right"))
-                  .height(16)
-                  .width(16)
-                  .objectFit(ImageFit.Contain)
-              }
-              .onClick(() => {
-                if(this.vibrationON) vibration.dotVibration()
-                this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('approve.html'), "用户协议"));
-              })
-              .height(52)
-              .width("100%")
-              .justifyContent(FlexAlign.SpaceBetween)
-              .padding({ left: 16, right: 16 })
-              Divider()
-                .color($r("app.color.border"))
-                .strokeWidth(0.5)
-                .margin({ left: 16, right: 16 })
-              Row() {
-                Row() {
-                  Image($r("app.media.privacy"))
-                    .height(24)
-                    .width(24)
-                    .objectFit(ImageFit.Contain)
-                  Text("隐私政策")
-                    .fontSize(16)
-                    .margin({ left: 12 })
-                }
-                Image($r("app.media.right"))
-                  .height(16)
-                  .width(16)
-                  .objectFit(ImageFit.Contain)
-              }
-              .onClick(() => {
-                if(this.vibrationON) vibration.dotVibration()
-                this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('privacy.html'), "隐私政策"));
-              })
-              .height(52)
-              .width("100%")
-              .justifyContent(FlexAlign.SpaceBetween)
-              .padding({ left: 16, right: 16 })
+              // Divider()
+              //   .color($r("app.color.border"))
+              //   .strokeWidth(0.5)
+              //   .margin({ left: 16, right: 16 })
+              // Row() {
+              //   Row() {
+              //     Image($r("app.media.approve"))
+              //       .height(24)
+              //       .width(24)
+              //       .objectFit(ImageFit.Contain)
+              //     Text("用户协议")
+              //       .fontSize(16)
+              //       .margin({ left: 12 })
+              //   }
+              //   Image($r("app.media.right"))
+              //     .height(16)
+              //     .width(16)
+              //     .objectFit(ImageFit.Contain)
+              // }
+              // .onClick(() => {
+              //   if(this.vibrationON) vibration.dotVibration()
+              //   this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('approve.html'), "用户协议"));
+              // })
+              // .height(52)
+              // .width("100%")
+              // .justifyContent(FlexAlign.SpaceBetween)
+              // .padding({ left: 16, right: 16 })
+              // Divider()
+              //   .color($r("app.color.border"))
+              //   .strokeWidth(0.5)
+              //   .margin({ left: 16, right: 16 })
+              // Row() {
+              //   Row() {
+              //     Image($r("app.media.privacy"))
+              //       .height(24)
+              //       .width(24)
+              //       .objectFit(ImageFit.Contain)
+              //     Text("隐私政策")
+              //       .fontSize(16)
+              //       .margin({ left: 12 })
+              //   }
+              //   Image($r("app.media.right"))
+              //     .height(16)
+              //     .width(16)
+              //     .objectFit(ImageFit.Contain)
+              // }
+              // .onClick(() => {
+              //   if(this.vibrationON) vibration.dotVibration()
+              //   this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('privacy.html'), "隐私政策"));
+              // })
+              // .height(52)
+              // .width("100%")
+              // .justifyContent(FlexAlign.SpaceBetween)
+              // .padding({ left: 16, right: 16 })
 
             }
             .borderWidth(0.5)
@@ -269,6 +269,7 @@ struct about {
               Text("京ICP备2025153453号")
                 .fontSize(12)
                 .fontColor($r("app.color.diff_content"))
+                .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
                 .onClick(async () => {
                   if(this.vibrationON) vibration.dotVibration()
                   const url = "https://beian.miit.gov.cn/#/Integrated/index";

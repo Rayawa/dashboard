@@ -291,7 +291,7 @@ struct Dashboard {
             this.buttonOnPageShow = true;
         }, 500);
         console.log("currentUsername",this.userName)
-        if(!this.showTutorial || this.showWarn){
+        if(!this.showTutorial || !this.showWarn){
             if(this.userName == '' || this.userName == deviceInfo.productModel){
                 console.info("currentUsername_pop!!")
                 setTimeout(() => {
@@ -332,7 +332,7 @@ struct Dashboard {
     @State firstBackTime: number = 0;
     private waitTime: number = 2000;
     onBackPress(): boolean | void {
-                if(this.vibrationON) vibration.dotVibration()
+        if(this.vibrationON) vibration.dotVibration()
         if (this.isSnackBarShow) {
             this.hdsSnackBar.dismiss();
         }
