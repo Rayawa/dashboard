@@ -159,8 +159,6 @@ struct Dashboard {
         .combine(TransitionEffect.scale({ x: 0, y: 1 }))
         .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
 
-
-
     //==========================页面生命周期部分==========================
     //entry
     @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
@@ -291,16 +289,18 @@ struct Dashboard {
             this.buttonOnPageShow = true;
         }, 500);
         console.log("currentUsername",this.userName)
-        if(!this.showTutorial || !this.showWarn){
-            if(this.userName == '' || this.userName == deviceInfo.productModel){
-                console.info("currentUsername_pop!!")
-                setTimeout(() => {
-                    this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
-                    this.isSnackBarShow = true;
-                },3000)
-                this.isSnackBarShow = false;
-            } else {
-                console.info("currentUsername_set")
+        if( !this.showWarn ){
+            if( !this.showTutorial ){
+                if(this.userName == '' || this.userName == deviceInfo.productModel){
+                    console.info("currentUsername_pop!!")
+                    setTimeout(() => {
+                        this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
+                        this.isSnackBarShow = true;
+                    },3000)
+                    this.isSnackBarShow = false;
+                } else {
+                    console.info("currentUsername_set")
+                }
             }
         }
     }
