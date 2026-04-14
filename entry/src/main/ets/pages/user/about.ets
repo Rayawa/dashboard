@@ -92,29 +92,6 @@ struct about {
               Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
               AboutItem({
-                icon: $r("app.media.app_icon"),
-                title: "项目网站首页",
-                onClickAction: async () => {
-                  const url = "https://rayawa.top/projects/dashboard.html";
-                  const ui_content = this.getUIContext();
-                  try {
-                    this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
-                    let context = ui_content.getHostContext() as common.UIAbilityContext;
-                    await context.startAbility({
-                      action: "ohos.want.action.viewData",
-                      entities: ["entity.system.browsable"],
-                      uri: url,
-                    } as Want);
-                  } catch (error) {
-                    console.error("打开链接失败:", (error as BusinessError).message);
-                    this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
-                  }
-                }
-              })
-
-              Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
-
-              AboutItem({
                 icon: $r("app.media.api"),
                 title: "API文档说明",
                 onClickAction: () =>{
