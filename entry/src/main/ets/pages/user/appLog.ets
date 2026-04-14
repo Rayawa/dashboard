@@ -20,25 +20,20 @@ struct appLog {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     private updateLogs: UpdateLog[] = [
         {
-            // "更新页面设计，增加了触感反馈与动效",
             // "applinking",
-            // "为不同比例的设备增加了页面适配",
-
-            // session terminate self
-            // 主界面backpress
             // 接续
-            // query返回不统一
-            // url get
             // ability tag
 
             version: "V2.0.0-rc.2",
-            date: "2026-4-10",
+            date: "2026-4-14",
             type: "rc",
             items: [
                 "大幅重构我的页面逻辑，增加众多页面",
                 "改变使用说明逻辑，增加首次启动提示",
+                "增加控制器与错误处理，优化主页面体验",
                 "为平板、PC与折叠屏适配了分栏显示",
                 "修复了分享和投稿页面在退出之后残留在用户后台的问题",
+                "修复了App查询返回逻辑不一致的问题",
             ],
         },
         {

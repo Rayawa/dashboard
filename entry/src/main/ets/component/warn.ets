@@ -42,7 +42,7 @@ export struct warn {
                 Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ top: 15, bottom: 15 })
 
                 Text("【免责申明】").fontSize(15).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 8 })
-                Text("所有数据由第三方测算，不代表华为官方立场！").fontColor(Color.Red).fontWeight(FontWeight.Bold).fontSize(13).margin({ bottom: 5 })
+                Text("所有数据由第三方测算，不代表华为官方立场！").fontColor(Color.Red).fontWeight(FontWeight.Bold).fontSize(15).margin({ bottom: 5 })
                 Text("项目组不对数据来源的准确性、完整性与真实性做任何法律担保，不承担用户因采信结果产生的任何损失。").fontSize(13).margin({ bottom: 5 })
                 Text("【知识产权】").fontSize(15).fontColor($r('app.color.diff_content')).fontWeight(FontWeight.Bold).margin({ bottom: 8 })
                 Text("算法原创，严禁商用。使用API对接数据库前请先与我们取得联系。").fontSize(13).margin({ bottom: 5 })

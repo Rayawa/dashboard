@@ -9,7 +9,7 @@ import { appSubmit } from '../component/appSubmit';
 import { appQuery } from '../component/appQuery';
 import { vibration } from '../common/vibration';
 import { blurPopup } from '../component/blurPopup';
-import { common } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
 
 @Component
 export struct user {
@@ -232,12 +232,26 @@ export struct user {
                         Text("更多").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
                         Column() {
                             OtherItem({
-                                icon: $r("app.media.sponsor"),
-                                title: "友情链接",
-                                onClickAction: () => {
-                                    this.pageStack.pushPathByName("FriendPage", null);
+                                icon: $r("app.media.app_icon"),
+                                title: "项目网站首页",
+                                onClickAction: async () => {
+                                    const url = "https://rayawa.top/projects/dashboard.html";
+                                    const ui_content = this.getUIContext();
+                                    try {
+                                        this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                                        let context = ui_content.getHostContext() as common.UIAbilityContext;
+                                        await context.startAbility({
+                                            action: "ohos.want.action.viewData",
+                                            entities: ["entity.system.browsable"],
+                                            uri: url,
+                                        } as Want);
+                                    } catch (error) {
+                                        console.error("打开链接失败:", (error as BusinessError).message);
+                                        this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                                    }
                                 }
                             })
+
                             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             OtherItem({
@@ -255,6 +269,17 @@ export struct user {
                                     }
                                 }
                             })
+
+                            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
+                            OtherItem({
+                                icon: $r("app.media.sponsor"),
+                                title: "友情链接",
+                                onClickAction: () => {
+                                    this.pageStack.pushPathByName("FriendPage", null);
+                                }
+                            })
+
                             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             OtherItem({
@@ -264,6 +289,7 @@ export struct user {
                                     this.showContact = true;
                                 }
                             })
+
                             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
                             OtherItem({
@@ -413,7 +439,7 @@ export function UserPageBuilder(){
 struct OtherItem {
     @Prop icon: Resource;
     @Prop title: string;
-    @StorageProp("vibrationON") canVibrate: boolean = true;
+    @StorageProp("vibrationON") vibrationON: boolean = true;
 
     onClickAction: () => void = () => {};
 
@@ -440,7 +466,7 @@ struct OtherItem {
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })
             .onClick(() => {
-                if (this.canVibrate) {
+                if (this.vibrationON) {
                     vibration.dotVibration();
                 }
                 this.onClickAction();

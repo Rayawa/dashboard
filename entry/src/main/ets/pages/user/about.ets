@@ -60,9 +60,9 @@ struct about {
                 .fontSize(20)
                 .margin({ top: 10 })
             }.margin({ top: 60 })
-            Divider()
-              .margin({ top: 20, bottom: 20 })
-              .color($r("app.color.border"))
+
+            Divider().margin({ top: 20, bottom: 20 }).color($r("app.color.border"))
+
             Column() {
               Row() {
                 Row() {
@@ -89,148 +89,80 @@ struct about {
               .justifyContent(FlexAlign.SpaceBetween)
               .padding({ left: 16, right: 16 })
 
-              Divider()
-                .color($r("app.color.border"))
-                .strokeWidth(0.5)
-                .margin({ left: 16, right: 16 })
+              Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
-              Row() {
-                Row() {
-                  Image($r("app.media.api"))
-                    .height(24)
-                    .width(24)
-                    .objectFit(ImageFit.Contain)
-                  Text("API文档说明")
-                    .fontSize(16)
-                    .margin({ left: 12 })
+              AboutItem({
+                icon: $r("app.media.app_icon"),
+                title: "项目网站首页",
+                onClickAction: async () => {
+                  const url = "https://rayawa.top/projects/dashboard.html";
+                  const ui_content = this.getUIContext();
+                  try {
+                    this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                    let context = ui_content.getHostContext() as common.UIAbilityContext;
+                    await context.startAbility({
+                      action: "ohos.want.action.viewData",
+                      entities: ["entity.system.browsable"],
+                      uri: url,
+                    } as Want);
+                  } catch (error) {
+                    console.error("打开链接失败:", (error as BusinessError).message);
+                    this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                  }
                 }
-                Image($r("app.media.right"))
-                  .height(16)
-                  .width(16)
-                  .objectFit(ImageFit.Contain)
-              }
-              .onClick(() => {
-                if(this.vibrationON) vibration.dotVibration()
-                let param = new WebViewParam('http://shenjack.top:10003/docs', 'API文档说明');
-                this.pageStack.pushPathByName("AboutWebPage", param);
               })
-              .height(52)
-              .width("100%")
-              .justifyContent(FlexAlign.SpaceBetween)
-              .padding({ left: 16, right: 16 })
 
+              Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
-              Divider()
-                .color($r("app.color.border"))
-                .strokeWidth(0.5)
-                .margin({ left: 16, right: 16 })
-
-              Row() {
-                Row() {
-                  Image($r("app.media.log"))
-                    .height(24)
-                    .width(24)
-                    .objectFit(ImageFit.Contain)
-                  Text("Web更新日志")
-                    .fontSize(16)
-                    .margin({ left: 12 })
+              AboutItem({
+                icon: $r("app.media.api"),
+                title: "API文档说明",
+                onClickAction: () =>{
+                  let param = new WebViewParam('http://shenjack.top:10003/docs', 'API文档说明');
+                  this.pageStack.pushPathByName("AboutWebPage", param);
                 }
-                Image($r("app.media.right"))
-                  .height(16)
-                  .width(16)
-                  .objectFit(ImageFit.Contain)
-              }
-              .onClick(() => {
-                if(this.vibrationON) vibration.dotVibration()
-                let param = new WebViewParam('https://hmos.txit.top/changelog', 'Web更新日志');
-                this.pageStack.pushPathByName("AboutWebPage", param);
               })
-              .height(52)
-              .width("100%")
-              .justifyContent(FlexAlign.SpaceBetween)
-              .padding({ left: 16, right: 16 })
-              Divider()
-                .color($r("app.color.border"))
-                .strokeWidth(0.5)
-                .margin({ left: 16, right: 16 })
-              Row() {
-                Row() {
-                  Image($r("app.media.app_log"))
-                    .height(24)
-                    .width(24)
-                    .objectFit(ImageFit.Contain)
-                  Text("App更新日志")
-                    .fontSize(16)
-                    .margin({ left: 12 })
-                }
-                Image($r("app.media.right"))
-                  .height(16)
-                  .width(16)
-                  .objectFit(ImageFit.Contain)
-              }
-              .onClick(() => {
-                this.pageStack.pushPathByName("AppLogPage", null)
-                if(this.vibrationON) vibration.dotVibration()
-              })
-              .height(52)
-              .width("100%")
-              .justifyContent(FlexAlign.SpaceBetween)
-              .padding({ left: 16, right: 16 })
-              // Divider()
-              //   .color($r("app.color.border"))
-              //   .strokeWidth(0.5)
-              //   .margin({ left: 16, right: 16 })
-              // Row() {
-              //   Row() {
-              //     Image($r("app.media.approve"))
-              //       .height(24)
-              //       .width(24)
-              //       .objectFit(ImageFit.Contain)
-              //     Text("用户协议")
-              //       .fontSize(16)
-              //       .margin({ left: 12 })
-              //   }
-              //   Image($r("app.media.right"))
-              //     .height(16)
-              //     .width(16)
-              //     .objectFit(ImageFit.Contain)
-              // }
-              // .onClick(() => {
-              //   if(this.vibrationON) vibration.dotVibration()
-              //   this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('approve.html'), "用户协议"));
-              // })
-              // .height(52)
-              // .width("100%")
-              // .justifyContent(FlexAlign.SpaceBetween)
-              // .padding({ left: 16, right: 16 })
-              // Divider()
-              //   .color($r("app.color.border"))
-              //   .strokeWidth(0.5)
-              //   .margin({ left: 16, right: 16 })
-              // Row() {
-              //   Row() {
-              //     Image($r("app.media.privacy"))
-              //       .height(24)
-              //       .width(24)
-              //       .objectFit(ImageFit.Contain)
-              //     Text("隐私政策")
-              //       .fontSize(16)
-              //       .margin({ left: 12 })
-              //   }
-              //   Image($r("app.media.right"))
-              //     .height(16)
-              //     .width(16)
-              //     .objectFit(ImageFit.Contain)
-              // }
-              // .onClick(() => {
-              //   if(this.vibrationON) vibration.dotVibration()
-              //   this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('privacy.html'), "隐私政策"));
-              // })
-              // .height(52)
-              // .width("100%")
-              // .justifyContent(FlexAlign.SpaceBetween)
-              // .padding({ left: 16, right: 16 })
 
+              Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
+              AboutItem({
+                icon: $r("app.media.log"),
+                title: "Web更新日志",
+                onClickAction: () =>{
+                  let param = new WebViewParam('https://hmos.txit.top/changelog', 'Web更新日志');
+                  this.pageStack.pushPathByName("AboutWebPage", param);
+                }
+              })
+
+              Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
+              AboutItem({
+                icon: $r("app.media.app_log"),
+                title: "App更新日志",
+                onClickAction: () =>{
+                  this.pageStack.pushPathByName("AppLogPage", null)
+                }
+              })
+
+              Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
+              AboutItem({
+                icon: $r("app.media.approve"),
+                title: "用户协议",
+                onClickAction: () => {
+                  this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('approve.html'), "用户协议"));
+                }
+              })
+
+              Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
+              AboutItem({
+                icon: $r("app.media.privacy"),
+                title: "隐私政策",
+                onClickAction: () => {
+                  this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('privacy.html'), "隐私政策"));
+                }
+              })
             }
             .borderWidth(0.5)
             .borderColor($r("app.color.border"))
@@ -400,4 +332,42 @@ struct about {
 @Builder
 export function AboutPageBuilder(){
   about()
+}
+
+@Component
+struct AboutItem {
+  @Prop icon: Resource;
+  @Prop title: string;
+  @StorageProp("vibrationON") vibrationON: boolean = true;
+  onClickAction: () => void = () => {};
+  build() {
+    Column() {
+      Row() {
+        Row() {
+          Image(this.icon)
+            .height(24)
+            .width(24)
+            .objectFit(ImageFit.Contain)
+          Text(this.title)
+            .fontSize(16)
+            .margin({ left: 12 })
+        }
+
+        Image($r("app.media.right"))
+          .height(16)
+          .width(16)
+          .objectFit(ImageFit.Contain)
+      }
+      .height(52)
+      .width("100%")
+      .justifyContent(FlexAlign.SpaceBetween)
+      .padding({ left: 16, right: 16 })
+      .onClick(() => {
+        if (this.vibrationON) {
+          vibration.dotVibration();
+        }
+        this.onClickAction();
+      })
+    }
+  }
 }
