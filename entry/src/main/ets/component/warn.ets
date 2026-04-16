@@ -3,6 +3,7 @@ import { confirmButtons } from './confirmButtons';
 import { PromptAction } from '@kit.ArkUI';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { mainPage } from '../common/constants';
 
 @Component
 export struct warn {
@@ -18,7 +19,6 @@ export struct warn {
                 Text("详情查看：项目总网页").fontSize(14).decoration({ type: TextDecorationType.Underline, color: Color.Blue }).fontColor(Color.Blue).margin({ left: 5 , top: 10 ,bottom: 20 })
                     .onClick(async () => {
                         if(this.vibrationON) vibration.dotVibration()
-                        const url = "https://rayawa.top/projects/dashboard.html";
                         const ui_content = this.getUIContext();
                         try {
                             this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
@@ -26,7 +26,7 @@ export struct warn {
                             await context.startAbility({
                                 action: "ohos.want.action.viewData",
                                 entities: ["entity.system.browsable"],
-                                uri: url,
+                                uri: mainPage.toString(),
                             } as Want);
                         } catch (error) {
                             console.error("打开链接失败:", (error as BusinessError).message);

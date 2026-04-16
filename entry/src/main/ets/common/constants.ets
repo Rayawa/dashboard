@@ -2,6 +2,8 @@ import { URL } from "./url";
 import { deviceInfo } from "@kit.BasicServicesKit";
 
 //主
+export const mainPage =new URL("https://rayawa.top/dashboard")
+
 export const RBaseURL = new URL("https://dashboard.rayawa.top/");
 export const SBaseURL = new URL("http://shenjack.top:10003/");
 export const EguiBaseURL = new URL("http://shenjack.top:10003/egui/");
@@ -25,7 +27,7 @@ export const submitURL: string = "submit";
 
 export const changelog: string = "changelog";
 
-export const APP_VERSION: string = "2.0.0-rc.1";
+export const APP_VERSION: string = "2.0.0";
 
 /** 太长了点
  */
