@@ -13,11 +13,17 @@ import {
   getVibrationEnabled,
   initializeSettings
 } from '../common/SettingsStorage';
+import { WebShareManager } from '../common/shareControl';
+import { common } from '@kit.AbilityKit';
+import { harmonyShare } from '@kit.ShareKit';
 
 @Component
 struct queryEntry {
   @Consume('pageStack') pageStack: NavPathStack;
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
+  onCloseSplit?: () => void;
+  private shareManager?: WebShareManager;
+  private context = getContext(this) as common.UIAbilityContext;
   @Prop url: string = '';
 
   @State progress: number = 0;
@@ -91,7 +97,6 @@ struct queryEntry {
     }
   }
   async aboutToAppear() {
-
     //获取屏幕右边位置
     const displayInfo = display.getDefaultDisplaySync();
     const screenWidthVp = px2vp(displayInfo.width);
@@ -119,9 +124,28 @@ struct queryEntry {
     setTimeout(() => {
       this.buttonOnPageShow = true;
     }, 500);
+
+    //分享
+    const context = getContext(this) as common.UIAbilityContext;
+    this.shareManager = WebShareManager.getInstance(context);
+    this.shareManager.enablePassiveShare();
+    this.context.eventHub.on("onFocus", () => {
+      this.shareManager?.enablePassiveShare();
+    });
+    this.context.eventHub.on("onBackGround", () => {
+      this.onBackGround();
+      this.shareManager?.disablePassiveShare();
+    });
   }
 
   aboutToDisappear() {
+    this.shareManager?.disablePassiveShare();
+    const hostContext = this.context;
+    hostContext.eventHub.off("onFocus");
+    hostContext.eventHub.off("onBackGround");
+    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
     try {
       motion.off("holdingHandChanged", this.holdingHandCallback);
     } catch (err) {
@@ -129,6 +153,13 @@ struct queryEntry {
       console.error("Motion off failed: " + error.code);
     }
   }
+
+  onBackGround() {
+    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
+  }
+
   build() {
     HdsNavDestination() {
       Stack(){
@@ -397,7 +428,10 @@ struct queryEntry {
         this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
         return true;
       } else {
-        this.pageStack.pop()
+        if (this.onCloseSplit) {
+          this.onCloseSplit();
+        }
+        this.pageStack.pop();
         return false;
       }
     })
@@ -465,10 +499,28 @@ struct queryEntry {
         title: {
           mainTitle: "查询结果",
         },
+        menu: {
+          value: [
+            {
+              content: {
+                label: "share",
+                icon: $r("sys.symbol.share"),
+                isEnabled: true,
+                action: () => {
+                  if(this.vibrationON) vibration.dotVibration()
+                  this.shareManager?.showSystemShare(this.url);
+                },
+              },
+            },
+          ]
+        },
         backIcon: {
           action: () => {
             if(this.vibrationON) vibration.dotVibration()
-            this.pageStack.clear();
+            if (this.onCloseSplit) {
+              this.onCloseSplit();
+            }
+            this.pageStack.pop();
           },
         },
       },

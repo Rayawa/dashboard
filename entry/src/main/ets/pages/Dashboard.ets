@@ -1,20 +1,20 @@
 import { webview } from '@kit.ArkWeb';
 import { motion, userStatus } from '@kit.MultimodalAwarenessKit';
 import {
-  BlurStrategy,
-  hdsEffect,
-  HdsNavigation,
-  HdsNavigationTitleMode,
-  HdsSnackBar,
-  HdsTabs,
-  HdsTabsController,
-  ScrollEffectType,
-  SnackBarIconOptions,
-  SnackBarMessageOptions,
-  SnackBarOperationOptions,
-  SnackBarOperationType,
-  SnackBarStyleOptions,
-  TitleSize
+    BlurStrategy,
+    hdsEffect,
+    HdsNavigation,
+    HdsNavigationTitleMode,
+    HdsSnackBar,
+    HdsTabs,
+    HdsTabsController,
+    ScrollEffectType,
+    SnackBarIconOptions,
+    SnackBarMessageOptions,
+    SnackBarOperationOptions,
+    SnackBarOperationType,
+    SnackBarStyleOptions,
+    TitleSize
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
@@ -29,12 +29,12 @@ import { getUsername, initialize as initializeUserStorage, setUsername as setUse
 import { tutorial } from '../component/tutorial';
 import { warn } from '../component/warn';
 import {
-  getButtonPosition,
-  getHoldCheckEnabled,
-  getImmersiveTexture,
-  getTabBarAuto,
-  getVibrationEnabled,
-  initializeSettings
+    getButtonPosition,
+    getHoldCheckEnabled,
+    getImmersiveTexture,
+    getTabBarAuto,
+    getVibrationEnabled,
+    initializeSettings
 } from '../common/SettingsStorage';
 import { blurPopup } from '../component/blurPopup';
 import { user } from './user';
@@ -104,6 +104,8 @@ struct Dashboard {
     private getActiveController(): webview.WebviewController {
         return this.controllers[this.siteIndex] || this.controller_S;
     }
+    @StorageLink('pageUrl') pageUrl: string = SBaseURL.toString();
+    @StorageLink('scrollDistance') currentDistance: number = 0;
 
     @State progress: number = 0;
     scroller: Scroller = new Scroller();
@@ -441,7 +443,7 @@ struct Dashboard {
                         .onPageBegin((event) => {
                             this.isLoading = true;
                             if (event) {
-                                AppStorage.setOrCreate('latestWebUrl', event.url);
+                                AppStorage.setOrCreate('pageUrl', event.url);
                             }
                         })
                         .onPageEnd((event) => {
@@ -450,9 +452,13 @@ struct Dashboard {
                                 try {
                                     const realUrl = ctrl.getUrl();
                                     this.shareManager?.updateShareData(realUrl);
+                                    AppStorage.setOrCreate('pageUrl', realUrl);
                                 } catch (e) {
                                 }
                             }
+                        })
+                        .onScroll((event) => {
+                            AppStorage.setOrCreate('scrollDistance', event.yOffset);
                         })
                         .onRefreshAccessedHistory(() => {
                             try {
@@ -470,7 +476,6 @@ struct Dashboard {
                                 }
                             }
                         })
-
                         .layoutMode(WebLayoutMode.FIT_CONTENT)
                         .nestedScroll({
                             scrollForward: NestedScrollMode.SELF_FIRST,

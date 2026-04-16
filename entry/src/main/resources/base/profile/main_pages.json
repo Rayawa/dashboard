@@ -3,6 +3,7 @@
     "pages/Dashboard",
     "abilityPages/complexSubmit",
     "abilityPages/queryWeb",
-    "abilityPages/loading"
+    "abilityPages/loading",
+    "abilityPages/continueWeb"
   ]
 }
