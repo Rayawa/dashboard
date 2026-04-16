@@ -19,7 +19,6 @@
     },
 
 
-
     {
       "name": "UserPage",
       "pageSourceFile": "src/main/ets/pages/user.ets",

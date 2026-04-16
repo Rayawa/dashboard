@@ -109,7 +109,7 @@ export struct user {
                                     .width(24)
                                     .objectFit(ImageFit.Contain)
                                     .onClick(() => {
-                                                if(this.vibrationON) vibration.dotVibration()
+                                        if(this.vibrationON) vibration.dotVibration()
                                         this.handlePopup = !this.handlePopup;
                                     })
                                     .bindPopup(this.handlePopup, {
@@ -177,7 +177,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.showSubmit = !this.showSubmit;
-                                        if(this.vibrationON) vibration.dotVibration()
+                                if(this.vibrationON) vibration.dotVibration()
                             })
                             .height(52)
                             .width("100%")
@@ -204,7 +204,7 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.showQuery = !this.showQuery;
-                                        if(this.vibrationON) vibration.dotVibration()
+                                if(this.vibrationON) vibration.dotVibration()
                             })
                             .height(52)
                             .width("100%")
@@ -323,7 +323,7 @@ export struct user {
                             this.showSubmit = false;
                             this.showQuery = false;
                             this.showContact = false;
-                                    if(this.vibrationON) vibration.dotVibration()
+                            if(this.vibrationON) vibration.dotVibration()
                         })
                         .width('100%')
                         .height('100%')
@@ -347,7 +347,7 @@ export struct user {
             .height("100%")
         }
         .onBackPressed(() => {
-                    if(this.vibrationON) vibration.dotVibration()
+            if(this.vibrationON) vibration.dotVibration()
             if (this.showQuery || this.showSubmit || this.showContact) {
                 this.showSubmit = false;
                 this.showQuery = false;
@@ -417,7 +417,7 @@ export struct user {
                 },
                 backIcon: {
                     action: () => {
-                                if(this.vibrationON) vibration.dotVibration()
+                        if(this.vibrationON) vibration.dotVibration()
                         if (this.onCloseSplit) {
                             this.onCloseSplit();
                         }

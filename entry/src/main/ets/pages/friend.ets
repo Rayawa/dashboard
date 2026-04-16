@@ -76,7 +76,7 @@ struct friend {
           .objectFit(ImageFit.Contain)
       }
       .onClick(() => {
-                if(this.vibrationON) vibration.dotVibration()
+        if(this.vibrationON) vibration.dotVibration()
         let params :FriendWebParams = {
           "url": site.url,
           "title": site.title
@@ -207,7 +207,7 @@ struct friend {
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .onBackPressed(() => {
-              if(this.vibrationON) vibration.dotVibration()
+      if(this.vibrationON) vibration.dotVibration()
       return false;
     })
     .titleBar({
@@ -243,7 +243,7 @@ struct friend {
         title: { mainTitle: "友情链接" },
         backIcon: {
           action: () => {
-                    if(this.vibrationON) vibration.dotVibration()
+            if(this.vibrationON) vibration.dotVibration()
             this.pageStack.pop()
           },
         },

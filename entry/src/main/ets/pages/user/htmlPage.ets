@@ -59,6 +59,13 @@ export struct HTML {
   build() {
     HdsNavDestination() {
       Column() {
+        Blank()
+          .height(80)
+          .width("100%")
+          .expandSafeArea(
+            [SafeAreaType.SYSTEM],
+            [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
+          )
         Web({ src: this.params.url, controller: this.controller })
           .domStorageAccess(true)
           .fileAccess(true)

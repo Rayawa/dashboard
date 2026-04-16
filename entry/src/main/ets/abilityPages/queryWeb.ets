@@ -14,11 +14,15 @@ import {
   initializeSettings
 } from '../common/SettingsStorage';
 import { common } from '@kit.AbilityKit';
+import { WebShareManager } from '../common/shareControl';
+import { harmonyShare } from '@kit.ShareKit';
 
 @Entry
 @Component
 struct queryWeb {
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
+  private shareManager?: WebShareManager;
+  private context = getContext(this) as common.UIAbilityContext;
   @Prop url: string = '';
 
   @State progress: number = 0;
@@ -43,8 +47,6 @@ struct queryWeb {
   @State isLoading: boolean = false;
 
   //动画与振动
-
-
   private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
       .combine(TransitionEffect.scale({ x: 0, y: 0 }))
@@ -130,6 +132,24 @@ struct queryWeb {
     setTimeout(() => {
       this.buttonOnPageShow = true;
     }, 500);
+
+    //分享
+    const context = getContext(this) as common.UIAbilityContext;
+    this.shareManager = WebShareManager.getInstance(context);
+    this.shareManager.enablePassiveShare();
+    this.context.eventHub.on("onFocus", () => {
+      this.shareManager?.enablePassiveShare();
+    });
+    this.context.eventHub.on("onBackGround", () => {
+      this.onBackGround();
+      this.shareManager?.disablePassiveShare();
+    });
+  }
+
+  onBackGround() {
+    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
   }
 
   @State firstBackTime: number = 0;
@@ -157,6 +177,13 @@ struct queryWeb {
   }
 
   aboutToDisappear() {
+    this.shareManager?.disablePassiveShare();
+    const hostContext = this.context;
+    hostContext.eventHub.off("onFocus");
+    hostContext.eventHub.off("onBackGround");
+    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
     try {
       motion.off("holdingHandChanged", this.holdingHandCallback);
     } catch (err) {
@@ -241,7 +268,7 @@ struct queryWeb {
                 yOffset: 0,
                 animation: { duration: 300, curve: Curve.Ease },
               });
-                      if(this.vibrationON) vibration.dotVibration()
+              if(this.vibrationON) vibration.dotVibration()
               this.PromptAction.showToast({
                 message: "回到顶部",
                 duration: 500,
@@ -289,7 +316,7 @@ struct queryWeb {
               if (this.isLoading) {
                 this.web_controller.stop();
                 this.isLoading = false;
-                        if(this.vibrationON) vibration.dotVibration()
+                if(this.vibrationON) vibration.dotVibration()
                 this.PromptAction.showToast({
                   message: "已停止加载",
                   duration: 1000,
@@ -306,7 +333,7 @@ struct queryWeb {
                   console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
                 }
                 this.isLoading = true;
-                        if(this.vibrationON) vibration.dotVibration()
+                if(this.vibrationON) vibration.dotVibration()
                 this.PromptAction.showToast({
                   message: "刷新中...",
                   duration: 1000,
@@ -406,7 +433,7 @@ struct queryWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-                      if(this.vibrationON) vibration.dotVibration()
+              if(this.vibrationON) vibration.dotVibration()
             });
           Column()
             .backgroundColor(Color.Transparent)
@@ -417,7 +444,7 @@ struct queryWeb {
             .onClick(() => {
               this.showButtonAnimation = true;
               this.showButton = true;
-                      if(this.vibrationON) vibration.dotVibration()
+              if(this.vibrationON) vibration.dotVibration()
             });
         }
       }
@@ -481,9 +508,24 @@ struct queryWeb {
         title: {
           mainTitle: "查询结果",
         },
+        menu: {
+          value: [
+            {
+              content: {
+                label: "share",
+                icon: $r("sys.symbol.share"),
+                isEnabled: true,
+                action: () => {
+                  if(this.vibrationON) vibration.dotVibration()
+                  this.shareManager?.showSystemShare(this.url);
+                },
+              },
+            },
+          ]
+        },
         backIcon: {
           action: () => {
-                    if(this.vibrationON) vibration.dotVibration()
+            if(this.vibrationON) vibration.dotVibration()
             this.closePage()
           },
         },

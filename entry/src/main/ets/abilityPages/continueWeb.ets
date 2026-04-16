@@ -7,19 +7,24 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction, router } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { WebShareManager } from '../common/shareControl';
 import {
   getButtonPosition,
   getHoldCheckEnabled,
   getVibrationEnabled,
   initializeSettings
 } from '../common/SettingsStorage';
+import { harmonyShare } from '@kit.ShareKit';
+import { common } from '@kit.AbilityKit';
 
 @Entry
 @Component
 struct queryWeb {
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  @LocalStorageLink('pageUrl') url: string = '';
-  @LocalStorageLink('scrollDistance') scrollDistance: number = 0;
+  private shareManager?: WebShareManager;
+  private context = getContext(this) as common.UIAbilityContext;
+  @StorageLink('pageUrl') url: string = '';
+  @StorageLink('scrollDistance') scrollDistance: number = 0;
 
   @State progress: number = 0;
   @State showButton: boolean = true;
@@ -90,6 +95,7 @@ struct queryWeb {
     }
   }
   async aboutToAppear() {
+    console.info("1111122222",this.url)
     //获取屏幕右边位置
     const displayInfo = display.getDefaultDisplaySync();
     const screenWidthVp = px2vp(displayInfo.width);
@@ -128,28 +134,41 @@ struct queryWeb {
     setTimeout(() => {
       this.buttonOnPageShow = true;
     }, 500);
+
+    //分享
+    const context = getContext(this) as common.UIAbilityContext;
+    this.shareManager = WebShareManager.getInstance(context);
+    this.shareManager.enablePassiveShare();
+    this.context.eventHub.on("onFocus", () => {
+      this.shareManager?.enablePassiveShare();
+    });
+    this.context.eventHub.on("onBackGround", () => {
+      this.onBackGround();
+      this.shareManager?.disablePassiveShare();
+    });
   }
 
-  @State firstBackTime: number = 0;
-  private waitTime: number = 2000;
   private backToMain() {
-
+    if(this.vibrationON) vibration.dotVibration()
+    router.replaceUrl({
+      url: 'pages/Dashboard'
+    }).catch((err: BusinessError) => {
+      console.error(`Failed to jump to Dashboard. Code: ${err.code}`);
+    })
   }
   onBackPress(): boolean | void {
-    const currentTime = new Date().getTime();
-    if (currentTime - this.firstBackTime > this.waitTime) {
-      this.firstBackTime = currentTime;
-      this.PromptAction.showToast({ message: "再按一次退出", duration: this.waitTime });
-      if(this.vibrationON) vibration.dotVibration()
-      return true;
-    } else {
-      if(this.vibrationON) vibration.dotVibration()
-      this.backToMain()
-      return false;
-    }
+    this.backToMain()
+    return true;
   }
 
   aboutToDisappear() {
+    this.shareManager?.disablePassiveShare();
+    const hostContext = this.context;
+    hostContext.eventHub.off("onFocus");
+    hostContext.eventHub.off("onBackGround");
+    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
     try {
       motion.off("holdingHandChanged", this.holdingHandCallback);
     } catch (err) {
@@ -157,6 +176,12 @@ struct queryWeb {
       console.error("Motion off failed: " + error.code);
     }
   }
+  onBackGround() {
+    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
+      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
+    });
+  }
+
   build() {
     HdsNavigation() {
       Stack(){
@@ -170,7 +195,7 @@ struct queryWeb {
         Scroll(this.scroller) {
           Column() {
             Blank()
-              .height(10)
+              .height(40)
               .width("100%")
               .expandSafeArea(
                 [SafeAreaType.SYSTEM],
@@ -477,11 +502,25 @@ struct queryWeb {
       },
       content: {
         title: {
-          mainTitle: "查询结果",
+          mainTitle: "鸿蒙应用看板",
+        },
+        menu: {
+          value: [
+            {
+              content: {
+                label: "share",
+                icon: $r("sys.symbol.share"),
+                isEnabled: true,
+                action: () => {
+                  if(this.vibrationON) vibration.dotVibration()
+                  this.shareManager?.showSystemShare(this.url);
+                },
+              },
+            },
+          ]
         },
         backIcon: {
           action: () => {
-            if(this.vibrationON) vibration.dotVibration()
             this.backToMain()
           },
         },

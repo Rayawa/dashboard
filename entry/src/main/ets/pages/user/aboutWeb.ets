@@ -7,7 +7,7 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { common } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../../common/shareControl';
 import {
@@ -484,14 +484,39 @@ struct aboutWeb {
           mainTitle: this.params.title,
         },
         menu: {
+
           value: [
+            {
+              content: {
+                label: "openlink",
+                icon: $r("sys.symbol.worldclock"),
+                isEnabled: true,
+                action: async () => {
+                  if(this.vibrationON) vibration.dotVibration()
+                  const url = this.url;
+                  const ui_content = this.getUIContext();
+                  try {
+                    this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                    let context = ui_content.getHostContext() as common.UIAbilityContext;
+                    await context.startAbility({
+                      action: "ohos.want.action.viewData",
+                      entities: ["entity.system.browsable"],
+                      uri: url,
+                    } as Want);
+                  } catch (error) {
+                    console.error("打开链接失败:", (error as BusinessError).message);
+                    this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                  }
+                },
+              },
+            },
             {
               content: {
                 label: "share",
                 icon: $r("sys.symbol.share"),
                 isEnabled: true,
                 action: () => {
-                          if(this.vibrationON) vibration.dotVibration()
+                  if(this.vibrationON) vibration.dotVibration()
                   const realUrl = this.web_controller.getUrl();
                   this.shareManager?.showSystemShare(realUrl);
                 },

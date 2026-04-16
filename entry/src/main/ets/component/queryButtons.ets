@@ -3,6 +3,7 @@ import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { PromptAction } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
+import { SBaseURL } from '../common/constants';
 
 interface QueryWebParams {
   url: string;
@@ -196,7 +197,8 @@ export struct queryButtons {
 
       if (isExists) {
         this.formData.appId = tempAppId;
-        const finalUrl = `http://shenjack.top:10003/dashboard?app_id=${tempAppId}`;
+        const finalUrl = SBaseURL + `?app_id=${tempAppId}`;
+        // const finalUrl = TBaseURL + `${tempAppId}`;
 
         this.isSearching = false;
         this.stopSearchRippleLoop();
@@ -486,7 +488,7 @@ export struct queryButtons {
               return;
             }
             this._cleanLastClick = now;
-                    if(this.vibrationON) vibration.dotVibration()
+            if(this.vibrationON) vibration.dotVibration()
             this.clearForm();
           })
       }
@@ -512,7 +514,7 @@ export struct queryButtons {
               return;
             }
             this._searchLastClick = now;
-                    if(this.vibrationON) vibration.dotVibration()
+            if(this.vibrationON) vibration.dotVibration()
             this.queryForm();
           })
       }
