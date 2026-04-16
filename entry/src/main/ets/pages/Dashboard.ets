@@ -1,26 +1,26 @@
 import { webview } from '@kit.ArkWeb';
 import { motion, userStatus } from '@kit.MultimodalAwarenessKit';
 import {
-    BlurStrategy,
-    hdsEffect,
-    HdsNavigation,
-    HdsNavigationTitleMode,
-    HdsSnackBar,
-    HdsTabs,
-    HdsTabsController,
-    ScrollEffectType,
-    SnackBarIconOptions,
-    SnackBarMessageOptions,
-    SnackBarOperationOptions,
-    SnackBarOperationType,
-    SnackBarStyleOptions,
-    TitleSize
+  BlurStrategy,
+  hdsEffect,
+  HdsNavigation,
+  HdsNavigationTitleMode,
+  HdsSnackBar,
+  HdsTabs,
+  HdsTabsController,
+  ScrollEffectType,
+  SnackBarIconOptions,
+  SnackBarMessageOptions,
+  SnackBarOperationOptions,
+  SnackBarOperationType,
+  SnackBarStyleOptions,
+  TitleSize
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
-import { customUserAgent, EguiBaseURL, RBaseURL, SBaseURL, TBaseURL } from '../common/constants';
+import { customUserAgent, RBaseURL, SBaseURL, TBaseURL } from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
@@ -29,12 +29,12 @@ import { getUsername, initialize as initializeUserStorage, setUsername as setUse
 import { tutorial } from '../component/tutorial';
 import { warn } from '../component/warn';
 import {
-    getButtonPosition,
-    getHoldCheckEnabled,
-    getImmersiveTexture,
-    getTabBarAuto,
-    getVibrationEnabled,
-    initializeSettings
+  getButtonPosition,
+  getHoldCheckEnabled,
+  getImmersiveTexture,
+  getTabBarAuto,
+  getVibrationEnabled,
+  initializeSettings
 } from '../common/SettingsStorage';
 import { blurPopup } from '../component/blurPopup';
 import { user } from './user';
@@ -368,6 +368,7 @@ struct Dashboard {
             return false;
         }
     }
+
     //==========================主程序部分==========================
     uiContext: UIContext = this.getUIContext();
     hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
@@ -522,7 +523,7 @@ struct Dashboard {
                     }, (item: SiteConfig) => item.key + item.url)
                 }
                 .onChange((index: number) => {
-                            if(this.vibrationON) vibration.dotVibration()
+                    if(this.vibrationON) vibration.dotVibration()
                     this.siteIndex = index;
                     preferences.getPreferences(this.context, 'myStore').then((pref) => {
                         pref.putSync('defaultSite', index);
@@ -573,7 +574,7 @@ struct Dashboard {
                                 yOffset: 0,
                                 animation: { duration: 300, curve: Curve.Ease },
                             });
-                                    if(this.vibrationON) vibration.dotVibration()
+                            if(this.vibrationON) vibration.dotVibration()
                             this.PromptAction.showToast({
                                 message: "回到顶部",
                                 duration: 500,
@@ -623,7 +624,7 @@ struct Dashboard {
                             if (this.isLoading) {
                                 activeCtrl.stop();
                                 this.isLoading = false;
-                                        if(this.vibrationON) vibration.dotVibration()
+                                if(this.vibrationON) vibration.dotVibration()
                             } else {
                                 activeCtrl.refresh();
                                 try {
@@ -635,7 +636,7 @@ struct Dashboard {
                                     console.warn(`hm dashboard e: ${error}`);
                                 }
                                 this.isLoading = true;
-                                        if(this.vibrationON) vibration.dotVibration()
+                                if(this.vibrationON) vibration.dotVibration()
                                 this.PromptAction.showToast({
                                     message: "刷新中...",
                                     duration: 1000,
@@ -735,7 +736,7 @@ struct Dashboard {
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
-                                    if(this.vibrationON) vibration.dotVibration()
+                            if(this.vibrationON) vibration.dotVibration()
                         });
                     Column()
                         .backgroundColor(Color.Transparent)
@@ -746,7 +747,7 @@ struct Dashboard {
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
-                                    if(this.vibrationON) vibration.dotVibration()
+                            if(this.vibrationON) vibration.dotVibration()
                         });
                 }
                 if (this.tabBarAutoON && !this.isTabsBarVisible) {
@@ -786,7 +787,7 @@ struct Dashboard {
                         )
                         .onClick(() => {
                             this.showTutorial = false;
-                                    if(this.vibrationON) vibration.dotVibration()
+                            if(this.vibrationON) vibration.dotVibration()
                         })
                 }
                 blurPopup({ isShow: $showTutorial }) { tutorial().margin({ top: 40 }) }
@@ -884,7 +885,7 @@ struct Dashboard {
                                 icon: $r("sys.symbol.questionmark_circle"),
                                 isEnabled: true,
                                 action: () => {
-                                            if(this.vibrationON) vibration.dotVibration()
+                                    if(this.vibrationON) vibration.dotVibration()
 
                                     if(this.showWarn){
                                         this.PromptAction.showToast({ message: "请先阅读重要提示！" })
@@ -900,7 +901,7 @@ struct Dashboard {
                                 icon: $r("sys.symbol.share"),
                                 isEnabled: true,
                                 action: () => {
-                                            if(this.vibrationON) vibration.dotVibration()
+                                    if(this.vibrationON) vibration.dotVibration()
 
                                     if(this.showWarn){
                                         this.PromptAction.showToast({ message: "请先阅读重要提示！" })
@@ -918,7 +919,7 @@ struct Dashboard {
                                 icon: $r("sys.symbol.person"),
                                 isEnabled: true,
                                 action: () => {
-                                            if(this.vibrationON) vibration.dotVibration()
+                                    if(this.vibrationON) vibration.dotVibration()
                                     if(this.showWarn){
                                         this.PromptAction.showToast({ message: "请先阅读重要提示！" })
                                         return;

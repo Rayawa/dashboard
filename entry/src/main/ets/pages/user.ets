@@ -10,6 +10,7 @@ import { appQuery } from '../component/appQuery';
 import { vibration } from '../common/vibration';
 import { blurPopup } from '../component/blurPopup';
 import { common, Want } from '@kit.AbilityKit';
+import { mainPage } from '../common/constants';
 
 @Component
 export struct user {
@@ -235,7 +236,6 @@ export struct user {
                                 icon: $r("app.media.app_icon"),
                                 title: "项目网站首页",
                                 onClickAction: async () => {
-                                    const url = "https://rayawa.top/projects/dashboard.html";
                                     const ui_content = this.getUIContext();
                                     try {
                                         this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
@@ -243,7 +243,7 @@ export struct user {
                                         await context.startAbility({
                                             action: "ohos.want.action.viewData",
                                             entities: ["entity.system.browsable"],
-                                            uri: url,
+                                            uri: mainPage.toString(),
                                         } as Want);
                                     } catch (error) {
                                         console.error("打开链接失败:", (error as BusinessError).message);

@@ -2,6 +2,7 @@ import KnockShareGuideCard, { CardRes } from './KnockShareGuideCard';
 import { vibration } from '../common/vibration';
 import { PromptAction } from '@kit.ArkUI';
 import { common, Want } from '@kit.AbilityKit';
+import { mainPage } from '../common/constants';
 
 @Component
 export struct tutorial {
@@ -36,7 +37,6 @@ export struct tutorial {
                     .decoration({ type: TextDecorationType.Underline, color: Color.Blue })
                     .onClick(async () => {
                         if(this.vibrationON) vibration.dotVibration()
-                        const url = "https://rayawa.top/projects/dashboard.html";
                         const ui_content = this.getUIContext();
                         try {
                             this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
@@ -44,7 +44,7 @@ export struct tutorial {
                             await context.startAbility({
                                 action: "ohos.want.action.viewData",
                                 entities: ["entity.system.browsable"],
-                                uri: url,
+                                uri: mainPage.toString(),
                             } as Want);
                         } catch (error) {
                             console.error("打开链接失败:", (error as BusinessError).message);

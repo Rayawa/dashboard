@@ -121,15 +121,15 @@ struct about {
                 }
               })
 
-              Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
-
-              AboutItem({
-                icon: $r("app.media.approve"),
-                title: "用户协议",
-                onClickAction: () => {
-                  this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('approve.html'), "用户协议"));
-                }
-              })
+              // Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+              //
+              // AboutItem({
+              //   icon: $r("app.media.approve"),
+              //   title: "用户协议",
+              //   onClickAction: () => {
+              //     this.pageStack.pushPathByName("HTMLPage", new WebViewParam($rawfile('approve.html'), "用户协议"));
+              //   }
+              // })
 
               Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 

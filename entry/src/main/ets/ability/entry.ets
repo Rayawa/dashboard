@@ -6,24 +6,31 @@ const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
     storage: LocalStorage = new LocalStorage();
+    private isContinuation: boolean = false;
+
+    onContinue(wantParam: Record<string, Object>): AbilityConstant.OnContinueResult {
+        const url = AppStorage.get<string>('pageUrl');
+        const distance = AppStorage.get<number>('scrollDistance');
+        wantParam.pageUrl = url ?? '';
+        wantParam.scrollDistance = distance ?? 0;
+        return AbilityConstant.OnContinueResult.AGREE;
+    }
 
     private handleContinuation(want: Want, launchParam: AbilityConstant.LaunchParam) {
         if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
-            const continueUrl = want.parameters?.['migratedUrl'] as string;
-            const continueIndex = want.parameters?.['migratedIndex'] as number;
+            this.isContinuation = true;
+
+            const continueUrl = want.parameters?.['pageUrl'] as string;
+            const scrollDistance = want.parameters?.['scrollDistance'] as number;
 
             if (continueUrl) {
-                this.storage.setOrCreate('migratedUrl', continueUrl);
-                this.storage.setOrCreate('migratedIndex', continueIndex ?? 0);
-                hilog.info(DOMAIN, "dashboard", "Continuation Data Saved: %{public}s", continueUrl);
+                this.storage.setOrCreate('pageUrl', continueUrl);
+                this.storage.setOrCreate('scrollDistance', scrollDistance ?? 0);
             }
-            this.context.restoreWindowStage(this.storage);
         }
     }
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-        hilog.info(DOMAIN, "dashboard", "Ability onCreate");
-        this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
         this.handleContinuation(want, launchParam);
     }
 
@@ -32,32 +39,24 @@ export default class EntryAbility extends UIAbility {
     }
 
     onWindowStageCreate(windowStage: window.WindowStage): void {
-        this.loadMainContent(windowStage, "onWindowStageCreate");
+        if (this.isContinuation) {
+            this.loadContent(windowStage, "abilityPages/continueWeb");
+        } else {
+            this.loadContent(windowStage, "pages/Dashboard");
+        }
     }
 
     onWindowStageRestore(windowStage: window.WindowStage): void {
-        this.loadMainContent(windowStage, "onWindowStageRestore");
+        this.loadContent(windowStage, "abilityPages/continueWeb");
     }
 
-    private loadMainContent(windowStage: window.WindowStage, tag: string) {
-        windowStage.loadContent("pages/Dashboard", this.storage, (err) => {
+    private loadContent(windowStage: window.WindowStage, path: string) {
+        windowStage.loadContent(path, this.storage, (err) => {
             if (err.code) {
-                hilog.error(DOMAIN, "dashboard", `${tag} Failed. Cause: %{public}s`, JSON.stringify(err));
+                hilog.error(DOMAIN, "EntryAbility", `Failed to load ${path}. Cause: %{public}s`, JSON.stringify(err));
                 return;
             }
-            hilog.info(DOMAIN, "window", `${tag} Succeeded.`);
+            hilog.info(DOMAIN, "EntryAbility", `Succeeded in loading ${path}.`);
         });
-    }
-
-    onContinue(wantParam: Record<string, Object>) {
-        const currentUrl = AppStorage.get<string>('latestWebUrl');
-        const currentIndex = AppStorage.get<number>('latestIndex');
-
-        if (currentUrl) {
-            wantParam['migratedUrl'] = currentUrl as Object;
-            wantParam['migratedIndex'] = (currentIndex ?? 0) as Object;
-            return AbilityConstant.OnContinueResult.AGREE;
-        }
-        return AbilityConstant.OnContinueResult.REJECT;
     }
 }

@@ -20,13 +20,10 @@ struct appLog {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     private updateLogs: UpdateLog[] = [
         {
-            // "applinking",
-            // 接续
-            // ability tag
-
-            version: "V2.0.0-rc.2",
+            version: "V2.0.0",
             date: "2026-4-14",
-            type: "rc",
+            type: "release",
+            isRelease: true,
             items: [
                 "大幅重构我的页面逻辑，增加众多页面",
                 "改变使用说明逻辑，增加首次启动提示",
