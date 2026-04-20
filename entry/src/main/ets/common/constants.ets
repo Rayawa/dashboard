@@ -35,6 +35,6 @@ const device_model: string = `${deviceInfo.deviceType}|${deviceInfo.productModel
 
 /** UA
  */
-export const customUserAgent: string = `top.rayawa.dashboard ${APP_VERSION} ${deviceInfo.osFullName} API:${deviceInfo.sdkApiVersion} ${device_model}`;
+export const customUserAgent: string = `top.rayawa.dashboard ${APP_VERSION} ${deviceInfo.osFullName} ${deviceInfo.incrementalVersion} API:${deviceInfo.sdkApiVersion} ${device_model}`;
 
 export const SUBMIT_PLATFORM: string = `ray_dashboard/${APP_VERSION}-${deviceInfo.deviceType}`;
