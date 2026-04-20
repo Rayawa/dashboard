@@ -5,35 +5,35 @@
         "name": "release",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/Rayawa.cer",
+          "storeFile": "/Users/raychen/Develop/HarmonyOS/DevEco-Studio/##certificate_new/Rayawa.p12",
+          "storePassword": "0000001E22F72F9F22B3BA086A942FFD27B57326A643AA26F7B22C54FCA335D26E0C13D7FC27393D41D6AFFDE0AF",
           "keyAlias": "Rayawa",
-          "keyPassword": "0000001E349C0F3C9D3E28E12FAB8C5CB910833DD0A244A6BC9EF1DABB283D06827E97A26741683EDC11362E4E1B",
-          "profile": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/RayawaRelease.p7b",
+          "keyPassword": "0000001E80A23FB34154CF152AFAE85C27EEFAD221C132C15692EAFF49DA58F76EA7DCB6A60ED84DC0046F2C9943",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "/Users/raychen/Documents/HarmonyOS/DevEco-Studio/#certificate/Rayawa.p12",
-          "storePassword": "0000001EBB77E3F171ECC56786F352ED028757F9F47ED6FA13618AB0ED99F6012D0B1E831778F1259C3644ED079E"
+          "profile": "/Users/raychen/Develop/HarmonyOS/DevEco-Studio/##certificate_new/dashboardRelease.p7b",
+          "certpath": "/Users/raychen/Develop/HarmonyOS/DevEco-Studio/##certificate_new/dashboard.cer"
         }
       },
       {
         "name": "debug",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.cer",
+          "certpath": "/Users/raychen/Develop/HarmonyOS/DevEco-Studio/#certificate/auto_debug_30086000648404249.cer.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001BA08AE3A835F67D93A30B92767756D5AE4533C8F30DA0BF29221D846F17927188A185890D06B245",
-          "profile": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.p7b",
+          "keyPassword": "0000001BB354FE5848B1EE0239D810CC7C830B7EB69319C83701F8A829783DF0BF25C206EDCB9C359532CD",
+          "profile": "/Users/raychen/Develop/HarmonyOS/DevEco-Studio/#certificate/RayawaRelease.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.p12",
-          "storePassword": "0000001B1142BC32D3ABB55DC2F5B9F55F47A273144B5DCF8F67A65F188FEF3C09546EEF8F838CFA46D128"
+          "storePassword": "0000001B62A728778CC029043E4E3518C55C034D7A66E6AAC52668F8606B6FF97EE59A07AB437A8F6A608A"
         }
       }
     ],
     "products": [
       {
         "name": "default",
-        "signingConfig": "debug",
+        "signingConfig": "release",
         "targetSdkVersion": "6.1.0(23)",
-        "compatibleSdkVersion": "6.0.0(20)",
+        "compatibleSdkVersion": "6.1.0(23)",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {
