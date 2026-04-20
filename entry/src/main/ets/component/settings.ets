@@ -1,17 +1,16 @@
 import { vibration } from '../common/vibration';
 import { webview } from '@kit.ArkWeb';
 import { common } from '@kit.AbilityKit';
-import { BusinessError } from '@kit.BasicServicesKit';
+import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
 import { promptAction } from '@kit.ArkUI';
 import {
-    initializeSettings,
-    setButtonPosition,
-    setHoldCheckEnabled,
-    setImmersiveTexture,
-    setTabBarAuto,
-    setVibrationEnabled
+  initializeSettings,
+  setButtonPosition,
+  setHoldCheckEnabled,
+  setImmersiveTexture,
+  setTabBarAuto,
+  setVibrationEnabled
 } from '../common/SettingsStorage';
-import { deviceInfo } from "@kit.BasicServicesKit";
 
 @Component
 export struct settings {
@@ -97,16 +96,16 @@ export struct settings {
             })
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
-            if(deviceInfo.sdkApiVersion >= 23){
-                SettingItem({
-                    icon: $r("app.media.immersive"),
-                    title: "使用沉浸式材质",
-                    isOn: this.immersiveTextureON,
-                    promptMsg: "开启沉浸式材质将增加应用功耗，\n如遇卡顿建议关闭。",
-                    onToggle: async (val) => { await setImmersiveTexture(val); this.immersiveTextureON = val; }
-                })
-                Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
-            }
+
+            SettingItem({
+                icon: $r("app.media.immersive"),
+                title: "使用沉浸式材质",
+                isOn: this.immersiveTextureON,
+                promptMsg: "开启沉浸式材质将增加应用功耗，\n如遇卡顿建议关闭。",
+                onToggle: async (val) => { await setImmersiveTexture(val); this.immersiveTextureON = val; }
+            })
+            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
 
             this.TrashItem()
 
