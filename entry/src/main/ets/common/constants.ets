@@ -62,6 +62,16 @@ export class FullDeviceInfo {
     public build_host: string = deviceInfo.buildHost
     public build_time: string = deviceInfo.buildTime
     public build_root_hash: string = deviceInfo.buildRootHash
+    public distribution_os_name: string = deviceInfo.distributionOSName
+    public distribution_os_version: string = deviceInfo.distributionOSVersion
+    public distribution_os_api_version: number = deviceInfo.distributionOSApiVersion
+    public distribution_os_api_name: string = deviceInfo.distributionOSApiName
+    public distribution_os_release_type: string = deviceInfo.distributionOSReleaseType
+    public performance_class: string = deviceInfo.performanceClass.toString()
+    public chip_type: string = deviceInfo.chipType
 }
+
+// 用户标识符
+export const ONLY_ID: string = deviceInfo.ODID;
 
 export const SUBMIT_PLATFORM: string = `ray_dashboard/${APP_VERSION}-${deviceInfo.deviceType}`;
