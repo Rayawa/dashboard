@@ -138,7 +138,7 @@ struct friend {
               .fontWeight(700)
               .fontSize(20)
               .fontColor(Color.Red)
-            Text("友情链接内网站展示的任何内容均与鸿蒙应用看板无关；\n" +
+            Text("友情链接内网站展示的任何内容均与Hm应用看板无关；\n" +
               "Harmony Gallery项目组不负责维护友情链接内容。")
               .fontWeight(600)
               .fontSize(15)

@@ -878,7 +878,7 @@ struct Dashboard {
             },
             content: {
                 title: {
-                    mainTitle: "鸿蒙应用看板",
+                    mainTitle: "Hm应用看板",
                     mainTitleSize: TitleSize.TITLE_S,
                 },
                 menu: {

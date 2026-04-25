@@ -23,7 +23,7 @@ export struct tutorial {
         Swiper() {
             // 欢迎页面
             Column() {
-                Text("欢迎来到鸿蒙应用看板")
+                Text("欢迎来到Hm应用看板")
                     .fontSize(24)
                     .fontColor($r("app.color.diff_content"))
                     .fontWeight(FontWeight.Bold)
@@ -183,7 +183,7 @@ export struct tutorial {
                     .fontWeight(FontWeight.Bold)
                     .margin({ bottom: 20 })
                 Text("  您可以在主界面访问友情链接。友情链接页面内点击地球仪图标可以在浏览器内访问页面。\n").fontSize(14)
-                Text("  友情链接内网站展示的任何内容均与鸿蒙应用看板无关，Harmony Gallery项目组不负责维护友情链接内容。").fontSize(14).fontColor($r('app.color.diff_content')).margin({ bottom: 20 })
+                Text("  友情链接内网站展示的任何内容均与Hm应用看板无关，Harmony Gallery项目组不负责维护友情链接内容。").fontSize(14).fontColor($r('app.color.diff_content')).margin({ bottom: 20 })
                 Text("  1. 链接分享：在主界面或任意应用详情页点击分享按钮分享当前页面链接。\n\n").fontSize(14)
                 Text("  2. 碰一碰分享：在任意界面使用碰一碰分享将当前页面链接分享给其他HarmonyOS设备。\n",).fontSize(14)
                 KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone })

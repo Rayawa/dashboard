@@ -502,7 +502,7 @@ struct queryWeb {
       },
       content: {
         title: {
-          mainTitle: "鸿蒙应用看板",
+          mainTitle: "Hm应用看板",
         },
         menu: {
           value: [
