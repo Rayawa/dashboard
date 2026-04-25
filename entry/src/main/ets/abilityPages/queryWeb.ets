@@ -113,6 +113,7 @@ struct queryWeb {
         AppStorage.setOrCreate('queryUrlFromAbility', '');
       }
     }
+
     //握持监听
     try {
       motion.on("holdingHandChanged", this.holdingHandCallback);
@@ -532,5 +533,4 @@ struct queryWeb {
       },
     });
   }
-
 }
