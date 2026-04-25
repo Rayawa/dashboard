@@ -3,7 +3,7 @@ import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { PromptAction } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
-import { SBaseURL } from '../common/constants';
+import { SBaseURL, TBaseURL } from '../common/constants';
 
 interface QueryWebParams {
   url: string;
@@ -197,8 +197,8 @@ export struct queryButtons {
 
       if (isExists) {
         this.formData.appId = tempAppId;
-        const finalUrl = SBaseURL + `?app_id=${tempAppId}`;
-        // const finalUrl = TBaseURL + `${tempAppId}`;
+        // const finalUrl = SBaseURL + `?app_id=${tempAppId}`;
+        const finalUrl = `https://hmos.txit.top/app/${tempAppId}`;
 
         this.isSearching = false;
         this.stopSearchRippleLoop();

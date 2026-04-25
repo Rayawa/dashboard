@@ -48,8 +48,6 @@ struct queryEntry {
   @State isLoading: boolean = false;
 
   //动画与振动
-
-
   private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
       .combine(TransitionEffect.scale({ x: 0, y: 0 }))
