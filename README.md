@@ -1,4 +1,4 @@
-# 鸿蒙应用看板 (HmDashbaord)
+# Hm应用看板 (HmDashbaord)
 
 **HmDashboard** 是一款专为 HarmonyOS 设计的实时分布式应用数据看板。本项目由 **Harmony Gallery** 项目组驱动，旨在通过直观的图表与多维度的搜索功能，实时展示华为应用市场的应用下载统计、评分趋势及市场分布。
 
