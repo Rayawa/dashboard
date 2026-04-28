@@ -43,7 +43,7 @@ export class FullDeviceInfo {
     public os_release_type: string = deviceInfo.osReleaseType
     public os_full_name: string = deviceInfo.osFullName
     public sdk_api_version: number = deviceInfo.sdkApiVersion
-    public fist_api_version: number = deviceInfo.firstApiVersion
+    public first_api_version: number = deviceInfo.firstApiVersion
     public version_id: string = deviceInfo.versionId
     public build_type: string = deviceInfo.buildType
     public build_user: string = deviceInfo.buildUser
