@@ -2,12 +2,11 @@ import { URL } from "./url";
 import { deviceInfo } from "@kit.BasicServicesKit";
 
 // 主要链接
-export const mainPage =new URL("https://rayawa.top/dashboard")
+export const mainPage =new URL("https://dashboard.rayawa.top")
 
-export const RBaseURL = new URL("https://dashboard.rayawa.top/");
+export const TBaseURL = new URL("https://hmos.txit.top/");
 export const SBaseURL = new URL("http://ddns.shenjack.top:10003/");
 export const EguiBaseURL = new URL("http://ddns.shenjack.top:10003/egui/");
-export const TBaseURL = new URL("https://hmos.txit.top/");
 
 // 友情链接
 export const HapStoreURL = new URL("https://hdc.osbdf.com/");
@@ -17,16 +16,6 @@ export const OpenStoreURL = new URL("https://next.betahub.tech/");
 export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
 
 // dev
-export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
-export const TBaseURLDev = new URL("http://192.168.2.9:50000/");
-export const TAPIBaseURL = new URL("/api/", TBaseURL);
-
-export const dashboardURL: string = "dashboard";
-
-export const submitURL: string = "submit";
-
-export const changelog: string = "changelog";
-
 export const APP_VERSION: string = "2.0.2";
 
 // 太长了点
