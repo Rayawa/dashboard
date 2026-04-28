@@ -1,41 +1,50 @@
 import { webview } from '@kit.ArkWeb';
 import { motion, userStatus } from '@kit.MultimodalAwarenessKit';
 import {
-    BlurStrategy,
-    hdsEffect,
-    HdsNavigation,
-    HdsNavigationTitleMode,
-    HdsSnackBar,
-    HdsTabs,
-    HdsTabsController,
-    ScrollEffectType,
-    SnackBarIconOptions,
-    SnackBarMessageOptions,
-    SnackBarOperationOptions,
-    SnackBarOperationType,
-    SnackBarStyleOptions,
-    TitleSize
+  BlurStrategy,
+  hdsEffect,
+  HdsNavigation,
+  HdsNavigationTitleMode,
+  HdsSnackBar,
+  HdsTabs,
+  HdsTabsController,
+  ScrollEffectType,
+  SnackBarIconOptions,
+  SnackBarMessageOptions,
+  SnackBarOperationOptions,
+  SnackBarOperationType,
+  SnackBarStyleOptions,
+  TitleSize
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
-import { customUserAgent, RBaseURL, SBaseURL, TBaseURL } from '../common/constants';
+import {
+    APP_BUNDLE_NAME,
+    APP_VERSION,
+    customUserAgent,
+    FullDeviceInfo,
+    ONLY_ID,
+    SAPIBaseURL, SBaseURL, SUBMIT_PLATFORM, TBaseURL,
+    telemetryReportURL } from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
 import { preferences } from '@kit.ArkData';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
-import { report_user_telemetry } from '../common/api';
 import { tutorial } from '../component/tutorial';
 import { warn } from '../component/warn';
+import type { BaseAPIResponse, TelemetryIngestResponse, TelemetryReportBody, TelemetryDeviceInfo } from '../common/types';
+import URL from '../common/url';
+import { http } from '@kit.NetworkKit';
 import {
-    getButtonPosition,
-    getHoldCheckEnabled,
-    getImmersiveTexture,
-    getTabBarAuto,
-    getVibrationEnabled,
-    initializeSettings
+  getButtonPosition,
+  getHoldCheckEnabled,
+  getImmersiveTexture,
+  getTabBarAuto,
+  getVibrationEnabled,
+  initializeSettings
 } from '../common/SettingsStorage';
 import { blurPopup } from '../component/blurPopup';
 import { user } from './user';
@@ -45,6 +54,45 @@ interface SiteConfig {
     url: string;
     label: string;
     icon: Resource;
+}
+
+async function report_user_telemetry(
+    event_name: string = "app_open",
+): Promise<BaseAPIResponse<TelemetryIngestResponse> | null> {
+    const final_data: TelemetryReportBody = {
+        app_id: APP_BUNDLE_NAME,
+        only_id: ONLY_ID,
+        app_version: APP_VERSION,
+        submit_platform: SUBMIT_PLATFORM,
+        custom_user_agent: customUserAgent,
+        event_name,
+        device_info: new FullDeviceInfo() as TelemetryDeviceInfo,
+    };
+    const path = new URL("/telemetry/report", SAPIBaseURL);
+    const request = http.createHttp();
+    try {
+        const response = await request.request(path.toString(), {
+            method: http.RequestMethod.POST,
+            expectDataType: http.HttpDataType.OBJECT,
+            usingCache: false,
+            header: {
+                "Content-Type": "application/json",
+            },
+            extraData: final_data,
+        });
+        const res: object =
+            typeof response.result === "string" ? JSON.parse(response.result) : response.result;
+        try {
+            return res as BaseAPIResponse<TelemetryIngestResponse>;
+        } catch (_e) {
+            return null;
+        }
+    } catch (e) {
+        console.warn(`telemetry error ${e}`);
+    } finally {
+        request.destroy();
+    }
+    return null;
 }
 
 @Entry
@@ -219,6 +267,7 @@ struct Dashboard {
     private context = getContext(this) as common.UIAbilityContext;
     @State isContinuation: boolean = false;
     async aboutToAppear() {
+        console.log("UAAA",customUserAgent)
         this.buttonOnPageShow = false;
         //年龄分级
         let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
@@ -253,9 +302,11 @@ struct Dashboard {
         }
         if (!this.hasReportedTelemetry) {
             this.hasReportedTelemetry = true;
-            report_user_telemetry().catch((error) => {
+            try {
+                report_user_telemetry();
+            } catch (error) {
                 console.warn(`report telemetry failed: ${error}`);
-            });
+            }
         }
         //用户名
         this.loadUserName();

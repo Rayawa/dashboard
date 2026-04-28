@@ -3,7 +3,8 @@ import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { PromptAction } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
-import { SBaseURL, TBaseURL } from '../common/constants';
+import { URL } from "../common/url";
+import { TBaseURL, SAPIBaseURL } from '../common/constants';
 
 interface QueryWebParams {
   url: string;
@@ -79,7 +80,7 @@ export struct queryButtons {
     return new Promise((resolve, reject) => {
       const httpRequest = http.createHttp();
 
-      const baseUrl = "http://shenjack.top:10003/api/v0/apps/list/0";
+      const baseUrl = new URL("apps/list/0",SAPIBaseURL)
       const params = `?page_size=5&detail=false&search_key=name&search_value=${encodeURIComponent(appName)}&search_exact=false`;
       const fullUrl = baseUrl + params;
 
@@ -126,10 +127,10 @@ export struct queryButtons {
       );
     });
   }
-  async getAppIdByPackage(pkgName: string): Promise<string> {
+  async getAppIdByPackage(pkg: string): Promise<string> {
     return new Promise((resolve, reject) => {
       let httpRequest = http.createHttp();
-      let apiUrl = `http://shenjack.top:10003/api/v0/apps/pkg_name/${pkgName}`;
+      const apiUrl = new URL(`apps/pkg_name/${pkg}`, SAPIBaseURL).toString();
       httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
         if (!err && data.responseCode === 200) {
           const res = JSON.parse(data.result.toString()) as ApiResponse;
@@ -147,7 +148,7 @@ export struct queryButtons {
     console.info(`queryResult [Verify Start] 正在校验 AppID 真实性: ${appId}`);
     return new Promise((resolve) => {
       let httpRequest = http.createHttp();
-      let apiUrl = `http://shenjack.top:10003/api/v0/apps/app_id/${appId}`;
+      const apiUrl = new URL(`apps/app_id/${appId}`, SAPIBaseURL).toString();
       httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
         if (!err && data.responseCode === 200) {
           try {
@@ -197,14 +198,13 @@ export struct queryButtons {
 
       if (isExists) {
         this.formData.appId = tempAppId;
-        // const finalUrl = SBaseURL + `?app_id=${tempAppId}`;
-        const finalUrl = `https://hmos.txit.top/app/${tempAppId}`;
+        const finalUrl = new URL(`app/${tempAppId}`, TBaseURL).toString()
 
         this.isSearching = false;
         this.stopSearchRippleLoop();
 
         const pathParams: QueryWebParams = {
-          url: finalUrl
+          url: finalUrl.toString()
         };
         if(this.vibrationON){
           vibration.waveVibration()

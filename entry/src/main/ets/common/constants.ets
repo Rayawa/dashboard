@@ -2,7 +2,7 @@ import { URL } from "./url";
 import { deviceInfo } from "@kit.BasicServicesKit";
 
 // 主要链接
-export const mainPage =new URL("https://dashboard.rayawa.top")
+export const mainPage = new URL("https://dashboard.rayawa.top")
 
 export const TBaseURL = new URL("https://hmos.txit.top/");
 export const SBaseURL = new URL("http://ddns.shenjack.top:10003/");
@@ -17,13 +17,12 @@ export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
 
 // dev
 export const APP_VERSION: string = "2.0.2";
+export const APP_BUNDLE_NAME: string = "top.rayawa.dashboard"
+export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
+export const telemetryReportURL = new URL("", SBaseURL)
 
-// 太长了点
-const device_model: string = `${deviceInfo.deviceType}|${deviceInfo.productModel}|${deviceInfo.productModelAlias}|${deviceInfo.softwareModel}|${deviceInfo.marketName}|${deviceInfo.hardwareModel}`;
-
-/** UA
- */
-export const customUserAgent: string = `${APP_BUNDLE_NAME} ${APP_VERSION} ${deviceInfo.osFullName} ${deviceInfo.incrementalVersion} API:${deviceInfo.sdkApiVersion} ${device_model}`;
+// UA
+export const customUserAgent: string = `${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.deviceType}(${deviceInfo.sdkApiVersion}) | ${deviceInfo.marketName}(${deviceInfo.chipType}) | ${deviceInfo.productModel}|${deviceInfo.productModelAlias}|${deviceInfo.softwareModel}|${deviceInfo.hardwareModel} | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion})`;
 
 // 额, 邪恶 device_info (确信)
 export class FullDeviceInfo {

@@ -1,8 +1,9 @@
-// src/main/ets/shareability/QueryAbility.ts
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from "@kit.AbilityKit";
 import { systemShare } from "@kit.ShareKit";
 import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { URL } from "../common/url";
+import { SAPIBaseURL, TBaseURL } from "../common/constants";
 
 interface FullInfo {
   alliance_app_id: string;
@@ -38,12 +39,12 @@ export class QueryAbility extends ShareExtensionAbility {
 
       if (!exists) throw new Error("市场未收录此应用");
 
-      const finalUrl = `https://hmos.txit.top/app/${appId}`;
+      const finalUrl = new URL(`/app/${appId}`, TBaseURL).toString()
       const wantForUI: Want = {
         bundleName: "top.rayawa.dashboard",
         abilityName: "queryEntryAbility",
         parameters: {
-          targetUrl: finalUrl
+          targetUrl: finalUrl.toString()
         }
       };
 
@@ -64,7 +65,7 @@ export class QueryAbility extends ShareExtensionAbility {
 
   private async getAppIdByPackage(pkg: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      let apiUrl = `http://shenjack.top:10003/api/v0/apps/pkg_name/${pkg}`;
+      const apiUrl = new URL(`apps/pkg_name/${pkg}`, SAPIBaseURL).toString();
       let httpRequest = http.createHttp();
       httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
         if (!err && data.responseCode === 200) {
@@ -89,7 +90,7 @@ export class QueryAbility extends ShareExtensionAbility {
 
   private async verifyAppIdExists(appId: string): Promise<boolean> {
     return new Promise((resolve) => {
-      let apiUrl = `http://shenjack.top:10003/api/v0/apps/app_id/${appId}`;
+      const apiUrl = new URL(`apps/app_id/${appId}`, SAPIBaseURL).toString();
       let httpRequest = http.createHttp();
       httpRequest.request(apiUrl, (err: BusinessError, data: http.HttpResponse) => {
         if (!err && data.responseCode === 200) {
