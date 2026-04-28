@@ -21,11 +21,12 @@ struct appLog {
     private updateLogs: UpdateLog[] = [
         {
             version: "V2.0.2",
-            date: "你记得填", // TODO
+            date: "2026-5-1",
             type: "release",
             isRelease: true,
             items: [
-                "修复了特定网络环境下访问不到S站的问题"
+                "修复了特定网络环境下访问不到S站的问题",
+                "更新隐私协议，增加了对于用户数据访问的神明"
             ],
         },
         {
