@@ -26,6 +26,7 @@ import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
 import { preferences } from '@kit.ArkData';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
+import { report_user_telemetry } from '../common/api';
 import { tutorial } from '../component/tutorial';
 import { warn } from '../component/warn';
 import {
@@ -84,6 +85,7 @@ struct Dashboard {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     @StorageLink("showWarn") showWarn: boolean = false;
     @State holdCheckTMP: boolean = false;
+    private hasReportedTelemetry: boolean = false;
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
@@ -248,6 +250,12 @@ struct Dashboard {
             console.error(
                 `UserAgent Error, ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`,
             );
+        }
+        if (!this.hasReportedTelemetry) {
+            this.hasReportedTelemetry = true;
+            report_user_telemetry().catch((error) => {
+                console.warn(`report telemetry failed: ${error}`);
+            });
         }
         //用户名
         this.loadUserName();

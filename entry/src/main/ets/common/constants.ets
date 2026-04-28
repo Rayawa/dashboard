@@ -23,7 +23,7 @@ const device_model: string = `${deviceInfo.deviceType}|${deviceInfo.productModel
 
 /** UA
  */
-export const customUserAgent: string = `top.rayawa.dashboard ${APP_VERSION} ${deviceInfo.osFullName} ${deviceInfo.incrementalVersion} API:${deviceInfo.sdkApiVersion} ${device_model}`;
+export const customUserAgent: string = `${APP_BUNDLE_NAME} ${APP_VERSION} ${deviceInfo.osFullName} ${deviceInfo.incrementalVersion} API:${deviceInfo.sdkApiVersion} ${device_model}`;
 
 // 额, 邪恶 device_info (确信)
 export class FullDeviceInfo {
