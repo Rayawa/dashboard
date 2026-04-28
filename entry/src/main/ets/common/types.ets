@@ -31,7 +31,7 @@ export interface TelemetryDeviceInfo {
     os_release_type: string;
     os_full_name: string;
     sdk_api_version: number;
-    fist_api_version: number;
+    first_api_version: number;
     version_id: string;
     build_type: string;
     build_user: string;

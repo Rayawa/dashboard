@@ -68,31 +68,63 @@ async function report_user_telemetry(
         event_name,
         device_info: new FullDeviceInfo() as TelemetryDeviceInfo,
     };
-    const path = new URL("/telemetry/report", SAPIBaseURL);
+    const path = "http://ddns.shenjack.top:10003/api/v0/telemetry/report";
     const request = http.createHttp();
+
     try {
+        const dataString = JSON.stringify(final_data);
         const response = await request.request(path.toString(), {
             method: http.RequestMethod.POST,
-            expectDataType: http.HttpDataType.OBJECT,
+            header: { "Content-Type": "application/json" },
+            extraData: dataString,
+            expectDataType: http.HttpDataType.STRING,
             usingCache: false,
-            header: {
-                "Content-Type": "application/json",
-            },
-            extraData: final_data,
+            connectTimeout: 10000, // 建议缩短到10s，60s对上报来说太久了
+            readTimeout: 10000,
         });
-        const res: object =
-            typeof response.result === "string" ? JSON.parse(response.result) : response.result;
-        try {
-            return res as BaseAPIResponse<TelemetryIngestResponse>;
-        } catch (_e) {
-            return null;
+
+        console.info(`EEEE| Status: ${response.responseCode}`);
+
+        if (response.responseCode === 200 && response.result) {
+            const rawResult = response.result;
+
+            // 安全解析逻辑
+            try {
+                if (typeof rawResult === 'string') {
+                    // 如果字符串为空或只有空白符，parse 也会报错
+                    if (!rawResult.trim()) {
+                        console.error("EEEE| Error: Received empty string");
+                        return null;
+                    }
+                    return JSON.parse(rawResult) as BaseAPIResponse<TelemetryIngestResponse>;
+                }
+                return rawResult as BaseAPIResponse<TelemetryIngestResponse>;
+            } catch (parseError) {
+                // 核心报错定位：打印出导致报错的原始字符串内容
+                console.error(`EEEE| JSON Parse Failed. Raw Content: ${rawResult}`);
+                console.error(`EEEE| Parse Error Detail: ${parseError.message}`);
+                return null;
+            }
+        }else {
+            // 关键：当 422 发生时，打印服务器返回的错误详情
+            console.error(`EEEE| Error Status: ${response.responseCode}`);
+            console.error(`EEEE| Error Detail from Server: ${response.result}`);
+
+            // 如果 result 是对象，尝试 JSON.stringify
+            if (typeof response.result !== 'string') {
+                console.error(`EEEE| Error Detail JSON: ${JSON.stringify(response.result)}`);
+            }
         }
+
+        console.warn(`EEEE| Request failed with code: ${response.responseCode}`);
+        return null;
+
     } catch (e) {
-        console.warn(`telemetry error ${e}`);
+        console.error("EEEE| Network/Request Error:", JSON.stringify(e));
+        return null;
     } finally {
         request.destroy();
     }
-    return null;
 }
 
 @Entry
