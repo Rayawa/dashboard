@@ -1,20 +1,20 @@
 import { webview } from '@kit.ArkWeb';
 import { motion, userStatus } from '@kit.MultimodalAwarenessKit';
 import {
-  BlurStrategy,
-  hdsEffect,
-  HdsNavigation,
-  HdsNavigationTitleMode,
-  HdsSnackBar,
-  HdsTabs,
-  HdsTabsController,
-  ScrollEffectType,
-  SnackBarIconOptions,
-  SnackBarMessageOptions,
-  SnackBarOperationOptions,
-  SnackBarOperationType,
-  SnackBarStyleOptions,
-  TitleSize
+    BlurStrategy,
+    hdsEffect,
+    HdsNavigation,
+    HdsNavigationTitleMode,
+    HdsSnackBar,
+    HdsTabs,
+    HdsTabsController,
+    ScrollEffectType,
+    SnackBarIconOptions,
+    SnackBarMessageOptions,
+    SnackBarOperationOptions,
+    SnackBarOperationType,
+    SnackBarStyleOptions,
+    TitleSize
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
@@ -36,15 +36,14 @@ import { getUsername, initialize as initializeUserStorage, setUsername as setUse
 import { tutorial } from '../component/tutorial';
 import { warn } from '../component/warn';
 import type { BaseAPIResponse, TelemetryIngestResponse, TelemetryReportBody, TelemetryDeviceInfo } from '../common/types';
-import URL from '../common/url';
 import { http } from '@kit.NetworkKit';
 import {
-  getButtonPosition,
-  getHoldCheckEnabled,
-  getImmersiveTexture,
-  getTabBarAuto,
-  getVibrationEnabled,
-  initializeSettings
+    getButtonPosition,
+    getHoldCheckEnabled,
+    getImmersiveTexture,
+    getTabBarAuto,
+    getVibrationEnabled,
+    initializeSettings
 } from '../common/SettingsStorage';
 import { blurPopup } from '../component/blurPopup';
 import { user } from './user';
@@ -79,48 +78,38 @@ async function report_user_telemetry(
             extraData: dataString,
             expectDataType: http.HttpDataType.STRING,
             usingCache: false,
-            connectTimeout: 10000, // 建议缩短到10s，60s对上报来说太久了
+            connectTimeout: 10000,
             readTimeout: 10000,
         });
-
-        console.info(`EEEE| Status: ${response.responseCode}`);
-
+        console.info(`Status: ${response.responseCode}`);
         if (response.responseCode === 200 && response.result) {
             const rawResult = response.result;
-
-            // 安全解析逻辑
             try {
                 if (typeof rawResult === 'string') {
-                    // 如果字符串为空或只有空白符，parse 也会报错
                     if (!rawResult.trim()) {
-                        console.error("EEEE| Error: Received empty string");
+                        console.error("Error: Received empty string");
                         return null;
                     }
                     return JSON.parse(rawResult) as BaseAPIResponse<TelemetryIngestResponse>;
                 }
                 return rawResult as BaseAPIResponse<TelemetryIngestResponse>;
             } catch (parseError) {
-                // 核心报错定位：打印出导致报错的原始字符串内容
-                console.error(`EEEE| JSON Parse Failed. Raw Content: ${rawResult}`);
-                console.error(`EEEE| Parse Error Detail: ${parseError.message}`);
+                console.error(`JSON Parse Failed. Raw Content: ${rawResult}`);
+                console.error(`Parse Error Detail: ${parseError.message}`);
                 return null;
             }
         }else {
-            // 关键：当 422 发生时，打印服务器返回的错误详情
-            console.error(`EEEE| Error Status: ${response.responseCode}`);
-            console.error(`EEEE| Error Detail from Server: ${response.result}`);
-
-            // 如果 result 是对象，尝试 JSON.stringify
+            console.error(`Error Status: ${response.responseCode}`);
+            console.error(`Error Detail from Server: ${response.result}`);
             if (typeof response.result !== 'string') {
-                console.error(`EEEE| Error Detail JSON: ${JSON.stringify(response.result)}`);
+                console.error(`Error Detail JSON: ${JSON.stringify(response.result)}`);
             }
         }
-
-        console.warn(`EEEE| Request failed with code: ${response.responseCode}`);
+        console.warn(`Request failed with code: ${response.responseCode}`);
         return null;
 
     } catch (e) {
-        console.error("EEEE| Network/Request Error:", JSON.stringify(e));
+        console.error("Network/Request Error:", JSON.stringify(e));
         return null;
     } finally {
         request.destroy();
