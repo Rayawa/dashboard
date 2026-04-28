@@ -1,5 +1,3 @@
-import { SBaseURL, TBaseURL, TBaseURLDev } from "./constants";
-
 export interface CommentInfo {
     platform?: string;
     user?: string;
