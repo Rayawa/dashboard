@@ -4,8 +4,19 @@ import type {
     BaseAPIResponse,
     CommentInfo,
     SubmitAppBody,
+    TelemetryDeviceInfo,
+    TelemetryIngestResponse,
+    TelemetryReportBody,
 } from "./types";
-import { SUBMIT_PLATFORM } from "./constants";
+import {
+    APP_BUNDLE_NAME,
+    APP_VERSION,
+    customUserAgent,
+    FullDeviceInfo,
+    ONLY_ID,
+    SUBMIT_PLATFORM,
+    telemetryReportURL,
+} from "./constants";
 import { SAPIBaseURL, submitURL } from "./constants";
 import URL from "./url";
 import { http } from "@kit.NetworkKit";
@@ -67,5 +78,44 @@ export async function submit_app(
 }
 
 export async function query_app(data: appIdOrPkgName) {
+    return null;
+}
+
+export async function report_user_telemetry(
+    event_name: string = "app_open",
+): Promise<BaseAPIResponse<TelemetryIngestResponse> | null> {
+    const final_data: TelemetryReportBody = {
+        app_id: APP_BUNDLE_NAME,
+        only_id: ONLY_ID,
+        app_version: APP_VERSION,
+        submit_platform: SUBMIT_PLATFORM,
+        custom_user_agent: customUserAgent,
+        event_name,
+        device_info: new FullDeviceInfo() as TelemetryDeviceInfo,
+    };
+    const path = new URL(telemetryReportURL, BASEURL);
+    const request = http.createHttp();
+    try {
+        const response = await request.request(path.toString(), {
+            method: http.RequestMethod.POST,
+            expectDataType: http.HttpDataType.OBJECT,
+            usingCache: false,
+            header: {
+                "Content-Type": "application/json",
+            },
+            extraData: final_data,
+        });
+        const res: object =
+            typeof response.result === "string" ? JSON.parse(response.result) : response.result;
+        try {
+            return res as BaseAPIResponse<TelemetryIngestResponse>;
+        } catch (_e) {
+            return null;
+        }
+    } catch (e) {
+        console.warn(`telemetry error ${e}`);
+    } finally {
+        request.destroy();
+    }
     return null;
 }
