@@ -22,7 +22,7 @@ export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
 export const telemetryReportURL = new URL("", SBaseURL)
 
 // UA
-export const customUserAgent: string = `${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.deviceType}(${deviceInfo.sdkApiVersion}) | ${deviceInfo.marketName}(${deviceInfo.chipType}) | ${deviceInfo.productModel}|${deviceInfo.productModelAlias}|${deviceInfo.softwareModel}|${deviceInfo.hardwareModel} | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion})`;
+export const customUserAgent: string = `${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion}) API:${deviceInfo.sdkApiVersion} | ${deviceInfo.productModel}/${deviceInfo.productModelAlias}/${deviceInfo.softwareModel}/${deviceInfo.hardwareModel} | ${deviceInfo.deviceType}/${deviceInfo.marketName}/${deviceInfo.chipType}`;
 
 // 额, 邪恶 device_info (确信)
 export class FullDeviceInfo {
