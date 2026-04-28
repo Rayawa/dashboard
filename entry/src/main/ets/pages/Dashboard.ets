@@ -56,7 +56,7 @@ interface SiteConfig {
 }
 
 async function report_user_telemetry(
-    event_name: string = "app_open",
+    event_name: string = customUserAgent,
 ): Promise<BaseAPIResponse<TelemetryIngestResponse> | null> {
     const final_data: TelemetryReportBody = {
         app_id: APP_BUNDLE_NAME,
@@ -74,7 +74,7 @@ async function report_user_telemetry(
         const dataString = JSON.stringify(final_data);
         const response = await request.request(path.toString(), {
             method: http.RequestMethod.POST,
-            header: { "Content-Type": "application/json" },
+            header: { "Content-Type": "application/json", "User-Agent": customUserAgent },
             extraData: dataString,
             expectDataType: http.HttpDataType.STRING,
             usingCache: false,
@@ -288,7 +288,6 @@ struct Dashboard {
     private context = getContext(this) as common.UIAbilityContext;
     @State isContinuation: boolean = false;
     async aboutToAppear() {
-        console.log("UAAA",customUserAgent)
         this.buttonOnPageShow = false;
         //年龄分级
         let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
@@ -324,7 +323,7 @@ struct Dashboard {
         if (!this.hasReportedTelemetry) {
             this.hasReportedTelemetry = true;
             try {
-                report_user_telemetry();
+                report_user_telemetry(customUserAgent);
             } catch (error) {
                 console.warn(`report telemetry failed: ${error}`);
             }
