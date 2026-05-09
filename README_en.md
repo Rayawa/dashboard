@@ -257,8 +257,8 @@ This layer provides cross-page business logic and foundational capabilities.
 The main site constants defined in the current code are in [`entry/src/main/ets/common/constants.ets`](/Users/raychen/Develop/HarmonyOS/Dashboard/dashboard/entry/src/main/ets/common/constants.ets):
 
 - `https://hmos.txit.top/`
-- `http://shenjack.top:10003/`
-- `http://shenjack.top:10003/egui/`
+- `https://shenjack.top:10003/`
+- `https://shenjack.top:10003/egui/`
 
 If you need to switch environments or replace sites, update this file first.
 

@@ -49,7 +49,7 @@ struct friend {
     { icon: $r('app.media.HapStore'), url: HapStoreURL.toString(), title: 'Hap资源站' },
     { icon: $r('app.media.NEXTStore'), url: NEXTStoreURL.toString(), title: 'NEXT Store' },
     { icon: $r('app.media.OpenStore'), url: OpenStoreURL.toString(), title: 'Open Store' },
-    { icon: $r('app.media.dztap'), url: dztapURL.toString(), title: '小刘的站点' },
+    { icon: $r('app.media.dztap'), url: dztapURL.toString(), title: '应用荟萃' },
   ];
   @State private friendApps: AppConfig[] = [
     { icon: $r('app.media.subscription'), appID: 'C6917594526782928388', title: '记得订阅' },

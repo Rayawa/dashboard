@@ -20,6 +20,17 @@ struct appLog {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     private updateLogs: UpdateLog[] = [
         {
+            version: "V2.0.3",
+            date: "2026-5-9",
+            type: "release",
+            isRelease: true,
+            items: [
+                "修复了特定网络环境下访问不到S站的问题",
+                "更新友情链接",
+                "修复已知问题，提升应用稳定性"
+            ],
+        },
+        {
             version: "V2.0.2",
             date: "2026-5-1",
             type: "release",

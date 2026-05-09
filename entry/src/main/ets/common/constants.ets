@@ -5,8 +5,8 @@ import { deviceInfo } from "@kit.BasicServicesKit";
 export const mainPage = new URL("https://dashboard.rayawa.top")
 
 export const TBaseURL = new URL("https://hmos.txit.top/");
-export const SBaseURL = new URL("http://ddns.shenjack.top:10003/");
-export const EguiBaseURL = new URL("http://ddns.shenjack.top:10003/egui/");
+export const SBaseURL = new URL("https://ddns.shenjack.top:10003/");
+export const EguiBaseURL = new URL("https://ddns.shenjack.top:10003/egui/");
 
 // 友情链接
 export const HapStoreURL = new URL("https://hdc.osbdf.com/");
@@ -19,6 +19,7 @@ export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
 export const APP_VERSION: string = "2.0.2";
 export const APP_BUNDLE_NAME: string = "top.rayawa.dashboard"
 export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
+export const SAPIReportURL = new URL("/telemtry/report", SAPIBaseURL);
 export const telemetryReportURL = new URL("", SBaseURL)
 
 // UA

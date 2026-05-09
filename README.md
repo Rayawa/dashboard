@@ -295,8 +295,8 @@
 当前代码中定义的主站点位于 [`entry/src/main/ets/common/constants.ets`](/Users/raychen/Develop/HarmonyOS/Dashboard/dashboard/entry/src/main/ets/common/constants.ets)：
 
 - `https://hmos.txit.top/`
-- `http://shenjack.top:10003/`
-- `http://shenjack.top:10003/egui/`
+- `https://shenjack.top:10003/`
+- `https://shenjack.top:10003/egui/`
 
 如需切换环境或替换站点，优先修改这里。
 
