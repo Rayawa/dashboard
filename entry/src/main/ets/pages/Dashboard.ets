@@ -26,8 +26,10 @@ import {
     customUserAgent,
     FullDeviceInfo,
     ONLY_ID,
-    SAPIBaseURL, SBaseURL, SUBMIT_PLATFORM, TBaseURL,
-    telemetryReportURL } from '../common/constants';
+    SBaseURL,
+    SUBMIT_PLATFORM,
+    TBaseURL
+} from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
@@ -35,7 +37,12 @@ import { preferences } from '@kit.ArkData';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
 import { warn } from '../component/warn';
-import type { BaseAPIResponse, TelemetryIngestResponse, TelemetryReportBody, TelemetryDeviceInfo } from '../common/types';
+import type {
+    BaseAPIResponse,
+    TelemetryDeviceInfo,
+    TelemetryIngestResponse,
+    TelemetryReportBody
+} from '../common/types';
 import { http } from '@kit.NetworkKit';
 import {
     getButtonPosition,
@@ -67,7 +74,7 @@ async function report_user_telemetry(
         event_name,
         device_info: new FullDeviceInfo() as TelemetryDeviceInfo,
     };
-    const path = "http://ddns.shenjack.top:10003/api/v0/telemetry/report";
+    const path = "https://ddns.shenjack.top:10003/api/v0/telemetry/report";
     const request = http.createHttp();
 
     try {
@@ -109,7 +116,7 @@ async function report_user_telemetry(
         return null;
 
     } catch (e) {
-        console.error("Network/Request Error:", JSON.stringify(e));
+        console.error("Network/Request Error:", e);
         return null;
     } finally {
         request.destroy();
@@ -971,7 +978,7 @@ struct Dashboard {
                                     if(this.vibrationON) vibration.dotVibration()
 
                                     if(this.showWarn){
-                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
                                         return;
                                     }
                                     this.showTutorial = true;
@@ -987,7 +994,7 @@ struct Dashboard {
                                     if(this.vibrationON) vibration.dotVibration()
 
                                     if(this.showWarn){
-                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
                                         return;
                                     }
                                     const activeCtrl = this.getActiveController();
@@ -1004,7 +1011,7 @@ struct Dashboard {
                                 action: () => {
                                     if(this.vibrationON) vibration.dotVibration()
                                     if(this.showWarn){
-                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
                                         return;
                                     }
                                     let index = this.pageStack.getIndexByName("UserPage");
