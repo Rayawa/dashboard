@@ -37,7 +37,7 @@ export struct contact {
                 this.ContactItem("👥 主要负责人", "shenjack", "邮箱：3695888@qq.com", "3695888@qq.com", "邮箱")
                 this.ContactItem("🌐 T站网页负责人", "tianxiu2b2t", "邮箱：administrator@ttb-network.top", "administrator@ttb-network.top", "邮箱")
                 this.ContactItem("📱 鸿蒙应用开发", "清霁·Rayawa", "邮箱：rayawa.work@outlook.com", "rayawa.work@outlook.com", "邮箱")
-                this.ContactItem("💬 QQ群", "Harmony Gallery 官方交流群", "群号：757273833", "757273833", "群号")
+                this.ContactItem("💬 QQ群", "Harmony Dashboard官方交流群", "群号：757273833", "757273833", "群号")
 
                 Column({ space: 4 }) {
                     Text("❤️ 赞助我们").fontSize(17).fontWeight(FontWeight.Bold)

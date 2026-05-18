@@ -2,8 +2,8 @@
   "string": [
     {
       "name": "app_name",
-      "value": "Hm应用看板",
-      "module_desc": "Hm应用看板"
+      "value": "Dashboard应用看板",
+      "module_desc": "Dashboard应用看板"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 HarmonyOS front-end repository. The overall project is a multi-platform application ecosystem powered by a Rust back end, including HarmonyOS, iOS, Android and Web editions; this repository contains only the HarmonyOS front end.
 
-The current application bundle name is `top.rayawa.dashboard`, the current version is `2.0.0`, and the main module uses the HarmonyOS Stage model.
+The current application bundle name is `top.rayawa.dashboard`, the current version is `2.0.3`, and the main module uses the HarmonyOS Stage model.
 
 [![HarmonyOS API](https://img.shields.io/badge/HarmonyOS-API%2012%2B-blue)](#)
 [![Languages](https://img.shields.io/badge/Language-ArkTS%20%7C%20Rust-orange)](#)

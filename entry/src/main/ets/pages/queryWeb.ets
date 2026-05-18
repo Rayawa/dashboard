@@ -441,7 +441,6 @@ struct queryEntry {
         console.info("成功接收到 URL: " + this.url);
       }
     })
-
     .titleBar({
       style: {
         scrollEffectOpts: {
