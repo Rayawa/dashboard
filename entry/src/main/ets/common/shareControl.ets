@@ -53,7 +53,7 @@ export class WebShareManager {
       let shareData: systemShare.SharedData = new systemShare.SharedData({
         utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
         content: finalUrl,
-        title: "Hm应用看板链接分享",
+        title: "应用看板链接分享",
         description: finalUrl,
         thumbnail: iconData
       });
@@ -120,7 +120,7 @@ export class WebShareManager {
     const shareData = new systemShare.SharedData({
       utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
       content: this.currentUrl,
-      title: "Hm应用看板链接分享",
+      title: "应用看板链接分享",
       description: this.currentUrl,
     });
 

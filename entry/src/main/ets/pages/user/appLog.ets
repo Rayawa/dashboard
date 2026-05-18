@@ -20,6 +20,15 @@ struct appLog {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     private updateLogs: UpdateLog[] = [
         {
+            version: "V2.0.4",
+            date: "2026-5-13",
+            type: "release",
+            isRelease: true,
+            items: [
+                "将应用显示名称从Hm应用看板更换至Dashboard应用看板"
+            ],
+        },
+        {
             version: "V2.0.3",
             date: "2026-5-9",
             type: "release",
@@ -36,8 +45,7 @@ struct appLog {
             type: "release",
             isRelease: true,
             items: [
-                "修复了特定网络环境下访问不到S站的问题",
-                "修复分享到看板查询页面不加载到严重bug",
+                "修复分享到看板查询页面不加载的严重bug",
                 "调整了UA",
                 "更新隐私协议，增加了对于用户数据访问的声明"
             ],

@@ -409,7 +409,6 @@ struct Dashboard {
         }
     }
 
-
     onBackGround() {
         harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
             sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
@@ -964,7 +963,7 @@ struct Dashboard {
             },
             content: {
                 title: {
-                    mainTitle: "Hm应用看板",
+                    mainTitle: "Dashboard应用看板",
                     mainTitleSize: TitleSize.TITLE_S,
                 },
                 menu: {

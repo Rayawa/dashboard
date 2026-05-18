@@ -51,7 +51,7 @@ struct about {
                 .height(100)
                 .width(100)
                 .borderRadius($r("sys.float.corner_radius_level6"))
-              Text("Hm应用看板")
+              Text("Dashboard应用看板")
                 .fontWeight(800)
                 .fontSize(30)
                 .margin({ top: 20 })

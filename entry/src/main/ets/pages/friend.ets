@@ -53,6 +53,7 @@ struct friend {
   ];
   @State private friendApps: AppConfig[] = [
     { icon: $r('app.media.subscription'), appID: 'C6917594526782928388', title: '记得订阅' },
+    { icon: $r('app.media.zhiyu'), appID: 'C6917600807866515662', title: '纸语' },
   ];
   @State private OtherSites: SiteConfig[] = [
     { icon: $r('app.media.AGstatistics'), url: AGstatisticsURL.toString(), title: 'AppGallery统计数据' },
@@ -138,8 +139,8 @@ struct friend {
               .fontWeight(700)
               .fontSize(20)
               .fontColor(Color.Red)
-            Text("友情链接内网站展示的任何内容均与Hm应用看板无关；\n" +
-              "Harmony Gallery项目组不负责维护友情链接内容。")
+            Text("友情链接内网站展示的任何内容均与应用看板无关；\n" +
+              "Harmony Dashboard项目组不负责维护友情链接内容。")
               .fontWeight(600)
               .fontSize(15)
               .margin({ top: 15 })
@@ -156,7 +157,7 @@ struct friend {
             .margin({ top: 20, bottom: 20 })
             .color($r("app.color.border"))
 
-          Text("使用Harmony Gallery数据的站点").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+          Text("使用Harmony Dashboard数据的站点").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           List() {
             ForEach(this.friendSites, (site: SiteConfig) => {
               ListItem() { this.webLists(site) }
@@ -172,7 +173,7 @@ struct friend {
             .margin({ top: 20, bottom: 20 })
             .color($r("app.color.border"))
 
-          Text("使用Harmony Gallery数据的应用").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+          Text("使用Harmony Dashboard数据的应用").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
           List() {
             ForEach(this.friendApps, (app: AppConfig) => {
               ListItem() { this.appLists(app) }
