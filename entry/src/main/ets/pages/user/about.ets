@@ -1,12 +1,13 @@
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
-import { APP_VERSION } from '../../common/constants';
+import { APP_VERSION, SBaseURL, TBaseURL } from '../../common/constants';
 import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { warn } from '../../component/warn';
 import { blurPopup } from '../../component/blurPopup';
+import URL from '../../common/url';
 
 export class WebViewParam {
   url: string | Resource;
@@ -50,7 +51,7 @@ struct about {
                 .height(100)
                 .width(100)
                 .borderRadius($r("sys.float.corner_radius_level6"))
-              Text("鸿蒙应用看板")
+              Text("Dashboard应用看板")
                 .fontWeight(800)
                 .fontSize(30)
                 .margin({ top: 20 })
@@ -95,7 +96,8 @@ struct about {
                 icon: $r("app.media.api"),
                 title: "API文档说明",
                 onClickAction: () =>{
-                  let param = new WebViewParam('http://shenjack.top:10003/docs', 'API文档说明');
+                  const APIURL = new URL("docs", SBaseURL)
+                  let param = new WebViewParam(APIURL.toString(), 'API文档说明');
                   this.pageStack.pushPathByName("AboutWebPage", param);
                 }
               })
@@ -106,7 +108,8 @@ struct about {
                 icon: $r("app.media.log"),
                 title: "Web更新日志",
                 onClickAction: () =>{
-                  let param = new WebViewParam('https://hmos.txit.top/changelog', 'Web更新日志');
+                  const changeLogURL = new URL("changelog", TBaseURL)
+                  let param = new WebViewParam(changeLogURL.toString(), 'Web更新日志');
                   this.pageStack.pushPathByName("AboutWebPage", param);
                 }
               })

@@ -2,7 +2,7 @@
 
 Dépôt du front-end HarmonyOS. Le projet global est un écosystème multi-plateforme piloté par un back end Rust, comprenant des éditions HarmonyOS, iOS, Android et Web ; ce dépôt ne contient que le front-end HarmonyOS.
 
-Le nom de bundle actuel de l'application est `top.rayawa.dashboard`, la version actuelle est `2.0.0`, et le module principal utilise le modèle Stage de HarmonyOS.
+Le nom de bundle actuel de l'application est `top.rayawa.dashboard`, la version actuelle est `2.0.3`, et le module principal utilise le modèle Stage de HarmonyOS.
 
 [![HarmonyOS API](https://img.shields.io/badge/HarmonyOS-API%2012%2B-blue)](#)
 [![Languages](https://img.shields.io/badge/Language-ArkTS%20%7C%20Rust-orange)](#)
@@ -257,8 +257,8 @@ Cette couche fournit la logique métier partagée et les capacités de base util
 Les constantes des sites principaux actuellement définies dans le code se trouvent dans [`entry/src/main/ets/common/constants.ets`](/Users/raychen/Develop/HarmonyOS/Dashboard/dashboard/entry/src/main/ets/common/constants.ets) :
 
 - `https://hmos.txit.top/`
-- `http://shenjack.top:10003/`
-- `http://shenjack.top:10003/egui/`
+- `https://shenjack.top:10003/`
+- `https://shenjack.top:10003/egui/`
 
 Si vous devez changer d'environnement ou remplacer des sites, commencez par modifier ce fichier.
 

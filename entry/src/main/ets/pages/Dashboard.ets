@@ -20,7 +20,16 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
-import { customUserAgent, RBaseURL, SBaseURL, TBaseURL } from '../common/constants';
+import {
+    APP_BUNDLE_NAME,
+    APP_VERSION,
+    customUserAgent,
+    FullDeviceInfo,
+    ONLY_ID,
+    SBaseURL,
+    SUBMIT_PLATFORM,
+    TBaseURL
+} from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
@@ -28,6 +37,13 @@ import { preferences } from '@kit.ArkData';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
 import { tutorial } from '../component/tutorial';
 import { warn } from '../component/warn';
+import type {
+    BaseAPIResponse,
+    TelemetryDeviceInfo,
+    TelemetryIngestResponse,
+    TelemetryReportBody
+} from '../common/types';
+import { http } from '@kit.NetworkKit';
 import {
     getButtonPosition,
     getHoldCheckEnabled,
@@ -44,6 +60,67 @@ interface SiteConfig {
     url: string;
     label: string;
     icon: Resource;
+}
+
+async function report_user_telemetry(
+    event_name: string = customUserAgent,
+): Promise<BaseAPIResponse<TelemetryIngestResponse> | null> {
+    const final_data: TelemetryReportBody = {
+        app_id: APP_BUNDLE_NAME,
+        only_id: ONLY_ID,
+        app_version: APP_VERSION,
+        submit_platform: SUBMIT_PLATFORM,
+        custom_user_agent: customUserAgent,
+        event_name,
+        device_info: new FullDeviceInfo() as TelemetryDeviceInfo,
+    };
+    const path = "https://ddns.shenjack.top:10003/api/v0/telemetry/report";
+    const request = http.createHttp();
+
+    try {
+        const dataString = JSON.stringify(final_data);
+        const response = await request.request(path.toString(), {
+            method: http.RequestMethod.POST,
+            header: { "Content-Type": "application/json", "User-Agent": customUserAgent },
+            extraData: dataString,
+            expectDataType: http.HttpDataType.STRING,
+            usingCache: false,
+            connectTimeout: 10000,
+            readTimeout: 10000,
+        });
+        console.info(`Status: ${response.responseCode}`);
+        if (response.responseCode === 200 && response.result) {
+            const rawResult = response.result;
+            try {
+                if (typeof rawResult === 'string') {
+                    if (!rawResult.trim()) {
+                        console.error("Error: Received empty string");
+                        return null;
+                    }
+                    return JSON.parse(rawResult) as BaseAPIResponse<TelemetryIngestResponse>;
+                }
+                return rawResult as BaseAPIResponse<TelemetryIngestResponse>;
+            } catch (parseError) {
+                console.error(`JSON Parse Failed. Raw Content: ${rawResult}`);
+                console.error(`Parse Error Detail: ${parseError.message}`);
+                return null;
+            }
+        }else {
+            console.error(`Error Status: ${response.responseCode}`);
+            console.error(`Error Detail from Server: ${response.result}`);
+            if (typeof response.result !== 'string') {
+                console.error(`Error Detail JSON: ${JSON.stringify(response.result)}`);
+            }
+        }
+        console.warn(`Request failed with code: ${response.responseCode}`);
+        return null;
+
+    } catch (e) {
+        console.error("Network/Request Error:", e);
+        return null;
+    } finally {
+        request.destroy();
+    }
 }
 
 @Entry
@@ -84,12 +161,12 @@ struct Dashboard {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     @StorageLink("showWarn") showWarn: boolean = false;
     @State holdCheckTMP: boolean = false;
+    private hasReportedTelemetry: boolean = false;
 
     //Web控制
     @State private sitesList: SiteConfig[] = [
-        { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
-        { key: 'R', url: RBaseURL.toString(), label: 'R站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
     ];
     @State private url: string = Array.from(this.sitesList.values())[0].url;
     @State private siteIndex: number = 0;
@@ -250,6 +327,14 @@ struct Dashboard {
                 `UserAgent Error, ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`,
             );
         }
+        if (!this.hasReportedTelemetry) {
+            this.hasReportedTelemetry = true;
+            try {
+                report_user_telemetry(customUserAgent);
+            } catch (error) {
+                console.warn(`report telemetry failed: ${error}`);
+            }
+        }
         //用户名
         this.loadUserName();
         //握持监听
@@ -323,7 +408,6 @@ struct Dashboard {
             console.error("Motion off failed: " + error.code);
         }
     }
-
 
     onBackGround() {
         harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
@@ -879,7 +963,7 @@ struct Dashboard {
             },
             content: {
                 title: {
-                    mainTitle: "鸿蒙应用看板",
+                    mainTitle: "Dashboard应用看板",
                     mainTitleSize: TitleSize.TITLE_S,
                 },
                 menu: {
@@ -893,7 +977,7 @@ struct Dashboard {
                                     if(this.vibrationON) vibration.dotVibration()
 
                                     if(this.showWarn){
-                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
                                         return;
                                     }
                                     this.showTutorial = true;
@@ -909,7 +993,7 @@ struct Dashboard {
                                     if(this.vibrationON) vibration.dotVibration()
 
                                     if(this.showWarn){
-                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
                                         return;
                                     }
                                     const activeCtrl = this.getActiveController();
@@ -926,7 +1010,7 @@ struct Dashboard {
                                 action: () => {
                                     if(this.vibrationON) vibration.dotVibration()
                                     if(this.showWarn){
-                                        this.PromptAction.showToast({ message: "请先阅读重要提示！" })
+                                        this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
                                         return;
                                     }
                                     let index = this.pageStack.getIndexByName("UserPage");

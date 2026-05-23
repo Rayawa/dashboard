@@ -1,8 +1,8 @@
-# 鸿蒙应用看板 (HmDashbaord)
+# Dashboard应用看板 (HmDashbaord)
 
-**HmDashboard** 是一款专为 HarmonyOS 设计的实时分布式应用数据看板。本项目由 **Harmony Gallery** 项目组驱动，旨在通过直观的图表与多维度的搜索功能，实时展示华为应用市场的应用下载统计、评分趋势及市场分布。
+**HmDashboard** 是一款专为 HarmonyOS 设计的实时分布式应用数据看板。本项目由 **Harmony Dashboard** 项目组驱动，旨在通过直观的图表与多维度的搜索功能，实时展示华为应用市场的应用下载统计、评分趋势及市场分布。
 
-应用包名为 `top.rayawa.dashboard`，当前最新版本为 `2.0.0`（历史版本见其他分支），主模块采用 HarmonyOS Stage 模型开发。
+应用包名为 `top.rayawa.dashboard`，当前最新版本为 `2.0.3`（历史版本见其他分支），主模块采用 HarmonyOS Stage 模型开发。
 
 
 [![HarmonyOS API](https://img.shields.io/badge/HarmonyOS-API%2012%2B-blue)](#)
@@ -295,8 +295,8 @@
 当前代码中定义的主站点位于 [`entry/src/main/ets/common/constants.ets`](/Users/raychen/Develop/HarmonyOS/Dashboard/dashboard/entry/src/main/ets/common/constants.ets)：
 
 - `https://hmos.txit.top/`
-- `http://shenjack.top:10003/`
-- `http://shenjack.top:10003/egui/`
+- `https://shenjack.top:10003/`
+- `https://shenjack.top:10003/egui/`
 
 如需切换环境或替换站点，优先修改这里。
 

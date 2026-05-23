@@ -48,8 +48,6 @@ struct queryEntry {
   @State isLoading: boolean = false;
 
   //动画与振动
-
-
   private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
       .combine(TransitionEffect.scale({ x: 0, y: 0 }))
@@ -443,7 +441,6 @@ struct queryEntry {
         console.info("成功接收到 URL: " + this.url);
       }
     })
-
     .titleBar({
       style: {
         scrollEffectOpts: {

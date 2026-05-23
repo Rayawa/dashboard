@@ -15,7 +15,7 @@ export struct warn {
             Text("重要提示").fontSize(24).fontColor(Color.Red).fontWeight(FontWeight.Bold).margin({ bottom: 5 })
 
             Column() {
-                Text("Harmony Gallery数据来源于网络。\n不保证来源准确性、完整性和真实性，仅供参考。").fontSize(14).fontColor(Color.Red).fontWeight(FontWeight.Medium).margin({ bottom: 12 })
+                Text("Harmony Dashboard数据来源于网络。\n不保证来源准确性、完整性和真实性，仅供参考。").fontSize(14).fontColor(Color.Red).fontWeight(FontWeight.Medium).margin({ bottom: 12 })
                 Text("详情查看：项目总网页").fontSize(14).decoration({ type: TextDecorationType.Underline, color: Color.Blue }).fontColor(Color.Blue).margin({ left: 5 , top: 10 ,bottom: 20 })
                     .onClick(async () => {
                         if(this.vibrationON) vibration.dotVibration()

@@ -1,7 +1,9 @@
 import { vibration } from '../common/vibration';
 import { PromptAction } from '@kit.ArkUI';
-import type { FormData } from '../common/types';
-import { submit_app } from '../common/api';
+import type { AppDetailInfo, BaseAPIResponse, CommentInfo, FormData, SubmitAppBody } from '../common/types';
+import { SAPIBaseURL, SUBMIT_PLATFORM,  } from '../common/constants';
+import URL from '../common/url';
+import { http } from '@kit.NetworkKit';
 
 interface Scale {
     x: number;
@@ -13,6 +15,48 @@ interface ButtonAnimationState {
     immediatelyScale: Scale;
     delayOpacity: number;
     delayScale: Scale;
+}
+
+export async function submit_app(
+    data: SubmitAppBody,
+): Promise<BaseAPIResponse<AppDetailInfo> | null> {
+    const final_comment: CommentInfo = {
+        user: data.comment?.user,
+        note: data.comment?.note,
+        platform: SUBMIT_PLATFORM,
+    };
+    const final_data: SubmitAppBody = {
+        app_id: data.app_id,
+        pkg_name: data.pkg_name,
+        comment: final_comment,
+    };
+    console.log("submit data:", JSON.stringify(final_data));
+    const path = new URL("submit", SAPIBaseURL);
+    const request = http.createHttp();
+    try {
+        const response = await request.request(path.toString(), {
+            method: http.RequestMethod.POST,
+            expectDataType: http.HttpDataType.OBJECT,
+            usingCache: false,
+            header: {
+                "Content-Type": "application/json",
+            },
+            extraData: final_data,
+        });
+        console.info(`request response code: ${response.responseCode}`);
+        const res: object =
+            typeof response.result === "string" ? JSON.parse(response.result) : response.result;
+        try {
+            return res as BaseAPIResponse<AppDetailInfo>;
+        } catch (e) {
+            return null;
+        }
+    } catch (e) {
+        console.warn(`error ${e}`);
+    } finally {
+        request.destroy();
+    }
+    return null;
 }
 
 @Component
@@ -349,7 +393,7 @@ export struct submitButtons {
                             return;
                         }
                         this._cleanLastClick = now;
-                                if(this.vibrationON) vibration.dotVibration()
+                        if(this.vibrationON) vibration.dotVibration()
                         this.clearForm();
                     })
             }
@@ -376,7 +420,7 @@ export struct submitButtons {
                             return;
                         }
                         this._submitLastClick = now;
-                                if(this.vibrationON) vibration.dotVibration()
+                        if(this.vibrationON) vibration.dotVibration()
                         this.submitForm();
                     })
             }
