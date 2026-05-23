@@ -1,0 +1,69 @@
+{
+	"summary": {
+		"app": {
+			"bundleName": "top.rayawa.dashboard",
+			"bundleType": "app",
+			"version": {
+				"code": 20000256,
+				"name": "2.1.0"
+			}
+		},
+		"modules": [
+			{
+				"mainAbility": "EntryAbility",
+				"deviceType": [
+					"phone",
+					"tablet",
+					"2in1"
+				],
+				"abilities": [
+					{
+						"name": "EntryAbility"
+					},
+					{
+						"name": "submitEntryAbility",
+						"label": "$string:shareEntryAbility_label"
+					},
+					{
+						"name": "queryEntryAbility",
+						"label": "$string:queryEntryAbility_label"
+					}
+				],
+				"extensionAbilities": [
+					{
+						"name": "query_ability"
+					},
+					{
+						"name": "simple_share_ability"
+					},
+					{
+						"name": "complex_share_ability"
+					}
+				],
+				"distro": {
+					"moduleType": "entry",
+					"installationFree": false,
+					"deliveryWithInstall": true,
+					"moduleName": "entry"
+				},
+				"apiVersion": {
+					"compatible": 23,
+					"releaseType": "Release",
+					"target": 23
+				}
+			}
+		]
+	},
+	"packages": [
+		{
+			"deviceType": [
+				"phone",
+				"tablet",
+				"2in1"
+			],
+			"moduleType": "entry",
+			"deliveryWithInstall": true,
+			"name": "entry-default"
+		}
+	]
+}
