@@ -16,7 +16,7 @@ export const OpenStoreURL = new URL("https://next.betahub.tech/");
 export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
 
 // dev
-export const APP_VERSION: string = "2.0.3";
+export const APP_VERSION: string = "2.1.0";
 export const APP_BUNDLE_NAME: string = "top.rayawa.dashboard"
 export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
 export const SAPIReportURL = new URL("/telemtry/report", SAPIBaseURL);

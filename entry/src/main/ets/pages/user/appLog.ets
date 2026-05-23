@@ -20,12 +20,13 @@ struct appLog {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     private updateLogs: UpdateLog[] = [
         {
-            version: "V2.0.4",
+            version: "V2.1.0",
             date: "2026-5-13",
             type: "release",
             isRelease: true,
             items: [
-                "将应用显示名称从Hm应用看板更换至Dashboard应用看板"
+                "将应用显示名称从Hm应用看板更换至Dashboard应用看板",
+                "更新隐私协议"
             ],
         },
         {
