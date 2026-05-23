@@ -18,13 +18,13 @@
         "name": "debug",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "/Users/raychen/Develop/HarmonyOS/DevEco-Studio/#certificate/auto_debug_30086000648404249.cer.cer",
+          "certpath": "/Users/raychen/.ohos/config/debug_dashboard_iw3QP0bl7e1PTc8StWWGAwGkr-tPPACCIcDySgAUiCU=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001BB354FE5848B1EE0239D810CC7C830B7EB69319C83701F8A829783DF0BF25C206EDCB9C359532CD",
-          "profile": "/Users/raychen/Develop/HarmonyOS/DevEco-Studio/#certificate/RayawaRelease.p7b",
+          "keyPassword": "0000001B465CAF5E56753066669E4FAD4C2FBB790C53824D97C59CF8EE969A85F538E1D84EF1E58DB7A729",
+          "profile": "/Users/raychen/.ohos/config/debug_dashboard_iw3QP0bl7e1PTc8StWWGAwGkr-tPPACCIcDySgAUiCU=.p7b",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "/Users/raychen/.ohos/config/debug_dashboard_NWCDtxt8jtpwqF6xo4I-XJJy7wlnaU4uYW_EuNOPi0U=.p12",
-          "storePassword": "0000001B62A728778CC029043E4E3518C55C034D7A66E6AAC52668F8606B6FF97EE59A07AB437A8F6A608A"
+          "storeFile": "/Users/raychen/.ohos/config/debug_dashboard_iw3QP0bl7e1PTc8StWWGAwGkr-tPPACCIcDySgAUiCU=.p12",
+          "storePassword": "0000001BA0016C31C645B63F645E72D174110B180EA7F0D0F45E12808E6DFAEB66EBA25BE6D88CF18D0725"
         }
       }
     ],

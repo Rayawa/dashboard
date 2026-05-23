@@ -23,7 +23,7 @@ export struct tutorial {
         Swiper() {
             // 欢迎页面
             Column() {
-                Text("欢迎来到鸿蒙应用看板")
+                Text("欢迎来到Dashboard应用看板")
                     .fontSize(24)
                     .fontColor($r("app.color.diff_content"))
                     .fontWeight(FontWeight.Bold)
@@ -53,7 +53,7 @@ export struct tutorial {
                     })
 
                 Text(
-                    "本应用是由Harmony Gallery项目组直接参与编写的鸿蒙应用。应用收集华为应用市场的公开数据，转化为直观的图表与报告。简单来说，您能在这里查看几乎所有鸿蒙应用的动态。\n" +
+                    "本应用是由Harmony Dashboard项目组直接参与编写的鸿蒙应用。应用收集华为应用市场的公开数据，转化为直观的图表与报告。简单来说，您能在这里查看几乎所有鸿蒙应用的动态。\n" +
                         " 1. 数据总览与图表分析：\n   通过榜单、饼图与折线图，直观查看应用下载量、评分趋势与市场分布。\n" +
                         " 2. 搜索应用与查看详情：\n   支持按名称、评分等条件搜索排序、应用内搜索应用、分享链接搜索应用。您可查看各种应用数据与趋势图。\n" +
                         " 3. 数据定时自动更新：\n    后台每30分钟同步一次数据，确保您始终获取最新数据。\n" +
@@ -183,7 +183,7 @@ export struct tutorial {
                     .fontWeight(FontWeight.Bold)
                     .margin({ bottom: 20 })
                 Text("  您可以在主界面访问友情链接。友情链接页面内点击地球仪图标可以在浏览器内访问页面。\n").fontSize(14)
-                Text("  友情链接内网站展示的任何内容均与鸿蒙应用看板无关，Harmony Gallery项目组不负责维护友情链接内容。").fontSize(14).fontColor($r('app.color.diff_content')).margin({ bottom: 20 })
+                Text("  友情链接内网站展示的任何内容均与应用看板无关，Harmony Dashboard项目组不负责维护友情链接内容。").fontSize(14).fontColor($r('app.color.diff_content')).margin({ bottom: 20 })
                 Text("  1. 链接分享：在主界面或任意应用详情页点击分享按钮分享当前页面链接。\n\n").fontSize(14)
                 Text("  2. 碰一碰分享：在任意界面使用碰一碰分享将当前页面链接分享给其他HarmonyOS设备。\n",).fontSize(14)
                 KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone })

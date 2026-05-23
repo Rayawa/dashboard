@@ -2,7 +2,7 @@
 
 HarmonyOS front-end repository. The overall project is a multi-platform application ecosystem powered by a Rust back end, including HarmonyOS, iOS, Android and Web editions; this repository contains only the HarmonyOS front end.
 
-The current application bundle name is `top.rayawa.dashboard`, the current version is `2.0.0`, and the main module uses the HarmonyOS Stage model.
+The current application bundle name is `top.rayawa.dashboard`, the current version is `2.0.3`, and the main module uses the HarmonyOS Stage model.
 
 [![HarmonyOS API](https://img.shields.io/badge/HarmonyOS-API%2012%2B-blue)](#)
 [![Languages](https://img.shields.io/badge/Language-ArkTS%20%7C%20Rust-orange)](#)
@@ -257,8 +257,8 @@ This layer provides cross-page business logic and foundational capabilities.
 The main site constants defined in the current code are in [`entry/src/main/ets/common/constants.ets`](/Users/raychen/Develop/HarmonyOS/Dashboard/dashboard/entry/src/main/ets/common/constants.ets):
 
 - `https://hmos.txit.top/`
-- `http://shenjack.top:10003/`
-- `http://shenjack.top:10003/egui/`
+- `https://shenjack.top:10003/`
+- `https://shenjack.top:10003/egui/`
 
 If you need to switch environments or replace sites, update this file first.
 

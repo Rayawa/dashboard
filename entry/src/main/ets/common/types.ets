@@ -1,5 +1,3 @@
-import { SBaseURL, TBaseURL, TBaseURLDev } from "./constants";
-
 export interface CommentInfo {
     platform?: string;
     user?: string;
@@ -13,6 +11,58 @@ export interface appIdOrPkgName {
 
 export interface SubmitAppBody extends appIdOrPkgName {
     comment?: CommentInfo;
+}
+
+export interface TelemetryDeviceInfo {
+    device_type: string;
+    manufacture: string;
+    brand: string;
+    market_name: string;
+    product_series: string;
+    product_model: string;
+    product_model_alias: string;
+    software_model: string;
+    hardware_model: string;
+    bootloader_version: string;
+    abi_list: string;
+    security_patch_tag: string;
+    display_version: string;
+    incremental_version: string;
+    os_release_type: string;
+    os_full_name: string;
+    sdk_api_version: number;
+    first_api_version: number;
+    version_id: string;
+    build_type: string;
+    build_user: string;
+    build_host: string;
+    build_time: string;
+    build_root_hash: string;
+    distribution_os_name: string;
+    distribution_os_version: string;
+    distribution_os_api_version: number;
+    distribution_os_api_name: string;
+    distribution_os_release_type: string;
+    performance_class: string;
+    chip_type: string;
+}
+
+export interface TelemetryReportBody {
+    app_id: string;
+    only_id: string;
+    app_version: string;
+    submit_platform?: string;
+    custom_user_agent?: string;
+    event_name?: string;
+    device_info: TelemetryDeviceInfo;
+}
+
+export interface TelemetryIngestResponse {
+    accepted: boolean;
+    new_user: boolean;
+    app_id: string;
+    event_name: string;
+    reported_at: string;
 }
 
 export function checkAppIdOrPkgName(value: appIdOrPkgName, raise_error: boolean = false): boolean {
