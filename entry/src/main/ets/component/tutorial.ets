@@ -24,7 +24,7 @@ export struct tutorial {
             // 欢迎页面
             Column() {
                 Text("欢迎来到Dashboard应用看板")
-                    .fontSize(24)
+                    .fontSize(23)
                     .fontColor($r("app.color.diff_content"))
                     .fontWeight(FontWeight.Bold)
                     .margin({ bottom: 20 })
@@ -77,7 +77,7 @@ export struct tutorial {
             // 主界面部分
             Column() {
                 Text("主界面")
-                    .fontSize(24)
+                    .fontSize(23)
                     .fontColor($r("app.color.diff_content"))
                     .fontWeight(FontWeight.Bold)
                     .margin({ bottom: 20 })
@@ -110,7 +110,7 @@ export struct tutorial {
             // 投稿与查询功能
             Column() {
                 Text("投稿与查询功能")
-                    .fontSize(24)
+                    .fontSize(23)
                     .fontColor($r("app.color.diff_content"))
                     .fontWeight(FontWeight.Bold)
                     .margin({ bottom: 20 })
@@ -178,7 +178,7 @@ export struct tutorial {
             // 分享功能与友情链接
             Column() {
                 Text("友情链接与分享功能")
-                    .fontSize(24)
+                    .fontSize(23)
                     .fontColor($r("app.color.diff_content"))
                     .fontWeight(FontWeight.Bold)
                     .margin({ bottom: 20 })

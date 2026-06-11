@@ -267,7 +267,7 @@ export struct queryButtons {
 
   @State isSearching: boolean = false;
   @State isCleaning: boolean = false;
-  private readonly BUTTON_WIDTH: string = "30%";
+  private readonly BUTTON_WIDTH: string = "35%";
   private readonly BUTTON_HEIGHT: number = 44;
   private readonly BUTTON_CLICK_SCALE: number = 0.8;
   private readonly ANIMATION_DURATION: number = 1300;
