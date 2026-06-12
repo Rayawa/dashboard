@@ -26,6 +26,7 @@ struct appLog {
             isRelease: true,
             items: [
                 "将应用显示名称从Hm应用看板更换至Dashboard应用看板",
+                "更新部分UI",
                 "更新隐私协议"
             ],
         },
