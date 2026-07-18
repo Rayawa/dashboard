@@ -132,9 +132,9 @@ struct Dashboard {
     @State navMode: NavigationMode = NavigationMode.Stack;
     private toggleSplitMode(isSplit: boolean) {
         const FIXED_RIGHT_WIDTH = 423;
-        if (isSplit && this.WVp >= FIXED_RIGHT_WIDTH*  2) {
+        if (isSplit && this.getUIContext().px2vp(this.winWidth) >= FIXED_RIGHT_WIDTH*  2) {
             this.navMode = NavigationMode.Split;
-            let targetLeftWidth = this.WVp - FIXED_RIGHT_WIDTH;
+            let targetLeftWidth = this.getUIContext().px2vp(this.winWidth) - FIXED_RIGHT_WIDTH;
             animateTo({
                 curve: curves.springMotion(0.4, 0.8),
                 duration: 400
@@ -206,8 +206,8 @@ struct Dashboard {
             this.unsubscribeHoldingHand();
         }
     }
-    @State WVp: number = 376;
-    @State HVp: number = 376;
+    @StorageLink('winWidth') winWidth: number = 1260;
+    @StorageLink('winHeight') winHeight: number = 2224;
     @State buttonY: number = 300;
     @State private isRightHand: boolean = false;
     @State private funcTranslateX: number = 0;
@@ -382,12 +382,6 @@ struct Dashboard {
     private shareManager?: WebShareManager;
     private context = getContext(this) as common.UIAbilityContext;
     async aboutToAppear() {
-        //获取屏幕尺寸
-        const displayInfo = display.getDefaultDisplaySync();
-        const screenWidthVp = px2vp(displayInfo.width);
-        const screenHeightVp = px2vp(displayInfo.height);
-        this.WVp = screenWidthVp;
-        this.HVp = screenHeightVp;
         //初始化设置内容
         initializeSettings();
         await this.loadSettings();
@@ -439,21 +433,21 @@ struct Dashboard {
             }
         }
         console.log("currentUsername",this.userName)
-        if(!this.showWarn){
-            if(!this.showTutorial ){
-                if(this.userName == '' || this.userName == deviceInfo.productModel){
-                    console.info("currentUsername_pop!!")
-                    setTimeout(() => {
-                        this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
-                        this.isSnackBarShow = true;
-                        this.snackTimer = -1;
-                    },3000)
-                    this.isSnackBarShow = false;
-                } else {
-                    console.info("currentUsername_set")
-                }
-            }
-        }
+        // if(!this.showWarn){
+        //     if(!this.showTutorial){
+        //         if(this.userName == '' || this.userName == deviceInfo.productModel){
+        //             console.info("currentUsername_pop!!")
+        //             setTimeout(() => {
+        //                 this.isSnackBarShow = true;
+        //                 this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
+        //                 this.snackTimer = -1;
+        //             },3000)
+        //             this.isSnackBarShow = false;
+        //         } else {
+        //             console.info("currentUsername_set")
+        //         }
+        //     }
+        // }
         //年龄分级
         let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
             console.info('callback succeeded, ageGroup:' + data.ageGroup + ", confidence:" + data.confidence);
@@ -474,7 +468,7 @@ struct Dashboard {
         if (this.lockBarTimer !== -1) { clearTimeout(this.lockBarTimer); this.lockBarTimer = -1; }
         if (this.scrollTimer !== -1) { clearTimeout(this.scrollTimer); this.scrollTimer = -1; }
         this.unsubscribeHoldingHand(); // 取消订阅握持手
-        this.hdsSnackBar.dismiss(); // 取消snack
+        // this.hdsSnackBar.dismiss(); // 取消snack
         this.shareManager?.disablePassiveShare(); // 取消分享
         const hostContext = this.context;
         hostContext.eventHub.off("onFocus");
@@ -500,9 +494,9 @@ struct Dashboard {
     private readonly waitTime: number = 2000;
     onBackPress(): boolean | void {
         if(this.vibrationON) vibration.dotVibration()
-        if (this.isSnackBarShow) {
-            this.hdsSnackBar.dismiss();
-        }
+        // if (this.isSnackBarShow) {
+        //     // this.hdsSnackBar.dismiss();
+        // }
         if (this.showTutorial) {
             this.showTutorial = false;
             console.info("关闭教程");
@@ -520,7 +514,7 @@ struct Dashboard {
         if (this.pageStack.size() > 0) {
             this.pageStack.pop();
             if (this.pageStack.size() === 0) {
-                this.toggleSplitMode(false);
+                setTimeout(() => { this.toggleSplitMode(false); }, 480);
             }
             return true;
         }
@@ -536,23 +530,23 @@ struct Dashboard {
     }
 
     //==========================主程序部分==========================
-    private uiContext: UIContext = this.getUIContext();
-    private hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
-    private icon: SnackBarIconOptions = {
-        icon: $r('sys.symbol.rename')
-    }
-    private message: SnackBarMessageOptions = {
-        title: "您还未设置用户名",
-        content: "前往我的页面设置用户名"
-    }
-    private operation: SnackBarOperationOptions = {
-        operationType: SnackBarOperationType.TEXT_WITH_CLOSE,
-    }
-    private style: SnackBarStyleOptions = {
-        backgroundBlurStyle: BlurStyle.Thin,
-        nextFocusId: 'button',
-        duration: 7999
-    }
+    // private uiContext: UIContext = this.getUIContext();
+    // private hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
+    // private icon: SnackBarIconOptions = {
+    //     icon: $r('sys.symbol.rename')
+    // }
+    // private message: SnackBarMessageOptions = {
+    //     title: "您还未设置用户名",
+    //     content: "前往我的页面设置用户名"
+    // }
+    // private operation: SnackBarOperationOptions = {
+    //     operationType: SnackBarOperationType.TEXT_WITH_CLOSE,
+    // }
+    // private style: SnackBarStyleOptions = {
+    //     backgroundBlurStyle: BlurStyle.Thin,
+    //     nextFocusId: 'button',
+    //     duration: 7999
+    // }
     @Builder
     PageMap(name: string) {
         if (name === "UserPage") {
@@ -838,7 +832,7 @@ struct Dashboard {
                         .borderRadius(22.5)
                     }
                     .position({
-                        x: this.isRightHand ? (this.WVp - 45 - 8) : 8,
+                        x: this.isRightHand ? (this.getUIContext().px2vp(this.winWidth) - 45 - 8) : 8,
                         y: this.buttonY
                     })
                     .translate({ x: this.funcTranslateX, y: 0 })
@@ -849,12 +843,24 @@ struct Dashboard {
                             SwipeGesture({ direction: SwipeDirection.Horizontal })
                                 .onAction((move: GestureEvent | undefined) => {
                                     if (move) {
-                                        this.showButton = false;
-                                        setTimeout(() => {
-                                            this.buttonAnimationTimer = -1;
-                                        }, 300);
+                                        const offset = this.isRightHand ? 120 : -120;
+                                        animateTo({
+                                            duration: 300,
+                                            curve: Curve.FastOutSlowIn,
+                                            onFinish: () => {
+                                                this.showButton = false;
+                                                this.funcTranslateX = 0;
+                                                this.funcOpacity = 1;
+                                                this.funcScale = 1;
+                                            }
+                                        }, () => {
+                                            this.funcTranslateX = offset;
+                                            this.funcOpacity = 0;
+                                            this.funcScale = 0.8;
+                                        });
                                     }
                                 }),
+
                             PanGesture({ direction: PanDirection.Vertical })
                                 .onActionStart(() => {
                                     if (this.holdCheckON) {
@@ -866,7 +872,7 @@ struct Dashboard {
                                 .onActionUpdate((event: GestureEvent) => {
                                     let nextY = this.startY + event.offsetY;
                                     const topLimit = 100;
-                                    const bottomLimit = this.HVp - 140;
+                                    const bottomLimit = this.getUIContext().px2vp(this.winHeight) - 140;
                                     if (nextY > bottomLimit) {
                                         nextY = bottomLimit;
                                     } else if (nextY < topLimit) {
@@ -880,7 +886,7 @@ struct Dashboard {
                                         this.holdCheckTMP = false;
                                     }
                                     const topLimit = 100;
-                                    const bottomLimit = this.HVp - 140;
+                                    const bottomLimit = this.getUIContext().px2vp(this.winHeight) - 140;
                                     if (this.buttonY >= bottomLimit) {
                                         this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
                                     } else if (this.buttonY <= topLimit) {
@@ -894,23 +900,61 @@ struct Dashboard {
                     Column()
                         .backgroundColor(Color.Transparent)
                         .height("100%")
-                        .width(15)
+                        .width(20)
                         .zIndex(5)
                         .position({ x: 0, y: 0 })
-                        .onClick(() => {
-                            this.showButton = true;
-                            if(this.vibrationON) vibration.dotVibration()
-                        });
+                        .gesture(
+                            TapGesture()
+                                .onAction((event: GestureEvent) => {
+                                    this.showButton = true;
+                                    const touchY = event.fingerList[0].localY - 50;
+                                    const topLimit = 100;
+                                    const bottomLimit = this.getUIContext().px2vp(this.winHeight) - 140;
+                                    this.buttonY = Math.min(Math.max(touchY, topLimit), bottomLimit);
+
+                                    const offset = this.isRightHand ? 120 : -120;
+                                    this.funcTranslateX = offset;
+                                    this.funcOpacity = 0;
+                                    this.funcScale = 0.8;
+                                    setTimeout(() => {
+                                        animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                                            this.funcTranslateX = 0;
+                                            this.funcOpacity = 1;
+                                            this.funcScale = 1;
+                                        });
+                                    }, 0);
+                                    if (this.vibrationON)  vibration.dotVibration();
+                                })
+                        );
                     Column()
                         .backgroundColor(Color.Transparent)
                         .height("100%")
-                        .width(15)
+                        .width(20)
                         .zIndex(5)
-                        .position({ x: this.WVp - 20, y: 0 })
-                        .onClick(() => {
-                            this.showButton = true;
-                            if(this.vibrationON) vibration.dotVibration()
-                        });
+                        .position({ x: this.getUIContext().px2vp(this.winWidth) - 20, y: 0 })
+                        .gesture(
+                            TapGesture()
+                                .onAction((event: GestureEvent) => {
+                                    this.showButton = true;
+                                    const touchY = event.fingerList[0].localY - 50;
+                                    const topLimit = 100;
+                                    const bottomLimit = this.getUIContext().px2vp(this.winHeight) - 140;
+                                    this.buttonY = Math.min(Math.max(touchY, topLimit), bottomLimit);
+
+                                    const offset = this.isRightHand ? 120 : -120;
+                                    this.funcTranslateX = offset;
+                                    this.funcOpacity = 0;
+                                    this.funcScale = 0.8;
+                                    setTimeout(() => {
+                                        animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                                            this.funcTranslateX = 0;
+                                            this.funcOpacity = 1;
+                                            this.funcScale = 1;
+                                        });
+                                    }, 0);
+                                    if (this.vibrationON)  vibration.dotVibration();
+                                })
+                        );
                 }
                 if (this.tabBarAutoON && !this.isTabsBarVisible) {
                     Column()
@@ -918,7 +962,7 @@ struct Dashboard {
                         .height(50)
                         .width("100%")
                         .zIndex(5)
-                        .position({ y: this.HVp - 50 })
+                        .position({ y: this.getUIContext().px2vp(this.winHeight) - 50 })
                         .onClick(() => {
                             if (this.lockBar) return;
                             animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
@@ -1092,7 +1136,7 @@ struct Dashboard {
                                         this.pageStack.removeByName("UserPage");
                                         this.toggleSplitMode(false);
                                     } else {
-                                        if (this.WVp >= 600) {
+                                        if (this.getUIContext().px2vp(this.winWidth) >= 600) {
                                             this.toggleSplitMode(true);
                                         }
                                         this.pageStack.pushPathByName("UserPage", null);
