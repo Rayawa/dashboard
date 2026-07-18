@@ -26,12 +26,23 @@
         "continuable": true,
         "skills": [
           {
+            "entities": ["top.rayawa.dashboard"],
+            "actions": ["ohos.want.action.view"]
+          },
+          {
             "entities": ["entity.system.home"],
             "actions": ["ohos.want.action.home"]
           },
           {
-            "entities": ["top.rayawa.dashboard"],
-            "actions": ["ohos.want.action.view"]
+            "entities": ["entity.system.browsable"],
+            "actions": ["ohos.want.action.viewData"],
+            "uris": [
+              {
+                "scheme": "https",
+                "host": "dashboard.rayawa.top",
+              }
+            ],
+            "domainVerify": true
           }
         ]
       },

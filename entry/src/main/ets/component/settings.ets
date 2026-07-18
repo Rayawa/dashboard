@@ -68,25 +68,28 @@ export struct settings {
             })
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
-            SettingItem({
-                icon: $r("app.media.button"),
-                title: "按钮默认位置",
-                isOn: this.buttonPositionRIGHT,
-                both: true,
-                offText: "左",
-                onText: "右",
-                onToggle: async (val) => { await setButtonPosition(val); this.buttonPositionRIGHT = val; }
-            })
-            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
-            SettingItem({
-                icon: $r("app.media.hand"),
-                title: "按钮智感握持",
-                isOn: this.holdCheckON,
-                promptMsg: "󰗫适人握持󰗫",
-                onToggle: async (val) => { await setHoldCheckEnabled(val); this.holdCheckON = val; }
-            })
-            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+            if(canIUse('SystemCapability.MultimodalAwareness.Motion')){
+                SettingItem({
+                    icon: $r("app.media.button"),
+                    title: "按钮默认位置",
+                    isOn: this.buttonPositionRIGHT,
+                    both: true,
+                    offText: "左",
+                    onText: "右",
+                    onToggle: async (val) => { await setButtonPosition(val); this.buttonPositionRIGHT = val; }
+                })
+                Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
+                SettingItem({
+                    icon: $r("app.media.hand"),
+                    title: "按钮智感握持",
+                    isOn: this.holdCheckON,
+                    promptMsg: "󰗫适人握持󰗫",
+                    onToggle: async (val) => { await setHoldCheckEnabled(val); this.holdCheckON = val; }
+                })
+                Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+            }
 
             SettingItem({
                 icon: $r("app.media.autoBar"),

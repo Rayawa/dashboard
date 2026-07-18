@@ -19,7 +19,7 @@ import { common } from '@kit.AbilityKit';
 
 @Entry
 @Component
-struct queryWeb {
+struct continueWeb {
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   private shareManager?: WebShareManager;
   private context = getContext(this) as common.UIAbilityContext;
