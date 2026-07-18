@@ -131,17 +131,15 @@ struct Dashboard {
     @State private navBarWidth: string | number = '100%';
     @State navMode: NavigationMode = NavigationMode.Stack;
     private toggleSplitMode(isSplit: boolean) {
-        if (isSplit && this.WVp >= 600) {
+        const FIXED_RIGHT_WIDTH = 423;
+        if (isSplit && this.WVp >= FIXED_RIGHT_WIDTH*  2) {
             this.navMode = NavigationMode.Split;
-            let calculatedWidth = this.WVp - 390;
-            if (calculatedWidth < 360) {
-                calculatedWidth = 360;
-            }
+            let targetLeftWidth = this.WVp - FIXED_RIGHT_WIDTH;
             animateTo({
                 curve: curves.springMotion(0.4, 0.8),
                 duration: 400
             }, () => {
-                this.navBarWidth = calculatedWidth;
+                this.navBarWidth = targetLeftWidth;
             })
         } else {
             animateTo({
@@ -259,6 +257,7 @@ struct Dashboard {
                 motion.on('holdingHandChanged', this.holdingHandCallback);
                 console.info('成功订阅握持手状态变化');
             } else {
+                this.buttonPositionRIGHT = false;
                 console.warn('当前设备不支持智感握持能力');
             }
         } catch (e) {
@@ -298,7 +297,6 @@ struct Dashboard {
     private getActiveController(): webview.WebviewController {
         return this.controllers[this.siteIndex] || this.controller_S;
     }
-    @StorageLink('pageUrl') pageUrl: string = SBaseURL.toString();
     @StorageLink('scrollDistance') currentDistance: number = 0;
 
     @State progress: number = 0;
