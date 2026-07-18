@@ -129,14 +129,29 @@ struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
     PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @State navBarWidth: string | number = '100%';
-
+    @State navMode: NavigationMode = NavigationMode.Stack;
     private toggleSplitMode(isSplit: boolean) {
-        animateTo({
-            curve: curves.springMotion(0.4, 0.8),
-            duration: 400
-        }, () => {
-            this.navBarWidth = isSplit ? (this.WVp - 390) : '100%';
-        })
+        if (isSplit && this.WVp >= 600) {
+            this.navMode = NavigationMode.Split;
+            let calculatedWidth = this.WVp - 390;
+            if (calculatedWidth < 360) {
+                calculatedWidth = 360;
+            }
+            animateTo({
+                curve: curves.springMotion(0.4, 0.8),
+                duration: 400
+            }, () => {
+                this.navBarWidth = calculatedWidth;
+            })
+        } else {
+            animateTo({
+                curve: curves.springMotion(0.4, 0.8),
+                duration: 400
+            }, () => {
+                this.navBarWidth = '100%';
+            })
+            this.navMode = NavigationMode.Stack;
+        }
     }
     //控制相关
     @State showButton: boolean = true;
@@ -435,25 +450,13 @@ struct Dashboard {
     }
 
     async onPageShow(): Promise<void> {
-        this.buttonOnPageShow = false;
         this.checkFirstLaunch();
         this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE, (result) => {
             console.info('setMissionContinueState ACTIVE result: ', JSON.stringify(result));
         });
-        this.buttonPositionRIGHT = await getButtonPosition();
-        if(this.buttonPositionRIGHT){
-            this.buttonShowX = this.WVp - 45 - 10;
-            this.buttonHideX = this.WVp + 10;
-        } else {
-            this.buttonShowX = 10;
-            this.buttonHideX = -45 - 10;
-        }
-        setTimeout(() => {
-            this.buttonOnPageShow = true;
-        }, 500);
         console.log("currentUsername",this.userName)
-        if( !this.showWarn ){
-            if( !this.showTutorial ){
+        if(!this.showWarn){
+            if(!this.showTutorial ){
                 if(this.userName == '' || this.userName == deviceInfo.productModel){
                     console.info("currentUsername_pop!!")
                     setTimeout(() => {
@@ -980,7 +983,7 @@ struct Dashboard {
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         }
         .backgroundColor($r('app.color.backcolor'))
-        .mode(NavigationMode.Auto)
+        .mode(this.navMode)
         .navBarWidth(this.navBarWidth)
         .navDestination(this.PageMap)
         .width("100%")
@@ -1093,10 +1096,13 @@ struct Dashboard {
                                     }
                                     let index = this.pageStack.getIndexByName("UserPage");
                                     if (index.length > 0) {
-                                        this.pageStack.moveToTop("UserPage");
+                                        this.pageStack.removeByName("UserPage");
+                                        this.toggleSplitMode(false);
                                     } else {
+                                        if (this.WVp >= 600) {
+                                            this.toggleSplitMode(true);
+                                        }
                                         this.pageStack.pushPathByName("UserPage", null);
-                                        this.toggleSplitMode(true);
                                     }
                                 },
                             },
