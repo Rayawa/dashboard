@@ -127,8 +127,8 @@ async function report_user_telemetry(
 @Component
 struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
-    PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @State navBarWidth: string | number = '100%';
+    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    @State private navBarWidth: string | number = '100%';
     @State navMode: NavigationMode = NavigationMode.Stack;
     private toggleSplitMode(isSplit: boolean) {
         if (isSplit && this.WVp >= 600) {
@@ -157,7 +157,6 @@ struct Dashboard {
     @State showButton: boolean = true;
     @State barMargin: number = 28;
     @State lockBar: boolean = false;
-    @State buttonOnPageShow: boolean = false;
     private lastOffset: number = 0;
     @State isTabsBarVisible: boolean = true;
     @State showTutorial: boolean = false;
@@ -212,9 +211,6 @@ struct Dashboard {
     @State WVp: number = 376;
     @State HVp: number = 376;
     @State buttonY: number = 300;
-    @State buttonShowX: number = 10;
-    @State buttonHideX: number = -25 - 10;
-    @State showButtonAnimation: boolean = true;
     @State private isRightHand: boolean = false;
     @State private funcTranslateX: number = 0;
     @State private funcScale: number = 1;
@@ -281,6 +277,9 @@ struct Dashboard {
         }
     }
     private hasReportedTelemetry: boolean = false;
+    private snackTimer: number = -1; // snack定时器管理
+    private buttonAnimationTimer: number = -1; // 按钮动画定时器管理
+    private lockBarTimer: number = -1; // 滑动手势定时器管理
     //Web控制
     @State private sitesList: SiteConfig[] = [
         { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
@@ -319,12 +318,22 @@ struct Dashboard {
             console.error("SyncData", "Controller not ready yet");
         }
     }
-
-    private effect: TransitionEffect = TransitionEffect.OPACITY.combine(
+    private readonly effect: TransitionEffect = TransitionEffect.OPACITY.combine(
         TransitionEffect.move(TransitionEdge.BOTTOM),
     )
         .combine(TransitionEffect.scale({ x: 0, y: 1 }))
         .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
+
+    private scrollTimer: number = -1;
+    private pendingScrollDistance: number = 0;
+    private updateScrollDistance(offset: number) {
+        this.pendingScrollDistance = offset;
+        if (this.scrollTimer !== -1) return;
+        this.scrollTimer = setTimeout(() => {
+            AppStorage.setOrCreate('scrollDistance', this.pendingScrollDistance);
+            this.scrollTimer = -1;
+        }, 100);
+    }
 
     //==========================页面生命周期部分==========================
     //entry
@@ -332,9 +341,9 @@ struct Dashboard {
     private async checkFirstLaunch(): Promise<void> {
         try {
             let context = getContext(this) as common.UIAbilityContext;
-            let prefs = await preferences.getPreferences(context, "myAppSettings");
+            let preference = await preferences.getPreferences(context, "myAppSettings");
 
-            let isFirstLaunch = await prefs.get(this.IS_FIRST_LAUNCH_KEY, true);
+            let isFirstLaunch = await preference.get(this.IS_FIRST_LAUNCH_KEY, true);
 
             if (isFirstLaunch === true) {
                 console.info("Index", "检测到首次启动，准备弹出协议。");
@@ -368,33 +377,13 @@ struct Dashboard {
             this.buttonPositionRIGHT = await getButtonPosition();
             this.tabBarAutoON = await getTabBarAuto();
             this.immersiveTextureON = await getImmersiveTexture();
-            if(this.buttonPositionRIGHT){
-                this.buttonShowX = this.WVp - 45 - 10;
-                this.buttonHideX = this.WVp + 10;
-            } else {
-                this.buttonShowX = 10;
-                this.buttonHideX = -45 - 10;
-            }
         } catch (error) {
             console.error("加载设置失败:", error);
         }
     }
     private shareManager?: WebShareManager;
     private context = getContext(this) as common.UIAbilityContext;
-    @State isContinuation: boolean = false;
     async aboutToAppear() {
-        this.buttonOnPageShow = false;
-        //年龄分级
-        let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
-            console.info('callback succeeded, ageGroup:' + data.ageGroup + ", confidence:" + data.confidence);
-        };
-        try {
-            userStatus.on('userAgeGroupDetected', callback);
-            console.info("on succeeded");
-        } catch (err) {
-            let error = err as BusinessError;
-            console.error("Failed on and err code is " + error.code);
-        }
         //获取屏幕尺寸
         const displayInfo = display.getDefaultDisplaySync();
         const screenWidthVp = px2vp(displayInfo.width);
@@ -404,7 +393,14 @@ struct Dashboard {
         //初始化设置内容
         initializeSettings();
         await this.loadSettings();
+        this.loadUserName();
         console.info(`握持手状态开始${this.holdCheckON}`);
+        try {
+            motion.on("holdingHandChanged", this.holdingHandCallback);
+        } catch (err) {
+            const error = err as BusinessError;
+            console.error("订阅失败，错误码: " + error.code);
+        }
         this.isRightHand = this.buttonPositionRIGHT;
         if (this.holdCheckON) this.subscribeHoldingHand();
         //UA
@@ -418,24 +414,6 @@ struct Dashboard {
                 `UserAgent Error, ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`,
             );
         }
-        if (!this.hasReportedTelemetry) {
-            this.hasReportedTelemetry = true;
-            try {
-                report_user_telemetry(customUserAgent);
-            } catch (error) {
-                console.warn(`report telemetry failed: ${error}`);
-            }
-        }
-        //用户名
-        this.loadUserName();
-        //握持监听
-        try {
-            motion.on("holdingHandChanged", this.holdingHandCallback);
-        } catch (err) {
-            const error = err as BusinessError;
-            console.error("订阅失败，错误码: " + error.code);
-        }
-
         //分享
         const context = getContext(this) as common.UIAbilityContext;
         this.shareManager = WebShareManager.getInstance(context);
@@ -454,6 +432,14 @@ struct Dashboard {
         this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE, (result) => {
             console.info('setMissionContinueState ACTIVE result: ', JSON.stringify(result));
         });
+        if (!this.hasReportedTelemetry) {
+            this.hasReportedTelemetry = true;
+            try {
+                report_user_telemetry(customUserAgent);
+            } catch (error) {
+                console.warn(`report telemetry failed: ${error}`);
+            }
+        }
         console.log("currentUsername",this.userName)
         if(!this.showWarn){
             if(!this.showTutorial ){
@@ -462,6 +448,7 @@ struct Dashboard {
                     setTimeout(() => {
                         this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
                         this.isSnackBarShow = true;
+                        this.snackTimer = -1;
                     },3000)
                     this.isSnackBarShow = false;
                 } else {
@@ -469,12 +456,28 @@ struct Dashboard {
                 }
             }
         }
+        //年龄分级
+        let callback : Callback<userStatus.UserClassification> = (data : userStatus.UserClassification) => {
+            console.info('callback succeeded, ageGroup:' + data.ageGroup + ", confidence:" + data.confidence);
+        };
+        try {
+            userStatus.on('userAgeGroupDetected', callback);
+            console.info("on succeeded");
+        } catch (err) {
+            let error = err as BusinessError;
+            console.error("Failed on and err code is " + error.code);
+        }
     }
 
     aboutToDisappear() {
-        this.unsubscribeHoldingHand();
-        this.hdsSnackBar.dismiss();
-        this.shareManager?.disablePassiveShare();
+        // 清理计时器
+        if (this.snackTimer !== -1) { clearTimeout(this.snackTimer); this.snackTimer = -1; }
+        if (this.buttonAnimationTimer !== -1) { clearTimeout(this.buttonAnimationTimer); this.buttonAnimationTimer = -1; }
+        if (this.lockBarTimer !== -1) { clearTimeout(this.lockBarTimer); this.lockBarTimer = -1; }
+        if (this.scrollTimer !== -1) { clearTimeout(this.scrollTimer); this.scrollTimer = -1; }
+        this.unsubscribeHoldingHand(); // 取消订阅握持手
+        this.hdsSnackBar.dismiss(); // 取消snack
+        this.shareManager?.disablePassiveShare(); // 取消分享
         const hostContext = this.context;
         hostContext.eventHub.off("onFocus");
         hostContext.eventHub.off("onBackGround");
@@ -482,7 +485,7 @@ struct Dashboard {
             sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
         });
         try {
-            motion.off("holdingHandChanged", this.holdingHandCallback);
+            motion.off("holdingHandChanged", this.holdingHandCallback); // 取消握持手订阅
         } catch (err) {
             const error = err as BusinessError;
             console.error("Motion off failed: " + error.code);
@@ -496,7 +499,7 @@ struct Dashboard {
     }
     //自定义返回逻辑
     @State firstBackTime: number = 0;
-    private waitTime: number = 2000;
+    private readonly waitTime: number = 2000;
     onBackPress(): boolean | void {
         if(this.vibrationON) vibration.dotVibration()
         if (this.isSnackBarShow) {
@@ -535,19 +538,19 @@ struct Dashboard {
     }
 
     //==========================主程序部分==========================
-    uiContext: UIContext = this.getUIContext();
-    hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
-    icon: SnackBarIconOptions = {
+    private uiContext: UIContext = this.getUIContext();
+    private hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
+    private icon: SnackBarIconOptions = {
         icon: $r('sys.symbol.rename')
     }
-    message: SnackBarMessageOptions = {
+    private message: SnackBarMessageOptions = {
         title: "您还未设置用户名",
         content: "前往我的页面设置用户名"
     }
-    operation: SnackBarOperationOptions = {
+    private operation: SnackBarOperationOptions = {
         operationType: SnackBarOperationType.TEXT_WITH_CLOSE,
     }
-    style: SnackBarStyleOptions = {
+    private style: SnackBarStyleOptions = {
         backgroundBlurStyle: BlurStyle.Thin,
         nextFocusId: 'button',
         duration: 7999
@@ -619,9 +622,7 @@ struct Dashboard {
                                 }
                             }
                         })
-                        .onScroll((event) => {
-                            AppStorage.setOrCreate('scrollDistance', event.yOffset);
-                        })
+                        .onScroll((event) => { this.updateScrollDistance(event.yOffset); })
                         .onRefreshAccessedHistory(() => {
                             try {
                                 const activeCtrl: webview.WebviewController = this.getActiveController();
@@ -692,10 +693,6 @@ struct Dashboard {
                 .onChange((index: number) => {
                     if(this.vibrationON) vibration.dotVibration()
                     this.siteIndex = index;
-                    preferences.getPreferences(this.context, 'myStore').then((pref) => {
-                        pref.putSync('defaultSite', index);
-                        pref.flush();
-                    });
                     this.syncShareData();
                 })
                 .animation({ curve: curves.springMotion(0.8, 0.8), duration: 400 })
@@ -717,7 +714,7 @@ struct Dashboard {
                 })
 
                 // ==========================悬浮按钮==========================
-                if (this.buttonOnPageShow) {
+                if (this.showButton) {
                     Column({ space: 10 }) {
                         Button() {
                             Image($r("app.media.arrow_up"))
@@ -815,6 +812,7 @@ struct Dashboard {
                                             duration: 1000,
                                         });
                                     }
+                                    this.buttonAnimationTimer = -1;
                                 }, 3000);
                             }
                         })
@@ -855,7 +853,7 @@ struct Dashboard {
                                     if (move) {
                                         this.showButton = false;
                                         setTimeout(() => {
-                                            this.showButtonAnimation = false;
+                                            this.buttonAnimationTimer = -1;
                                         }, 300);
                                     }
                                 }),
@@ -865,7 +863,6 @@ struct Dashboard {
                                         this.holdCheckON = false;
                                         this.holdCheckTMP = true;
                                     }
-                                    this.showButtonAnimation = false;
                                     this.startY = this.buttonY;
                                 })
                                 .onActionUpdate((event: GestureEvent) => {
@@ -880,7 +877,6 @@ struct Dashboard {
                                     this.buttonY = nextY;
                                 })
                                 .onActionEnd(() => {
-                                    this.showButtonAnimation = true;
                                     if (this.holdCheckTMP) {
                                         this.holdCheckON = true;
                                         this.holdCheckTMP = false;
@@ -904,7 +900,6 @@ struct Dashboard {
                         .zIndex(5)
                         .position({ x: 0, y: 0 })
                         .onClick(() => {
-                            this.showButtonAnimation = true;
                             this.showButton = true;
                             if(this.vibrationON) vibration.dotVibration()
                         });
@@ -915,7 +910,6 @@ struct Dashboard {
                         .zIndex(5)
                         .position({ x: this.WVp - 20, y: 0 })
                         .onClick(() => {
-                            this.showButtonAnimation = true;
                             this.showButton = true;
                             if(this.vibrationON) vibration.dotVibration()
                         });
@@ -937,6 +931,7 @@ struct Dashboard {
                             this.lockBar = true;
                             setTimeout(() => {
                                 this.lockBar = false;
+                                this.lockBarTimer = -1;
                             }, 1000);
                         });
                 }

@@ -7,7 +7,7 @@ import { mainPage } from '../common/constants';
 @Component
 export struct tutorial {
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     private currentIndex: number = 0;
     private readonly cardSwiperResourcesPhone: CardRes[] = [
         {

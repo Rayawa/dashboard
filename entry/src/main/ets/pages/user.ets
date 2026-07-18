@@ -16,7 +16,7 @@ import { mainPage } from '../common/constants';
 export struct user {
     @Consume('pageStack') pageStack: NavPathStack;
     onCloseSplit?: () => void;
-    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
 
@@ -53,7 +53,6 @@ export struct user {
         await setUsername(undefined);
         await this.loadUserName();
     }
-
 
     build() {
         HdsNavDestination() {

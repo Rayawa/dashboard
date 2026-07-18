@@ -8,7 +8,7 @@ export struct blurPopup {
 
   @StorageLink("vibrationON") vibrationON: boolean = true;
 
-  private effect: TransitionEffect = TransitionEffect.OPACITY.combine(
+  private readonly effect: TransitionEffect = TransitionEffect.OPACITY.combine(
     TransitionEffect.move(TransitionEdge.BOTTOM),
   )
     .combine(TransitionEffect.scale({ x: 0, y: 1 }))

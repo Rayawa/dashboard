@@ -24,7 +24,7 @@ export struct HTML {
     }
   }
   @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
-  PromptAction: PromptAction = this.getUIContext().getPromptAction();
+  private PromptAction: PromptAction = this.getUIContext().getPromptAction();
 
   private async closePage() {
     this.PromptAction.showDialog({

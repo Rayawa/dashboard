@@ -15,7 +15,7 @@ interface UpdateLog {
 @Component
 struct appLog {
     @Consume('pageStack') pageStack: NavPathStack;
-    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     private updateLogs: UpdateLog[] = [
@@ -26,6 +26,7 @@ struct appLog {
             isRelease: true,
             items: [
                 "更新智感握持动画，现在按钮不会从屏幕中间经过",
+                "优化了主页面的性能，减少卡顿的同时修复了分享可能会导致应用崩溃的问题",
                 "修复手机端用户界面侧滑返回会直接退出应用的问题，并强化了所有返回逻辑",
                 "修复特定平板设备上展开用户界面分栏时内容显示的问题",
                 "修复特定设备上用户界面无法打开的问题",

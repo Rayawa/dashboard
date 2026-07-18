@@ -5,7 +5,7 @@ import { vibration } from '../common/vibration';
 
 @Component
 export struct contact {
-    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
 
     @Builder ContactItem(title: string, name: string, detail: string, copyContent: string, toastLabel: string) {

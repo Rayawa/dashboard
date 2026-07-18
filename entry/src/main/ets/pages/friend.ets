@@ -25,7 +25,7 @@ interface AppConfig {
 @Component
 struct friend {
   @Consume('pageStack') pageStack: NavPathStack;
-  PromptAction: PromptAction = this.getUIContext().getPromptAction();
+  private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
   private isExiting: boolean = false;
