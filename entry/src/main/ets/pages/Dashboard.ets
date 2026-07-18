@@ -155,14 +155,117 @@ struct Dashboard {
     @State isSnackBarShow: boolean = false;
     private controller: HdsTabsController = new HdsTabsController();
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    @StorageLink("holdCheckON") holdCheckON: boolean = false;
-    @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
+    @StorageLink("buttonPositionRIGHT") @Watch("onButtonPositionChanged") buttonPositionRIGHT: boolean = false;
+    onButtonPositionChanged() {
+        const targetRight = this.buttonPositionRIGHT;
+        if (targetRight === this.isRightHand) {
+            return;
+        }
+        this.lastSwitchTime = Date.now();
+        animateTo({
+            duration: 200,
+            curve: Curve.FastOutSlowIn,
+            onFinish: () => {
+                this.isRightHand = targetRight;
+                this.funcTranslateX = targetRight ? 120 : -120;
+                animateTo({
+                    duration: 300,
+                    curve: curves.springMotion(0.4, 0.8)
+                }, () => {
+                    this.funcTranslateX = 0;
+                    this.funcScale = 1;
+                    this.funcOpacity = 1;
+                });
+            }
+        }, () => {
+            this.funcTranslateX = this.isRightHand ? 120 : -120;
+            this.funcScale = 0.3;
+            this.funcOpacity = 0;
+        });
+    }
     @StorageLink("tabBarAutoON") tabBarAutoON: boolean = true;
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     @StorageLink("showWarn") showWarn: boolean = false;
-    @State holdCheckTMP: boolean = false;
+    @StorageLink("holdCheckON") @Watch("onHoldCheckChanged") holdCheckON: boolean = false;
+    onHoldCheckChanged() {
+        if (this.holdCheckON) {
+            this.subscribeHoldingHand();
+        } else {
+            this.unsubscribeHoldingHand();
+        }
+    }
+    @State WVp: number = 376;
+    @State HVp: number = 376;
+    @State buttonY: number = 300;
+    @State buttonShowX: number = 10;
+    @State buttonHideX: number = -25 - 10;
+    @State showButtonAnimation: boolean = true;
+    @State private isRightHand: boolean = false;
+    @State private funcTranslateX: number = 0;
+    @State private funcScale: number = 1;
+    @State private funcOpacity: number = 1;
+    @State private holdCheckTMP: boolean = false;
+    private lastSwitchTime: number = 0;
+    private holdingHandCallback: Callback<motion.HoldingHandStatus> | null = null;
+    subscribeHoldingHand() {
+        if (this.holdingHandCallback !== null) {
+            return;
+        }
+        try {
+            if (canIUse('SystemCapability.MultimodalAwareness.Motion')) {
+                this.holdingHandCallback = (data: motion.HoldingHandStatus) => {
+                    const isNowRightHand = data === motion.HoldingHandStatus.RIGHT_HAND_HELD;
+                    if (isNowRightHand !== this.isRightHand) {
+                        const currentTime = Date.now();
+                        if (currentTime - this.lastSwitchTime >= 2000) {
+                            this.lastSwitchTime = currentTime;
+                            animateTo({
+                                duration: 200,
+                                curve: Curve.FastOutSlowIn,
+                                onFinish: () => {
+                                    this.isRightHand = isNowRightHand;
+                                    this.funcTranslateX = isNowRightHand ? 120 : -120;
+                                    animateTo({
+                                        duration: 300,
+                                        curve: curves.springMotion(0.4, 0.8)
+                                    }, () => {
+                                        this.funcTranslateX = 0;
+                                        this.funcScale = 1;
+                                        this.funcOpacity = 1;
+                                    });
+                                }
+                            }, () => {
+                                this.funcTranslateX = this.isRightHand ? 120 : -120;
+                                this.funcScale = 0.3;
+                                this.funcOpacity = 0;
+                            });
+                        } else {
+                            console.info('未满2秒，拦截频繁握持手势切换');
+                        }
+                    }
+                    console.info(`握持手状态变化: ${data}`);
+                };
+                motion.on('holdingHandChanged', this.holdingHandCallback);
+                console.info('成功订阅握持手状态变化');
+            } else {
+                console.warn('当前设备不支持智感握持能力');
+            }
+        } catch (e) {
+            console.error('订阅握持手状态变化失败:', e);
+        }
+    }
+    unsubscribeHoldingHand() {
+        if (this.holdingHandCallback !== null) {
+            try {
+                motion.off('holdingHandChanged', this.holdingHandCallback);
+                this.holdingHandCallback = null;
+                console.info('已成功取消订阅握持手状态变化');
+            } catch (e) {
+                console.error('取消订阅握持手状态变化失败:', e);
+            }
+        }
+    }
     private hasReportedTelemetry: boolean = false;
-
     //Web控制
     @State private sitesList: SiteConfig[] = [
         { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
@@ -202,36 +305,6 @@ struct Dashboard {
         }
     }
 
-    //智感握持
-    @State WVp: number = 376;
-    @State HVp: number = 376;
-    @State buttonY: number = 300;
-    @State buttonShowX: number = 10;
-    @State buttonHideX: number = -25 - 10;
-    @State showButtonAnimation: boolean = true;
-    holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
-        if (this.holdCheckON) {
-            switch (data) {
-                case 1: // 左手握持
-                    this.buttonShowX = 10;
-                    this.buttonHideX = -45 - 10;
-                    break;
-                case 2: // 右手握持
-                    this.buttonShowX = this.WVp - 45 - 10;
-                    this.buttonHideX = this.WVp + 10;
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
-    //动画与振动
-    private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
-        TransitionEffect.OPACITY
-            .combine(TransitionEffect.scale({ x: 0, y: 0 }))
-            .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),
-        TransitionEffect.IDENTITY
-    );
     private effect: TransitionEffect = TransitionEffect.OPACITY.combine(
         TransitionEffect.move(TransitionEdge.BOTTOM),
     )
@@ -316,6 +389,9 @@ struct Dashboard {
         //初始化设置内容
         initializeSettings();
         await this.loadSettings();
+        console.info(`握持手状态开始${this.holdCheckON}`);
+        this.isRightHand = this.buttonPositionRIGHT;
+        if (this.holdCheckON) this.subscribeHoldingHand();
         //UA
         try {
             webview.WebviewController.initializeWebEngine();
@@ -393,6 +469,7 @@ struct Dashboard {
     }
 
     aboutToDisappear() {
+        this.unsubscribeHoldingHand();
         this.hdsSnackBar.dismiss();
         this.shareManager?.disablePassiveShare();
         const hostContext = this.context;
@@ -438,7 +515,6 @@ struct Dashboard {
         }
         if (this.pageStack.size() > 0) {
             this.pageStack.pop();
-
             if (this.pageStack.size() === 0) {
                 this.toggleSplitMode(false);
             }
@@ -489,7 +565,6 @@ struct Dashboard {
         }
     }
     @Builder Web(site: SiteConfig, ctrl: webview.WebviewController) {
-
         Stack() {
             if (this.isLoading) {
                 Progress({ value: this.progress, total: 100 })
@@ -639,7 +714,7 @@ struct Dashboard {
                 })
 
                 // ==========================悬浮按钮==========================
-                if(this.buttonOnPageShow){
+                if (this.buttonOnPageShow) {
                     Column({ space: 10 }) {
                         Button() {
                             Image($r("app.media.arrow_up"))
@@ -663,7 +738,7 @@ struct Dashboard {
                                 yOffset: 0,
                                 animation: { duration: 300, curve: Curve.Ease },
                             });
-                            if(this.vibrationON) vibration.dotVibration()
+                            if (this.vibrationON) vibration.dotVibration()
                             this.PromptAction.showToast({
                                 message: "回到顶部",
                                 duration: 500,
@@ -690,7 +765,6 @@ struct Dashboard {
                             color: $r('app.color.button_border')
                         })
                         .borderRadius(22.5)
-
                         Button() {
                             Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
                                 .width(24)
@@ -713,7 +787,7 @@ struct Dashboard {
                             if (this.isLoading) {
                                 activeCtrl.stop();
                                 this.isLoading = false;
-                                if(this.vibrationON) vibration.dotVibration()
+                                if (this.vibrationON) vibration.dotVibration()
                             } else {
                                 activeCtrl.refresh();
                                 try {
@@ -725,7 +799,7 @@ struct Dashboard {
                                     console.warn(`hm dashboard e: ${error}`);
                                 }
                                 this.isLoading = true;
-                                if(this.vibrationON) vibration.dotVibration()
+                                if (this.vibrationON) vibration.dotVibration()
                                 this.PromptAction.showToast({
                                     message: "刷新中...",
                                     duration: 1000,
@@ -741,7 +815,6 @@ struct Dashboard {
                                 }, 3000);
                             }
                         })
-                        .shadow(ShadowStyle.OUTER_DEFAULT_LG)
                         .type(ButtonType.Circle)
                         .width(45).height(45)
                         .backgroundColor('rgba(255, 255, 255, 0.2)')
@@ -766,53 +839,58 @@ struct Dashboard {
                         .borderRadius(22.5)
                     }
                     .position({
-                        x: this.showButton ? this.buttonShowX : this.buttonHideX,
-                        y: this.buttonY,
+                        x: this.isRightHand ? (this.WVp - 45 - 8) : 8,
+                        y: this.buttonY
                     })
-                    .animation(
-                        this.showButtonAnimation
-                            ? { curve: curves.springMotion(0.8, 0.8), duration: 400 }
-                            : { duration: 0 },
-                    )
-                    .transition(this.buttonEffect)
+                    .translate({ x: this.funcTranslateX, y: 0 })
+                    .scale({ x: this.funcScale, y: this.funcScale })
+                    .opacity(this.funcOpacity)
                     .gesture(
-                        SwipeGesture({ direction: SwipeDirection.Horizontal }).onAction(
-                            (move: GestureEvent | undefined) => {
-                                if (move) {
-                                    this.showButton = false;
-                                    setTimeout(() => {
-                                        this.showButtonAnimation = false;
-                                    }, 300);
-                                }
-                            },
-                        ),
-                    )
-                    .gesture(
-                        PanGesture({ direction: PanDirection.Vertical })
-                            .onActionStart(() => {
-                                if(this.holdCheckON){ this.holdCheckON = false; this.holdCheckTMP = true; }
-                                this.showButtonAnimation = false;
-                                this.startY = this.buttonY;
-                            })
-                            .onActionUpdate((event: GestureEvent) => {
-                                //判断实际位置
-                                let nextY = this.startY + event.offsetY;
-                                if (nextY > 660) {
-                                    nextY = 660;
-                                } else if (nextY < 70) {
-                                    nextY = 70;
-                                }
-                                this.buttonY = nextY;
-                            })
-                            .onActionEnd(() => {
-                                this.showButtonAnimation = true;
-                                if(this.holdCheckTMP){ this.holdCheckON = true; }
-                                if (this.buttonY >= 660) {
-                                    this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
-                                } else if (this.buttonY <= 70) {
-                                    this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
-                                }
-                            }),
+                        GestureGroup(GestureMode.Exclusive,
+                            SwipeGesture({ direction: SwipeDirection.Horizontal })
+                                .onAction((move: GestureEvent | undefined) => {
+                                    if (move) {
+                                        this.showButton = false;
+                                        setTimeout(() => {
+                                            this.showButtonAnimation = false;
+                                        }, 300);
+                                    }
+                                }),
+                            PanGesture({ direction: PanDirection.Vertical })
+                                .onActionStart(() => {
+                                    if (this.holdCheckON) {
+                                        this.holdCheckON = false;
+                                        this.holdCheckTMP = true;
+                                    }
+                                    this.showButtonAnimation = false;
+                                    this.startY = this.buttonY;
+                                })
+                                .onActionUpdate((event: GestureEvent) => {
+                                    let nextY = this.startY + event.offsetY;
+                                    const topLimit = 100;
+                                    const bottomLimit = this.HVp - 140;
+                                    if (nextY > bottomLimit) {
+                                        nextY = bottomLimit;
+                                    } else if (nextY < topLimit) {
+                                        nextY = topLimit;
+                                    }
+                                    this.buttonY = nextY;
+                                })
+                                .onActionEnd(() => {
+                                    this.showButtonAnimation = true;
+                                    if (this.holdCheckTMP) {
+                                        this.holdCheckON = true;
+                                        this.holdCheckTMP = false;
+                                    }
+                                    const topLimit = 100;
+                                    const bottomLimit = this.HVp - 140;
+                                    if (this.buttonY >= bottomLimit) {
+                                        this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
+                                    } else if (this.buttonY <= topLimit) {
+                                        this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
+                                    }
+                                })
+                        )
                     )
                 }
                 if (!this.showButton) {
@@ -821,7 +899,7 @@ struct Dashboard {
                         .height("100%")
                         .width(15)
                         .zIndex(5)
-                        .position({ x: 0 })
+                        .position({ x: 0, y: 0 })
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
@@ -832,7 +910,7 @@ struct Dashboard {
                         .height("100%")
                         .width(15)
                         .zIndex(5)
-                        .position({ x: this.WVp - 15 })
+                        .position({ x: this.WVp - 20, y: 0 })
                         .onClick(() => {
                             this.showButtonAnimation = true;
                             this.showButton = true;
