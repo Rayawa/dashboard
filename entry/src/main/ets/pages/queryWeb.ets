@@ -20,7 +20,7 @@ import { harmonyShare } from '@kit.ShareKit';
 @Component
 struct queryEntry {
   @Consume('pageStack') pageStack: NavPathStack;
-  PromptAction: PromptAction = this.getUIContext().getPromptAction();
+  private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   onCloseSplit?: () => void;
   private shareManager?: WebShareManager;
   private context = getContext(this) as common.UIAbilityContext;
@@ -41,14 +41,14 @@ struct queryEntry {
   @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
 
-  scroller: Scroller = new Scroller();
+  private scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
 
   //动画与振动
-  private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
+  private readonly buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
       .combine(TransitionEffect.scale({ x: 0, y: 0 }))
       .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),

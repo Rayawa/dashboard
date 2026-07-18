@@ -9,7 +9,7 @@ import { privacyManager } from '@kit.StoreKit';
 export struct confirmButtons {
     @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
     @StorageLink("showWarn") showWarn: boolean = false;
-    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @State countDown: number = 5;
     @State isConfirmEnabled: boolean = false;

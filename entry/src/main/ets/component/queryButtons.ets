@@ -54,7 +54,7 @@ interface SearchResponse {
 @Component
 export struct queryButtons {
   @Consume('pageStack') pageStack: NavPathStack;
-  PromptAction: PromptAction = this.getUIContext().getPromptAction();
+  private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @State appId: string = '';
   @State isLoading: boolean = false;
 

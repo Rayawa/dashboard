@@ -8,7 +8,7 @@ import { mainPage } from '../common/constants';
 @Component
 export struct warn {
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
 
     build() {
         Column() {

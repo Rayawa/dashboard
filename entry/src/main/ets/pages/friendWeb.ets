@@ -28,7 +28,7 @@ import {
 @Component
 export struct friendWeb {
   @Consume('pageStack') pageStack: NavPathStack;
-  PromptAction: PromptAction = this.getUIContext().getPromptAction();
+  private PromptAction: PromptAction = this.getUIContext().getPromptAction();
 
   @State url: string = '';
   @State title: string = '';
@@ -48,15 +48,15 @@ export struct friendWeb {
   @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
 
-  scroller: Scroller = new Scroller();
+  private scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
 
 
-  uiContext: UIContext = this.getUIContext();
-  hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
+  private uiContext: UIContext = this.getUIContext();
+  private hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
   icon: SnackBarIconOptions = {
     icon: $r('sys.symbol.exclamationmark_circle')
   }
@@ -74,7 +74,7 @@ export struct friendWeb {
   }
 
   //动画与振动
-  private buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
+  private readonly buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
       .combine(TransitionEffect.scale({ x: 0, y: 0 }))
       .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),

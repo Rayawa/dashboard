@@ -61,7 +61,7 @@ export async function submit_app(
 
 @Component
 export struct submitButtons {
-    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @State appId: string = '';
     @State isLoading: boolean = false;
 

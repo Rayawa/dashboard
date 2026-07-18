@@ -14,7 +14,7 @@ interface ShareParams {
 @Entry
 @Component
 struct complexSubmit {
-    PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
     @StorageLink("userName") userName: string = "";
     @StorageLink("inputText") inputText: string = "";
@@ -54,7 +54,7 @@ struct complexSubmit {
     }
 
     @State firstBackTime: number = 0;
-    private waitTime: number = 2000;
+    private readonly waitTime: number = 2000;
     private closePage() {
         const context = getContext(this) as common.UIAbilityContext;
         context.terminateSelf().then(() => {
