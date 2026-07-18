@@ -20,6 +20,17 @@ struct appLog {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     private updateLogs: UpdateLog[] = [
         {
+            version: "V2.2.0",
+            date: "2026-7-20",
+            type: "release",
+            isRelease: true,
+            items: [
+                "更新智感握持动画，现在按钮不会从屏幕中间经过",
+                "修复手机端用户界面侧滑返回会直接退出应用的问题",
+                "更新隐私协议"
+            ],
+        },
+        {
             version: "V2.1.0",
             date: "2026-5-13",
             type: "release",
