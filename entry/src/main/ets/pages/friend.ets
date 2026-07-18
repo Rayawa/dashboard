@@ -28,6 +28,7 @@ struct friend {
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+  private isExiting: boolean = false;
 
   private jumpToMarket(appId: string) {
     const context = getContext(this) as common.UIAbilityContext;
@@ -208,8 +209,13 @@ struct friend {
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .onBackPressed(() => {
+      if (this.isExiting) {
+        return true;
+      }
       if(this.vibrationON) vibration.dotVibration()
-      return false;
+      this.isExiting = true;
+      this.pageStack.pop();
+      return true;
     })
     .titleBar({
       style: {
@@ -244,8 +250,10 @@ struct friend {
         title: { mainTitle: "友情链接" },
         backIcon: {
           action: () => {
+            if (this.isExiting) return;
             if(this.vibrationON) vibration.dotVibration()
-            this.pageStack.pop()
+            this.isExiting = true;
+            this.pageStack.pop();
           },
         },
       },
