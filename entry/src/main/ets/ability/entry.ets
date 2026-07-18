@@ -30,6 +30,22 @@ export default class EntryAbility extends UIAbility {
         this.handleContinuation(want, launchParam);
     }
     onWindowStageCreate(windowStage: window.WindowStage): void {
+        console.info('Ability onWindowStageCreate.');
+        windowStage.getMainWindow().then((windowClass) => {
+            AppStorage.setOrCreate('winWidth', windowClass.getWindowProperties().windowRect.width);
+            AppStorage.setOrCreate('winHeight', windowClass.getWindowProperties().windowRect.height);
+            windowClass.on('windowSizeChange', (windowSize) => {
+                AppStorage.setOrCreate('winWidth', windowSize.width);
+                AppStorage.setOrCreate('winHeight', windowSize.height);
+            });
+        });
+        windowStage.loadContent('pages/Index', (err) => {
+            if (err.code) {
+                console.error('Failed to load the content. Cause: ' + JSON.stringify(err));
+                return;
+            }
+            console.info('Succeeded in loading the content.');
+        });
         if (this.isContinuation) {
             this.loadContent(windowStage, "abilityPages/continueWeb");
         } else {
