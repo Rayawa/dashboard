@@ -1,4 +1,4 @@
-import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { settings } from '../component/settings';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
@@ -8,7 +8,6 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { appSubmit } from '../component/appSubmit';
 import { appQuery } from '../component/appQuery';
 import { vibration } from '../common/vibration';
-import { blurPopup } from '../component/blurPopup';
 import { common, Want } from '@kit.AbilityKit';
 import { mainPage } from '../common/constants';
 
@@ -21,24 +20,15 @@ export struct user {
     @StorageLink("vibrationON") vibrationON: boolean = true;
 
 
-    @State showQuery: boolean = false;
-    @State showSubmit: boolean = false;
-    @State showContact: boolean = false;
+    @State showSheet: boolean = false;
+    @State currentSheet: string = "";
     @State handlePopup: boolean = false;
     @State customPopup: boolean = false;
     @StorageLink("userName") userName: string = "";
     @State deviceName: string = "";
-
-    @State WVp: number = 376;
-    @State HVp: number = 376;
+    @StorageLink('winWidth') winWidth: number = 1260;
     aboutToAppear() {
         this.loadUserName();
-        //获取屏幕尺寸
-        const displayInfo = display.getDefaultDisplaySync();
-        const screenWidthVp = px2vp(displayInfo.width);
-        const screenHeightVp = px2vp(displayInfo.height);
-        this.WVp = screenWidthVp;
-        this.HVp = screenHeightVp;
     }
     async loadUserName() {
         initializeUserStorage();
@@ -52,6 +42,12 @@ export struct user {
     async resetToDeviceName() {
         await setUsername(undefined);
         await this.loadUserName();
+    }
+    @Builder
+    sheetBuilder() {
+        if (this.currentSheet === "query") appQuery()
+        if (this.currentSheet === "submit") appSubmit()
+        if (this.currentSheet === "contact") contact()
     }
 
     build() {
@@ -175,7 +171,8 @@ export struct user {
                                     .objectFit(ImageFit.Contain)
                             }
                             .onClick(() => {
-                                this.showSubmit = !this.showSubmit;
+                                this.currentSheet = "submit";
+                                this.showSheet = true;
                                 if(this.vibrationON) vibration.dotVibration()
                             })
                             .height(52)
@@ -202,7 +199,8 @@ export struct user {
                                     .objectFit(ImageFit.Contain)
                             }
                             .onClick(() => {
-                                this.showQuery = !this.showQuery;
+                                this.currentSheet = "query";
+                                this.showSheet = true;
                                 if(this.vibrationON) vibration.dotVibration()
                             })
                             .height(52)
@@ -285,7 +283,8 @@ export struct user {
                                 icon: $r("app.media.contact"),
                                 title: "联系我们",
                                 onClickAction: () => {
-                                    this.showContact = true;
+                                    this.currentSheet = "contact";
+                                    this.showSheet = true;
                                 }
                             })
 
@@ -316,41 +315,27 @@ export struct user {
                     .alignItems(HorizontalAlign.Center)
                     .margin({ top: 30, bottom: 20 })
                 }.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM]).width("100%").height("100%")
-                if (this.showSubmit || this.showQuery || this.showContact) {
-                    Column()
-                        .onClick(() => {
-                            this.showSubmit = false;
-                            this.showQuery = false;
-                            this.showContact = false;
-                            if(this.vibrationON) vibration.dotVibration()
-                        })
-                        .width('100%')
-                        .height('100%')
-                        .backgroundColor(Color.Transparent)
-                        .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-                        .transition(
-                            TransitionEffect.OPACITY.animation({
-                                curve: curves.springMotion(0, 1),
-                                duration: 800,
-                            }),
-                        )
-                }
-                blurPopup({ isShow: $showSubmit }) { appSubmit() }
-                blurPopup({ isShow: $showQuery }) { appQuery() }
-                blurPopup({ isShow: $showContact }) { contact() }
             }
             .backgroundColor($r("app.color.backcolor"))
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
             .width("100%")
             .height("100%")
         }
+        .bindSheet($$this.showSheet, this.sheetBuilder(), {
+            width: this.getUIContext().px2vp(this.winWidth) > 450 ? 450 : this.getUIContext().px2vp(this.winWidth),
+            height: SheetSize.FIT_CONTENT,
+            preferType: SheetType.CENTER,
+            backgroundColor: $r('app.color.backcolor'),
+            blurStyle: BlurStyle.BACKGROUND_ULTRA_THICK,
+            borderWidth: 2,
+            borderColor: $r("app.color.border"),
+            onWillDisappear: () => { if(this.vibrationON) vibration.dotVibration() },
+            title: { title: this.currentSheet === "query" ? "查询应用" : this.currentSheet === "submit" ? "投稿/更新应用" : "联系我们" }
+        })
         .onBackPressed(() => {
             if(this.vibrationON) vibration.dotVibration()
-            if (this.showQuery || this.showSubmit || this.showContact) {
-                this.showSubmit = false;
-                this.showQuery = false;
-                this.showContact = false;
+            if (this.showSheet) {
+                this.showSheet = false;
                 return true;
             } else {
                 if (this.onCloseSplit) {

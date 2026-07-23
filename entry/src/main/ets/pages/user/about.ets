@@ -6,7 +6,6 @@ import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { warn } from '../../component/warn';
-import { blurPopup } from '../../component/blurPopup';
 import URL from '../../common/url';
 
 export class WebViewParam {
@@ -24,11 +23,13 @@ struct about {
   @Consume('pageStack') pageStack: NavPathStack;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
-
   @StorageLink("vibrationON") vibrationON: boolean = true;
-
-
   @StorageProp("showWarn") showWarn: boolean = false;
+  private readonly effect: TransitionEffect = TransitionEffect.OPACITY.combine(
+    TransitionEffect.move(TransitionEdge.BOTTOM),
+  )
+    .combine(TransitionEffect.scale({ x: 0, y: 1 }))
+    .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
 
   @State WVp: number = 376;
   @State HVp: number = 376;
@@ -226,7 +227,7 @@ struct about {
               if(this.vibrationON) vibration.dotVibration()
             })
         }
-        blurPopup({ isShow: this.showWarn }) { warn() }
+        warn({ isShow: this.showWarn }).transition(this.effect)
       }
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
