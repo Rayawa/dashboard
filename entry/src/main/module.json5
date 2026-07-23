@@ -24,6 +24,7 @@
         "startWindowBackground": "$color:start_window_background",
         "exported": true,
         "continuable": true,
+        "orientation": "auto_rotation",
         "skills": [
           {
             "entities": ["top.rayawa.dashboard"],

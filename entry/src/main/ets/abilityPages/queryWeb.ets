@@ -4,7 +4,7 @@ import {
   hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, PromptAction, router } from '@kit.ArkUI';
+import { curves, LengthMetrics, PromptAction, router } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import {
@@ -27,16 +27,12 @@ struct queryWeb {
 
   @State progress: number = 0;
   @State showButton: boolean = true;
-  @State buttonOnPageShow: boolean = false;
   @State startY: number = 0;
   @State isPressed1: boolean = false;
   @State isPressed2: boolean = false;
   @State touchX: number = 0;
   @State touchY: number = 0;
-  @State isTouching: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("holdCheckON") holdCheckON: boolean = false;
-  @State holdCheckTMP: boolean = false;
   @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
 
@@ -45,63 +41,99 @@ struct queryWeb {
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
-
-  //动画与振动
-  private readonly buttonEffect: TransitionEffect = TransitionEffect.asymmetric(
-    TransitionEffect.OPACITY
-      .combine(TransitionEffect.scale({ x: 0, y: 0 }))
-      .animation({ curve: curves.springMotion(0.9, 0.5), duration: 500 }),
-    TransitionEffect.IDENTITY
-  );
-  //智感握持
-  @State WVp: number = 376;
-  @State HVp: number = 376;
-  @State buttonY: number = 300;
-  @State buttonShowX: number = 10;
-  @State buttonHideX: number = -25 - 10;
-  @State showButtonAnimation: boolean = true;
-  holdingHandCallback: Callback<motion.HoldingHandStatus> = (data: motion.HoldingHandStatus) => {
+  @StorageLink("holdCheckON") @Watch("onHoldCheckChanged") holdCheckON: boolean = false;
+  onHoldCheckChanged() {
     if (this.holdCheckON) {
-      switch (data) {
-        case 1: // 左手握持
-          this.buttonShowX = 10;
-          this.buttonHideX = -45 - 10;
-          break;
-        case 2: // 右手握持
-          this.buttonShowX = this.WVp - 45 - 10;
-          this.buttonHideX = this.WVp + 10;
-          break;
-        default:
-          break;
+      this.subscribeHoldingHand();
+    } else {
+      this.unsubscribeHoldingHand();
+    }
+  }
+  @StorageLink('winWidth') winWidth: number = 1260;
+  @StorageLink('winHeight') winHeight: number = 2224;
+  @State buttonY: number = 300;
+  @State private isRightHand: boolean = false;
+  @State private funcTranslateX: number = 0;
+  @State private funcScale: number = 1;
+  @State private funcOpacity: number = 1;
+  @State private holdCheckTMP: boolean = false;
+  private lastSwitchTime: number = 0;
+  private holdingHandCallback: Callback<motion.HoldingHandStatus> | null = null;
+  private buttonAnimationTimer: number = -1; // 按钮动画定时器管理
+  subscribeHoldingHand() {
+    if (this.holdingHandCallback !== null) {
+      return;
+    }
+    try {
+      if (canIUse('SystemCapability.MultimodalAwareness.Motion')) {
+        this.holdingHandCallback = (data: motion.HoldingHandStatus) => {
+          const isNowRightHand = data === motion.HoldingHandStatus.RIGHT_HAND_HELD;
+          if (isNowRightHand !== this.isRightHand) {
+            const currentTime = Date.now();
+            if (currentTime - this.lastSwitchTime >= 2000) {
+              this.lastSwitchTime = currentTime;
+              animateTo({
+                duration: 200,
+                curve: Curve.FastOutSlowIn,
+                onFinish: () => {
+                  this.isRightHand = isNowRightHand;
+                  this.funcTranslateX = isNowRightHand ? 120 : -120;
+                  animateTo({
+                    duration: 300,
+                    curve: curves.springMotion(0.4, 0.8)
+                  }, () => {
+                    this.funcTranslateX = 0;
+                    this.funcScale = 1;
+                    this.funcOpacity = 1;
+                  });
+                }
+              }, () => {
+                this.funcTranslateX = this.isRightHand ? 120 : -120;
+                this.funcScale = 0.3;
+                this.funcOpacity = 0;
+              });
+            } else {
+              console.info('未满2秒，拦截频繁握持手势切换');
+            }
+          }
+          console.info(`握持手状态变化: ${data}`);
+        };
+        motion.on('holdingHandChanged', this.holdingHandCallback);
+        console.info('成功订阅握持手状态变化');
+      } else {
+        this.buttonPositionRIGHT = false;
+        console.warn('当前设备不支持智感握持能力');
+      }
+    } catch (e) {
+      console.error('订阅握持手状态变化失败:', e);
+    }
+  }
+  unsubscribeHoldingHand() {
+    if (this.holdingHandCallback !== null) {
+      try {
+        motion.off('holdingHandChanged', this.holdingHandCallback);
+        this.holdingHandCallback = null;
+        console.info('已成功取消订阅握持手状态变化');
+      } catch (e) {
+        console.error('取消订阅握持手状态变化失败:', e);
       }
     }
-  };
+  }
 
   private async loadSettings() {
     try {
       this.vibrationON = await getVibrationEnabled();
       this.holdCheckON = await getHoldCheckEnabled();
       this.buttonPositionRIGHT = await getButtonPosition();
-      if(this.buttonPositionRIGHT){
-        this.buttonShowX = this.WVp - 45 - 10;
-        this.buttonHideX = this.WVp + 10;
-      } else {
-        this.buttonShowX = 10;
-        this.buttonHideX = -45 - 10;
-      }
     } catch (error) {
       console.error("加载设置失败:", error);
     }
   }
   async aboutToAppear() {
-    //获取屏幕右边位置
-    const displayInfo = display.getDefaultDisplaySync();
-    const screenWidthVp = px2vp(displayInfo.width);
-    const screenHeightVp = px2vp(displayInfo.height);
-    this.WVp = screenWidthVp;
-    this.HVp = screenHeightVp;
     initializeSettings();
     await this.loadSettings();
+    this.isRightHand = this.buttonPositionRIGHT;
+    if (this.holdCheckON) this.subscribeHoldingHand();
     const params = router.getParams() as Record<string, string>;
     if (params && params.url) {
       this.url = params.url;
@@ -113,27 +145,6 @@ struct queryWeb {
         AppStorage.setOrCreate('queryUrlFromAbility', '');
       }
     }
-
-    //握持监听
-    try {
-      motion.on("holdingHandChanged", this.holdingHandCallback);
-    } catch (err) {
-      const error = err as BusinessError;
-      console.error("订阅失败，错误码: " + error.code);
-    }
-    this.buttonOnPageShow = false;
-    this.buttonPositionRIGHT = await getButtonPosition();
-    if(this.buttonPositionRIGHT){
-      this.buttonShowX = this.WVp - 45 - 10;
-      this.buttonHideX = this.WVp + 10;
-    } else {
-      this.buttonShowX = 10;
-      this.buttonHideX = -45 - 10;
-    }
-    setTimeout(() => {
-      this.buttonOnPageShow = true;
-    }, 500);
-
     //分享
     const context = getContext(this) as common.UIAbilityContext;
     this.shareManager = WebShareManager.getInstance(context);
@@ -185,12 +196,8 @@ struct queryWeb {
     harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
       sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
     });
-    try {
-      motion.off("holdingHandChanged", this.holdingHandCallback);
-    } catch (err) {
-      const error = err as BusinessError;
-      console.error("Motion off failed: " + error.code);
-    }
+    if (this.buttonAnimationTimer !== -1) { clearTimeout(this.buttonAnimationTimer); this.buttonAnimationTimer = -1; }
+    this.unsubscribeHoldingHand(); // 取消订阅握持手
   }
   build() {
     HdsNavigation() {
@@ -245,7 +252,7 @@ struct queryWeb {
         }
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
         // ==========================悬浮按钮==========================
-        if(this.buttonOnPageShow){
+        if (this.showButton) {
           Column({ space: 10 }) {
             Button() {
               Image($r("app.media.arrow_up"))
@@ -269,7 +276,7 @@ struct queryWeb {
                 yOffset: 0,
                 animation: { duration: 300, curve: Curve.Ease },
               });
-              if(this.vibrationON) vibration.dotVibration()
+              if (this.vibrationON) vibration.dotVibration()
               this.PromptAction.showToast({
                 message: "回到顶部",
                 duration: 500,
@@ -296,7 +303,6 @@ struct queryWeb {
               color: $r('app.color.button_border')
             })
             .borderRadius(22.5)
-
             Button() {
               Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
                 .width(24)
@@ -317,11 +323,7 @@ struct queryWeb {
               if (this.isLoading) {
                 this.web_controller.stop();
                 this.isLoading = false;
-                if(this.vibrationON) vibration.dotVibration()
-                this.PromptAction.showToast({
-                  message: "已停止加载",
-                  duration: 1000,
-                });
+                if (this.vibrationON) vibration.dotVibration()
               } else {
                 this.web_controller.refresh();
                 try {
@@ -330,11 +332,10 @@ struct queryWeb {
                     this.web_controller.removeCache(false),
                   ]);
                 } catch (error) {
-                  // man! what can I say
-                  console.warn(`hm dashboard 清除缓存失败 e: ${error}`);
+                  console.warn(`hm dashboard e: ${error}`);
                 }
                 this.isLoading = true;
-                if(this.vibrationON) vibration.dotVibration()
+                if (this.vibrationON) vibration.dotVibration()
                 this.PromptAction.showToast({
                   message: "刷新中...",
                   duration: 1000,
@@ -347,10 +348,10 @@ struct queryWeb {
                       duration: 1000,
                     });
                   }
+                  this.buttonAnimationTimer = -1;
                 }, 3000);
               }
             })
-            .shadow(ShadowStyle.OUTER_DEFAULT_LG)
             .type(ButtonType.Circle)
             .width(45).height(45)
             .backgroundColor('rgba(255, 255, 255, 0.2)')
@@ -375,78 +376,129 @@ struct queryWeb {
             .borderRadius(22.5)
           }
           .position({
-            x: this.showButton ? this.buttonShowX : this.buttonHideX,
-            y: this.buttonY,
+            x: this.isRightHand ? (this.getUIContext().px2vp(this.winWidth) - 45 - 8) : 8,
+            y: this.buttonY
           })
-          .animation(
-            this.showButtonAnimation
-              ? { curve: curves.springMotion(0.8, 0.8), duration: 400 }
-              : { duration: 0 },
-          )
-          .transition(this.buttonEffect)
+          .translate({ x: this.funcTranslateX, y: 0 })
+          .scale({ x: this.funcScale, y: this.funcScale })
+          .opacity(this.funcOpacity)
           .gesture(
-            SwipeGesture({ direction: SwipeDirection.Horizontal }).onAction(
-              (move: GestureEvent | undefined) => {
-                if (move) {
-                  this.showButton = false;
-                  setTimeout(() => {
-                    this.showButtonAnimation = false;
-                  }, 300);
-                }
-              },
-            ),
-          )
-          .gesture(
-            PanGesture({ direction: PanDirection.Vertical })
-              .onActionStart(() => {
-                if(this.holdCheckON){ this.holdCheckON = false; this.holdCheckTMP = true; }
-                this.showButtonAnimation = false;
-                this.startY = this.buttonY;
-              })
-              .onActionUpdate((event: GestureEvent) => {
-                //判断实际位置
-                let nextY = this.startY + event.offsetY;
-                if (nextY > 660) {
-                  nextY = 660;
-                } else if (nextY < 70) {
-                  nextY = 70;
-                }
-                this.buttonY = nextY;
-              })
-              .onActionEnd(() => {
-                this.showButtonAnimation = true;
-                if(this.holdCheckTMP){ this.holdCheckON = true; }
-                if (this.buttonY >= 660) {
-                  this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
-                } else if (this.buttonY <= 70) {
-                  this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
-                }
-              }),
+            GestureGroup(GestureMode.Exclusive,
+              SwipeGesture({ direction: SwipeDirection.Horizontal })
+                .onAction((move: GestureEvent | undefined) => {
+                  if (move) {
+                    const offset = this.isRightHand ? 120 : -120;
+                    animateTo({
+                      duration: 300,
+                      curve: Curve.FastOutSlowIn,
+                      onFinish: () => {
+                        this.showButton = false;
+                        this.funcTranslateX = 0;
+                        this.funcOpacity = 1;
+                        this.funcScale = 1;
+                      }
+                    }, () => {
+                      this.funcTranslateX = offset;
+                      this.funcOpacity = 0;
+                      this.funcScale = 0.8;
+                    });
+                  }
+                }),
+
+              PanGesture({ direction: PanDirection.Vertical })
+                .onActionStart(() => {
+                  if (this.holdCheckON) {
+                    this.holdCheckON = false;
+                    this.holdCheckTMP = true;
+                  }
+                  this.startY = this.buttonY;
+                })
+                .onActionUpdate((event: GestureEvent) => {
+                  let nextY = this.startY + event.offsetY;
+                  const topLimit = 100;
+                  const bottomLimit = this.getUIContext().px2vp(this.winHeight) - 140;
+                  if (nextY > bottomLimit) {
+                    nextY = bottomLimit;
+                  } else if (nextY < topLimit) {
+                    nextY = topLimit;
+                  }
+                  this.buttonY = nextY;
+                })
+                .onActionEnd(() => {
+                  if (this.holdCheckTMP) {
+                    this.holdCheckON = true;
+                    this.holdCheckTMP = false;
+                  }
+                  const topLimit = 100;
+                  const bottomLimit = this.getUIContext().px2vp(this.winHeight) - 140;
+                  if (this.buttonY >= bottomLimit) {
+                    this.PromptAction.showToast({ message: "不能再往下啦", duration: 500 });
+                  } else if (this.buttonY <= topLimit) {
+                    this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
+                  }
+                })
+            )
           )
         }
         if (!this.showButton) {
           Column()
             .backgroundColor(Color.Transparent)
             .height("100%")
-            .width(15)
+            .width(20)
             .zIndex(5)
-            .position({ x: 0 })
-            .onClick(() => {
-              this.showButtonAnimation = true;
-              this.showButton = true;
-              if(this.vibrationON) vibration.dotVibration()
-            });
+            .position({ x: 0, y: 0 })
+            .gesture(
+              TapGesture()
+                .onAction((event: GestureEvent) => {
+                  this.showButton = true;
+                  const touchY = event.fingerList[0].localY - 50;
+                  const topLimit = 100;
+                  const bottomLimit = this.getUIContext().px2vp(this.winHeight) - 140;
+                  this.buttonY = Math.min(Math.max(touchY, topLimit), bottomLimit);
+
+                  const offset = this.isRightHand ? 120 : -120;
+                  this.funcTranslateX = offset;
+                  this.funcOpacity = 0;
+                  this.funcScale = 0.8;
+                  setTimeout(() => {
+                    animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                      this.funcTranslateX = 0;
+                      this.funcOpacity = 1;
+                      this.funcScale = 1;
+                    });
+                  }, 0);
+                  if (this.vibrationON)  vibration.dotVibration();
+                })
+            );
           Column()
             .backgroundColor(Color.Transparent)
             .height("100%")
-            .width(15)
+            .width(20)
             .zIndex(5)
-            .position({ x: this.WVp - 15 })
-            .onClick(() => {
-              this.showButtonAnimation = true;
-              this.showButton = true;
-              if(this.vibrationON) vibration.dotVibration()
-            });
+            .position({ x: this.getUIContext().px2vp(this.winWidth) - 20, y: 0 })
+            .gesture(
+              TapGesture()
+                .onAction((event: GestureEvent) => {
+                  this.showButton = true;
+                  const touchY = event.fingerList[0].localY - 50;
+                  const topLimit = 100;
+                  const bottomLimit = this.getUIContext().px2vp(this.winHeight) - 140;
+                  this.buttonY = Math.min(Math.max(touchY, topLimit), bottomLimit);
+
+                  const offset = this.isRightHand ? 120 : -120;
+                  this.funcTranslateX = offset;
+                  this.funcOpacity = 0;
+                  this.funcScale = 0.8;
+                  setTimeout(() => {
+                    animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                      this.funcTranslateX = 0;
+                      this.funcOpacity = 1;
+                      this.funcScale = 1;
+                    });
+                  }, 0);
+                  if (this.vibrationON)  vibration.dotVibration();
+                })
+            );
         }
       }
       .backgroundColor($r("app.color.backcolor"))

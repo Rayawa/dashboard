@@ -24,20 +24,6 @@ export struct appSubmit {
 
     build() {
         Column() {
-            // 标题
-            Row({ space: 8 }) {
-                Image($r("app.media.submit"))
-                    .height(25)
-                    .width(25)
-                Text("投稿/更新应用")
-                    .fontSize(21)
-                    .fontWeight(FontWeight.Bold)
-            }
-            .width("100%")
-            .justifyContent(FlexAlign.Start)
-            .alignItems(VerticalAlign.Center)
-            .padding({ bottom: 16 })
-
             Text("填写应用信息投稿至数据库：\n已有应用将同步更新，新应用将新增至数据库。").width("95%").fontSize(14).fontColor($r('app.color.diff_content')).margin({ bottom:10 })
 
             // 智能提取
@@ -308,21 +294,7 @@ export struct appSubmit {
             // 按钮区域
             submitButtons()
         }
-        .width(350)
-        .padding({
-            top: 20,
-            bottom: 20,
-            left: 10,
-            right: 10,
-        })
-        .borderRadius(20)
-        .backgroundColor($r("app.color.backcolor"))
-        .shadow({
-            radius: 20,
-            color: Color.Gray,
-            offsetX: 0,
-            offsetY: 4,
-        });
+        .width("100%").padding(10).margin({ bottom: 20 })
     }
 
     // 处理提取信息

@@ -11,7 +11,7 @@ export struct confirmButtons {
     @StorageLink("showWarn") showWarn: boolean = false;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    @State countDown: number = 5;
+    @State countDown: number = 3;
     @State isConfirmEnabled: boolean = false;
     @State isExiting: boolean = false;
     @State isProcessing: boolean = false;
