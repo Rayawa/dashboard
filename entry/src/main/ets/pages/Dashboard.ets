@@ -206,7 +206,7 @@ struct Dashboard {
     @State private funcTranslateX: number = 0;
     @State private funcScale: number = 1;
     @State private funcOpacity: number = 1;
-    @State private holdCheckTMP: boolean = false;
+    @State private isDragging: boolean = false; // 拖拽逻辑锁
     private lastSwitchTime: number = 0;
     private holdingHandCallback: Callback<motion.HoldingHandStatus> | null = null;
     subscribeHoldingHand() {
@@ -216,6 +216,7 @@ struct Dashboard {
         try {
             if (canIUse('SystemCapability.MultimodalAwareness.Motion')) {
                 this.holdingHandCallback = (data: motion.HoldingHandStatus) => {
+                    if(this.isDragging) return;
                     const isNowRightHand = data === motion.HoldingHandStatus.RIGHT_HAND_HELD;
                     if (isNowRightHand !== this.isRightHand) {
                         const currentTime = Date.now();
@@ -885,10 +886,7 @@ struct Dashboard {
 
                             PanGesture({ direction: PanDirection.Vertical })
                                 .onActionStart(() => {
-                                    if (this.holdCheckON) {
-                                        this.holdCheckON = false;
-                                        this.holdCheckTMP = true;
-                                    }
+                                    this.isDragging = true;
                                     this.startY = this.buttonY;
                                 })
                                 .onActionUpdate((event: GestureEvent) => {
@@ -903,10 +901,7 @@ struct Dashboard {
                                     this.buttonY = nextY;
                                 })
                                 .onActionEnd(() => {
-                                    if (this.holdCheckTMP) {
-                                        this.holdCheckON = true;
-                                        this.holdCheckTMP = false;
-                                    }
+                                    this.isDragging = false;
                                     const topLimit = 100;
                                     const bottomLimit = this.getUIContext().px2vp(this.winHeight) - 140;
                                     if (this.buttonY >= bottomLimit) {
@@ -914,6 +909,9 @@ struct Dashboard {
                                     } else if (this.buttonY <= topLimit) {
                                         this.PromptAction.showToast({ message: "不能再往上啦", duration: 500 });
                                     }
+                                })
+                                .onActionCancel(() => {
+                                    this.isDragging = false;
                                 })
                         )
                     )
