@@ -19,8 +19,7 @@ export struct user {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
 
-
-    @State showSheet: boolean = false;
+    @StorageLink("showSheet") showSheet: boolean = false;
     @State currentSheet: string = "";
     @State handlePopup: boolean = false;
     @State customPopup: boolean = false;
