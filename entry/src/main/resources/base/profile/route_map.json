@@ -1,6 +1,10 @@
 {
   "routerMap": [
-
+    {
+      "name": "TutorialPage",
+      "pageSourceFile": "src/main/ets/pages/tutorial.ets",
+      "buildFunction": "TutorialPageBuilder"
+    },
     {
       "name": "FriendPage",
       "pageSourceFile": "src/main/ets/pages/friend.ets",
