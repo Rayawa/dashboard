@@ -54,6 +54,7 @@ interface SearchResponse {
 @Component
 export struct queryButtons {
   @Consume('pageStack') pageStack: NavPathStack;
+  @StorageLink("showSheet") showSheet: boolean = false;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @State appId: string = '';
   @State isLoading: boolean = false;
@@ -209,6 +210,7 @@ export struct queryButtons {
         if(this.vibrationON){
           vibration.waveVibration()
         }
+        this.showSheet = false;
         this.pageStack.pushPathByName("QueryPage", pathParams);
 
         this.formData = {
