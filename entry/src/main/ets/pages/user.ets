@@ -1,4 +1,4 @@
-import { display, LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { settings } from '../component/settings';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
@@ -264,6 +264,16 @@ export struct user {
                                     } catch (e) {
                                         this.PromptAction.showToast({ message: "跳转错误" });
                                     }
+                                }
+                            })
+
+                            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+
+                            OtherItem({
+                                icon: $r("app.media.tutorial"),
+                                title: "查看教程",
+                                onClickAction: () => {
+                                    this.pageStack.pushPathByName("TutorialPage", null);
                                 }
                             })
 
