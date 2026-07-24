@@ -21,7 +21,7 @@ struct appLog {
     private updateLogs: UpdateLog[] = [
         {
             version: "V2.2.0",
-            date: "2026-7-20",
+            date: "2026-7-24",
             type: "release",
             isRelease: true,
             items: [

@@ -14,7 +14,8 @@ import { mainPage } from '../common/constants';
 @Component
 export struct user {
     @Consume('pageStack') pageStack: NavPathStack;
-    onCloseSplit?: () => void;
+    @StorageLink("isSplitMode") isSplitMode: boolean = false;
+    @State private isBackAnimating: boolean = false;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
@@ -338,19 +339,16 @@ export struct user {
             blurStyle: BlurStyle.BACKGROUND_ULTRA_THICK,
             borderWidth: 2,
             borderColor: $r("app.color.border"),
-            onWillDisappear: () => { if(this.vibrationON) vibration.dotVibration() },
+            onWillDisappear: () => {
+                if(this.vibrationON) vibration.dotVibration()
+                this.showSheet = false;
+            },
             title: { title: this.currentSheet === "query" ? "查询应用" : this.currentSheet === "submit" ? "投稿/更新应用" : "联系我们" }
         })
-        .onBackPressed(() => {
+        .onWillDisappear(() => {
             if(this.vibrationON) vibration.dotVibration()
             if (this.showSheet) {
                 this.showSheet = false;
-                return true;
-            } else {
-                if (this.onCloseSplit) {
-                    this.onCloseSplit();
-                }
-                return false;
             }
         })
         .titleBar({
@@ -411,10 +409,9 @@ export struct user {
                 backIcon: {
                     action: () => {
                         if(this.vibrationON) vibration.dotVibration()
-                        if (this.onCloseSplit) {
-                            this.onCloseSplit();
-                        }
                         this.pageStack.pop();
+                        const hasSplitPage = this.pageStack.getIndexByName("UserPage").length > 0 || this.pageStack.getIndexByName("TutorialPage").length > 0;
+                        if (!hasSplitPage) this.isSplitMode = false;
                     },
                 },
             },

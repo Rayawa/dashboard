@@ -121,29 +121,6 @@ async function report_user_telemetry(
 struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @State private navBarWidth: string | number = '100%';
-    @State navMode: NavigationMode = NavigationMode.Stack;
-    private toggleSplitMode(isSplit: boolean) {
-        const FIXED_RIGHT_WIDTH = 423;
-        if (isSplit && this.getUIContext().px2vp(this.winWidth) >= FIXED_RIGHT_WIDTH*  2) {
-            this.navMode = NavigationMode.Split;
-            let targetLeftWidth = this.getUIContext().px2vp(this.winWidth) - FIXED_RIGHT_WIDTH;
-            animateTo({
-                curve: curves.springMotion(0.4, 0.8),
-                duration: 400
-            }, () => {
-                this.navBarWidth = targetLeftWidth;
-            })
-        } else {
-            animateTo({
-                curve: curves.springMotion(0.4, 0.8),
-                duration: 400
-            }, () => {
-                this.navBarWidth = '100%';
-            })
-            this.navMode = NavigationMode.Stack;
-        }
-    }
     //控制相关
     @State showButton: boolean = true;
     @State barMargin: number = 28;
@@ -261,7 +238,12 @@ struct Dashboard {
     unsubscribeHoldingHand() {
         if (this.holdingHandCallback !== null) {
             try {
-                motion.off('holdingHandChanged', this.holdingHandCallback);
+                if (canIUse("SystemCapability.MultimodalAwareness.Motion")) {
+                    motion.off('holdingHandChanged', this.holdingHandCallback);
+                } else {
+                    this.buttonPositionRIGHT = false;
+                    console.warn('当前设备不支持智感握持能力');
+                }
                 this.holdingHandCallback = null;
                 console.info('已成功取消订阅握持手状态变化');
             } catch (e) {
@@ -375,15 +357,7 @@ struct Dashboard {
     }
     private shareManager?: WebShareManager;
     private context = getContext(this) as common.UIAbilityContext;
-    //旋转屏幕关闭分屏
-    private lastOrientation: display.Orientation = display.Orientation.PORTRAIT;
-    private displayCallback = (): void => {
-        let defaultDisplay = display.getDefaultDisplaySync();
-        if (this.lastOrientation !== defaultDisplay.orientation) {
-            this.lastOrientation = defaultDisplay.orientation;
-            this.toggleSplitMode(false);
-        }
-    };
+
     async aboutToAppear() {
         //初始化设置内容
         initializeSettings();
@@ -508,9 +482,8 @@ struct Dashboard {
         }
         if (this.pageStack.size() > 0) {
             this.pageStack.pop();
-            if (this.pageStack.size() === 0) {
-                setTimeout(() => { this.toggleSplitMode(false); }, 480);
-            }
+            const hasSplitPage = this.pageStack.getIndexByName("UserPage").length > 0 || this.pageStack.getIndexByName("TutorialPage").length > 0;
+            if (!hasSplitPage) this.isSplitMode = false;
             return true;
         }
         const currentTime = new Date().getTime();
@@ -542,59 +515,68 @@ struct Dashboard {
     //     nextFocusId: 'button',
     //     duration: 7999
     // }
-    @Builder
-    PageMap(name: string) {
-        if (name === "UserPage") {
-            user({
-                onCloseSplit: () => {
-                    animateTo({
-                        curve: curves.springMotion(0.4, 0.8),
-                        duration: 350
-                    }, () => {
-                        this.navBarWidth= '100%';
-                    })
-                }
-            })
-        }
-        if (name === "TutorialPage") {
-            tutorial({
-                onCloseSplit: () => {
-                    animateTo({
-                        curve: curves.springMotion(0.4, 0.8),
-                        duration: 350
-                    }, () => {
-                        this.navBarWidth= '100%';
-                    })
-                }
-            })
+    @State private navBarWidth: string | number = '100%';
+    @State navMode: NavigationMode = NavigationMode.Stack;
+    private readonly MIN_CONTENT_WIDTH = 423;
+    private canSplit(): boolean {
+        const width = this.getUIContext().px2vp(this.winWidth);
+        return width >= this.MIN_CONTENT_WIDTH * 2;
+    }
+    @StorageLink("isSplitMode") @Watch("onSplitModeChange") isSplitMode: boolean = false;
+    onSplitModeChange() {
+        const width = this.getUIContext().px2vp(this.winWidth);
+        if (this.isSplitMode && width >= this.MIN_CONTENT_WIDTH * 2) {
+            this.navMode = NavigationMode.Split;
+            animateTo({
+                curve: curves.springMotion(0.4, 0.8),
+                duration: 400
+            }, () => { this.navBarWidth = width - this.MIN_CONTENT_WIDTH; });
+        } else {
+            this.navMode = NavigationMode.Stack;
+            animateTo({
+                curve: curves.springMotion(0.4, 0.8),
+                duration: 400
+            }, () => { this.navBarWidth = '100%';});
         }
     }
+    @Builder
+    PageMap(name: string) {
+        if (name === "UserPage") user()
+        if (name === "TutorialPage") tutorial()
+    }
+
     private openSplitPage(targetPage: string) {
-        if (this.vibrationON) {
-            vibration.dotVibration();
-        }
+        if (this.vibrationON) vibration.dotVibration();
         if (this.showWarn) {
             this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" });
             return;
         }
         const splitPages = ["TutorialPage", "UserPage"];
-        const activeSplitPage = splitPages.find(
-            (page) => this.pageStack.getIndexByName(page).length > 0
-        );
-
+        const activeSplitPage = splitPages.find((page) => this.pageStack.getIndexByName(page).length > 0);
         if (activeSplitPage === targetPage) {
             this.pageStack.removeByName(targetPage);
-            this.toggleSplitMode(false);
+            const hasSplitPage = this.pageStack.getIndexByName("UserPage").length > 0 || this.pageStack.getIndexByName("TutorialPage").length > 0;
+            if (!hasSplitPage) this.isSplitMode = false;
+            return;
+        }
+        if (activeSplitPage) {
+            this.pageStack.pushPathByName(targetPage, null);
+            setTimeout(() => { this.pageStack.removeByName(activeSplitPage); }, 50);
         } else {
-            if (activeSplitPage) {
-                this.pageStack.removeByName(activeSplitPage);
-            }
-            if (this.getUIContext().px2vp(this.winWidth) >= 600) {
-                this.toggleSplitMode(true);
-            }
+            if (this.canSplit()) this.isSplitMode = true;
             this.pageStack.pushPathByName(targetPage, null);
         }
     }
+    //旋转屏幕关闭分屏
+    private lastOrientation: display.Orientation = display.Orientation.PORTRAIT;
+    private displayCallback = (): void => {
+        let defaultDisplay = display.getDefaultDisplaySync();
+        if (this.lastOrientation !== defaultDisplay.orientation) {
+            this.lastOrientation = defaultDisplay.orientation;
+            this.isSplitMode = false;
+        }
+    };
+
     @Builder Web(site: SiteConfig, ctrl: webview.WebviewController) {
         Stack() {
             if (this.isLoading) {
