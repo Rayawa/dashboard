@@ -24,9 +24,10 @@ export default class EntryAbility extends UIAbility {
             AppStorage.setOrCreate('pageUrl', want.parameters['targetUrl'] as string);
         }
         if (want.parameters?.['scrollOffset']) {
-            AppStorage.setOrCreate('restoreScrollOffset', want.parameters['scrollOffset'] as number);
+            AppStorage.setOrCreate('scrollDistance', want.parameters['scrollOffset'] as number);
         }
     }
+
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         this.restoreContinuationParams(want, launchParam);
     }

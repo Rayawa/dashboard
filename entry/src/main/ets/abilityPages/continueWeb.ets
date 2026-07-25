@@ -225,23 +225,34 @@ struct continueWeb {
               renderMode: RenderMode.SYNC_RENDER,
             })
               .id(`HmDashboard_onContinue`)
-              .onPageEnd(() => {
-                this.isLoading = false;
-                if (this.scrollDistance > 0) {
-                  setTimeout(() => {
-                    this.scroller.scrollTo({
-                      xOffset: 0,
-                      yOffset: this.scrollDistance,
-                      animation: { duration: 200, curve: Curve.Ease }
-                    });
-                  }, 150);
-                }
-              })
               .onControllerAttached(() => {
                 if (this.url !== "") {
                   this.web_controller.loadUrl(this.url);
                 }
               })
+              .onPageBegin(() => (this.isLoading = true))
+              .onPageEnd(() => {
+                this.isLoading = false;
+                if (this.scrollDistance > 0) {
+                  let attempts = 0;
+                  const maxAttempts = 10;
+                  const tryScroll = () => {
+                    this.scroller.scrollTo({
+                      xOffset: 0,
+                      yOffset: this.scrollDistance,
+                      animation: { duration: 150, curve: Curve.Ease }
+                    });
+                    if (Math.abs(this.scroller.currentOffset().yOffset - this.scrollDistance) > 5 && attempts < maxAttempts) {
+                      attempts++;
+                      setTimeout(tryScroll, 100);
+                    }
+                  };
+
+                  setTimeout(tryScroll, 100);
+                }
+              })
+
+              .onProgressChange((p) => (this.progress = p.newProgress))
               .layoutMode(WebLayoutMode.FIT_CONTENT)
               .nestedScroll({
                 scrollForward: NestedScrollMode.SELF_FIRST,
@@ -256,10 +267,8 @@ struct continueWeb {
               .forceDarkAccess(true)
               .width("100%")
               .backgroundColor($r("app.color.backcolor"))
-              .onProgressChange((p) => (this.progress = p.newProgress))
-              .onPageBegin(() => (this.isLoading = true))
-              .onPageEnd(() => (this.isLoading = false))
               .metaViewport(true)
+
           }
 
         }
