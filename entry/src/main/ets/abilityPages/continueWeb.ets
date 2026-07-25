@@ -8,6 +8,7 @@ import { curves, display, LengthMetrics, PromptAction, router } from '@kit.ArkUI
 import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { WebShareManager } from '../common/shareControl';
+import { customUserAgent } from '../common/constants';
 import {
   getButtonPosition,
   getHoldCheckEnabled,
@@ -226,8 +227,13 @@ struct continueWeb {
             })
               .id(`HmDashboard_onContinue`)
               .onControllerAttached(() => {
-                if (this.url !== "") {
-                  this.web_controller.loadUrl(this.url);
+                try {
+                  if (this.url !== "") {
+                    this.web_controller.loadUrl(this.url);
+                  }
+                  this.web_controller.setCustomUserAgent(customUserAgent);
+                } catch (e) {
+                  console.error(`WebController attach error: ${e}`);
                 }
               })
               .onPageBegin(() => (this.isLoading = true))
