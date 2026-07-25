@@ -23,8 +23,17 @@ struct continueWeb {
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   private shareManager?: WebShareManager;
   private context = getContext(this) as common.UIAbilityContext;
-  @StorageLink('pageUrl') url: string = '';
+  @StorageLink('pageUrl') @Watch('onUrlChanged') url: string = '';
   @StorageLink('scrollDistance') scrollDistance: number = 0;
+  onUrlChanged() {
+    if (this.url && this.web_controller) {
+      try {
+        this.web_controller.loadUrl(this.url);
+      } catch (e) {
+        console.error('loadUrl failed:', e);
+      }
+    }
+  }
 
   @State progress: number = 0;
   @State showButton: boolean = true;
@@ -147,7 +156,7 @@ struct continueWeb {
         AppStorage.setOrCreate('queryUrlFromAbility', '');
       }
     }
-    console.log("continueWebReport",this.url)
+    console.log("continueWebReport",this.url," ",this.scrollDistance)
     //分享
     const context = getContext(this) as common.UIAbilityContext;
     this.shareManager = WebShareManager.getInstance(context);
@@ -217,8 +226,15 @@ struct continueWeb {
             })
               .id(`HmDashboard_onContinue`)
               .onPageEnd(() => {
+                this.isLoading = false;
                 if (this.scrollDistance > 0) {
-                  this.web_controller.runJavaScript(`window.scrollTo(0, ${this.scrollDistance})`);
+                  setTimeout(() => {
+                    this.scroller.scrollTo({
+                      xOffset: 0,
+                      yOffset: this.scrollDistance,
+                      animation: { duration: 200, curve: Curve.Ease }
+                    });
+                  }, 150);
                 }
               })
               .onControllerAttached(() => {
