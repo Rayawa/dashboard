@@ -18,6 +18,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
+import { customUserAgent } from '../common/constants';
 import {
   getButtonPosition,
   getHoldCheckEnabled,
@@ -221,8 +222,13 @@ export struct friendWeb {
             })
               .id(`HmDashboard_web_friends`)
               .onControllerAttached(() => {
-                if (this.url !== "") {
-                  this.web_controller.loadUrl(this.url);
+                try {
+                  if (this.url !== "") {
+                    this.web_controller.loadUrl(this.url);
+                  }
+                  this.web_controller.setCustomUserAgent(customUserAgent);
+                } catch (e) {
+                  console.error(`WebController attach error: ${e}`);
                 }
               })
               .layoutMode(WebLayoutMode.FIT_CONTENT)
