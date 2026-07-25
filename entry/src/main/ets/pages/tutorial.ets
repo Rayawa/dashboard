@@ -10,7 +10,6 @@ import { hdsMaterial, HdsNavDestination, ScrollEffectType } from '@kit.UIDesignK
 export struct tutorial {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink("isSplitMode") isSplitMode: boolean = false;
-  @State private isBackAnimating: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
   @StorageLink("showWarn") showWarn: boolean = false;

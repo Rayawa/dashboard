@@ -146,6 +146,7 @@ struct queryWeb {
         AppStorage.setOrCreate('queryUrlFromAbility', '');
       }
     }
+    console.log("continueWebReport",this.url)
     //分享
     const context = getContext(this) as common.UIAbilityContext;
     this.shareManager = WebShareManager.getInstance(context);

@@ -15,7 +15,6 @@ import { mainPage } from '../common/constants';
 export struct user {
     @Consume('pageStack') pageStack: NavPathStack;
     @StorageLink("isSplitMode") isSplitMode: boolean = false;
-    @State private isBackAnimating: boolean = false;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
     @StorageLink("vibrationON") vibrationON: boolean = true;
