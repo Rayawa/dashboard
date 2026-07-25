@@ -260,18 +260,15 @@ struct Dashboard {
         { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
     ];
-    @State private url: string = Array.from(this.sitesList.values())[0].url;
     @State private siteIndex: number = 0;
     private controller_T: webview.WebviewController = new webview.WebviewController();
     private controller_S: webview.WebviewController = new webview.WebviewController();
-    private controller_R: webview.WebviewController = new webview.WebviewController();
-    private controllers: webview.WebviewController[] = [
-        this.controller_S,
-        this.controller_T,
-        this.controller_R
-    ];
+    private controllers: Record<string, webview.WebviewController> = {
+        'T': this.controller_T,
+        'S': this.controller_S,
+    };
     private getActiveController(): webview.WebviewController {
-        return this.controllers[this.siteIndex] || this.controller_S;
+        return this.siteIndex === 0 ? this.controller_T : this.controller_S;
     }
     @StorageLink('scrollDistance') currentDistance: number = 0;
 
@@ -594,12 +591,17 @@ struct Dashboard {
                         .id(`HmDashboard_${site.key}`)
                         .onControllerAttached(() => {
                             try {
-                                if (this.url !== "") {
-                                    ctrl.loadUrl(this.url);
-                                }
+                                if (site.url) ctrl.loadUrl(site.url);
                                 ctrl.setCustomUserAgent(customUserAgent);
                             } catch (e) {
-                                console.error(`Attach error for ${site.key}: ${e.code}`);
+                                console.error(`Attach error for ${site.key}: ${e}`);
+                            }
+                        })
+                        .onNavigationEntryCommitted((details) => {
+                            if (details && details.url && details.url !== 'about:blank') {
+                                site.url = details.url;
+                                AppStorage.setOrCreate('pageUrl', details.url);
+                                this.shareManager?.updateShareData(details.url);
                             }
                         })
                         .onPageBegin((event) => {
@@ -619,7 +621,6 @@ struct Dashboard {
                                 }
                             }
                         })
-                        .onScroll((event) => { this.updateScrollDistance(event.yOffset); })
                         .onRefreshAccessedHistory(() => {
                             try {
                                 const activeCtrl: webview.WebviewController = this.getActiveController();
@@ -654,6 +655,9 @@ struct Dashboard {
                         .metaViewport(true)
                 }
             }
+            .onDidScroll(() => {
+                AppStorage.setOrCreate('scrollDistance', this.scroller.currentOffset().yOffset);
+            })
             .onWillScroll(() => {
                 if (this.tabBarAutoON) {
                     const currentOffset = this.scroller.currentOffset().yOffset;
@@ -682,8 +686,8 @@ struct Dashboard {
             Stack() {
                 //==========================HdsTabs携带web==========================
                 HdsTabs({ controller: this.controller }) {
-                    ForEach(this.sitesList, (site: SiteConfig, index: number) => {
-                        TabContent() { this.Web(site, this.controllers[index]) }
+                    ForEach(this.sitesList, (site: SiteConfig) => {
+                        TabContent() { this.Web(site, this.controllers[site.key]) }
                         .tabBar(new BottomTabBarStyle(site.icon, site.label))
                     }, (item: SiteConfig) => item.key + item.url)
                 }
