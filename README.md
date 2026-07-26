@@ -83,7 +83,7 @@
 
 ## 运行环境
 
-- DevEco Studio `6.0.0+`
+- DevEco Studio `6.1.0+`
 - HarmonyOS SDK
   推荐按项目配置使用：
   - `targetSdkVersion: 6.1.0(23)`

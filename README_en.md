@@ -86,7 +86,7 @@ This repository implements the HarmonyOS client with ArkTS, ArkUI and ArkWeb, an
 
 ## Runtime Environment
 
-- DevEco Studio `6.0.0+`
+- DevEco Studio `6.1.0+`
 - HarmonyOS SDK
   Recommended according to the project configuration:
   - `targetSdkVersion: 6.1.0(23)`
