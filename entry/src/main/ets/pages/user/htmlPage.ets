@@ -37,7 +37,7 @@ export struct HTML {
       if (result.index === 1) {
         try {
           await setFirstLaunch(true);
-          const context = getContext(this) as common.UIAbilityContext;
+          const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
           privacyManager.disableService();
           this.PromptAction.showToast({ message: `${this.params.title}已撤销，即将退出` });
           context.terminateSelf().then(() => {

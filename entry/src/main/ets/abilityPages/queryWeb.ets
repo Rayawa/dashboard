@@ -75,13 +75,13 @@ struct queryWeb {
             const currentTime = Date.now();
             if (currentTime - this.lastSwitchTime >= 2000) {
               this.lastSwitchTime = currentTime;
-              animateTo({
+              this.getUIContext().animateTo({
                 duration: 200,
                 curve: Curve.FastOutSlowIn,
                 onFinish: () => {
                   this.isRightHand = isNowRightHand;
                   this.funcTranslateX = isNowRightHand ? 120 : -120;
-                  animateTo({
+                  this.getUIContext().animateTo({
                     duration: 300,
                     curve: curves.springMotion(0.4, 0.8)
                   }, () => {
@@ -150,7 +150,7 @@ struct queryWeb {
     }
     console.log("continueWebReport",this.url)
     //分享
-    const context = getContext(this) as common.UIAbilityContext;
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     this.shareManager = WebShareManager.getInstance(context);
     this.shareManager.enablePassiveShare();
     this.context.eventHub.on("onFocus", () => {
@@ -171,7 +171,7 @@ struct queryWeb {
   @State firstBackTime: number = 0;
   private waitTime: number = 2000;
   private closePage() {
-    const context = getContext(this) as common.UIAbilityContext;
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     context.terminateSelf().then(() => {
       console.info('Ability 销毁指令发送成功');
     }).catch((err: BusinessError) => {
@@ -397,7 +397,7 @@ struct queryWeb {
                 .onAction((move: GestureEvent | undefined) => {
                   if (move) {
                     const offset = this.isRightHand ? 120 : -120;
-                    animateTo({
+                    this.getUIContext().animateTo({
                       duration: 300,
                       curve: Curve.FastOutSlowIn,
                       onFinish: () => {
@@ -467,7 +467,7 @@ struct queryWeb {
                   this.funcOpacity = 0;
                   this.funcScale = 0.8;
                   setTimeout(() => {
-                    animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                    this.getUIContext().animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
                       this.funcTranslateX = 0;
                       this.funcOpacity = 1;
                       this.funcScale = 1;
@@ -496,7 +496,7 @@ struct queryWeb {
                   this.funcOpacity = 0;
                   this.funcScale = 0.8;
                   setTimeout(() => {
-                    animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                    this.getUIContext().animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
                       this.funcTranslateX = 0;
                       this.funcOpacity = 1;
                       this.funcScale = 1;

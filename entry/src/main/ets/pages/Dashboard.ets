@@ -146,13 +146,13 @@ struct Dashboard {
             return;
         }
         this.lastSwitchTime = Date.now();
-        animateTo({
+        this.getUIContext().animateTo({
             duration: 200,
             curve: Curve.FastOutSlowIn,
             onFinish: () => {
                 this.isRightHand = targetRight;
                 this.funcTranslateX = targetRight ? 120 : -120;
-                animateTo({
+                this.getUIContext().animateTo({
                     duration: 300,
                     curve: curves.springMotion(0.4, 0.8)
                 }, () => {
@@ -201,13 +201,13 @@ struct Dashboard {
                         const currentTime = Date.now();
                         if (currentTime - this.lastSwitchTime >= 2000) {
                             this.lastSwitchTime = currentTime;
-                            animateTo({
+                            this.getUIContext().animateTo({
                                 duration: 200,
                                 curve: Curve.FastOutSlowIn,
                                 onFinish: () => {
                                     this.isRightHand = isNowRightHand;
                                     this.funcTranslateX = isNowRightHand ? 120 : -120;
-                                    animateTo({
+                                    this.getUIContext().animateTo({
                                         duration: 300,
                                         curve: curves.springMotion(0.4, 0.8)
                                     }, () => {
@@ -361,7 +361,7 @@ struct Dashboard {
         }
     }
     private shareManager?: WebShareManager;
-    private context = getContext(this) as common.UIAbilityContext;
+    private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
     async aboutToAppear() {
         //初始化设置内容
@@ -385,7 +385,7 @@ struct Dashboard {
             );
         }
         //分享
-        const context = getContext(this) as common.UIAbilityContext;
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
         this.shareManager = WebShareManager.getInstance(context);
         this.shareManager.enablePassiveShare();
         this.context.eventHub.on("onFocus", () => {
@@ -532,13 +532,13 @@ struct Dashboard {
         const width = this.getUIContext().px2vp(this.winWidth);
         if (this.isSplitMode && width >= this.MIN_CONTENT_WIDTH * 2) {
             this.navMode = NavigationMode.Split;
-            animateTo({
+            this.getUIContext().animateTo({
                 curve: curves.springMotion(0.4, 0.8),
                 duration: 400
             }, () => { this.navBarWidth = width - this.MIN_CONTENT_WIDTH; });
         } else {
             this.navMode = NavigationMode.Stack;
-            animateTo({
+            this.getUIContext().animateTo({
                 curve: curves.springMotion(0.4, 0.8),
                 duration: 400
             }, () => { this.navBarWidth = '100%';});
@@ -674,14 +674,14 @@ struct Dashboard {
                     const currentOffset = this.scroller.currentOffset().yOffset;
                     if (currentOffset > this.lastOffset && currentOffset > 50) {
                         if (this.isTabsBarVisible && !this.lockBar) {
-                            animateTo({ curve: curves.springMotion(0.9, 0.8) }, () => {
+                            this.getUIContext().animateTo({ curve: curves.springMotion(0.9, 0.8) }, () => {
                                 this.barMargin = -90;
                                 this.isTabsBarVisible = false;
                             })
                         }
                     } else if (currentOffset < this.lastOffset) {
                         if (!this.isTabsBarVisible && !this.lockBar) {
-                            animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
+                            this.getUIContext().animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
                                 this.barMargin = 28;
                                 this.isTabsBarVisible = true;
                             })
@@ -878,7 +878,7 @@ struct Dashboard {
                                 .onAction((move: GestureEvent | undefined) => {
                                     if (move) {
                                         const offset = this.isRightHand ? 120 : -120;
-                                        animateTo({
+                                        this.getUIContext().animateTo({
                                             duration: 300,
                                             curve: Curve.FastOutSlowIn,
                                             onFinish: () => {
@@ -948,7 +948,7 @@ struct Dashboard {
                                     this.funcOpacity = 0;
                                     this.funcScale = 0.8;
                                     setTimeout(() => {
-                                        animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                                        this.getUIContext().animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
                                             this.funcTranslateX = 0;
                                             this.funcOpacity = 1;
                                             this.funcScale = 1;
@@ -977,7 +977,7 @@ struct Dashboard {
                                     this.funcOpacity = 0;
                                     this.funcScale = 0.8;
                                     setTimeout(() => {
-                                        animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                                        this.getUIContext().animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
                                             this.funcTranslateX = 0;
                                             this.funcOpacity = 1;
                                             this.funcScale = 1;
@@ -996,7 +996,7 @@ struct Dashboard {
                         .position({ y: this.getUIContext().px2vp(this.winHeight) - 50 })
                         .onClick(() => {
                             if (this.lockBar) return;
-                            animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
+                            this.getUIContext().animateTo({ curve: curves.springMotion(0.36, 0.6) }, () => {
                                 this.barMargin = 28;
                                 this.isTabsBarVisible = true;
                             })

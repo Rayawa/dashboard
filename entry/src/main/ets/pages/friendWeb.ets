@@ -81,13 +81,13 @@ export struct friendWeb {
             const currentTime = Date.now();
             if (currentTime - this.lastSwitchTime >= 2000) {
               this.lastSwitchTime = currentTime;
-              animateTo({
+              this.getUIContext().animateTo({
                 duration: 200,
                 curve: Curve.FastOutSlowIn,
                 onFinish: () => {
                   this.isRightHand = isNowRightHand;
                   this.funcTranslateX = isNowRightHand ? 120 : -120;
-                  animateTo({
+                  this.getUIContext().animateTo({
                     duration: 300,
                     curve: curves.springMotion(0.4, 0.8)
                   }, () => {
@@ -130,7 +130,7 @@ export struct friendWeb {
   }
 
   private shareManager?: WebShareManager;
-  private context = getContext(this) as common.UIAbilityContext;
+  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   private async loadSettings() {
     try {
       this.vibrationON = await getVibrationEnabled();
@@ -164,7 +164,7 @@ export struct friendWeb {
     this.isRightHand = this.buttonPositionRIGHT;
     if (this.holdCheckON) this.subscribeHoldingHand();
     //分享
-    const context = getContext(this) as common.UIAbilityContext;
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     this.shareManager = WebShareManager.getInstance(context);
     this.shareManager.enablePassiveShare();
     this.context.eventHub.on("onFocus", () => {
@@ -390,7 +390,7 @@ export struct friendWeb {
                 .onAction((move: GestureEvent | undefined) => {
                   if (move) {
                     const offset = this.isRightHand ? 120 : -120;
-                    animateTo({
+                    this.getUIContext().animateTo({
                       duration: 300,
                       curve: Curve.FastOutSlowIn,
                       onFinish: () => {
@@ -460,7 +460,7 @@ export struct friendWeb {
                   this.funcOpacity = 0;
                   this.funcScale = 0.8;
                   setTimeout(() => {
-                    animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                    this.getUIContext().animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
                       this.funcTranslateX = 0;
                       this.funcOpacity = 1;
                       this.funcScale = 1;
@@ -489,7 +489,7 @@ export struct friendWeb {
                   this.funcOpacity = 0;
                   this.funcScale = 0.8;
                   setTimeout(() => {
-                    animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                    this.getUIContext().animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
                       this.funcTranslateX = 0;
                       this.funcOpacity = 1;
                       this.funcScale = 1;
