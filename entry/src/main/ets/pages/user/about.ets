@@ -7,6 +7,7 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { warn } from '../../component/warn';
 import URL from '../../common/url';
+import { fetchDashboardConfig } from '../../common/dashboardConfig';
 
 export class WebViewParam {
   url: string | Resource;
@@ -25,6 +26,7 @@ struct about {
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @State showWarn: boolean = false;
+  @State showTSite: boolean = false;
   private readonly effect: TransitionEffect = TransitionEffect.OPACITY.combine(
     TransitionEffect.move(TransitionEdge.BOTTOM),
   )
@@ -34,6 +36,12 @@ struct about {
   @State WVp: number = 376;
   @State HVp: number = 376;
   aboutToAppear() {
+    fetchDashboardConfig().then((config) => {
+      this.showTSite = config.showTSite;
+    }).catch((error: Error) => {
+      console.warn(`Dashboard config load failed on about page: ${error.message}`);
+      this.showTSite = false;
+    });
     //获取屏幕尺寸
     const displayInfo = display.getDefaultDisplaySync();
     const screenWidthVp = this.getUIContext().px2vp(displayInfo.width);
@@ -103,17 +111,19 @@ struct about {
                 }
               })
 
-              Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
+              if (this.showTSite) {
+                Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
-              AboutItem({
-                icon: $r("app.media.log"),
-                title: "Web更新日志",
-                onClickAction: () =>{
-                  const changeLogURL = new URL("changelog", TBaseURL)
-                  let param = new WebViewParam(changeLogURL.toString(), 'Web更新日志');
-                  this.pageStack.pushPathByName("AboutWebPage", param);
-                }
-              })
+                AboutItem({
+                  icon: $r("app.media.log"),
+                  title: "Web更新日志",
+                  onClickAction: () =>{
+                    const changeLogURL = new URL("changelog", TBaseURL)
+                    let param = new WebViewParam(changeLogURL.toString(), 'Web更新日志');
+                    this.pageStack.pushPathByName("AboutWebPage", param);
+                  }
+                })
+              }
 
               Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 

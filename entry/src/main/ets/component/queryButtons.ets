@@ -4,7 +4,8 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { PromptAction } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
 import { URL } from "../common/url";
-import { DEFAULT_QUERY_TIMEOUT_MS, TBaseURL, SAPIBaseURL, createQueryFormData } from '../common/constants';
+import { DEFAULT_QUERY_TIMEOUT_MS, SAPIBaseURL, createQueryFormData } from '../common/constants';
+import { resolveDashboardAppDetailUrl } from '../common/dashboardConfig';
 
 interface QueryWebParams {
   url: string;
@@ -193,7 +194,7 @@ export struct queryButtons {
 
       if (isExists) {
         this.formData.appId = tempAppId;
-        const finalUrl = new URL(`app/${tempAppId}`, TBaseURL).toString()
+        const finalUrl = await resolveDashboardAppDetailUrl(tempAppId);
 
         this.isSearching = false;
         this.stopSearchRippleLoop();

@@ -18,6 +18,7 @@ import type {
     RatingDistribution,
     SdkBucket
 } from './types';
+import type { DashboardVisibilityConfig } from '../../common/dashboardConfig';
 
 interface StatCardDef {
     label: string;
@@ -194,6 +195,7 @@ struct NdDistSection {
 struct NdAppRow {
     app: AppSummary = { app_id: '' };
     seq: number = 0;
+    @Prop showDownloadMetrics: boolean = false;
 
     private ratingLabel(): string {
         // 后端 numeric 字段序列化成了字符串（如 "3.9"），也可能为 null/undefined，统一 Number() 转换
@@ -254,10 +256,12 @@ struct NdAppRow {
                 .fontColor($r('app.color.nd_text_main'))
                 .width(70)
 
-            Text(formatNumber(this.app.download_count))
-                .fontSize(11)
-                .fontColor($r('app.color.nd_text_main'))
-                .width(80)
+            if (this.showDownloadMetrics) {
+                Text(formatNumber(this.app.download_count))
+                    .fontSize(11)
+                    .fontColor($r('app.color.nd_text_main'))
+                    .width(80)
+            }
 
             Text(formatSize(this.app.size_bytes))
                 .fontSize(11)
@@ -280,6 +284,7 @@ struct NdAppRow {
 export struct NativeDashboard {
     // Dashboard 页通过父子 @Link 传递刷新信号，避免跨页面事件总线。
     @Link @Watch('onRefreshTick') nativeRefreshTick: number;
+    @Prop @Watch('onDashboardConfigChanged') dashboardConfig: DashboardVisibilityConfig;
 
     // 概览统计
     @State statCards: StatCardDef[] = [];
@@ -306,7 +311,7 @@ export struct NativeDashboard {
     @State searchField: string = 'name';
     @State searchOp: string = 'ilike';
     @State searchValue: string = '';
-    @State sortField: string = 'download_count';
+    @State sortField: string = 'updated_at';
     @State sortDesc: boolean = true;
 
     // 下拉框选项（aboutToAppear 里生成）
@@ -348,9 +353,22 @@ export struct NativeDashboard {
         this.loadAll();
     }
 
+    private onDashboardConfigChanged(): void {
+        if (!this.dashboardConfig.showAppDownloadMetrics && this.sortField === 'download_count') {
+            this.sortField = 'updated_at';
+        }
+        this.loadAll();
+    }
+
     private loadAll(): void {
         this.loadOverview();
-        this.loadRankings();
+        if (this.dashboardConfig.showTotalDownloadRanking || this.dashboardConfig.showNonHuaweiDownloadRanking) {
+            this.loadRankings();
+        } else {
+            this.rankingsLoading = false;
+            this.topDownloads = [];
+            this.topDownloadsNH = [];
+        }
         this.loadCharts();
         this.loadApps();
     }
@@ -362,13 +380,20 @@ export struct NativeDashboard {
                 this.overviewError = '数据加载失败';
                 return;
             }
-            const cards: StatCardDef[] = [
-                { label: '鸿蒙装机量', value: formatNumber(res.data.app_count.max_download_count), color: ACCENT_ROSE },
+            const cards: StatCardDef[] = [];
+            if (this.dashboardConfig.showInstallCount) {
+                cards.push({
+                    label: '鸿蒙装机量',
+                    value: formatNumber(res.data.app_count.max_download_count),
+                    color: ACCENT_ROSE,
+                });
+            }
+            cards.push(
                 { label: '鸿蒙应用总数', value: formatNumber(res.data.app_count.apps), color: ACCENT_AMBER },
                 { label: '鸿蒙元服务总数', value: formatNumber(res.data.app_count.atomic_services), color: ACCENT_EMERALD },
                 { label: '鸿蒙开发者总数', value: formatNumber(res.data.developer_count), color: ACCENT_INDIGO },
                 { label: '已知专题数量', value: formatNumber(res.data.substance_count), color: ACCENT_PURPLE },
-            ];
+            );
             this.statCards = cards;
             this.lastUpdate = res.timestamp ? formatDate(res.timestamp) : '-';
         }).catch((e: Error) => {
@@ -378,19 +403,32 @@ export struct NativeDashboard {
 
     private loadRankings(): void {
         this.rankingsLoading = true;
-        const total = fetchTopDownloads(false).then((list: AppSummary[]) => {
-            this.topDownloads = list;
-            this.maxTotalDownload = list.length > 0 ? (list[0].download_count ?? 0) : 0;
-        });
-        const nonHuawei = fetchTopDownloads(true).then((list: AppSummary[]) => {
-            this.topDownloadsNH = list;
-            this.maxNHDownload = list.length > 0 ? (list[0].download_count ?? 0) : 0;
-        });
-        Promise.all([total, nonHuawei]).then(() => {
+        const requests: Promise<void>[] = [];
+        if (this.dashboardConfig.showTotalDownloadRanking) {
+            requests.push(fetchTopDownloads(false).then((list: AppSummary[]) => {
+                this.topDownloads = list;
+                this.maxTotalDownload = list.length > 0 ? (list[0].download_count ?? 0) : 0;
+            }));
+        } else {
+            this.topDownloads = [];
+        }
+        if (this.dashboardConfig.showNonHuaweiDownloadRanking) {
+            requests.push(fetchTopDownloads(true).then((list: AppSummary[]) => {
+                this.topDownloadsNH = list;
+                this.maxNHDownload = list.length > 0 ? (list[0].download_count ?? 0) : 0;
+            }));
+        } else {
+            this.topDownloadsNH = [];
+        }
+        Promise.all(requests).then(() => {
             this.rankingsLoading = false;
         }).catch(() => {
             this.rankingsLoading = false;
         });
+    }
+
+    private appTableWidth(): number {
+        return this.dashboardConfig.showAppDownloadMetrics ? 866 : 786;
     }
 
     private toDistBars(pairs: SdkBucket[]): DistBarDef[] {
@@ -582,49 +620,53 @@ export struct NativeDashboard {
                 .width('100%')
 
                 // ===================== 总下载榜 =====================
-                Column() {
-                    Text('总下载榜')
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor(ACCENT_BLUE)
-                        .width('100%')
-                        .textAlign(TextAlign.Center)
-                        .padding({ top: 10, bottom: 8 })
-                    Divider().color($r('app.color.nd_card_border'))
-                    if (this.rankingsLoading) {
-                        LoadingProgress().width(28).height(28).margin(16).color(ACCENT_BLUE)
-                    } else {
-                        ForEach(this.topDownloads, (app: AppSummary, idx: number) => {
-                            NdRankingRow({
-                                app: app,
-                                rank: idx + 1,
-                                maxCount: this.maxTotalDownload,
-                                accent: ACCENT_BLUE,
-                            })
-                        }, (app: AppSummary) => app.app_id + String(app.download_count))
+                if (this.dashboardConfig.showTotalDownloadRanking) {
+                    Column() {
+                        Text('总下载榜')
+                            .fontSize(16)
+                            .fontWeight(FontWeight.Bold)
+                            .fontColor(ACCENT_BLUE)
+                            .width('100%')
+                            .textAlign(TextAlign.Center)
+                            .padding({ top: 10, bottom: 8 })
+                        Divider().color($r('app.color.nd_card_border'))
+                        if (this.rankingsLoading) {
+                            LoadingProgress().width(28).height(28).margin(16).color(ACCENT_BLUE)
+                        } else {
+                            ForEach(this.topDownloads, (app: AppSummary, idx: number) => {
+                                NdRankingRow({
+                                    app: app,
+                                    rank: idx + 1,
+                                    maxCount: this.maxTotalDownload,
+                                    accent: ACCENT_BLUE,
+                                })
+                            }, (app: AppSummary) => app.app_id + String(app.download_count))
+                        }
                     }
+                    .width('100%')
+                    .backgroundColor($r('app.color.nd_card_bg'))
+                    .borderRadius(12)
+                    .clip(true)
                 }
-                .width('100%')
-                .backgroundColor($r('app.color.nd_card_bg'))
-                .borderRadius(12)
-                .clip(true)
 
                 // ===================== 下载量历史（原生图表施工中） =====================
-                Column({ space: 6 }) {
-                    Text('鸿蒙应用下载量历史')
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor(ACCENT_EMERALD)
-                        .padding({ top: 10, bottom: 4 })
-                    Text('原生折线图施工中，请前往 S 站查看')
-                        .fontSize(11)
-                        .fontColor($r('app.color.nd_text_sub'))
-                        .padding({ bottom: 12 })
+                if (this.dashboardConfig.showDownloadHistory) {
+                    Column({ space: 6 }) {
+                        Text('鸿蒙应用下载量历史')
+                            .fontSize(16)
+                            .fontWeight(FontWeight.Bold)
+                            .fontColor(ACCENT_EMERALD)
+                            .padding({ top: 10, bottom: 4 })
+                        Text('原生折线图施工中，请前往 S 站查看')
+                            .fontSize(11)
+                            .fontColor($r('app.color.nd_text_sub'))
+                            .padding({ bottom: 12 })
+                    }
+                    .width('100%')
+                    .backgroundColor($r('app.color.nd_card_bg'))
+                    .borderRadius(12)
+                    .clip(true)
                 }
-                .width('100%')
-                .backgroundColor($r('app.color.nd_card_bg'))
-                .borderRadius(12)
-                .clip(true)
 
                 // ===================== 三个分布卡片 =====================
                 // 栅格按窗口宽度自动完成 1/2/3 列布局，不使用条件渲染。
@@ -649,32 +691,34 @@ export struct NativeDashboard {
                 .width('100%')
 
                 // ===================== 非华为应用下载榜 =====================
-                Column() {
-                    Text('非华为应用/内置应用下载榜')
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor(ACCENT_TEAL)
-                        .width('100%')
-                        .textAlign(TextAlign.Center)
-                        .padding({ top: 10, bottom: 8 })
-                    Divider().color($r('app.color.nd_card_border'))
-                    if (this.rankingsLoading) {
-                        LoadingProgress().width(28).height(28).margin(16).color(ACCENT_TEAL)
-                    } else {
-                        ForEach(this.topDownloadsNH, (app: AppSummary, idx: number) => {
-                            NdRankingRow({
-                                app: app,
-                                rank: idx + 1,
-                                maxCount: this.maxNHDownload,
-                                accent: ACCENT_TEAL,
-                            })
-                        }, (app: AppSummary) => app.app_id + String(app.download_count))
+                if (this.dashboardConfig.showNonHuaweiDownloadRanking) {
+                    Column() {
+                        Text('非华为应用/内置应用下载榜')
+                            .fontSize(16)
+                            .fontWeight(FontWeight.Bold)
+                            .fontColor(ACCENT_TEAL)
+                            .width('100%')
+                            .textAlign(TextAlign.Center)
+                            .padding({ top: 10, bottom: 8 })
+                        Divider().color($r('app.color.nd_card_border'))
+                        if (this.rankingsLoading) {
+                            LoadingProgress().width(28).height(28).margin(16).color(ACCENT_TEAL)
+                        } else {
+                            ForEach(this.topDownloadsNH, (app: AppSummary, idx: number) => {
+                                NdRankingRow({
+                                    app: app,
+                                    rank: idx + 1,
+                                    maxCount: this.maxNHDownload,
+                                    accent: ACCENT_TEAL,
+                                })
+                            }, (app: AppSummary) => app.app_id + String(app.download_count))
+                        }
                     }
+                    .width('100%')
+                    .backgroundColor($r('app.color.nd_card_bg'))
+                    .borderRadius(12)
+                    .clip(true)
                 }
-                .width('100%')
-                .backgroundColor($r('app.color.nd_card_bg'))
-                .borderRadius(12)
-                .clip(true)
 
                 // ===================== 应用列表 =====================
                 Column() {
@@ -754,11 +798,13 @@ export struct NativeDashboard {
                                     .onClick(() => {
                                         this.changeSort('total_star_rating_count');
                                     })
-                                Text(this.sortField === 'download_count' ? (this.sortDesc ? '下载量 ↓' : '下载量 ↑') : '下载量')
-                                    .fontSize(11).fontColor(ACCENT_BLUE).fontWeight(FontWeight.Bold).width(80)
-                                    .onClick(() => {
-                                        this.changeSort('download_count');
-                                    })
+                                if (this.dashboardConfig.showAppDownloadMetrics) {
+                                    Text(this.sortField === 'download_count' ? (this.sortDesc ? '下载量 ↓' : '下载量 ↑') : '下载量')
+                                        .fontSize(11).fontColor(ACCENT_BLUE).fontWeight(FontWeight.Bold).width(80)
+                                        .onClick(() => {
+                                            this.changeSort('download_count');
+                                        })
+                                }
                                 Text(this.sortField === 'size_bytes' ? (this.sortDesc ? '大小 ↓' : '大小 ↑') : '大小')
                                     .fontSize(11).fontColor(ACCENT_BLUE).fontWeight(FontWeight.Bold).width(70)
                                     .onClick(() => {
@@ -770,7 +816,7 @@ export struct NativeDashboard {
                                         this.changeSort('updated_at');
                                     })
                             }
-                            .width(866)
+                            .width(this.appTableWidth())
                             .padding({ left: 8, right: 8, top: 6, bottom: 6 })
                             .backgroundColor($r('app.color.nd_bar_track'))
 
@@ -783,12 +829,16 @@ export struct NativeDashboard {
                                     .margin(16)
                             } else {
                                 ForEach(this.apps, (app: AppSummary, idx: number) => {
-                                    NdAppRow({ app: app, seq: (this.appsPage - 1) * this.pageSize + idx + 1 })
+                                    NdAppRow({
+                                        app: app,
+                                        seq: (this.appsPage - 1) * this.pageSize + idx + 1,
+                                        showDownloadMetrics: this.dashboardConfig.showAppDownloadMetrics,
+                                    })
                                 }, (app: AppSummary) => app.app_id + String(app.download_count))
                             }
                         }
-                        .width(866)
-                        .constraintSize({ minWidth: 866 })
+                        .width(this.appTableWidth())
+                        .constraintSize({ minWidth: this.appTableWidth() })
                     }
                     .width('100%')
                     .scrollable(ScrollDirection.Horizontal)
