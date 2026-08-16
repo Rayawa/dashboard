@@ -6,7 +6,7 @@ import {
   HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, LengthMetrics, PromptAction, router } from '@kit.ArkUI';
+import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { customUserAgent } from '../common/constants';
@@ -27,8 +27,9 @@ struct queryEntry {
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
   onCloseSplit?: () => void;
   private shareManager?: WebShareManager;
-  private context = getContext(this) as common.UIAbilityContext;
-  @Prop url: string = '';
+  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+  // @Entry 页面无父组件传值，url 实际由 getParams() 注入，用 @State 即可
+  @State url: string = '';
 
   @State progress: number = 0;
   @State showButton: boolean = true;
@@ -140,7 +141,7 @@ struct queryEntry {
     await this.loadSettings();
     this.isRightHand = this.buttonPositionRIGHT;
     if (this.holdCheckON) this.subscribeHoldingHand();
-    const params = router.getParams() as Record<string, string>;
+    const params = this.getUIContext().getRouter().getParams() as Record<string, string>;
     if (params && params.url) {
       this.url = params.url;
     }

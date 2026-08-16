@@ -4,7 +4,7 @@ import {
   hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, PromptAction, router } from '@kit.ArkUI';
+import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { WebShareManager } from '../common/shareControl';
@@ -146,7 +146,7 @@ struct continueWeb {
     await this.loadSettings();
     this.isRightHand = this.buttonPositionRIGHT;
     if (this.holdCheckON) this.subscribeHoldingHand();
-    const params = router.getParams() as Record<string, string>;
+    const params = this.getUIContext().getRouter().getParams() as Record<string, string>;
     if (params && params.url) {
       this.url = params.url;
     }
@@ -173,7 +173,7 @@ struct continueWeb {
 
   private backToMain() {
     if(this.vibrationON) vibration.dotVibration()
-    router.replaceUrl({
+    this.getUIContext().getRouter().replaceUrl({
       url: 'pages/Dashboard'
     }).catch((err: BusinessError) => {
       console.error(`Failed to jump to Dashboard. Code: ${err.code}`);
