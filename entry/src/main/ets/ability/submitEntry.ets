@@ -82,7 +82,6 @@ export default class shareEntryAbility extends UIAbility {
             await windowClass.setWindowLayoutFullScreen(true);
             const avoidArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
             hilog.info(DOMAIN, "dashboard", "Avoid area: %{public}s", JSON.stringify(avoidArea));
-            await windowClass.setFullScreen(true);
         } catch (err) {
             hilog.error(
                 DOMAIN,

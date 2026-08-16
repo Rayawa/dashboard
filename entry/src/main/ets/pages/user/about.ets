@@ -36,8 +36,8 @@ struct about {
   aboutToAppear() {
     //获取屏幕尺寸
     const displayInfo = display.getDefaultDisplaySync();
-    const screenWidthVp = px2vp(displayInfo.width);
-    const screenHeightVp = px2vp(displayInfo.height);
+    const screenWidthVp = this.getUIContext().px2vp(displayInfo.width);
+    const screenHeightVp = this.getUIContext().px2vp(displayInfo.height);
     this.WVp = screenWidthVp;
     this.HVp = screenHeightVp;
   }
