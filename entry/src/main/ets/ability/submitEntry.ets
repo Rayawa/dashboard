@@ -1,6 +1,7 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
+import { loadPersistedState } from '../common/storage';
 interface WantParams {
     sharePackageName: string;
     shareUrl: string;
@@ -28,6 +29,8 @@ export default class shareEntryAbility extends UIAbility {
     private shareWantParams: WantParams = { sharePackageName: "", shareUrl: "" };
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+        // 与主 EntryAbility 一致：页面加载前完成旧数据迁移并水合 AppStorage
+        loadPersistedState(this.context);
         try {
             this.context
                 .getApplicationContext()

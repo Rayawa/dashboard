@@ -52,41 +52,46 @@ function getStore(ctx?: common.Context): DiskStorageInstance {
 
 // 所有公开读写都经过这里：旧数据迁移必然先于首次访问完成
 async function ensureReady(ctx?: common.Context): Promise<DiskStorageInstance> {
-    if (!readyPromise) {
-        readyPromise = migrateLegacyData(ctx);
+    if (readyPromise) {
+        await readyPromise;
+        return getStore(ctx);
     }
-    await readyPromise;
+    try {
+        const migrate = migrateLegacyData(ctx);
+        readyPromise = migrate;
+        await migrate;
+    } catch (error) {
+        // 初始化/迁移失败不缓存 readyPromise：后续携带 context 的调用仍可重试
+        readyPromise = undefined;
+        throw error as Error;
+    }
     return getStore(ctx);
 }
 
 async function migrateLegacyData(ctx?: common.Context): Promise<void> {
-    try {
-        const target = getStore(ctx);
-        if (await target.has(KEY_MIGRATED)) {
-            return;
-        }
-        const copied: string[] = [];
-        // 旧 profile 文件：用户名（唯一必须保住的旧数据）
-        if (await copyLegacyKey(target, 'profile', KEY_USERNAME, ctx)) {
-            copied.push(KEY_USERNAME);
-        }
-        // 旧 settings 文件：设置开关（新旧 key 同名）
-        const settingKeys: string[] = [KEY_VIBRATION, KEY_HOLD_CHECK, KEY_BUTTON_RIGHT, KEY_TAB_BAR_AUTO, KEY_IMMERSIVE];
-        for (const key of settingKeys) {
-            if (await copyLegacyKey(target, 'settings', key, ctx)) {
-                copied.push(key);
-            }
-        }
-        // 旧 myAppSettings 文件：首启标志
-        if (await copyLegacyKey(target, 'myAppSettings', KEY_FIRST_LAUNCH, ctx)) {
-            copied.push(KEY_FIRST_LAUNCH);
-        }
-        await target.set(KEY_MIGRATED, true);
-        console.info(`[storage] 旧数据迁移完成: ${copied.length > 0 ? copied.join(', ') : '全新安装，无需迁移'}`);
-    } catch (error) {
-        // 迁移失败不阻塞使用（按默认值运行），标志位未写入，下次启动会重试
-        console.error(`[storage] 旧数据迁移失败，本次按默认值运行: ${JSON.stringify(error)}`);
+    // 无 context 且实例尚未创建时，DiskStorage 构造在此抛出明确错误（由 ensureReady 处理）
+    const target = getStore(ctx);
+    if (await target.has(KEY_MIGRATED)) {
+        return;
     }
+    const copied: string[] = [];
+    // 旧 profile 文件：用户名（唯一必须保住的旧数据）
+    if (await copyLegacyKey(target, 'profile', KEY_USERNAME, ctx)) {
+        copied.push(KEY_USERNAME);
+    }
+    // 旧 settings 文件：设置开关（新旧 key 同名）
+    const settingKeys: string[] = [KEY_VIBRATION, KEY_HOLD_CHECK, KEY_BUTTON_RIGHT, KEY_TAB_BAR_AUTO, KEY_IMMERSIVE];
+    for (const key of settingKeys) {
+        if (await copyLegacyKey(target, 'settings', key, ctx)) {
+            copied.push(key);
+        }
+    }
+    // 旧 myAppSettings 文件：首启标志
+    if (await copyLegacyKey(target, 'myAppSettings', KEY_FIRST_LAUNCH, ctx)) {
+        copied.push(KEY_FIRST_LAUNCH);
+    }
+    await target.set(KEY_MIGRATED, true);
+    console.info(`[storage] 旧数据迁移完成: ${copied.length > 0 ? copied.join(', ') : '全新安装，无需迁移'}`);
 }
 
 async function copyLegacyKey(target: DiskStorageInstance, legacyFile: string, key: string, ctx?: common.Context): Promise<boolean> {
