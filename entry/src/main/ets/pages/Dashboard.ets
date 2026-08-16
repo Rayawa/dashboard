@@ -28,8 +28,17 @@ import {
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
-import { preferences } from '@kit.ArkData';
-import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
+import {
+    getButtonPosition,
+    getFirstLaunch,
+    getHoldCheckEnabled,
+    getImmersiveTexture,
+    getTabBarAuto,
+    getUsername,
+    getVibrationEnabled,
+    initializeSettings,
+    setUsername
+} from '../common/storage';
 import { warn } from '../component/warn';
 import type {
     BaseAPIResponse,
@@ -38,14 +47,6 @@ import type {
     TelemetryReportBody
 } from '../common/types';
 import { http } from '@kit.NetworkKit';
-import {
-    getButtonPosition,
-    getHoldCheckEnabled,
-    getImmersiveTexture,
-    getTabBarAuto,
-    getVibrationEnabled,
-    initializeSettings
-} from '../common/SettingsStorage';
 import { user } from './user';
 import { NativeDashboard } from '../component/nativeDashboard/nativeDashboard';
 
@@ -166,8 +167,8 @@ struct Dashboard {
             this.funcOpacity = 0;
         });
     }
-    @StorageLink("tabBarAutoON") tabBarAutoON: boolean = true;
-    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+    @StorageLink("tabBarAutoON") tabBarAutoON: boolean = false;
+    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
     @StorageLink("showWarn") showWarn: boolean = false;
     @StorageLink("holdCheckON") @Watch("onHoldCheckChanged") holdCheckON: boolean = false;
     onHoldCheckChanged() {
@@ -320,13 +321,9 @@ struct Dashboard {
 
     //==========================页面生命周期部分==========================
     //entry
-    @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
     private async checkFirstLaunch(): Promise<void> {
         try {
-            let context = getContext(this) as common.UIAbilityContext;
-            let preference = await preferences.getPreferences(context, "myAppSettings");
-
-            let isFirstLaunch = await preference.get(this.IS_FIRST_LAUNCH_KEY, true);
+            const isFirstLaunch = await getFirstLaunch();
 
             if (isFirstLaunch === true) {
                 console.info("Index", "检测到首次启动，准备弹出协议。");
@@ -342,7 +339,6 @@ struct Dashboard {
     }
     @StorageLink("userName") userName: string = "";
     async loadUserName() {
-        initializeUserStorage();
         this.userName = await getUsername();
     }
     async saveUserName() {

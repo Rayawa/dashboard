@@ -1,6 +1,7 @@
 import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
+import { loadPersistedState } from '../common/storage';
 
 const DOMAIN = 0x0000;
 
@@ -30,6 +31,8 @@ export default class EntryAbility extends UIAbility {
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         this.restoreContinuationParams(want, launchParam);
+        // UI 绑定前把磁盘上的持久化设置灌入 AppStorage（内部含旧数据迁移，只跑一次）
+        loadPersistedState(this.context);
     }
     onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         this.restoreContinuationParams(want, launchParam);

@@ -11,7 +11,7 @@ export struct tutorial {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink("isSplitMode") isSplitMode: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
   @StorageLink("showWarn") showWarn: boolean = false;
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
   private readonly cardSwiperResourcesPhone: CardRes[] = [

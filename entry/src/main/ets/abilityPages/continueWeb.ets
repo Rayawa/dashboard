@@ -14,7 +14,7 @@ import {
   getHoldCheckEnabled,
   getVibrationEnabled,
   initializeSettings
-} from '../common/SettingsStorage';
+} from '../common/storage';
 import { harmonyShare } from '@kit.ShareKit';
 import { common } from '@kit.AbilityKit';
 
@@ -45,7 +45,7 @@ struct continueWeb {
   @State touchY: number = 0;
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
-  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
 
   private scroller: Scroller = new Scroller();
   private web_controller: webview.WebviewController = new webview.WebviewController();

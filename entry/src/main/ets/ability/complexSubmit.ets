@@ -1,7 +1,7 @@
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from "@kit.AbilityKit";
 import { systemShare } from "@kit.ShareKit";
 import { BusinessError } from "@kit.BasicServicesKit";
-import { initialize as initializeUserStorage } from "../common/profile";
+import { initialize as initializeUserStorage } from "../common/storage";
 import { parseInputSplitLinksPkgsAndAppIds } from "../common/utils";
 
 export class ShareAbility extends ShareExtensionAbility {

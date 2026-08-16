@@ -3,7 +3,7 @@ import { vibration } from '../common/vibration';
 import { confirmButtons } from './confirmButtons';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { preferences } from '@kit.ArkData';
+import { getFirstLaunch } from '../common/storage';
 import { mainPage } from '../common/constants';
 
 
@@ -12,13 +12,9 @@ export struct warn {
   @Link isShow: boolean;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
   private is_first_launch: boolean = true;
   async aboutToAppear() {
-    let context = getContext(this) as common.UIAbilityContext;
-    let prefs = await preferences.getPreferences(context, "myAppSettings");
-    let check = await prefs.get(this.IS_FIRST_LAUNCH_KEY, true);
-    if (check === true) { this.is_first_launch = true } else{ this.is_first_launch = false }
+    this.is_first_launch = await getFirstLaunch();
   }
 
   private readonly effect: TransitionEffect = TransitionEffect.OPACITY.combine(

@@ -18,52 +18,13 @@ class DiskStorage {
 
     constructor(preference_name: string, context?: common.Context) {
         this.preference_name = preference_name;
-        const ctx = context || DiskStorage.tryGetGlobalContext();
-        if (!ctx) {
+        // Stage 模型下 globalThis 不再可靠，context 必须由调用方显式提供
+        // （正常流程中第一个调用方是 EntryAbility.onCreate 的 loadPersistedState(this.context)）
+        if (!context) {
             throw new Error("DiskStorage: Context is required for first-time initialization");
         }
-        this._context = ctx;
+        this._context = context;
         console.log("DiskStorage: Instance created");
-    }
-
-    // 尝试从全局获取上下文
-    private static tryGetGlobalContext(): common.Context | undefined {
-        try {
-            // 方法1: UIAbility 标准方式
-            if (globalThis.abilityContext) {
-                console.log("DiskStorage: Got context from abilityContext");
-                return globalThis.abilityContext;
-            }
-
-            // 方法2: ExtensionAbility 方式
-            if (globalThis.extensionContext) {
-                console.log("DiskStorage: Got context from extensionContext");
-                return globalThis.extensionContext;
-            }
-
-            // 方法3: AbilityStage方式
-            if (globalThis.abilityStage && globalThis.abilityStage.context) {
-                console.log("DiskStorage: Got context from abilityStage");
-                return globalThis.abilityStage.context;
-            }
-
-            // 方法4: ApplicationContext方式
-            if (globalThis.applicationContext) {
-                console.log("DiskStorage: Got context from applicationContext");
-                return globalThis.applicationContext;
-            }
-
-            if (globalThis.getContext) {
-                console.log("DiskStorage: Got globalThis context");
-                return globalThis.getContext();
-            }
-
-            console.warn("DiskStorage: No global context available");
-            return undefined;
-        } catch (error) {
-            console.error("DiskStorage: Error getting global context:", error);
-            return undefined;
-        }
     }
 
     // 初始化存储
@@ -86,10 +47,7 @@ class DiskStorage {
             this._initializing = true;
 
             if (!this._context) {
-                this._context = DiskStorage.tryGetGlobalContext();
-                if (!this._context) {
-                    throw new Error("DiskStorage: Cannot initialize without context");
-                }
+                throw new Error("DiskStorage: Cannot initialize without context");
             }
 
             console.log(

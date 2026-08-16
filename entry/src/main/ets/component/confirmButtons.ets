@@ -2,12 +2,11 @@ import { vibration } from '../common/vibration';
 import { PromptAction } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { preferences } from '@kit.ArkData';
+import { setFirstLaunch, getFirstLaunch } from '../common/storage';
 import { privacyManager } from '@kit.StoreKit';
 
 @Component
 export struct confirmButtons {
-    @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
     @StorageLink("showWarn") showWarn: boolean = false;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
@@ -29,9 +28,7 @@ export struct confirmButtons {
 
     private async startCountDown() {
         try {
-            let context = getContext(this) as common.UIAbilityContext;
-            let prefs = await preferences.getPreferences(context, "myAppSettings");
-            let isFirstLaunch = await prefs.get(this.IS_FIRST_LAUNCH_KEY, true);
+            let isFirstLaunch = await getFirstLaunch();
 
             if (isFirstLaunch === true) {
                 // 情况 A：首次启动，执行倒计时逻辑
@@ -58,11 +55,7 @@ export struct confirmButtons {
         this.isExiting = true;
         this.PromptAction.showToast({ message: "退出应用..." });
         try {
-            let context = getContext(this) as common.UIAbilityContext;
-            let prefs = await preferences.getPreferences(context, "myAppSettings");
-
-            await prefs.put(this.IS_FIRST_LAUNCH_KEY, true);
-            await prefs.flush();
+            await setFirstLaunch(true);
 
             console.info("Index", "用户点击取消，标记位重置为true。");
         } catch (err) {
@@ -86,11 +79,7 @@ export struct confirmButtons {
     private async handleConfirm() {
         if (!this.isConfirmEnabled) return;
         try {
-            let context = getContext(this) as common.UIAbilityContext;
-            let prefs = await preferences.getPreferences(context, "myAppSettings");
-
-            await prefs.put(this.IS_FIRST_LAUNCH_KEY, false);
-            await prefs.flush();
+            await setFirstLaunch(false);
 
             this.showWarn = false;
             console.info("Index", "用户已同意协议，标记位已更新。");

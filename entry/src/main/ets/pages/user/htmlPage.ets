@@ -6,14 +6,14 @@ import { webview } from '@kit.ArkWeb';
 import { WebViewParam } from './about';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { preferences } from '@kit.ArkData';
+import { setFirstLaunch } from '../../common/storage';
 import { privacyManager } from '@kit.StoreKit';
 
 @Component
 export struct HTML {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
   controller: webview.WebviewController = new webview.WebviewController();
   @State params: WebViewParam = new WebViewParam('', '');
 
@@ -23,7 +23,6 @@ export struct HTML {
       this.params = pathInfo[0];
     }
   }
-  @StorageLink("IS_FIRST_LAUNCH_KEY") IS_FIRST_LAUNCH_KEY: string = "isFirstLaunch";
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
 
   private async closePage() {
@@ -37,10 +36,8 @@ export struct HTML {
     }).then(async (result: promptAction.ShowDialogSuccessResponse) => {
       if (result.index === 1) {
         try {
-          let context = getContext(this) as common.UIAbilityContext;
-          let prefs = await preferences.getPreferences(context, "myAppSettings");
-          await prefs.put(this.IS_FIRST_LAUNCH_KEY, true);
-          await prefs.flush();
+          await setFirstLaunch(true);
+          const context = getContext(this) as common.UIAbilityContext;
           privacyManager.disableService();
           this.PromptAction.showToast({ message: `${this.params.title}已撤销，即将退出` });
           context.terminateSelf().then(() => {
