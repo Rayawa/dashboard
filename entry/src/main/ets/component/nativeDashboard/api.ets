@@ -69,12 +69,18 @@ export async function fetchAppsPage(
 
 export async function fetchTopDownloads(excludeHuawei: boolean): Promise<AppSummary[]> {
     const res = await fetchAppsPage(1, 15, 'download_count', true, undefined, undefined, undefined, excludeHuawei);
-    return res.data.data ?? [];
+    if (!res.data || !res.data.data) {
+        throw new Error(`总下载榜接口返回异常 (success=${res.success})`);
+    }
+    return res.data.data;
 }
 
 // 评分分布
 export async function fetchRatingDist(): Promise<RatingDistribution> {
     const res = await getJson<RatingChartResponse>('charts/rating');
+    if (!res.data) {
+        throw new Error(`评分分布接口返回异常 (success=${res.success})`);
+    }
     return res.data;
 }
 

@@ -519,7 +519,10 @@ export struct NativeDashboard {
             this.currentSearchExact(),
             false,
         ).then((res: AppsListResponse) => {
-            this.apps = res.data.data ?? [];
+            if (!res.data || !res.data.data) {
+                throw new Error(`应用列表接口返回异常 (success=${res.success})`);
+            }
+            this.apps = res.data.data;
             this.appsTotal = res.data.total_count ?? 0;
             this.appsLoading = false;
         }).catch((e: Error) => {
