@@ -22,7 +22,7 @@ export class WebViewParam {
 struct about {
   @Consume('pageStack') pageStack: NavPathStack;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageProp("showWarn") showWarn: boolean = false;
   private readonly effect: TransitionEffect = TransitionEffect.OPACITY.combine(

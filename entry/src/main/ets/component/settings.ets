@@ -5,20 +5,22 @@ import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
 import { promptAction } from '@kit.ArkUI';
 import {
   initializeSettings,
+  resetAllSettings,
   setButtonPosition,
+  setFirstLaunch,
   setHoldCheckEnabled,
   setImmersiveTexture,
   setTabBarAuto,
   setVibrationEnabled
-} from '../common/SettingsStorage';
+} from '../common/storage';
 
 @Component
 export struct settings {
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = false;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
-    @StorageLink("tabBarAutoON") tabBarAutoON: boolean = true;
-    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+    @StorageLink("tabBarAutoON") tabBarAutoON: boolean = false;
+    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
 
     @State handlePopupTrash: boolean = false;
 
@@ -43,6 +45,9 @@ export struct settings {
                     try {
                         webview.WebStorage.deleteAllData();
                         webview.WebCookieManager.deleteEntireCookie();
+                        // 偏好数据一并复位：设置回默认值，下次启动重新弹隐私协议
+                        await resetAllSettings();
+                        await setFirstLaunch(true);
                         const context = getContext(this) as common.UIAbilityContext;
                         context.terminateSelf().then(() => {
                             console.info('Ability 销毁指令发送成功');
@@ -64,7 +69,7 @@ export struct settings {
                 icon: $r("app.media.vibrate"),
                 title: "全局振动反馈",
                 isOn: this.vibrationON,
-                onToggle: async (val) => { await setVibrationEnabled(val); this.vibrationON = val; }
+                onToggle: async (val) => { await setVibrationEnabled(val); }
             })
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
@@ -77,7 +82,7 @@ export struct settings {
                     both: true,
                     offText: "左",
                     onText: "右",
-                    onToggle: async (val) => { await setButtonPosition(val); this.buttonPositionRIGHT = val; }
+                    onToggle: async (val) => { await setButtonPosition(val); }
                 })
                 Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
@@ -86,7 +91,7 @@ export struct settings {
                     title: "按钮智感握持",
                     isOn: this.holdCheckON,
                     promptMsg: "󰗫适人握持󰗫",
-                    onToggle: async (val) => { await setHoldCheckEnabled(val); this.holdCheckON = val; }
+                    onToggle: async (val) => { await setHoldCheckEnabled(val); }
                 })
                 Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
             }
@@ -95,7 +100,7 @@ export struct settings {
                 icon: $r("app.media.autoBar"),
                 title: "自动隐藏底部栏",
                 isOn: this.tabBarAutoON,
-                onToggle: async (val) => { await setTabBarAuto(val); this.tabBarAutoON = val; }
+                onToggle: async (val) => { await setTabBarAuto(val); }
             })
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
@@ -105,7 +110,7 @@ export struct settings {
                 title: "使用沉浸式材质",
                 isOn: this.immersiveTextureON,
                 promptMsg: "开启沉浸式材质将增加应用功耗，\n如遇卡顿建议关闭。",
-                onToggle: async (val) => { await setImmersiveTexture(val); this.immersiveTextureON = val; }
+                onToggle: async (val) => { await setImmersiveTexture(val); }
             })
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 

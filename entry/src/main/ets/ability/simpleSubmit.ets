@@ -2,7 +2,7 @@
 import { ShareExtensionAbility, UIExtensionContentSession, Want } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { getUsername, initialize as initializeUserStorage } from '../common/profile';
+import { getUsername, initialize as initializeUserStorage } from '../common/storage';
 import { parseInputSplitLinksPkgsAndAppIds } from '../common/utils';
 import { submit_app } from '../component/submitButtons';
 

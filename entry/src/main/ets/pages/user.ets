@@ -1,7 +1,7 @@
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { settings } from '../component/settings';
 import { deviceInfo } from '@kit.BasicServicesKit';
-import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/profile';
+import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/storage';
 import { contact } from '../component/contact';
 import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
@@ -16,7 +16,7 @@ export struct user {
     @Consume('pageStack') pageStack: NavPathStack;
     @StorageLink("isSplitMode") isSplitMode: boolean = false;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
     @StorageLink("vibrationON") vibrationON: boolean = true;
 
     @StorageLink("showSheet") showSheet: boolean = false;

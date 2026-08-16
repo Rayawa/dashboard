@@ -17,7 +17,7 @@ struct appLog {
     @Consume('pageStack') pageStack: NavPathStack;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
     private updateLogs: UpdateLog[] = [
         {
             version: "V2.2.0",

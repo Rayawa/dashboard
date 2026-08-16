@@ -27,7 +27,7 @@ struct friend {
   @Consume('pageStack') pageStack: NavPathStack;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = true;
+  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
   private isExiting: boolean = false;
 
   private jumpToMarket(appId: string) {
