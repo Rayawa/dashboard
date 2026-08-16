@@ -2,7 +2,6 @@ import { vibration } from '../common/vibration';
 import { webview } from '@kit.ArkWeb';
 import { common } from '@kit.AbilityKit';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
-import { promptAction } from '@kit.ArkUI';
 import {
   initializeSettings,
   resetAllSettings,
@@ -44,11 +43,11 @@ export struct settings {
                 action: async () => {
                     try {
                         webview.WebStorage.deleteAllData();
-                        webview.WebCookieManager.deleteEntireCookie();
+                        webview.WebCookieManager.clearAllCookiesSync();
                         // 偏好数据一并复位：设置回默认值，下次启动重新弹隐私协议
                         await resetAllSettings();
                         await setFirstLaunch(true);
-                        const context = getContext(this) as common.UIAbilityContext;
+                        const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
                         context.terminateSelf().then(() => {
                             console.info('Ability 销毁指令发送成功');
                         }).catch((err: BusinessError) => {
@@ -183,7 +182,7 @@ struct SettingItem {
                             if (this.canVibrate) vibration.dotVibration();
                             await this.onToggle(checked);
                             if (checked && this.promptMsg !== "") {
-                                promptAction.showToast({
+                                this.getUIContext().getPromptAction().showToast({
                                     message: this.promptMsg,
                                     duration: 1000
                                 });
