@@ -44,6 +44,26 @@
     {
       "name": "diff_content",
       "value": "#4A9CE2"
+    },
+    {
+      "name": "nd_card_bg",
+      "value": "#16202B"
+    },
+    {
+      "name": "nd_card_border",
+      "value": "#273546"
+    },
+    {
+      "name": "nd_text_main",
+      "value": "#E6EAF0"
+    },
+    {
+      "name": "nd_text_sub",
+      "value": "#98A6B3"
+    },
+    {
+      "name": "nd_bar_track",
+      "value": "#233046"
     }
   ]
 }
