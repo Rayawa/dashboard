@@ -1,6 +1,6 @@
 // 原生看板页面：复刻 S 站 web 看板（get_market/assets/html/main.html）的内容框架
 // 数据来源与 web 版一致：/api/v0 下的 market_info、apps/list、charts/*
-import { mediaquery, PromptAction } from '@kit.ArkUI';
+import { PromptAction } from '@kit.ArkUI';
 import {
     fetchAppsPage,
     fetchMarketInfo,
@@ -32,17 +32,6 @@ interface DistBarDef {
     color: string;
 }
 
-interface SearchFieldOption {
-    key: string;
-    label: string;
-}
-
-interface SearchOpOption {
-    key: string;
-    label: string;
-    exact: boolean;
-}
-
 const ACCENT_ROSE: string = '#E11D48';
 const ACCENT_AMBER: string = '#D97706';
 const ACCENT_EMERALD: string = '#059669';
@@ -69,7 +58,6 @@ struct NdStatCard {
                 .fontWeight(FontWeight.Bold)
                 .fontColor(this.card.color)
         }
-        // 宽度由外部 Row + layoutWeight 均分（保证最后一行也占满整行）
         .width('100%')
         .padding({ top: 14, bottom: 14 })
         .borderRadius(12)
@@ -117,19 +105,15 @@ struct NdRankingRow {
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
 
-            Stack({ alignContent: Alignment.Start }) {
-                Row()
-                    .width('100%')
-                    .height(8)
-                    .borderRadius(4)
-                    .backgroundColor($r('app.color.nd_bar_track'))
-                Row()
-                    .width(this.maxCount > 0 ? `${Math.max((this.app.download_count ?? 0) / this.maxCount * 100, 4)}%` : '0%')
-                    .height(8)
-                    .borderRadius(4)
-                    .backgroundColor(this.accent)
-            }
+            Progress({
+                value: this.app.download_count ?? 0,
+                total: Math.max(this.maxCount, 1),
+                type: ProgressType.Linear,
+            })
             .width(80)
+            .height(8)
+            .color(this.accent)
+            .backgroundColor($r('app.color.nd_bar_track'))
 
             Text(formatNumber(this.app.download_count))
                 .fontSize(12)
@@ -159,35 +143,24 @@ struct NdDistBar {
                     .fontColor($r('app.color.nd_text_main'))
             }
             .width('100%')
-            Stack({ alignContent: Alignment.Start }) {
-                Row()
-                    .width('100%')
-                    .height(8)
-                    .borderRadius(4)
-                    .backgroundColor($r('app.color.nd_bar_track'))
-                Row()
-                    .width(`${Math.max(this.bar.percent, 1)}%`)
-                    .height(8)
-                    .borderRadius(4)
-                    .backgroundColor(this.bar.color)
-            }
+            Progress({ value: this.bar.percent, total: 100, type: ProgressType.Linear })
             .width('100%')
+            .height(8)
+            .color(this.bar.color)
+            .backgroundColor($r('app.color.nd_bar_track'))
         }
         .width('100%')
         .padding({ left: 10, right: 10, top: 4, bottom: 4 })
     }
 }
 
-// ==================== 子组件：分布区块（评分/SKD） ====================
+// ==================== 子组件：分布区块（评分/SDK） ====================
 @Component
 struct NdDistSection {
     title: string = '';
     accent: string = ACCENT_PURPLE;
     // 直接实例化的固定组件（非 ForEach），普通成员不会随父组件 @State 更新，必须用 @Prop 同步
     @Prop bars: DistBarDef[] = [];
-    // 窄屏纵向排列时占满整行；1+2 布局 49.5%；1x3 布局 32%
-    @Prop sectionWidth: string = '49.5%';
-
     build() {
         Column() {
             Text(this.title)
@@ -209,7 +182,7 @@ struct NdDistSection {
                 }, (bar: DistBarDef) => bar.label)
             }
         }
-        .width(this.sectionWidth)
+        .width('100%')
         .backgroundColor($r('app.color.nd_card_bg'))
         .borderRadius(12)
         .clip(true)
@@ -325,17 +298,6 @@ export struct NativeDashboard {
     @State minSdkBars: DistBarDef[] = [];
     @State targetSdkBars: DistBarDef[] = [];
 
-    // 布局宽度分界（mediaquery 基于应用窗口宽度，窗口模式/分屏/旋转/折叠都会跟随）：
-    // < 432vp（普通手机竖屏）：纵向排列
-    // >= 432vp（Pura X 展开态宽度）：1+2 横排
-    // >= 840vp（官方 lg 断点，平板横屏/大窗口）：1x3 三列
-    @State private isWideLayout: boolean = false;
-    @State private useThreeColumn: boolean = false;
-    private readonly wideLayoutQuery: string = '(min-width: 432vp)';
-    private readonly threeColumnQuery: string = '(min-width: 840vp)';
-    private wideQueryListener: mediaquery.MediaQueryListener | null = null;
-    private threeColumnListener: mediaquery.MediaQueryListener | null = null;
-
     // 应用列表
     @State apps: AppSummary[] = [];
     @State appsTotal: number = 0;
@@ -363,20 +325,6 @@ export struct NativeDashboard {
     private readonly opExact: boolean[] = [false, true, false, true, true, true];
 
     aboutToAppear(): void {
-        // 模块级 matchMediaSync 已弃用，改用 UIContext.getMediaQuery() 实例入口
-        const mediaQuery = this.getUIContext().getMediaQuery();
-        const wideQuery = mediaQuery.matchMediaSync(this.wideLayoutQuery);
-        this.isWideLayout = wideQuery.matches;
-        this.wideQueryListener = wideQuery;
-        wideQuery.on('change', (result: mediaquery.MediaQueryResult) => {
-            this.isWideLayout = result.matches;
-        });
-        const threeQuery = mediaQuery.matchMediaSync(this.threeColumnQuery);
-        this.useThreeColumn = threeQuery.matches;
-        this.threeColumnListener = threeQuery;
-        threeQuery.on('change', (result: mediaquery.MediaQueryResult) => {
-            this.useThreeColumn = result.matches;
-        });
         const fieldOptions: SelectOption[] = [];
         for (let i = 0; i < this.fieldKeys.length; i++) {
             const option: SelectOption = { value: this.fieldLabels[i] };
@@ -393,14 +341,6 @@ export struct NativeDashboard {
     }
 
     aboutToDisappear(): void {
-        if (this.wideQueryListener !== null) {
-            this.wideQueryListener.off('change');
-            this.wideQueryListener = null;
-        }
-        if (this.threeColumnListener !== null) {
-            this.threeColumnListener.off('change');
-            this.threeColumnListener = null;
-        }
         this.cancelSearchDebounce();
     }
 
@@ -564,13 +504,6 @@ export struct NativeDashboard {
         }
     }
 
-    private clearSearch(): void {
-        this.cancelSearchDebounce();
-        this.searchValue = '';
-        this.appsPage = 1;
-        this.loadApps();
-    }
-
     private changeSort(field: string): void {
         if (this.sortField === field) {
             this.sortDesc = !this.sortDesc;
@@ -631,56 +564,22 @@ export struct NativeDashboard {
                     .justifyContent(FlexAlign.Center)
                     .padding(16)
                 }
-                // 断点分行渲染：每行内 layoutWeight 均分，最后一行也占满整行
-                if (this.useThreeColumn) {
-                    // 大屏：一行 5 个
-                    Row({ space: 8 }) {
-                        ForEach(this.statCards, (card: StatCardDef) => {
-                            NdStatCard({ card: card }).layoutWeight(1)
-                        }, (card: StatCardDef) => card.label + card.value)
-                    }
-                    .width('100%')
-                } else if (this.isWideLayout) {
-                    // 中等：3 + 2，两行都均分整行
-                    Column({ space: 8 }) {
-                        Row({ space: 8 }) {
-                            ForEach(this.statCards.slice(0, 3), (card: StatCardDef) => {
-                                NdStatCard({ card: card }).layoutWeight(1)
-                            }, (card: StatCardDef) => card.label + card.value)
+                // 栅格按窗口宽度自动完成 2/3/5 列布局，无需维护媒体查询状态。
+                GridRow({
+                    columns: { xs: 2, sm: 3, md: 5 },
+                    gutter: { x: 8, y: 8 },
+                    breakpoints: {
+                        value: ['432vp', '840vp'],
+                        reference: BreakpointsReference.WindowSize,
+                    },
+                }) {
+                    ForEach(this.statCards, (card: StatCardDef) => {
+                        GridCol({ span: 1 }) {
+                            NdStatCard({ card: card })
                         }
-                        .width('100%')
-                        Row({ space: 8 }) {
-                            ForEach(this.statCards.slice(3, 5), (card: StatCardDef) => {
-                                NdStatCard({ card: card }).layoutWeight(1)
-                            }, (card: StatCardDef) => card.label + card.value)
-                        }
-                        .width('100%')
-                    }
-                    .width('100%')
-                } else {
-                    // 窄屏：2 + 2 + 1
-                    Column({ space: 8 }) {
-                        Row({ space: 8 }) {
-                            ForEach(this.statCards.slice(0, 2), (card: StatCardDef) => {
-                                NdStatCard({ card: card }).layoutWeight(1)
-                            }, (card: StatCardDef) => card.label + card.value)
-                        }
-                        .width('100%')
-                        Row({ space: 8 }) {
-                            ForEach(this.statCards.slice(2, 4), (card: StatCardDef) => {
-                                NdStatCard({ card: card }).layoutWeight(1)
-                            }, (card: StatCardDef) => card.label + card.value)
-                        }
-                        .width('100%')
-                        Row({ space: 8 }) {
-                            ForEach(this.statCards.slice(4, 5), (card: StatCardDef) => {
-                                NdStatCard({ card: card }).layoutWeight(1)
-                            }, (card: StatCardDef) => card.label + card.value)
-                        }
-                        .width('100%')
-                    }
-                    .width('100%')
+                    }, (card: StatCardDef) => card.label + card.value)
                 }
+                .width('100%')
 
                 // ===================== 总下载榜 =====================
                 Column() {
@@ -728,29 +627,26 @@ export struct NativeDashboard {
                 .clip(true)
 
                 // ===================== 三个分布卡片 =====================
-                // < 432vp 纵向；432-840vp 1+2；>= 840vp 1x3
-                if (this.useThreeColumn) {
-                    Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
-                        NdDistSection({ title: '总应用评分分布', accent: ACCENT_PURPLE, bars: this.ratingBars, sectionWidth: '32%' })
-                        NdDistSection({ title: '应用目标SDK分布', accent: ACCENT_PURPLE, bars: this.targetSdkBars, sectionWidth: '32%' })
-                        NdDistSection({ title: '应用最小SDK分布', accent: ACCENT_PURPLE, bars: this.minSdkBars, sectionWidth: '32%' })
+                // 栅格按窗口宽度自动完成 1/2/3 列布局，不使用条件渲染。
+                GridRow({
+                    columns: { xs: 1, sm: 2, md: 3 },
+                    gutter: { x: 10, y: 10 },
+                    breakpoints: {
+                        value: ['432vp', '840vp'],
+                        reference: BreakpointsReference.WindowSize,
+                    },
+                }) {
+                    GridCol({ span: 1 }) {
+                        NdDistSection({ title: '总应用评分分布', accent: ACCENT_PURPLE, bars: this.ratingBars })
                     }
-                    .width('100%')
-                } else if (this.isWideLayout) {
-                    Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
-                        NdDistSection({ title: '总应用评分分布', accent: ACCENT_PURPLE, bars: this.ratingBars, sectionWidth: '49.5%' })
-                        NdDistSection({ title: '应用目标SDK分布', accent: ACCENT_PURPLE, bars: this.targetSdkBars, sectionWidth: '49.5%' })
-                        NdDistSection({ title: '应用最小SDK分布', accent: ACCENT_PURPLE, bars: this.minSdkBars, sectionWidth: '49.5%' })
+                    GridCol({ span: 1 }) {
+                        NdDistSection({ title: '应用目标SDK分布', accent: ACCENT_PURPLE, bars: this.targetSdkBars })
                     }
-                    .width('100%')
-                } else {
-                    Column({ space: 10 }) {
-                        NdDistSection({ title: '总应用评分分布', accent: ACCENT_PURPLE, bars: this.ratingBars, sectionWidth: '100%' })
-                        NdDistSection({ title: '应用目标SDK分布', accent: ACCENT_PURPLE, bars: this.targetSdkBars, sectionWidth: '100%' })
-                        NdDistSection({ title: '应用最小SDK分布', accent: ACCENT_PURPLE, bars: this.minSdkBars, sectionWidth: '100%' })
+                    GridCol({ span: 1 }) {
+                        NdDistSection({ title: '应用最小SDK分布', accent: ACCENT_PURPLE, bars: this.minSdkBars })
                     }
-                    .width('100%')
                 }
+                .width('100%')
 
                 // ===================== 非华为应用下载榜 =====================
                 Column() {
@@ -820,34 +716,21 @@ export struct NativeDashboard {
                         }
                         .width('100%')
 
-                        Row({ space: 8 }) {
-                            TextInput({ placeholder: '输入关键词搜索...', text: this.searchValue })
-                                .fontSize(13)
-                                .layoutWeight(1)
-                                .backgroundColor($r('app.color.nd_bar_track'))
-                                .borderRadius(8)
-                                .onChange((value: string) => {
-                                    this.searchValue = value;
-                                    this.scheduleAutoSearch();
-                                })
-                                .onSubmit(() => {
-                                    // Enter 立即搜索，取消防抖中的自动搜索
-                                    this.submitSearch();
-                                })
-                            Button('搜索')
-                                .fontSize(13)
-                                .backgroundColor(ACCENT_INDIGO)
-                                .onClick(() => {
-                                    this.submitSearch();
-                                })
-                            Button('清除')
-                                .fontSize(13)
-                                .backgroundColor($r('app.color.nd_text_sub'))
-                                .onClick(() => {
-                                    this.clearSearch();
-                                })
-                        }
-                        .width('100%')
+                        Search({ value: this.searchValue, placeholder: '输入关键词搜索...' })
+                            .width('100%')
+                            .height(40)
+                            .textFont({ size: 13 })
+                            .searchButton('搜索', { fontSize: 13, fontColor: ACCENT_INDIGO })
+                            .backgroundColor($r('app.color.nd_bar_track'))
+                            .borderRadius(8)
+                            .onChange((value: string) => {
+                                this.searchValue = value;
+                                this.scheduleAutoSearch();
+                            })
+                            .onSubmit(() => {
+                                // 搜索按钮或 Enter 立即搜索，取消防抖中的自动搜索。
+                                this.submitSearch();
+                            })
                     }
                     .width('100%')
                     .padding(10)
