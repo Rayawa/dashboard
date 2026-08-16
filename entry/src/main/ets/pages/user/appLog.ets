@@ -20,6 +20,19 @@ struct appLog {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
     private updateLogs: UpdateLog[] = [
         {
+            version: "V2.2.1",
+            date: "2026-8-16",
+            type: "release",
+            isRelease: true,
+            items: [
+                "新增原生看板，可直接查看应用概览、评分与SDK分布、应用列表等信息",
+                "优化原生看板响应式布局，统计与分布卡片会根据屏幕宽度自动调整",
+                "优化设置数据的初始化与持久化，提升应用重启后的状态恢复可靠性",
+                "隔离查询、投稿与分享表单状态，修复不同入口之间可能出现的内容串扰",
+                "改进应用接续、查询与分享页面的状态传递和恢复机制",
+            ],
+        },
+        {
             version: "V2.2.0",
             date: "2026-7-24",
             type: "release",

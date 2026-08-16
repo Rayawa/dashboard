@@ -49,6 +49,11 @@ import { http } from '@kit.NetworkKit';
 import { user } from './user';
 import { NativeDashboard } from '../component/nativeDashboard/nativeDashboard';
 import { setContinuationPageUrl, setContinuationScrollDistance } from '../common/appState';
+import {
+    createRestrictedDashboardConfig,
+    DashboardVisibilityConfig,
+    fetchDashboardConfig,
+} from '../common/dashboardConfig';
 
 interface SiteConfig {
     key: string;
@@ -257,10 +262,10 @@ struct Dashboard {
     private buttonAnimationTimer: number = -1; // 按钮动画定时器管理
     private lockBarTimer: number = -1; // 滑动手势定时器管理
     //Web控制
+    @State private dashboardVisibility: DashboardVisibilityConfig = createRestrictedDashboardConfig();
     @State private sitesList: SiteConfig[] = [
         { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'N', url: '', label: '原生', icon: $r('sys.media.cup_fill') },
-        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
     ];
     @State private siteIndex: number = 0;
     private controller_T: webview.WebviewController = new webview.WebviewController();
@@ -278,6 +283,35 @@ struct Dashboard {
         return this.sitesList[this.siteIndex]?.key === 'N';
     }
     @State nativeRefreshTick: number = 0;
+
+    private applyDashboardConfig(config: DashboardVisibilityConfig): void {
+        const activeSiteKey = this.sitesList[this.siteIndex]?.key ?? 'S';
+        const sites: SiteConfig[] = [
+            { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
+            { key: 'N', url: '', label: '原生', icon: $r('sys.media.cup_fill') },
+        ];
+        if (config.showTSite) {
+            sites.push({
+                key: 'T',
+                url: TBaseURL.toString(),
+                label: 'T站',
+                icon: $r('sys.media.wifi_router_fill'),
+            });
+        }
+        this.dashboardVisibility = config;
+        this.sitesList = sites;
+        const nextSiteIndex = sites.findIndex((site: SiteConfig) => site.key === activeSiteKey);
+        this.siteIndex = nextSiteIndex >= 0 ? nextSiteIndex : 0;
+    }
+
+    private refreshDashboardConfig(): void {
+        fetchDashboardConfig().then((config: DashboardVisibilityConfig) => {
+            this.applyDashboardConfig(config);
+        }).catch((error: Error) => {
+            console.warn(`Dashboard config load failed: ${error.message}`);
+            this.applyDashboardConfig(createRestrictedDashboardConfig());
+        });
+    }
 
     @State progress: number = 0;
     scroller: Scroller = new Scroller();
@@ -377,6 +411,7 @@ struct Dashboard {
     }
 
     async onPageShow(): Promise<void> {
+        this.refreshDashboardConfig();
         this.checkFirstLaunch();
         this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE, (result) => {
             console.info('setMissionContinueState ACTIVE result: ', JSON.stringify(result));
@@ -678,7 +713,10 @@ struct Dashboard {
                     ForEach(this.sitesList, (site: SiteConfig) => {
                         TabContent() {
                             if (site.key === 'N') {
-                                NativeDashboard({ nativeRefreshTick: this.nativeRefreshTick })
+                                NativeDashboard({
+                                    nativeRefreshTick: this.nativeRefreshTick,
+                                    dashboardConfig: this.dashboardVisibility,
+                                })
                             } else {
                                 this.Web(site, this.controllers[site.key])
                             }
@@ -784,6 +822,7 @@ struct Dashboard {
                             if (!activeCtrl) {
                                 if (this.vibrationON) vibration.dotVibration()
                                 this.PromptAction.showToast({ message: "刷新中...", duration: 1000 });
+                                this.refreshDashboardConfig();
                                 this.nativeRefreshTick += 1;
                                 return;
                             }

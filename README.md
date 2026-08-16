@@ -2,7 +2,7 @@
 
 **HmDashboard** 是一款专为 HarmonyOS 设计的实时分布式应用数据看板。本项目由 **Harmony Dashboard** 项目组驱动，旨在通过直观的图表与多维度的搜索功能，实时展示华为应用市场的应用下载统计、评分趋势及市场分布。
 
-应用包名为 `top.rayawa.dashboard`，当前最新版本为 `2.2.0`，主模块采用 HarmonyOS Stage 模型开发。
+应用包名为 `top.rayawa.dashboard`，当前最新版本为 `2.2.1`，主模块采用 HarmonyOS Stage 模型开发。
 
 
 [![HarmonyOS API](https://img.shields.io/badge/HarmonyOS-API%2023%2B-blue)](#)

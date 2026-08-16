@@ -3,7 +3,8 @@ import { systemShare } from "@kit.ShareKit";
 import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { URL } from "../common/url";
-import { SAPIBaseURL, TBaseURL } from "../common/constants";
+import { SAPIBaseURL } from "../common/constants";
+import { resolveDashboardAppDetailUrl } from '../common/dashboardConfig';
 
 interface FullInfo {
   alliance_app_id: string;
@@ -39,7 +40,7 @@ export class QueryAbility extends ShareExtensionAbility {
 
       if (!exists) throw new Error("市场未收录此应用");
 
-      const finalUrl = new URL(`/app/${appId}`, TBaseURL).toString()
+      const finalUrl = await resolveDashboardAppDetailUrl(appId);
       const wantForUI: Want = {
         bundleName: "top.rayawa.dashboard",
         abilityName: "queryEntryAbility",
