@@ -57,7 +57,7 @@ const BAR_PALETTE: string[] = [
 // ==================== 子组件：概览统计卡片 ====================
 @Component
 struct NdStatCard {
-    private card: StatCardDef = { label: '', value: '-', color: ACCENT_INDIGO };
+    card: StatCardDef = { label: '', value: '-', color: ACCENT_INDIGO };
 
     build() {
         Column({ space: 6 }) {
@@ -81,10 +81,10 @@ struct NdStatCard {
 // ==================== 子组件：下载榜单行 ====================
 @Component
 struct NdRankingRow {
-    private app: AppSummary = { app_id: '' };
-    private rank: number = 0;
-    private maxCount: number = 0;
-    private accent: string = ACCENT_BLUE;
+    app: AppSummary = { app_id: '' };
+    rank: number = 0;
+    maxCount: number = 0;
+    accent: string = ACCENT_BLUE;
 
     build() {
         Row({ space: 8 }) {
@@ -145,7 +145,7 @@ struct NdRankingRow {
 // ==================== 子组件：分布比例条 ====================
 @Component
 struct NdDistBar {
-    private bar: DistBarDef = { label: '', count: 0, percent: 0, color: ACCENT_BLUE };
+    bar: DistBarDef = { label: '', count: 0, percent: 0, color: ACCENT_BLUE };
 
     build() {
         Column({ space: 3 }) {
@@ -181,8 +181,8 @@ struct NdDistBar {
 // ==================== 子组件：分布区块（评分/SKD） ====================
 @Component
 struct NdDistSection {
-    private title: string = '';
-    private accent: string = ACCENT_PURPLE;
+    title: string = '';
+    accent: string = ACCENT_PURPLE;
     // 直接实例化的固定组件（非 ForEach），普通成员不会随父组件 @State 更新，必须用 @Prop 同步
     @Prop bars: DistBarDef[] = [];
     // 窄屏纵向排列时占满整行；1+2 布局 49.5%；1x3 布局 32%
@@ -219,8 +219,8 @@ struct NdDistSection {
 // ==================== 子组件：应用列表行 ====================
 @Component
 struct NdAppRow {
-    private app: AppSummary = { app_id: '' };
-    private seq: number = 0;
+    app: AppSummary = { app_id: '' };
+    seq: number = 0;
 
     private ratingLabel(): string {
         // 后端 numeric 字段序列化成了字符串（如 "3.9"），也可能为 null/undefined，统一 Number() 转换
@@ -363,13 +363,15 @@ export struct NativeDashboard {
     private readonly opExact: boolean[] = [false, true, false, true, true, true];
 
     aboutToAppear(): void {
-        const wideQuery = mediaquery.matchMediaSync(this.wideLayoutQuery);
+        // 模块级 matchMediaSync 已弃用，改用 UIContext.getMediaQuery() 实例入口
+        const mediaQuery = this.getUIContext().getMediaQuery();
+        const wideQuery = mediaQuery.matchMediaSync(this.wideLayoutQuery);
         this.isWideLayout = wideQuery.matches;
         this.wideQueryListener = wideQuery;
         wideQuery.on('change', (result: mediaquery.MediaQueryResult) => {
             this.isWideLayout = result.matches;
         });
-        const threeQuery = mediaquery.matchMediaSync(this.threeColumnQuery);
+        const threeQuery = mediaQuery.matchMediaSync(this.threeColumnQuery);
         this.useThreeColumn = threeQuery.matches;
         this.threeColumnListener = threeQuery;
         threeQuery.on('change', (result: mediaquery.MediaQueryResult) => {
