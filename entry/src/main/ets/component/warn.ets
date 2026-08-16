@@ -110,7 +110,7 @@ export struct warn {
           .padding(10)
           .alignItems(HorizontalAlign.Start)
 
-          if (this.is_first_launch) confirmButtons()
+          if (this.is_first_launch) confirmButtons({ isShow: this.isShow })
 
         }
         .width(350)

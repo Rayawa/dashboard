@@ -3,7 +3,6 @@ import { webview } from '@kit.ArkWeb';
 import { common } from '@kit.AbilityKit';
 import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
 import {
-  initializeSettings,
   resetAllSettings,
   setButtonPosition,
   setFirstLaunch,
@@ -24,11 +23,10 @@ export struct settings {
     @State handlePopupTrash: boolean = false;
 
     async aboutToAppear() {
-        initializeSettings();
         if(deviceInfo.sdkApiVersion >= 23){
             console.info("settings, api23 true! API: ", deviceInfo.sdkApiVersion)
         } else {
-            this.immersiveTextureON = false;
+            await setImmersiveTexture(false);
             console.info("settings, api23 false! API: ", deviceInfo.sdkApiVersion)
         }
     }
@@ -160,7 +158,7 @@ struct SettingItem {
     @Prop onText: string = "开";
     @Prop offText: string = "关";
     @Prop promptMsg: string = "";
-    @StorageProp("vibrationON") canVibrate: boolean = true;
+    @StorageLink("vibrationON") canVibrate: boolean = true;
 
     onToggle: (isOn: boolean) => Promise<void> = async () => {};
 
