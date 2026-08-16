@@ -51,6 +51,26 @@
     {
       "name": "gradient_end_color",
       "value": "#623AA2"
+    },
+    {
+      "name": "nd_card_bg",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "nd_card_border",
+      "value": "#D8E4F2"
+    },
+    {
+      "name": "nd_text_main",
+      "value": "#1F2937"
+    },
+    {
+      "name": "nd_text_sub",
+      "value": "#6B7280"
+    },
+    {
+      "name": "nd_bar_track",
+      "value": "#EAF0F8"
     }
   ]
 }

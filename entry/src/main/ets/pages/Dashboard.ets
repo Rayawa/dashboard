@@ -47,6 +47,7 @@ import {
     initializeSettings
 } from '../common/SettingsStorage';
 import { user } from './user';
+import { NativeDashboard } from '../component/nativeDashboard/nativeDashboard';
 
 interface SiteConfig {
     key: string;
@@ -257,8 +258,9 @@ struct Dashboard {
     private lockBarTimer: number = -1; // 滑动手势定时器管理
     //Web控制
     @State private sitesList: SiteConfig[] = [
-        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
         { key: 'S', url: SBaseURL.toString(), label: 'S站', icon: $r('sys.media.wifi_router_fill') },
+        { key: 'N', url: '', label: '原生', icon: $r('sys.media.cup_fill') },
+        { key: 'T', url: TBaseURL.toString(), label: 'T站', icon: $r('sys.media.wifi_router_fill') },
     ];
     @State private siteIndex: number = 0;
     private controller_T: webview.WebviewController = new webview.WebviewController();
@@ -267,8 +269,13 @@ struct Dashboard {
         'T': this.controller_T,
         'S': this.controller_S,
     };
-    private getActiveController(): webview.WebviewController {
-        return this.siteIndex === 0 ? this.controller_T : this.controller_S;
+    // 原生看板 tab 没有 WebviewController，返回 undefined 由调用方处理
+    private getActiveController(): webview.WebviewController | undefined {
+        const key = this.sitesList[this.siteIndex]?.key;
+        return key !== undefined ? this.controllers[key] : undefined;
+    }
+    private isNativeTab(): boolean {
+        return this.sitesList[this.siteIndex]?.key === 'N';
     }
     @StorageLink('scrollDistance') currentDistance: number = 0;
 
@@ -279,8 +286,13 @@ struct Dashboard {
     @State isLoading: boolean = false;
 
     private syncShareData() {
+        const activeCtrl = this.getActiveController();
+        if (!activeCtrl) {
+            // 原生看板 tab：分享 S 站入口
+            this.shareManager?.updateShareData(SBaseURL.toString());
+            return;
+        }
         try {
-            const activeCtrl = this.getActiveController();
             const currentUrl = activeCtrl.getUrl();
             if (currentUrl && currentUrl !== "about:blank") {
                 this.shareManager?.updateShareData(currentUrl);
@@ -470,7 +482,7 @@ struct Dashboard {
         }
         try {
             let activeCtrl = this.getActiveController();
-            if (activeCtrl.accessStep(-1)) {
+            if (activeCtrl && activeCtrl.accessStep(-1)) {
                 activeCtrl.backward();
                 return true;
             }
@@ -623,7 +635,10 @@ struct Dashboard {
                         })
                         .onRefreshAccessedHistory(() => {
                             try {
-                                const activeCtrl: webview.WebviewController = this.getActiveController();
+                                const activeCtrl = this.getActiveController();
+                                if (activeCtrl === undefined) {
+                                    return;
+                                }
                                 const realUrl: string = activeCtrl.getUrl();
                                 if (this.shareManager !== undefined && this.shareManager !== null) {
                                     this.shareManager.updateShareData(realUrl);
@@ -687,7 +702,13 @@ struct Dashboard {
                 //==========================HdsTabs携带web==========================
                 HdsTabs({ controller: this.controller }) {
                     ForEach(this.sitesList, (site: SiteConfig) => {
-                        TabContent() { this.Web(site, this.controllers[site.key]) }
+                        TabContent() {
+                            if (site.key === 'N') {
+                                NativeDashboard()
+                            } else {
+                                this.Web(site, this.controllers[site.key])
+                            }
+                        }
                         .tabBar(new BottomTabBarStyle(site.icon, site.label))
                     }, (item: SiteConfig) => item.key + item.url)
                 }
@@ -784,6 +805,14 @@ struct Dashboard {
                         })
                         .onClick(() => {
                             const activeCtrl = this.getActiveController();
+
+                            // 原生看板 tab：通过时间戳通知组件刷新
+                            if (!activeCtrl) {
+                                if (this.vibrationON) vibration.dotVibration()
+                                this.PromptAction.showToast({ message: "刷新中...", duration: 1000 });
+                                AppStorage.setOrCreate('nativeRefreshTick', Date.now());
+                                return;
+                            }
 
                             if (this.isLoading) {
                                 activeCtrl.stop();
@@ -1104,6 +1133,10 @@ struct Dashboard {
                                         return;
                                     }
                                     const activeCtrl = this.getActiveController();
+                                    if (!activeCtrl) {
+                                        this.shareManager?.showSystemShare(SBaseURL.toString());
+                                        return;
+                                    }
                                     const realUrl = activeCtrl.getUrl();
                                     this.shareManager?.showSystemShare(realUrl);
                                 },
