@@ -7,7 +7,7 @@ import { privacyManager } from '@kit.StoreKit';
 
 @Component
 export struct confirmButtons {
-    @StorageLink("showWarn") showWarn: boolean = false;
+    @Link isShow: boolean;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @State countDown: number = 3;
@@ -81,12 +81,12 @@ export struct confirmButtons {
         try {
             await setFirstLaunch(false);
 
-            this.showWarn = false;
+            this.isShow = false;
             console.info("Index", "用户已同意协议，标记位已更新。");
         } catch (err) {
         }
         this.isProcessing = true;
-        this.showWarn = false;
+        this.isShow = false;
     }
 
     private readonly BUTTON_HEIGHT: number = 44;

@@ -1,7 +1,7 @@
 import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@ohos.base';
-import { APP_VERSION, SBaseURL, TBaseURL } from '../../common/constants';
+import { APP_VERSION, MIIT_ICP_URL, SBaseURL, TBaseURL } from '../../common/constants';
 import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
@@ -24,7 +24,7 @@ struct about {
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageProp("showWarn") showWarn: boolean = false;
+  @State showWarn: boolean = false;
   private readonly effect: TransitionEffect = TransitionEffect.OPACITY.combine(
     TransitionEffect.move(TransitionEdge.BOTTOM),
   )
@@ -185,7 +185,7 @@ struct about {
                 .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
                 .onClick(async () => {
                   if(this.vibrationON) vibration.dotVibration()
-                  const url = "https://beian.miit.gov.cn/#/Integrated/index";
+                  const url = MIIT_ICP_URL.toString();
                   const ui_content = this.getUIContext();
                   try {
                     this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
