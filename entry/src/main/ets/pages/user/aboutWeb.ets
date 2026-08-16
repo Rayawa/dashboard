@@ -10,13 +10,8 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../../common/shareControl';
-import { customUserAgent } from '../../common/constants';
-import {
-  getButtonPosition,
-  getHoldCheckEnabled,
-  getVibrationEnabled,
-  initializeSettings
-} from '../../common/storage';
+import { customUserAgent, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../../common/constants';
+import { setButtonPosition } from '../../common/storage';
 
 @Component
 struct aboutWeb {
@@ -49,8 +44,8 @@ struct aboutWeb {
       this.unsubscribeHoldingHand();
     }
   }
-  @StorageLink('winWidth') winWidth: number = 1260;
-  @StorageLink('winHeight') winHeight: number = 2224;
+  @LocalStorageLink('winWidth') winWidth: number = DEFAULT_WINDOW_WIDTH;
+  @LocalStorageLink('winHeight') winHeight: number = DEFAULT_WINDOW_HEIGHT;
   @State buttonY: number = 300;
   @State private isRightHand: boolean = false;
   @State private funcTranslateX: number = 0;
@@ -102,7 +97,7 @@ struct aboutWeb {
         motion.on('holdingHandChanged', this.holdingHandCallback);
         console.info('成功订阅握持手状态变化');
       } else {
-        this.buttonPositionRIGHT = false;
+        setButtonPosition(false);
         console.warn('当前设备不支持智感握持能力');
       }
     } catch (e) {
@@ -123,19 +118,7 @@ struct aboutWeb {
 
   private shareManager?: WebShareManager;
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-  private async loadSettings() {
-    try {
-      this.vibrationON = await getVibrationEnabled();
-      this.holdCheckON = await getHoldCheckEnabled();
-      this.buttonPositionRIGHT = await getButtonPosition();
-    } catch (error) {
-      console.error("加载设置失败:", error);
-    }
-  }
-
   async aboutToAppear() {
-    initializeSettings();
-    await this.loadSettings();
     this.isRightHand = this.buttonPositionRIGHT;
     if (this.holdCheckON) this.subscribeHoldingHand();
     //分享

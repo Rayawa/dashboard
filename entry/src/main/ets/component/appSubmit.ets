@@ -2,25 +2,20 @@ import { AppInfo, NaturalLanguageExtractor } from '../common/NaturalLanguageExtr
 import { hdsEffect } from '@kit.UIDesignKit';
 import { vibration } from '../common/vibration';
 import { submitButtons } from './submitButtons';
+import { FORM_DEBOUNCE_DELAY_MS } from '../common/constants';
 
 import type { FormData } from '../common/types';
 
 @Component
 export struct appSubmit {
     @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
-    @StorageLink("userName") userName: string = "";
-    @StorageLink("inputText") inputText: string = "";
+    @Link inputText: string;
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    @StorageLink("formData") formData: FormData = {
-        appLink: "",
-        packageName: "",
-        appId: "",
-        remark: "",
-    };
+    @Link formData: FormData;
     @State extractedApps: AppInfo[] = [];
     @State isProcessing: boolean = false;
     private debounceTimer: number | null = null;
-    private readonly DEBOUNCE_DELAY: number = 800;
+    private readonly DEBOUNCE_DELAY: number = FORM_DEBOUNCE_DELAY_MS;
 
     build() {
         Column() {
@@ -292,7 +287,7 @@ export struct appSubmit {
             .padding(12)
 
             // 按钮区域
-            submitButtons()
+            submitButtons({ inputText: this.inputText, formData: this.formData })
         }
         .width("100%").padding(10).margin({ bottom: 20 })
     }

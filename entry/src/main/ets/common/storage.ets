@@ -6,17 +6,36 @@
 import { common } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import getDiskStorageInstance, { DiskStorageInstance } from './DiskStorage';
+import {
+    DEFAULT_BUTTON_RIGHT,
+    DEFAULT_HOLD_CHECK_ENABLED,
+    DEFAULT_IMMERSIVE_TEXTURE,
+    DEFAULT_TAB_BAR_AUTO,
+    DEFAULT_VIBRATION_ENABLED,
+    LEGACY_APP_SETTINGS_FILE_NAME,
+    LEGACY_PROFILE_FILE_NAME,
+    LEGACY_SETTINGS_FILE_NAME,
+    STORAGE_FILE_NAME,
+    STORAGE_KEY_BUTTON_RIGHT,
+    STORAGE_KEY_FIRST_LAUNCH,
+    STORAGE_KEY_HOLD_CHECK,
+    STORAGE_KEY_IMMERSIVE,
+    STORAGE_KEY_LEGACY_MIGRATED,
+    STORAGE_KEY_TAB_BAR_AUTO,
+    STORAGE_KEY_USERNAME,
+    STORAGE_KEY_VIBRATION,
+} from './constants';
 
 // ===== 偏好 key（唯一事实来源，同时是对应的 AppStorage key 名）=====
-const STORE_NAME = 'app_storage';
-const KEY_MIGRATED = 'legacy_migrated';
-const KEY_USERNAME = 'username';
-const KEY_FIRST_LAUNCH = 'isFirstLaunch';
-const KEY_VIBRATION = 'vibrationON';
-const KEY_HOLD_CHECK = 'holdCheckON';
-const KEY_BUTTON_RIGHT = 'buttonPositionRIGHT';
-const KEY_TAB_BAR_AUTO = 'tabBarAutoON';
-const KEY_IMMERSIVE = 'immersiveTextureON';
+const STORE_NAME = STORAGE_FILE_NAME;
+const KEY_MIGRATED = STORAGE_KEY_LEGACY_MIGRATED;
+const KEY_USERNAME = STORAGE_KEY_USERNAME;
+const KEY_FIRST_LAUNCH = STORAGE_KEY_FIRST_LAUNCH;
+const KEY_VIBRATION = STORAGE_KEY_VIBRATION;
+const KEY_HOLD_CHECK = STORAGE_KEY_HOLD_CHECK;
+const KEY_BUTTON_RIGHT = STORAGE_KEY_BUTTON_RIGHT;
+const KEY_TAB_BAR_AUTO = STORAGE_KEY_TAB_BAR_AUTO;
+const KEY_IMMERSIVE = STORAGE_KEY_IMMERSIVE;
 
 export interface AppSettings {
     vibrationON: boolean;
@@ -28,11 +47,11 @@ export interface AppSettings {
 
 // 所有持久化 key 的默认值；@StorageLink 装饰器的初始值必须与此保持一致
 const DEFAULT_SETTINGS: AppSettings = {
-    vibrationON: true,
-    holdCheckON: false,
-    buttonPositionRIGHT: false,
-    tabBarAutoON: false,
-    immersiveTextureON: false
+    vibrationON: DEFAULT_VIBRATION_ENABLED,
+    holdCheckON: DEFAULT_HOLD_CHECK_ENABLED,
+    buttonPositionRIGHT: DEFAULT_BUTTON_RIGHT,
+    tabBarAutoON: DEFAULT_TAB_BAR_AUTO,
+    immersiveTextureON: DEFAULT_IMMERSIVE_TEXTURE
 };
 
 // ===== 单例与一次性迁移 =====
@@ -76,30 +95,31 @@ async function migrateLegacyData(ctx?: common.Context): Promise<void> {
     }
     const copied: string[] = [];
     // 旧 profile 文件：用户名（唯一必须保住的旧数据）
-    if (await copyLegacyKey(target, 'profile', KEY_USERNAME, ctx)) {
+    if (await copyLegacyKey(target, LEGACY_PROFILE_FILE_NAME, KEY_USERNAME, ctx) ||
+        await copyLegacyKey(target, LEGACY_PROFILE_FILE_NAME, 'userName', ctx, KEY_USERNAME)) {
         copied.push(KEY_USERNAME);
     }
     // 旧 settings 文件：设置开关（新旧 key 同名）
     const settingKeys: string[] = [KEY_VIBRATION, KEY_HOLD_CHECK, KEY_BUTTON_RIGHT, KEY_TAB_BAR_AUTO, KEY_IMMERSIVE];
     for (const key of settingKeys) {
-        if (await copyLegacyKey(target, 'settings', key, ctx)) {
+        if (await copyLegacyKey(target, LEGACY_SETTINGS_FILE_NAME, key, ctx)) {
             copied.push(key);
         }
     }
     // 旧 myAppSettings 文件：首启标志
-    if (await copyLegacyKey(target, 'myAppSettings', KEY_FIRST_LAUNCH, ctx)) {
+    if (await copyLegacyKey(target, LEGACY_APP_SETTINGS_FILE_NAME, KEY_FIRST_LAUNCH, ctx)) {
         copied.push(KEY_FIRST_LAUNCH);
     }
     await target.set(KEY_MIGRATED, true);
     console.info(`[storage] 旧数据迁移完成: ${copied.length > 0 ? copied.join(', ') : '全新安装，无需迁移'}`);
 }
 
-async function copyLegacyKey(target: DiskStorageInstance, legacyFile: string, key: string, ctx?: common.Context): Promise<boolean> {
+async function copyLegacyKey(target: DiskStorageInstance, legacyFile: string, key: string, ctx?: common.Context, targetKey: string = key): Promise<boolean> {
     try {
         const legacy = getDiskStorageInstance(legacyFile, ctx);
         if (legacy && await legacy.has(key)) {
             const value = await legacy.get(key, '');
-            await target.set(key, value);
+            await target.set(targetKey, value);
             return true;
         }
     } catch (error) {
@@ -151,10 +171,11 @@ export async function setUsername(username?: string): Promise<void> {
     const s = await ensureReady();
     if (username === undefined) {
         await s.remove(KEY_USERNAME);
+        AppStorage.setOrCreate(KEY_USERNAME, getDeviceName());
         return;
     }
     await s.set(KEY_USERNAME, username);
-    AppStorage.setOrCreate('userName', username);
+    AppStorage.setOrCreate(KEY_USERNAME, username);
 }
 
 export async function clearUsername(): Promise<void> {
@@ -265,7 +286,7 @@ export async function loadPersistedState(ctx?: common.Context): Promise<void> {
         AppStorage.setOrCreate(KEY_BUTTON_RIGHT, await getButtonPosition());
         AppStorage.setOrCreate(KEY_TAB_BAR_AUTO, await getTabBarAuto());
         AppStorage.setOrCreate(KEY_IMMERSIVE, await getImmersiveTexture());
-        AppStorage.setOrCreate('userName', await getUsername());
+        AppStorage.setOrCreate(KEY_USERNAME, await getUsername());
     } catch (error) {
         console.error(`[storage] AppStorage 水合失败: ${JSON.stringify(error)}`);
     }

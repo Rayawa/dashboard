@@ -8,24 +8,22 @@ import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { WebShareManager } from '../common/shareControl';
-import { customUserAgent } from '../common/constants';
+import { customUserAgent, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../common/constants';
 import {
-  getButtonPosition,
-  getHoldCheckEnabled,
-  getVibrationEnabled,
-  initializeSettings
+  setButtonPosition
 } from '../common/storage';
 import { harmonyShare } from '@kit.ShareKit';
 import { common } from '@kit.AbilityKit';
+import { consumeQueryTargetUrl, getContinuationState } from '../common/appState';
 
-@Entry
+@Entry({ useSharedStorage: true })
 @Component
 struct continueWeb {
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   private shareManager?: WebShareManager;
   private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-  @StorageLink('pageUrl') @Watch('onUrlChanged') url: string = '';
-  @StorageLink('scrollDistance') scrollDistance: number = 0;
+  @State @Watch('onUrlChanged') url: string = '';
+  @State scrollDistance: number = 0;
   onUrlChanged() {
     if (this.url && this.web_controller) {
       try {
@@ -60,8 +58,8 @@ struct continueWeb {
       this.unsubscribeHoldingHand();
     }
   }
-  @StorageLink('winWidth') winWidth: number = 1260;
-  @StorageLink('winHeight') winHeight: number = 2224;
+  @LocalStorageLink('winWidth') winWidth: number = DEFAULT_WINDOW_WIDTH;
+  @LocalStorageLink('winHeight') winHeight: number = DEFAULT_WINDOW_HEIGHT;
   @State buttonY: number = 300;
   @State private isRightHand: boolean = false;
   @State private funcTranslateX: number = 0;
@@ -113,7 +111,7 @@ struct continueWeb {
         motion.on('holdingHandChanged', this.holdingHandCallback);
         console.info('成功订阅握持手状态变化');
       } else {
-        this.buttonPositionRIGHT = false;
+        setButtonPosition(false);
         console.warn('当前设备不支持智感握持能力');
       }
     } catch (e) {
@@ -132,29 +130,20 @@ struct continueWeb {
     }
   }
 
-  private async loadSettings() {
-    try {
-      this.vibrationON = await getVibrationEnabled();
-      this.holdCheckON = await getHoldCheckEnabled();
-      this.buttonPositionRIGHT = await getButtonPosition();
-    } catch (error) {
-      console.error("加载设置失败:", error);
-    }
-  }
   async aboutToAppear() {
-    initializeSettings();
-    await this.loadSettings();
     this.isRightHand = this.buttonPositionRIGHT;
     if (this.holdCheckON) this.subscribeHoldingHand();
+    const continuation = getContinuationState();
+    this.url = continuation.pageUrl;
+    this.scrollDistance = continuation.scrollDistance;
     const params = this.getUIContext().getRouter().getParams() as Record<string, string>;
     if (params && params.url) {
       this.url = params.url;
     }
     else {
-      const storageUrl = AppStorage.get<string>('queryUrlFromAbility');
+      const storageUrl = consumeQueryTargetUrl();
       if (storageUrl) {
         this.url = storageUrl;
-        AppStorage.setOrCreate('queryUrlFromAbility', '');
       }
     }
     console.log("continueWebReport",this.url," ",this.scrollDistance)

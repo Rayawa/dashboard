@@ -2,64 +2,73 @@ import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { loadPersistedState } from '../common/storage';
+import {
+    DEFAULT_WINDOW_HEIGHT,
+    DEFAULT_WINDOW_WIDTH,
+    LOCAL_STORAGE_KEY_WINDOW_HEIGHT,
+    LOCAL_STORAGE_KEY_WINDOW_WIDTH,
+} from '../common/constants';
+import { getContinuationState, setContinuationState } from '../common/appState';
 
 const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
     storage: LocalStorage = new LocalStorage();
     private isContinuation: boolean = false;
+    private startupTask: Promise<void> = Promise.resolve();
 
     onContinue(wantParam: Record<string, Object>): AbilityConstant.OnContinueResult {
-        const currentUrl: string = AppStorage.get('pageUrl') || '';
-        const currentScroll: number = AppStorage.get('scrollDistance') || 0;
+        const current = getContinuationState();
 
-        wantParam['targetUrl'] = currentUrl;
-        wantParam['scrollOffset'] = currentScroll;
+        wantParam['targetUrl'] = current.pageUrl;
+        wantParam['scrollOffset'] = current.scrollDistance;
         return AbilityConstant.OnContinueResult.AGREE;
     }
     private restoreContinuationParams(want: Want, launchParam?: AbilityConstant.LaunchParam): void {
         if (launchParam?.launchReason === AbilityConstant.LaunchReason.CONTINUATION || want.parameters?.['targetUrl']) {
             this.isContinuation = true;
         }
-        if (want.parameters?.['targetUrl']) {
-            AppStorage.setOrCreate('pageUrl', want.parameters['targetUrl'] as string);
-        }
-        if (want.parameters?.['scrollOffset']) {
-            AppStorage.setOrCreate('scrollDistance', want.parameters['scrollOffset'] as number);
+        if (want.parameters?.['targetUrl'] || want.parameters?.['scrollOffset'] !== undefined) {
+            setContinuationState({
+                pageUrl: want.parameters?.['targetUrl'] as string || '',
+                scrollDistance: want.parameters?.['scrollOffset'] as number || 0,
+            });
         }
     }
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         this.restoreContinuationParams(want, launchParam);
-        // UI 绑定前把磁盘上的持久化设置灌入 AppStorage（内部含旧数据迁移，只跑一次）
-        loadPersistedState(this.context);
+        // UI 绑定前完成持久化设置迁移和运行时状态水合。
+        this.startupTask = loadPersistedState(this.context);
     }
     onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         this.restoreContinuationParams(want, launchParam);
     }
     onWindowStageCreate(windowStage: window.WindowStage): void {
         console.info('Ability onWindowStageCreate.');
-
-        windowStage.getMainWindow().then((windowClass) => {
-            AppStorage.setOrCreate('winWidth', windowClass.getWindowProperties().windowRect.width);
-            AppStorage.setOrCreate('winHeight', windowClass.getWindowProperties().windowRect.height);
-            windowClass.on('windowSizeChange', (windowSize) => {
-                AppStorage.setOrCreate('winWidth', windowSize.width);
-                AppStorage.setOrCreate('winHeight', windowSize.height);
-            });
-        });
-        if (this.isContinuation) {
-            this.loadContent(windowStage, "abilityPages/continueWeb");
-        } else {
-            this.loadContent(windowStage, "pages/Dashboard");
-        }
+        this.startupTask
+            .then(() => this.bindWindowStorage(windowStage))
+            .then(() => this.loadCurrentPage(windowStage));
     }
     onWindowStageRestore(windowStage: window.WindowStage): void {
-        if (this.isContinuation) {
-            this.loadContent(windowStage, "abilityPages/continueWeb");
-        } else {
-            this.loadContent(windowStage, "pages/Dashboard");
-        }
+        this.startupTask
+            .then(() => this.bindWindowStorage(windowStage))
+            .then(() => this.loadCurrentPage(windowStage));
+    }
+    private loadCurrentPage(windowStage: window.WindowStage): void {
+        this.loadContent(windowStage, this.isContinuation ? 'abilityPages/continueWeb' : 'pages/Dashboard');
+    }
+    private async bindWindowStorage(windowStage: window.WindowStage): Promise<void> {
+        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, DEFAULT_WINDOW_WIDTH);
+        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, DEFAULT_WINDOW_HEIGHT);
+        const windowClass = await windowStage.getMainWindow();
+        const rect = windowClass.getWindowProperties().windowRect;
+        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, rect.width);
+        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, rect.height);
+        windowClass.on('windowSizeChange', (windowSize) => {
+            this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, windowSize.width);
+            this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, windowSize.height);
+        });
     }
     private loadContent(windowStage: window.WindowStage, path: string) {
         windowStage.loadContent(path, this.storage, (err) => {

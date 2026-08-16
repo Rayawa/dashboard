@@ -9,18 +9,16 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { customUserAgent } from '../common/constants';
+import { customUserAgent, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../common/constants';
 import {
-  getButtonPosition,
-  getHoldCheckEnabled,
-  getVibrationEnabled,
-  initializeSettings
+  setButtonPosition
 } from '../common/storage';
 import { common } from '@kit.AbilityKit';
 import { WebShareManager } from '../common/shareControl';
 import { harmonyShare } from '@kit.ShareKit';
+import { consumeQueryTargetUrl } from '../common/appState';
 
-@Entry
+@Entry({ useSharedStorage: true })
 @Component
 struct queryEntry {
   @Consume('pageStack') pageStack: NavPathStack;
@@ -55,8 +53,8 @@ struct queryEntry {
       this.unsubscribeHoldingHand();
     }
   }
-  @StorageLink('winWidth') winWidth: number = 1260;
-  @StorageLink('winHeight') winHeight: number = 2224;
+  @LocalStorageLink('winWidth') winWidth: number = DEFAULT_WINDOW_WIDTH;
+  @LocalStorageLink('winHeight') winHeight: number = DEFAULT_WINDOW_HEIGHT;
   @State buttonY: number = 300;
   @State private isRightHand: boolean = false;
   @State private funcTranslateX: number = 0;
@@ -108,7 +106,7 @@ struct queryEntry {
         motion.on('holdingHandChanged', this.holdingHandCallback);
         console.info('成功订阅握持手状态变化');
       } else {
-        this.buttonPositionRIGHT = false;
+        setButtonPosition(false);
         console.warn('当前设备不支持智感握持能力');
       }
     } catch (e) {
@@ -127,18 +125,7 @@ struct queryEntry {
     }
   }
 
-  private async loadSettings() {
-    try {
-      this.vibrationON = await getVibrationEnabled();
-      this.holdCheckON = await getHoldCheckEnabled();
-      this.buttonPositionRIGHT = await getButtonPosition();
-    } catch (error) {
-      console.error("加载设置失败:", error);
-    }
-  }
   async aboutToAppear() {
-    initializeSettings();
-    await this.loadSettings();
     this.isRightHand = this.buttonPositionRIGHT;
     if (this.holdCheckON) this.subscribeHoldingHand();
     const params = this.getUIContext().getRouter().getParams() as Record<string, string>;
@@ -146,10 +133,9 @@ struct queryEntry {
       this.url = params.url;
     }
     else {
-      const storageUrl = AppStorage.get<string>('queryUrlFromAbility');
+      const storageUrl = consumeQueryTargetUrl();
       if (storageUrl) {
         this.url = storageUrl;
-        AppStorage.setOrCreate('queryUrlFromAbility', '');
       }
     }
     //分享

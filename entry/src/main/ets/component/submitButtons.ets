@@ -1,7 +1,7 @@
 import { vibration } from '../common/vibration';
 import { PromptAction } from '@kit.ArkUI';
 import type { AppDetailInfo, BaseAPIResponse, CommentInfo, FormData, SubmitAppBody } from '../common/types';
-import { SAPIBaseURL, SUBMIT_PLATFORM,  } from '../common/constants';
+import { createSubmitFormData, SAPIBaseURL, SUBMIT_PLATFORM } from '../common/constants';
 import URL from '../common/url';
 import { http } from '@kit.NetworkKit';
 
@@ -65,15 +65,10 @@ export struct submitButtons {
     @State appId: string = '';
     @State isLoading: boolean = false;
 
-    @StorageLink("userName") userName: string = "";
-    @StorageLink("inputText") inputText: string = "";
+    @StorageLink("username") userName: string = "";
+    @Link inputText: string;
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    @StorageLink("formData") formData: FormData = {
-        appLink: "",
-        packageName: "",
-        appId: "",
-        remark: "",
-    };
+    @Link formData: FormData;
 
 
     async clearForm(): Promise<void> {
@@ -83,12 +78,7 @@ export struct submitButtons {
         this.isCleaning = true;
         this.startCleanRippleLoop();
 
-        this.formData = {
-            appLink: "",
-            packageName: "",
-            appId: "",
-            remark: "",
-        };
+        this.formData = createSubmitFormData();
         this.inputText = "";
 
         setTimeout(() => {
@@ -142,12 +132,7 @@ export struct submitButtons {
                 duration: 1500,
             });
 
-            this.formData = {
-                appLink: "",
-                packageName: "",
-                appId: "",
-                remark: "",
-            };
+            this.formData = createSubmitFormData();
             this.inputText = "";
         } catch (error) {
             console.error("提交失败:", error);

@@ -1,7 +1,7 @@
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { settings } from '../component/settings';
 import { deviceInfo } from '@kit.BasicServicesKit';
-import { getUsername, initialize as initializeUserStorage, setUsername as setUsername, } from '../common/storage';
+import { setUsername } from '../common/storage';
 import { contact } from '../component/contact';
 import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
@@ -9,7 +9,9 @@ import { appSubmit } from '../component/appSubmit';
 import { appQuery } from '../component/appQuery';
 import { vibration } from '../common/vibration';
 import { common, Want } from '@kit.AbilityKit';
-import { mainPage } from '../common/constants';
+import { DEFAULT_WINDOW_WIDTH, mainPage, MEOW_CHANNEL_URL } from '../common/constants';
+import { createQueryFormData, createSubmitFormData } from '../common/constants';
+import type { FormData } from '../common/types';
 
 @Component
 export struct user {
@@ -19,19 +21,19 @@ export struct user {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
     @StorageLink("vibrationON") vibrationON: boolean = true;
 
-    @StorageLink("showSheet") showSheet: boolean = false;
+    @State showSheet: boolean = false;
     @State currentSheet: string = "";
     @State handlePopup: boolean = false;
     @State customPopup: boolean = false;
-    @StorageLink("userName") userName: string = "";
+    @StorageLink("username") userName: string = "";
     @State deviceName: string = "";
-    @StorageLink('winWidth') winWidth: number = 1260;
+    @State submitInputText: string = '';
+    @State submitFormData: FormData = createSubmitFormData();
+    @State queryInputText: string = '';
+    @State queryFormData: FormData = createQueryFormData();
+    @LocalStorageLink('winWidth') winWidth: number = DEFAULT_WINDOW_WIDTH;
     aboutToAppear() {
-        this.loadUserName();
-    }
-    async loadUserName() {
-        initializeUserStorage();
-        this.userName = await getUsername();
+        this.deviceName = deviceInfo.productModel || '';
     }
 
     async saveUserName() {
@@ -40,12 +42,18 @@ export struct user {
 
     async resetToDeviceName() {
         await setUsername(undefined);
-        await this.loadUserName();
     }
     @Builder
     sheetBuilder() {
-        if (this.currentSheet === "query") appQuery()
-        if (this.currentSheet === "submit") appSubmit()
+        if (this.currentSheet === "query") appQuery({
+            showSheet: this.showSheet,
+            inputText: this.queryInputText,
+            formData: this.queryFormData,
+        })
+        if (this.currentSheet === "submit") appSubmit({
+            inputText: this.submitInputText,
+            formData: this.submitFormData,
+        })
         if (this.currentSheet === "contact") contact()
     }
 
@@ -90,9 +98,8 @@ export struct user {
                                         color: this.userName ? "#007DFF" : "#E5E5E5",
                                         radius: 16,
                                     })
-                                    .onChange((value: string) => {
-                                        this.userName = value;
-                                        this.saveUserName();
+                                    .onChange(async (value: string) => {
+                                        await setUsername(value);
                                     })
                                     .onSubmit(() => {
                                         this.saveUserName();
@@ -171,6 +178,8 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.currentSheet = "submit";
+                                this.submitInputText = '';
+                                this.submitFormData = createSubmitFormData();
                                 this.showSheet = true;
                                 if(this.vibrationON) vibration.dotVibration()
                             })
@@ -199,6 +208,8 @@ export struct user {
                             }
                             .onClick(() => {
                                 this.currentSheet = "query";
+                                this.queryInputText = '';
+                                this.queryFormData = createQueryFormData();
                                 this.showSheet = true;
                                 if(this.vibrationON) vibration.dotVibration()
                             })
@@ -256,7 +267,7 @@ export struct user {
                                 onClickAction: () => {
                                     try {
                                         const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-                                        context.openLink("https://www.chuckfang.com/MeoW/appLinking?channelId=8bbba7f53bf9458284a41d04f295450b")
+                                        context.openLink(MEOW_CHANNEL_URL.toString())
                                             .catch((err: BusinessError) => {
                                                 this.PromptAction.showToast({ message: "跳转失败: " + err.message });
                                             });

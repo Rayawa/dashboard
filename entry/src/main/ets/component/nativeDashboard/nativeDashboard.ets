@@ -305,8 +305,8 @@ struct NdAppRow {
 // ==================== 主组件 ====================
 @Component
 export struct NativeDashboard {
-    // Dashboard 页的悬浮刷新按钮在原生 tab 下通过 AppStorage 的时间戳触发刷新
-    @StorageLink('nativeRefreshTick') @Watch('onRefreshTick') nativeRefreshTick: number = 0;
+    // Dashboard 页通过父子 @Link 传递刷新信号，避免跨页面事件总线。
+    @Link @Watch('onRefreshTick') nativeRefreshTick: number;
 
     // 概览统计
     @State statCards: StatCardDef[] = [];
