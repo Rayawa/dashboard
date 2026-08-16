@@ -64,7 +64,7 @@ export struct confirmButtons {
         setTimeout(() => {
             try {
                 privacyManager.disableService();
-                const context = getContext(this) as common.UIAbilityContext;
+                const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
                 context.terminateSelf().then(() => {
                     console.info('Ability 销毁指令发送成功');
                 }).catch((err: BusinessError) => {

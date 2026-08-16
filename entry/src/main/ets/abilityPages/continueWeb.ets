@@ -23,7 +23,7 @@ import { common } from '@kit.AbilityKit';
 struct continueWeb {
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   private shareManager?: WebShareManager;
-  private context = getContext(this) as common.UIAbilityContext;
+  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
   @StorageLink('pageUrl') @Watch('onUrlChanged') url: string = '';
   @StorageLink('scrollDistance') scrollDistance: number = 0;
   onUrlChanged() {
@@ -84,13 +84,13 @@ struct continueWeb {
             const currentTime = Date.now();
             if (currentTime - this.lastSwitchTime >= 2000) {
               this.lastSwitchTime = currentTime;
-              animateTo({
+              this.getUIContext().animateTo({
                 duration: 200,
                 curve: Curve.FastOutSlowIn,
                 onFinish: () => {
                   this.isRightHand = isNowRightHand;
                   this.funcTranslateX = isNowRightHand ? 120 : -120;
-                  animateTo({
+                  this.getUIContext().animateTo({
                     duration: 300,
                     curve: curves.springMotion(0.4, 0.8)
                   }, () => {
@@ -159,7 +159,7 @@ struct continueWeb {
     }
     console.log("continueWebReport",this.url," ",this.scrollDistance)
     //分享
-    const context = getContext(this) as common.UIAbilityContext;
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     this.shareManager = WebShareManager.getInstance(context);
     this.shareManager.enablePassiveShare();
     this.context.eventHub.on("onFocus", () => {
@@ -416,7 +416,7 @@ struct continueWeb {
                 .onAction((move: GestureEvent | undefined) => {
                   if (move) {
                     const offset = this.isRightHand ? 120 : -120;
-                    animateTo({
+                    this.getUIContext().animateTo({
                       duration: 300,
                       curve: Curve.FastOutSlowIn,
                       onFinish: () => {
@@ -486,7 +486,7 @@ struct continueWeb {
                   this.funcOpacity = 0;
                   this.funcScale = 0.8;
                   setTimeout(() => {
-                    animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                    this.getUIContext().animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
                       this.funcTranslateX = 0;
                       this.funcOpacity = 1;
                       this.funcScale = 1;
@@ -515,7 +515,7 @@ struct continueWeb {
                   this.funcOpacity = 0;
                   this.funcScale = 0.8;
                   setTimeout(() => {
-                    animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
+                    this.getUIContext().animateTo({ duration: 300, curve: curves.springMotion(0.4, 0.8) }, () => {
                       this.funcTranslateX = 0;
                       this.funcOpacity = 1;
                       this.funcScale = 1;

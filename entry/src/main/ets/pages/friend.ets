@@ -31,7 +31,7 @@ struct friend {
   private isExiting: boolean = false;
 
   private jumpToMarket(appId: string) {
-    const context = getContext(this) as common.UIAbilityContext;
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     const want: Want = {
       action: 'ohos.want.action.appdetail',
       uri: `store://appgallery.huawei.com/app/detail?id=${appId}`
