@@ -4,23 +4,19 @@ import { vibration } from '../common/vibration';
 import { queryButtons } from './queryButtons';
 
 import type { FormData } from '../common/types';
+import { FORM_DEBOUNCE_DELAY_MS } from '../common/constants';
 
 @Component
 export struct appQuery {
   @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("userName") userName: string = "";
-  @StorageLink("inputText") inputText: string = "";
-  @StorageLink("formData") formData: FormData = {
-    appName: "",
-    appLink: "",
-    packageName: "",
-    appId: "",
-  };
+  @Link showSheet: boolean;
+  @Link inputText: string;
+  @Link formData: FormData;
   @State extractedApps: AppInfo[] = [];
   @State isProcessing: boolean = false;
   private debounceTimer: number | null = null;
-  private readonly DEBOUNCE_DELAY: number = 800;
+  private readonly DEBOUNCE_DELAY: number = FORM_DEBOUNCE_DELAY_MS;
 
   build() {
     Column() {
@@ -286,7 +282,7 @@ export struct appQuery {
 
 
       // 按钮区域
-      queryButtons()
+      queryButtons({ showSheet: this.showSheet, inputText: this.inputText, formData: this.formData })
     }
     .width("100%").padding(10).margin({ bottom: 20 })
   }

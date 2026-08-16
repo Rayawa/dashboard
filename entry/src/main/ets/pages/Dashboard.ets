@@ -23,20 +23,19 @@ import {
     ONLY_ID,
     SBaseURL,
     SUBMIT_PLATFORM,
-    TBaseURL
+    TBaseURL,
+    DASHBOARD_MIN_CONTENT_WIDTH,
+    DEFAULT_NETWORK_TIMEOUT_MS,
+    DEFAULT_WINDOW_HEIGHT,
+    DEFAULT_WINDOW_WIDTH,
+    TELEMETRY_INGEST_URL,
 } from '../common/constants';
 import { AbilityConstant, common } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
 import {
-    getButtonPosition,
     getFirstLaunch,
-    getHoldCheckEnabled,
-    getImmersiveTexture,
-    getTabBarAuto,
-    getUsername,
-    getVibrationEnabled,
-    initializeSettings,
+    setButtonPosition,
     setUsername
 } from '../common/storage';
 import { warn } from '../component/warn';
@@ -49,6 +48,7 @@ import type {
 import { http } from '@kit.NetworkKit';
 import { user } from './user';
 import { NativeDashboard } from '../component/nativeDashboard/nativeDashboard';
+import { setContinuationPageUrl, setContinuationScrollDistance } from '../common/appState';
 
 interface SiteConfig {
     key: string;
@@ -69,19 +69,18 @@ async function report_user_telemetry(
         event_name,
         device_info: new FullDeviceInfo() as TelemetryDeviceInfo,
     };
-    const path = "https://ddns.shenjack.top:10003/api/v0/telemetry/report";
     const request = http.createHttp();
 
     try {
         const dataString = JSON.stringify(final_data);
-        const response = await request.request(path.toString(), {
+        const response = await request.request(TELEMETRY_INGEST_URL.toString(), {
             method: http.RequestMethod.POST,
             header: { "Content-Type": "application/json", "User-Agent": customUserAgent },
             extraData: dataString,
             expectDataType: http.HttpDataType.STRING,
             usingCache: false,
-            connectTimeout: 10000,
-            readTimeout: 10000,
+            connectTimeout: DEFAULT_NETWORK_TIMEOUT_MS,
+            readTimeout: DEFAULT_NETWORK_TIMEOUT_MS,
         });
         console.info(`Status: ${response.responseCode}`);
         if (response.responseCode === 200 && response.result) {
@@ -118,7 +117,7 @@ async function report_user_telemetry(
     }
 }
 
-@Entry
+@Entry({ useSharedStorage: true })
 @Component
 struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
@@ -169,7 +168,7 @@ struct Dashboard {
     }
     @StorageLink("tabBarAutoON") tabBarAutoON: boolean = false;
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
-    @StorageLink("showWarn") showWarn: boolean = false;
+    @State showWarn: boolean = false;
     @StorageLink("holdCheckON") @Watch("onHoldCheckChanged") holdCheckON: boolean = false;
     onHoldCheckChanged() {
         if (this.holdCheckON) {
@@ -178,8 +177,8 @@ struct Dashboard {
             this.unsubscribeHoldingHand();
         }
     }
-    @StorageLink('winWidth') winWidth: number = 1260;
-    @StorageLink('winHeight') winHeight: number = 2224;
+    @LocalStorageLink('winWidth') winWidth: number = DEFAULT_WINDOW_WIDTH;
+    @LocalStorageLink('winHeight') winHeight: number = DEFAULT_WINDOW_HEIGHT;
     @State buttonY: number = 300;
     @State private isRightHand: boolean = false;
     @State private funcTranslateX: number = 0;
@@ -230,7 +229,7 @@ struct Dashboard {
                 motion.on('holdingHandChanged', this.holdingHandCallback);
                 console.info('成功订阅握持手状态变化');
             } else {
-                this.buttonPositionRIGHT = false;
+                setButtonPosition(false);
                 console.warn('当前设备不支持智感握持能力');
             }
         } catch (e) {
@@ -243,7 +242,7 @@ struct Dashboard {
                 if (canIUse("SystemCapability.MultimodalAwareness.Motion")) {
                     motion.off('holdingHandChanged', this.holdingHandCallback);
                 } else {
-                    this.buttonPositionRIGHT = false;
+                    setButtonPosition(false);
                     console.warn('当前设备不支持智感握持能力');
                 }
                 this.holdingHandCallback = null;
@@ -278,7 +277,7 @@ struct Dashboard {
     private isNativeTab(): boolean {
         return this.sitesList[this.siteIndex]?.key === 'N';
     }
-    @StorageLink('scrollDistance') currentDistance: number = 0;
+    @State nativeRefreshTick: number = 0;
 
     @State progress: number = 0;
     scroller: Scroller = new Scroller();
@@ -314,7 +313,7 @@ struct Dashboard {
         this.pendingScrollDistance = offset;
         if (this.scrollTimer !== -1) return;
         this.scrollTimer = setTimeout(() => {
-            AppStorage.setOrCreate('scrollDistance', this.pendingScrollDistance);
+            setContinuationScrollDistance(this.pendingScrollDistance);
             this.scrollTimer = -1;
         }, 100);
     }
@@ -337,37 +336,17 @@ struct Dashboard {
             console.error("Index", "检查失败", JSON.stringify(error));
         }
     }
-    @StorageLink("userName") userName: string = "";
-    async loadUserName() {
-        this.userName = await getUsername();
-    }
+    @StorageLink("username") userName: string = "";
     async saveUserName() {
         await setUsername(this.userName);
     }
     async resetToDeviceName() {
         await setUsername(undefined);
-        await this.loadUserName();
-    }
-    // 加载所有设置
-    private async loadSettings() {
-        try {
-            this.vibrationON = await getVibrationEnabled();
-            this.holdCheckON = await getHoldCheckEnabled();
-            this.buttonPositionRIGHT = await getButtonPosition();
-            this.tabBarAutoON = await getTabBarAuto();
-            this.immersiveTextureON = await getImmersiveTexture();
-        } catch (error) {
-            console.error("加载设置失败:", error);
-        }
     }
     private shareManager?: WebShareManager;
     private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
     async aboutToAppear() {
-        //初始化设置内容
-        initializeSettings();
-        await this.loadSettings();
-        this.loadUserName();
         this.isRightHand = this.buttonPositionRIGHT;
         if (this.holdCheckON) this.subscribeHoldingHand();
         let defaultDisplay = display.getDefaultDisplaySync();
@@ -522,20 +501,19 @@ struct Dashboard {
     // }
     @State private navBarWidth: string | number = '100%';
     @State navMode: NavigationMode = NavigationMode.Stack;
-    private readonly MIN_CONTENT_WIDTH = 423;
     private canSplit(): boolean {
         const width = this.getUIContext().px2vp(this.winWidth);
-        return width >= this.MIN_CONTENT_WIDTH * 2;
+        return width >= DASHBOARD_MIN_CONTENT_WIDTH * 2;
     }
     @StorageLink("isSplitMode") @Watch("onSplitModeChange") isSplitMode: boolean = false;
     onSplitModeChange() {
         const width = this.getUIContext().px2vp(this.winWidth);
-        if (this.isSplitMode && width >= this.MIN_CONTENT_WIDTH * 2) {
+        if (this.isSplitMode && width >= DASHBOARD_MIN_CONTENT_WIDTH * 2) {
             this.navMode = NavigationMode.Split;
             this.getUIContext().animateTo({
                 curve: curves.springMotion(0.4, 0.8),
                 duration: 400
-            }, () => { this.navBarWidth = width - this.MIN_CONTENT_WIDTH; });
+            }, () => { this.navBarWidth = width - DASHBOARD_MIN_CONTENT_WIDTH; });
         } else {
             this.navMode = NavigationMode.Stack;
             this.getUIContext().animateTo({
@@ -608,14 +586,14 @@ struct Dashboard {
                         .onNavigationEntryCommitted((details) => {
                             if (details && details.url && details.url !== 'about:blank') {
                                 site.url = details.url;
-                                AppStorage.setOrCreate('pageUrl', details.url);
+                                setContinuationPageUrl(details.url);
                                 this.shareManager?.updateShareData(details.url);
                             }
                         })
                         .onPageBegin((event) => {
                             this.isLoading = true;
                             if (event) {
-                                AppStorage.setOrCreate('pageUrl', event.url);
+                                setContinuationPageUrl(event.url);
                             }
                         })
                         .onPageEnd((event) => {
@@ -624,7 +602,7 @@ struct Dashboard {
                                 try {
                                     const realUrl = ctrl.getUrl();
                                     this.shareManager?.updateShareData(realUrl);
-                                    AppStorage.setOrCreate('pageUrl', realUrl);
+                                    setContinuationPageUrl(realUrl);
                                 } catch (e) {
                                 }
                             }
@@ -667,7 +645,7 @@ struct Dashboard {
                 }
             }
             .onDidScroll(() => {
-                AppStorage.setOrCreate('scrollDistance', this.scroller.currentOffset().yOffset);
+                setContinuationScrollDistance(this.scroller.currentOffset().yOffset);
             })
             .onWillScroll(() => {
                 if (this.tabBarAutoON) {
@@ -700,7 +678,7 @@ struct Dashboard {
                     ForEach(this.sitesList, (site: SiteConfig) => {
                         TabContent() {
                             if (site.key === 'N') {
-                                NativeDashboard()
+                                NativeDashboard({ nativeRefreshTick: this.nativeRefreshTick })
                             } else {
                                 this.Web(site, this.controllers[site.key])
                             }
@@ -806,7 +784,7 @@ struct Dashboard {
                             if (!activeCtrl) {
                                 if (this.vibrationON) vibration.dotVibration()
                                 this.PromptAction.showToast({ message: "刷新中...", duration: 1000 });
-                                AppStorage.setOrCreate('nativeRefreshTick', Date.now());
+                                this.nativeRefreshTick += 1;
                                 return;
                             }
 

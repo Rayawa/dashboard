@@ -5,43 +5,36 @@ import { submitButtons } from '../component/submitButtons';
 import { vibration } from '../common/vibration'
 import { FormData } from '../common/types';
 import { PromptAction } from '@kit.ArkUI';
-
-interface ShareParams {
-    shareAppId: string;
-    shareUrl: string;
-}
+import { consumeShareRequest } from '../common/appState';
+import { createSubmitFormData, FORM_DEBOUNCE_DELAY_MS } from '../common/constants';
+import { setUsername } from '../common/storage';
 
 @Entry
 @Component
 struct complexSubmit {
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @State controller: hdsEffect.ShaderEffectController = new hdsEffect.ShaderEffectController();
-    @StorageLink("userName") userName: string = "";
-    @StorageLink("inputText") inputText: string = "";
-    @StorageLink("formData") formData: FormData = {
-        appLink: "",
-        packageName: "",
-        appId: "",
-        remark: "",
-    };
-
-    @StorageProp("shareParams") shareParams: ShareParams = { shareAppId: "", shareUrl: "" };
+    @StorageLink("username") userName: string = "";
+    @State inputText: string = '';
+    @State formData: FormData = createSubmitFormData();
     @StorageLink("vibrationON") vibrationON: boolean = true;
 
     @State extractedApps: AppInfo[] = [];
     @State isProcessing: boolean = false;
 
     private debounceTimer: number | null = null;
-    private readonly DEBOUNCE_DELAY: number = 800;
+    private readonly DEBOUNCE_DELAY: number = FORM_DEBOUNCE_DELAY_MS;
 
     aboutToAppear() {
-        console.log("complexSubmit接受取到的所有参数:", JSON.stringify(this.shareParams));
-        this.inputText = this.shareParams.shareUrl;
-        this.formData.appLink = this.shareParams.shareUrl.replace(
+        const shareRequest = consumeShareRequest();
+        console.log("complexSubmit接受取到的所有参数:", JSON.stringify(shareRequest));
+        this.inputText = shareRequest.shareUrl;
+        this.formData = createSubmitFormData();
+        this.formData.appLink = shareRequest.shareUrl.replace(
             /&channelId=SHARE&source=appshare$/,
             "",
         );
-        this.formData.packageName = this.shareParams.shareAppId;
+        this.formData.packageName = shareRequest.sharePackageName;
     }
 
     onPageHide(): void {
@@ -364,8 +357,8 @@ struct complexSubmit {
                         .borderWidth(0.5)
                         .borderColor($r("app.color.border"))
                         .backgroundColor($r("app.color.diff_background"))
-                        .onChange((value: string) => {
-                            this.userName = value;
+                        .onChange(async (value: string) => {
+                            await setUsername(value);
                         })
                 }
                 .width("100%")
@@ -401,7 +394,7 @@ struct complexSubmit {
                 .width("100%")
                 .padding(12)
                 // 按钮区域
-                submitButtons()
+                submitButtons({ inputText: this.inputText, formData: this.formData })
             }
             .width("90%")
             .padding({ top: 20, bottom: 10, left: 10, right: 10 })

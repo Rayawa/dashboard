@@ -2,35 +2,35 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.Ab
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { loadPersistedState } from '../common/storage';
-interface WantParams {
-    sharePackageName: string;
-    shareUrl: string;
-}
+import { setShareRequest, ShareRequest } from '../common/appState';
 const DOMAIN = 0x0000;
 
 export default class shareEntryAbility extends UIAbility {
+    private startupTask: Promise<void> = Promise.resolve();
     onWindowStageCreate(windowStage: window.WindowStage): void {
         hilog.info(DOMAIN, "dashboard", "%{public}s", "dashboard Ability onWindowStageCreate");
-        this.setGlobalImmersive(windowStage);
-        windowStage.loadContent("abilityPages/complexSubmit", (err) => {
-            if (err.code) {
-                hilog.error(
-                    DOMAIN,
-                    "dashboard",
-                    "Failed to load the content. Cause: %{public}s",
-                    JSON.stringify(err),
-                );
-                return;
-            }
-            hilog.info(DOMAIN, "window", "Succeeded in loading the content.");
+        this.startupTask.then(() => {
+            this.setGlobalImmersive(windowStage);
+            windowStage.loadContent("abilityPages/complexSubmit", (err) => {
+                if (err.code) {
+                    hilog.error(
+                        DOMAIN,
+                        "dashboard",
+                        "Failed to load the content. Cause: %{public}s",
+                        JSON.stringify(err),
+                    );
+                    return;
+                }
+                hilog.info(DOMAIN, "window", "Succeeded in loading the content.");
+            });
         });
     }
 
-    private shareWantParams: WantParams = { sharePackageName: "", shareUrl: "" };
+    private shareWantParams: ShareRequest = { sharePackageName: "", shareUrl: "" };
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-        // 与主 EntryAbility 一致：页面加载前完成旧数据迁移并水合 AppStorage
-        loadPersistedState(this.context);
+        // 与主 EntryAbility 一致：页面加载前完成旧数据迁移和运行时状态水合。
+        this.startupTask = loadPersistedState(this.context);
         try {
             this.context
                 .getApplicationContext()
@@ -48,9 +48,9 @@ export default class shareEntryAbility extends UIAbility {
         const sharePackageName = want.parameters?.sharePackageName as string;
         const shareUrl = want.parameters?.shareUrl as string;
 
-        if (sharePackageName && shareUrl) {
-            this.shareWantParams = { sharePackageName, shareUrl };
-            AppStorage.setOrCreate<WantParams>("shareParams", this.shareWantParams);
+        if (shareUrl) {
+            this.shareWantParams = { sharePackageName: sharePackageName || '', shareUrl };
+            setShareRequest(this.shareWantParams);
         }
     }
 

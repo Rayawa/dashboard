@@ -4,7 +4,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { PromptAction } from '@kit.ArkUI';
 import type { FormData } from '../common/types';
 import { URL } from "../common/url";
-import { TBaseURL, SAPIBaseURL } from '../common/constants';
+import { DEFAULT_QUERY_TIMEOUT_MS, TBaseURL, SAPIBaseURL, createQueryFormData } from '../common/constants';
 
 interface QueryWebParams {
   url: string;
@@ -54,20 +54,14 @@ interface SearchResponse {
 @Component
 export struct queryButtons {
   @Consume('pageStack') pageStack: NavPathStack;
-  @StorageLink("showSheet") showSheet: boolean = false;
+  @Link showSheet: boolean;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @State appId: string = '';
   @State isLoading: boolean = false;
 
-  @StorageLink("userName") userName: string = "";
-  @StorageLink("inputText") inputText: string = "";
+  @Link inputText: string;
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("formData") formData: FormData = {
-    appName: "",
-    appLink: "",
-    packageName: "",
-    appId: "",
-  };
+  @Link formData: FormData;
 
 
   extractBundleName(url: string): string | null {
@@ -92,7 +86,7 @@ export struct queryButtons {
         {
           method: http.RequestMethod.GET,
           expectDataType: http.HttpDataType.STRING,
-          readTimeout: 5000,
+          readTimeout: DEFAULT_QUERY_TIMEOUT_MS,
         },
         (err: BusinessError, data: http.HttpResponse) => {
           if (!err && data.responseCode === 200) {
@@ -213,12 +207,7 @@ export struct queryButtons {
         this.showSheet = false;
         this.pageStack.pushPathByName("QueryPage", pathParams);
 
-        this.formData = {
-          appLink: "",
-          packageName: "",
-          appId: "",
-          remark: "",
-        };
+        this.formData = createQueryFormData();
         this.inputText = "";
 
       } else {
@@ -244,12 +233,7 @@ export struct queryButtons {
     this.isCleaning = true;
     this.startCleanRippleLoop();
 
-    this.formData = {
-      appLink: "",
-      packageName: "",
-      appId: "",
-      remark: "",
-    };
+    this.formData = createQueryFormData();
     this.inputText = "";
 
     setTimeout(() => {

@@ -18,7 +18,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { harmonyShare } from '@kit.ShareKit';
 import { WebShareManager } from '../common/shareControl';
-import { customUserAgent } from '../common/constants';
+import { customUserAgent, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../common/constants';
 import {
   getButtonPosition,
   getHoldCheckEnabled,
@@ -57,8 +57,8 @@ export struct friendWeb {
       this.unsubscribeHoldingHand();
     }
   }
-  @StorageLink('winWidth') winWidth: number = 1260;
-  @StorageLink('winHeight') winHeight: number = 2224;
+  @LocalStorageLink('winWidth') winWidth: number = DEFAULT_WINDOW_WIDTH;
+  @LocalStorageLink('winHeight') winHeight: number = DEFAULT_WINDOW_HEIGHT;
   @State buttonY: number = 300;
   @State private isRightHand: boolean = false;
   @State private funcTranslateX: number = 0;

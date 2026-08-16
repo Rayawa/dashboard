@@ -23,17 +23,17 @@ export class ShareAbility extends ShareExtensionAbility {
                     }
                     const content: string = record.content!.toString();
                     const res = parseInputSplitLinksPkgsAndAppIds(content);
-                    const link = res.links.length != 0 ? [res.links.length - 1] : undefined;
+                    const link = res.links.length != 0 ? res.links[res.links.length - 1] : undefined;
                     if (link == undefined) {
                         console.warn(`dashboard share get unparseable url ${content}`);
                         return;
                     }
-                    const app_query = link!.toString();
+                    const app_query = link;
                     console.info(`dashboard_share_parse ${app_query}`);
                     console.info(`dashboard_share_raw ${content}`);
 
                     contents.push(app_query);
-                    parsedPackageName = app_query;
+                    parsedPackageName = res.pkgs.length > 0 ? res.pkgs[res.pkgs.length - 1] : "";
                     rawContent = content;
                 });
 

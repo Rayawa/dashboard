@@ -1,4 +1,5 @@
 import { EntityType, textProcessing } from "@kit.NaturalLanguageKit";
+import { HUAWEI_APP_DETAIL_URL_PREFIX } from './constants';
 
 // ========== 类型定义 ==========
 export interface HuaweiLinkParseResult {
@@ -82,7 +83,7 @@ export class NaturalLanguageExtractor {
 
     // 解析华为应用链接
     private static parseHuaweiLink(url: string): HuaweiLinkParseResult | null {
-        const huaweiPrefix = "https://appgallery.huawei.com/app/detail?id=";
+        const huaweiPrefix = HUAWEI_APP_DETAIL_URL_PREFIX;
 
         if (!url.startsWith(huaweiPrefix)) {
             return null;
