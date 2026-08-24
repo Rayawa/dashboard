@@ -20,10 +20,9 @@ struct appLog {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
     private updateLogs: UpdateLog[] = [
         {
-            version: "V2.2.1",
+            version: "V2.2.1-beta.1",
             date: "2026-8-16",
-            type: "release",
-            isRelease: true,
+            type: "beta",
             items: [
                 "新增原生看板，可直接查看应用概览、评分与SDK分布、应用列表等信息",
                 "优化原生看板响应式布局，统计与分布卡片会根据屏幕宽度自动调整",

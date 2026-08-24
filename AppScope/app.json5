@@ -2,7 +2,7 @@
   "app": {
     "bundleName": "top.rayawa.dashboard",
     "vendor": "example",
-    "versionCode": 22000217,
+    "versionCode": 22010004,
     //  x     xx    xx       x     xx
     //大版本 中版本 小版本   r2rc1b0 build
     "versionName": "2.2.1",
