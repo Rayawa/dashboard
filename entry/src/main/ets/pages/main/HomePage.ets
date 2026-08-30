@@ -115,6 +115,7 @@ export struct HomePage {
                     Column({ space: 5 }) {
                         Text(`你好，${this.username || 'HarmonyOS 用户'}`)
                             .fontSize(26)
+                            .margin({top:100})
                             .fontWeight(FontWeight.Bold)
                             .fontColor($r('app.color.v3_text_primary'))
                             .accessibilityText(`欢迎，${this.username || 'HarmonyOS 用户'}`)
@@ -291,11 +292,18 @@ export struct HomePage {
                     const continuation = getContinuationState();
                     if (continuation.mainTab === MAIN_TAB_HOME && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
                         continuation.scrollDistance > 0) {
-                        setTimeout(() => this.scroller.scrollTo({
-                            xOffset: 0,
-                            yOffset: continuation.scrollDistance,
-                            animation: { duration: 0 },
-                        }), 80);
+                        setTimeout((): void => {
+                            try {
+                                this.scroller.scrollTo({
+                                    xOffset: 0,
+                                    yOffset: continuation.scrollDistance,
+                                    animation: { duration: 0 },
+                                });
+                            } catch (error) {
+                                console.warn('[Dashboard][pages/main/HomePage][WARN]',
+                                    `恢复滚动位置失败: ${JSON.stringify(error)}`);
+                            }
+                        }, 80);
                     }
                 }
             })

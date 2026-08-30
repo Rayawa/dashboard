@@ -1,5 +1,5 @@
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { HdsNavDestination, HdsNavigationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
+import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { popPathSafely } from '../../common/safeNavigation';
@@ -40,6 +40,7 @@ struct appLog {
                 "整理 ETS 目录为 main、detail、more 与 charts 分层，并移除已退出编译流程的旧页面和旧分享入口",
                 "新增带有效期的 API 磁盘缓存与网络失败回退提示；清除缓存覆盖 API 缓存、ArkWeb 存储和 Cookie",
                 "修复缓存写入、点击事件与图表尺寸命名导致的 ArkTS 编译错误，并为文件、窗口、网络、弹窗和设备能力调用补齐异常回退与统一日志",
+                "修复导航参数对象、滚动恢复回调和 HdsNavDestination 标题模式的 ArkTS 类型错误，移除 2in1 不可用的视口配置与不兼容设备能力监听",
                 "按 600vp 与 840vp 断点完善手机、平板和 2in1 响应式布局，并补充中文无障碍播报标签",
                 "版本更新为 3.0.0，构建号更新为 30000001",
             ],
@@ -413,7 +414,7 @@ struct appLog {
                     if(this.vibrationON) vibration.dotVibration()
             return false;
         })
-        .titleMode(HdsNavigationTitleMode.MINI)
+        .titleMode(HdsNavDestinationTitleMode.MINI)
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .titleBar({
             style: {

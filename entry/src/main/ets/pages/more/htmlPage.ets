@@ -1,5 +1,5 @@
 import { LengthMetrics, PromptAction, promptAction } from '@kit.ArkUI';
-import { HdsNavDestination, HdsNavigationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
+import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { webview } from '@kit.ArkWeb';
@@ -93,7 +93,7 @@ export struct HTML {
       .accessibilityText('可滚动的协议正文')
     }
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
-    .titleMode(HdsNavigationTitleMode.MINI)
+    .titleMode(HdsNavDestinationTitleMode.MINI)
     .onBackPressed(() => {
       if(this.vibrationON) vibration.dotVibration()
       popPathSafely(this.pageStack, 'pages/more/htmlPage');

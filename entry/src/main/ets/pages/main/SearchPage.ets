@@ -72,7 +72,9 @@ export struct SearchPage {
         this.input = raw;
         this.openDetailAfterSearch = target.openDetailOnSuccess === true;
         if (target.autoRun !== false) {
-            setTimeout(() => this.search(), 0);
+            setTimeout((): void => {
+                this.search();
+            }, 0);
         }
     }
 
@@ -231,7 +233,9 @@ export struct SearchPage {
             return;
         }
         this.openDetailAfterSearch = false;
-        setTimeout(() => this.openDetail(), 0);
+        setTimeout((): void => {
+            this.openDetail();
+        }, 0);
     }
 
     build() {
@@ -413,11 +417,18 @@ export struct SearchPage {
                     const continuation = getContinuationState();
                     if (continuation.mainTab === MAIN_TAB_SEARCH && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
                         continuation.scrollDistance > 0) {
-                        setTimeout(() => this.scroller.scrollTo({
-                            xOffset: 0,
-                            yOffset: continuation.scrollDistance,
-                            animation: { duration: 0 },
-                        }), 80);
+                        setTimeout((): void => {
+                            try {
+                                this.scroller.scrollTo({
+                                    xOffset: 0,
+                                    yOffset: continuation.scrollDistance,
+                                    animation: { duration: 0 },
+                                });
+                            } catch (error) {
+                                console.warn('[Dashboard][pages/main/SearchPage][WARN]',
+                                    `恢复滚动位置失败: ${JSON.stringify(error)}`);
+                            }
+                        }, 80);
                     }
                 }
             })

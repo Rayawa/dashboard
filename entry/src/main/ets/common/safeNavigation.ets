@@ -1,7 +1,9 @@
+export class EmptyPathParam {}
+
 export function pushPathSafely(
     stack: NavPathStack,
     name: string,
-    param: Object = {},
+    param: Object = new EmptyPathParam(),
     scope: string = 'Navigation',
 ): boolean {
     try {

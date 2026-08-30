@@ -1,9 +1,8 @@
 import { webview } from '@kit.ArkWeb';
-import { motion } from '@kit.MultimodalAwarenessKit';
 import {
   hdsEffect,
   HdsNavDestination,
-  HdsNavigationTitleMode,
+  HdsNavDestinationTitleMode,
   ScrollEffectType,
   TitleSize,
 } from '@kit.UIDesignKit';
@@ -13,7 +12,6 @@ import { vibration } from '../../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { customUserAgent, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../../common/constants';
-import { setButtonPosition } from '../../common/storage';
 import { popPathSafely } from '../../common/safeNavigation';
 
 @Component
@@ -39,14 +37,6 @@ struct aboutWeb {
   @State scrollMode: NestedScrollMode = NestedScrollMode.PARENT_FIRST;
   @State mode: WebDarkMode = WebDarkMode.Auto;
   @State isLoading: boolean = false;
-  @StorageLink("holdCheckON") @Watch("onHoldCheckChanged") holdCheckON: boolean = false;
-  onHoldCheckChanged() {
-    if (this.holdCheckON) {
-      this.subscribeHoldingHand();
-    } else {
-      this.unsubscribeHoldingHand();
-    }
-  }
   @LocalStorageLink('winWidth') winWidth: number = DEFAULT_WINDOW_WIDTH;
   @LocalStorageLink('winHeight') winHeight: number = DEFAULT_WINDOW_HEIGHT;
   @State buttonY: number = 300;
@@ -55,84 +45,13 @@ struct aboutWeb {
   @State private funcScale: number = 1;
   @State private funcOpacity: number = 1;
   @State private isDragging: boolean = false; // 拖拽逻辑锁
-  private lastSwitchTime: number = 0;
-  private holdingHandCallback: Callback<motion.HoldingHandStatus> | null = null;
   private buttonAnimationTimer: number = -1; // 按钮动画定时器管理
-  subscribeHoldingHand() {
-    if (this.holdingHandCallback !== null) {
-      return;
-    }
-    try {
-      if (canIUse('SystemCapability.MultimodalAwareness.Motion')) {
-        this.holdingHandCallback = (data: motion.HoldingHandStatus) => {
-          if (this.isDragging) return;
-          const isNowRightHand = data === motion.HoldingHandStatus.RIGHT_HAND_HELD;
-          if (isNowRightHand !== this.isRightHand) {
-            const currentTime = Date.now();
-            if (currentTime - this.lastSwitchTime >= 2000) {
-              this.lastSwitchTime = currentTime;
-              this.getUIContext().animateTo({
-                duration: 200,
-                curve: Curve.FastOutSlowIn,
-                onFinish: () => {
-                  this.isRightHand = isNowRightHand;
-                  this.funcTranslateX = isNowRightHand ? 120 : -120;
-                  this.getUIContext().animateTo({
-                    duration: 300,
-                    curve: curves.springMotion(0.4, 0.8)
-                  }, () => {
-                    this.funcTranslateX = 0;
-                    this.funcScale = 1;
-                    this.funcOpacity = 1;
-                  });
-                }
-              }, () => {
-                this.funcTranslateX = this.isRightHand ? 120 : -120;
-                this.funcScale = 0.3;
-                this.funcOpacity = 0;
-              });
-            } else {
-              console.info('[Dashboard][pages/more/aboutWeb][INFO]', '未满2秒，拦截频繁握持手势切换');
-            }
-          }
-          console.info('[Dashboard][pages/more/aboutWeb][INFO]', `握持手状态变化: ${data}`);
-        };
-        motion.on('holdingHandChanged', this.holdingHandCallback);
-        console.info('[Dashboard][pages/more/aboutWeb][INFO]', '成功订阅握持手状态变化');
-      } else {
-        setButtonPosition(false);
-        console.warn('[Dashboard][pages/more/aboutWeb][WARN]', '当前设备不支持智感握持能力');
-      }
-    } catch (e) {
-      console.error('[Dashboard][pages/more/aboutWeb][ERROR]', '订阅握持手状态变化失败:', e);
-    }
-  }
-  unsubscribeHoldingHand() {
-    if (this.holdingHandCallback !== null) {
-      if (!canIUse('SystemCapability.MultimodalAwareness.Motion')) {
-        this.holdingHandCallback = null;
-        setButtonPosition(false);
-        console.warn('[Dashboard][pages/more/aboutWeb][WARN]', '当前设备不支持智感握持，已仅复位本地订阅状态');
-        return;
-      }
-      try {
-        motion.off('holdingHandChanged', this.holdingHandCallback);
-        console.info('[Dashboard][pages/more/aboutWeb][INFO]', '已成功取消订阅握持手状态变化');
-      } catch (e) {
-        console.error('[Dashboard][pages/more/aboutWeb][ERROR]', '取消订阅握持手状态变化失败:', e);
-      } finally {
-        this.holdingHandCallback = null;
-      }
-    }
-  }
 
   async aboutToAppear() {
     this.isRightHand = this.buttonPositionRIGHT;
-    if (this.holdCheckON) this.subscribeHoldingHand();
   }
   aboutToDisappear() {
     if (this.buttonAnimationTimer !== -1) { clearTimeout(this.buttonAnimationTimer); this.buttonAnimationTimer = -1; }
-    this.unsubscribeHoldingHand(); // 取消订阅握持手
   }
 
   build() {
@@ -180,7 +99,6 @@ struct aboutWeb {
               .onProgressChange((p) => (this.progress = p.newProgress))
               .onPageBegin(() => (this.isLoading = true))
               .onPageEnd(() => (this.isLoading = false))
-              .metaViewport(true)
           }
 
         }
@@ -436,7 +354,7 @@ struct aboutWeb {
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
-    .titleMode(HdsNavigationTitleMode.MINI)
+    .titleMode(HdsNavDestinationTitleMode.MINI)
     .onBackPressed(() => {
       if(this.vibrationON) vibration.dotVibration()
       if (this.web_controller.accessStep(-1)) {
