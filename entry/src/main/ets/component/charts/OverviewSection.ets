@@ -7,7 +7,7 @@ import { formatCount } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
 import type { BaseAPIResponse, MarketApp, PageInfo, RatingDistribution } from '../../common/types';
-import { pushPathSafely } from '../../common/safeNavigation';
+import { EmptyPathParam, pushPathSafely } from '../../common/safeNavigation';
 
 interface DistributionChart {
     title: string;
@@ -271,7 +271,9 @@ struct ApiHistoryChart {
                     .onSelect((index: number) => {
                         if (this.vibrationEnabled) vibration.dotVibration();
                         this.selectedApiIndex = index;
-                        setTimeout(() => this.draw(), 0);
+                        setTimeout((): void => {
+                            this.draw();
+                        }, 0);
                     })
                     .accessibilityText('选择要查看的Harmony API版本')
             }
@@ -284,7 +286,9 @@ struct ApiHistoryChart {
                 .onAreaChange((oldArea: Area, newArea: Area) => {
                     this.canvasWidth = Number(newArea.width);
                     this.canvasHeight = Number(newArea.height);
-                    setTimeout(() => this.draw(), 0);
+                    setTimeout((): void => {
+                        this.draw();
+                    }, 0);
                 })
                 .accessibilityText(`API历史折线图，${this.currentValue()}`)
 
@@ -564,6 +568,11 @@ export struct OverviewSection {
     private openDetail(app: MarketApp): void {
         this.vibrate();
         setDetailTarget({ appId: app.app_id, packageName: app.pkg_name });
-        pushPathSafely(this.pageStack, 'AppDetailPage', {}, 'component/charts/OverviewSection');
+        pushPathSafely(
+            this.pageStack,
+            'AppDetailPage',
+            new EmptyPathParam(),
+            'component/charts/OverviewSection',
+        );
     }
 }

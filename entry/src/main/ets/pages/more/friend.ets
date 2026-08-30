@@ -1,4 +1,4 @@
-import { HdsNavDestination, HdsNavigationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
+import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } from '../../common/constants';
@@ -209,7 +209,7 @@ struct friend {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
-    .titleMode(HdsNavigationTitleMode.MINI)
+    .titleMode(HdsNavDestinationTitleMode.MINI)
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {
       if (this.isExiting) {

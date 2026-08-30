@@ -402,11 +402,18 @@ export struct AppsPage {
                   const continuation = getContinuationState();
                   if (continuation.mainTab === MAIN_TAB_APPS && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
                       continuation.scrollDistance > 0) {
-                      setTimeout(() => this.pageScroller.scrollTo({
-                          xOffset: 0,
-                          yOffset: continuation.scrollDistance,
-                          animation: { duration: 0 },
-                      }), 80);
+                      setTimeout((): void => {
+                          try {
+                              this.pageScroller.scrollTo({
+                                  xOffset: 0,
+                                  yOffset: continuation.scrollDistance,
+                                  animation: { duration: 0 },
+                              });
+                          } catch (error) {
+                              console.warn('[Dashboard][pages/main/AppsPage][WARN]',
+                                  `恢复滚动位置失败: ${JSON.stringify(error)}`);
+                          }
+                      }, 80);
                   }
               }
           })

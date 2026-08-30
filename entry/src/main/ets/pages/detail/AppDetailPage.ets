@@ -2,7 +2,7 @@ import { common, Want } from '@kit.AbilityKit';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import {
     HdsNavDestination,
-    HdsNavigationTitleMode,
+    HdsNavDestinationTitleMode,
     ScrollEffectType,
     TitleSize,
 } from '@kit.UIDesignKit';
@@ -244,7 +244,9 @@ export struct AppDetailPage {
                 }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `指标加载失败: ${error.message}`));
             }
             if (!force && !this.target.backgroundRefreshHandled) {
-                setTimeout(() => this.load(true, true), BACKGROUND_REFRESH_DELAY_MS);
+                setTimeout((): void => {
+                    this.load(true, true);
+                }, BACKGROUND_REFRESH_DELAY_MS);
             }
         }).catch((error: Error) => {
             if (!background) {
@@ -554,13 +556,22 @@ export struct AppDetailPage {
                             this.target,
                             this.shareUrl(),
                         );
-                        setTimeout(() => this.load(false), 0);
+                        setTimeout((): void => {
+                            this.load(false);
+                        }, 0);
                         if (continuation.routeName === CONTINUATION_ROUTE_DETAIL && continuation.scrollDistance > 0) {
-                            setTimeout(() => this.scroller.scrollTo({
-                                xOffset: 0,
-                                yOffset: continuation.scrollDistance,
-                                animation: { duration: 0 },
-                            }), 80);
+                            setTimeout((): void => {
+                                try {
+                                    this.scroller.scrollTo({
+                                        xOffset: 0,
+                                        yOffset: continuation.scrollDistance,
+                                        animation: { duration: 0 },
+                                    });
+                                } catch (error) {
+                                    console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]',
+                                        `恢复滚动位置失败: ${JSON.stringify(error)}`);
+                                }
+                            }, 80);
                         }
                     }
                 })
@@ -610,7 +621,7 @@ export struct AppDetailPage {
                 },
             },
         })
-        .titleMode(HdsNavigationTitleMode.MINI)
+        .titleMode(HdsNavDestinationTitleMode.MINI)
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .onBackPressed(() => {
             this.closePage();

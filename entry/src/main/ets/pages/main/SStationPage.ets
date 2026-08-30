@@ -22,7 +22,6 @@ export struct SStationPage {
                 .domStorageAccess(true)
                 .darkMode(WebDarkMode.Auto)
                 .forceDarkAccess(true)
-                .metaViewport(true)
                 .onControllerAttached(() => {
                     try {
                         this.controller.setCustomUserAgent(customUserAgent);

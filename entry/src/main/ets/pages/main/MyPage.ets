@@ -18,6 +18,7 @@ import { getContinuationState, setContinuationView } from '../../common/appState
 import { WebViewParam } from '../../common/types';
 import URL from '../../common/url';
 import { showToastSafely } from '../../common/safeUi';
+import { EmptyPathParam } from '../../common/safeNavigation';
 import { vibration } from '../../common/vibration';
 
 interface MoreItem {
@@ -89,7 +90,7 @@ export struct MyPage {
         }
     }
 
-    private pushPage(name: string, param: Object = {}): void {
+    private pushPage(name: string, param: Object = new EmptyPathParam()): void {
         try {
             this.pageStack.pushPathByName(name, param);
         } catch (error) {
@@ -286,11 +287,18 @@ export struct MyPage {
                         const continuation = getContinuationState();
                         if (continuation.mainTab === MAIN_TAB_MY && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
                             continuation.scrollDistance > 0) {
-                            setTimeout(() => this.scroller.scrollTo({
-                                xOffset: 0,
-                                yOffset: continuation.scrollDistance,
-                                animation: { duration: 0 },
-                            }), 80);
+                            setTimeout((): void => {
+                                try {
+                                    this.scroller.scrollTo({
+                                        xOffset: 0,
+                                        yOffset: continuation.scrollDistance,
+                                        animation: { duration: 0 },
+                                    });
+                                } catch (error) {
+                                    console.warn('[Dashboard][pages/main/MyPage][WARN]',
+                                        `恢复滚动位置失败: ${JSON.stringify(error)}`);
+                                }
+                            }, 80);
                         }
                     }
                 })

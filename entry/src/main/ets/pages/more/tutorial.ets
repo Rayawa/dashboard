@@ -7,7 +7,7 @@ import { mainPage } from '../../common/constants';
 import {
   hdsMaterial,
   HdsNavDestination,
-  HdsNavigationTitleMode,
+  HdsNavDestinationTitleMode,
   ScrollEffectType,
   TitleSize,
 } from '@kit.UIDesignKit';
@@ -217,7 +217,7 @@ export struct tutorial {
       .height("100%")
 
     }
-    .titleMode(HdsNavigationTitleMode.MINI)
+    .titleMode(HdsNavDestinationTitleMode.MINI)
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onWillDisappear(() => {
       if (this.vibrationON) vibration.dotVibration();
