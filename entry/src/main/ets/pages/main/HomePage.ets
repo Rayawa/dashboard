@@ -1,9 +1,18 @@
 import { PromptAction } from '@kit.ArkUI';
-import { CONTENT_MAX_WIDTH, RESPONSIVE_BREAKPOINT_LARGE, RESPONSIVE_BREAKPOINT_MEDIUM } from '../../common/constants';
+import {
+    CONTENT_MAX_WIDTH,
+    CONTINUATION_ROUTE_MAIN,
+    MAIN_TAB_HOME,
+    RESPONSIVE_BREAKPOINT_LARGE,
+    RESPONSIVE_BREAKPOINT_MEDIUM,
+} from '../../common/constants';
+import { getContinuationState, setContinuationView } from '../../common/appState';
 import { fetchMarketInfo } from '../../common/MarketApi';
 import { formatCount, formatDateTime, formatPercent } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
 import type { BaseAPIResponse, MarketInfo } from '../../common/types';
+import { vibration } from '../../common/vibration';
+import { OverviewSection } from '../../component/charts/OverviewSection';
 
 interface HomeStat {
     label: string;
@@ -44,6 +53,7 @@ struct HomeStatCard {
 @Component
 export struct HomePage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
+    private scroller: Scroller = new Scroller();
     @StorageLink('username') private username: string = '';
     @State private market: MarketInfo | undefined = undefined;
     @State private loading: boolean = false;
@@ -52,6 +62,14 @@ export struct HomePage {
     @State private cachedAt: number = 0;
     @State private lastUpdated: string = '';
     @State private loaded: boolean = false;
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    private restoredScroll: boolean = false;
+
+    private vibrate(): void {
+        if (this.vibrationEnabled) {
+            vibration.dotVibration();
+        }
+    }
 
     private load(force: boolean): void {
         if (this.loading) {
@@ -71,7 +89,7 @@ export struct HomePage {
             this.loaded = true;
         }).catch((error: Error) => {
             this.errorMessage = `加载失败：${error.message}`;
-            console.error('[Dashboard][pages/v3/HomePage][ERROR]', `首页数据加载失败且无缓存: ${error.message}`);
+            console.error('[Dashboard][pages/main/HomePage][ERROR]', `首页数据加载失败且无缓存: ${error.message}`);
             showToastSafely(this.prompt, '网络不佳且没有可用缓存，请稍后重试', 2500, 'V3Home');
         }).finally(() => {
             this.loading = false;
@@ -91,7 +109,7 @@ export struct HomePage {
     }
 
     build() {
-        Scroll() {
+        Scroll(this.scroller) {
             Column({ space: 14 }) {
                 Row() {
                     Column({ space: 5 }) {
@@ -117,7 +135,10 @@ export struct HomePage {
                     .height(44)
                     .backgroundColor($r('app.color.v3_surface_alt'))
                     .enabled(!this.loading)
-                    .onClick(() => this.load(true))
+                    .onClick(() => {
+                        this.vibrate();
+                        this.load(true);
+                    })
                     .accessibilityText(this.loading ? '正在刷新' : '刷新首页数据')
                 }
                 .width('100%')
@@ -249,6 +270,13 @@ export struct HomePage {
                     .accessibilityText('服务当前状态')
                 }
 
+                Divider()
+                    .margin({ top: 8, bottom: 2 })
+                    .color($r('app.color.border'))
+                    .accessibilityText('首页概览与图表分隔线')
+
+                OverviewSection()
+
                 Blank().height(96)
             }
             .width('100%')
@@ -258,11 +286,26 @@ export struct HomePage {
                 if (!this.loaded) {
                     this.load(false);
                 }
+                if (!this.restoredScroll) {
+                    this.restoredScroll = true;
+                    const continuation = getContinuationState();
+                    if (continuation.mainTab === MAIN_TAB_HOME && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
+                        continuation.scrollDistance > 0) {
+                        setTimeout(() => this.scroller.scrollTo({
+                            xOffset: 0,
+                            yOffset: continuation.scrollDistance,
+                            animation: { duration: 0 },
+                        }), 80);
+                    }
+                }
             })
         }
         .width('100%')
         .height('100%')
         .scrollBar(BarState.Off)
+        .onDidScroll(() => {
+            setContinuationView(MAIN_TAB_HOME, this.scroller.currentOffset().yOffset);
+        })
         .backgroundColor($r('app.color.background'))
         .accessibilityText('首页')
     }

@@ -1,7 +1,8 @@
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
+import { HdsNavDestination, HdsNavigationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
+import { popPathSafely } from '../../common/safeNavigation';
 
 interface UpdateLog {
     version: string;
@@ -21,17 +22,22 @@ struct appLog {
     private updateLogs: UpdateLog[] = [
         {
             version: "V3.0.0",
-            date: "2026-8-28",
+            date: "2026-8-30",
             type: "release",
             isRelease: true,
             items: [
-                "主界面重构为 HdsNavigation 与六个 HdsTabs：S站、首页、应用概况、搜索、应用总表、我的",
+                "主界面重构为固定标题栏与五个 HdsTabs：S站、首页、搜索、应用总表、我的，取消标签切换位移动画",
                 "新增原生首页与同步状态卡片，展示最后更新时间、服务状态和市场核心指标",
-                "新增交互式评分、SDK 分布图、Harmony API 历史折线图、总下载榜与非华为应用下载榜",
-                "搜索、投稿、更新与三个系统分享入口合并；新应用自动 simple 投稿，已有应用自动 query 更新",
-                "新增公用原生应用详情模板，统一查询、列表和分享入口的详情展示流程",
-                "应用总表新增多字段升降序排序、名称筛选和跳转指定页数",
-                "合并用户与关于页面，并在清除缓存项中显示缓存文件总大小",
+                "首页与应用概况合并；图表改为独立并行加载，单项失败不再阻断其余图表",
+                "搜索、投稿、更新与系统分享入口合并为唯一 shareAbility；新应用自动 simple 投稿，已有应用自动 query 更新",
+                "新增公用原生应用详情模板，统一查询、列表、深链和分享入口的详情展示流程",
+                "详情信息改为高密度标签与文字组合，并补齐按钮分享、碰一碰、隔空传送及图标卡片预览",
+                "应用总表新增多字段升降序排序、名称筛选和跳转指定页数，修复表格高度受限与无法上下滑动",
+                "我的页面恢复旧版栏目、分割线与统一卡片样式；用户名并入设置首项且仅在主动编辑时弹出键盘",
+                "清除缓存项恢复说明问号并显示缓存文件总大小",
+                "原生主页面和详情页补齐振动反馈，并按页面与滚动位置恢复跨设备接续",
+                "全部子页面统一使用 Scroll、MINI 标题模式、TITLE_S 主标题和系统上下安全区忽略配置",
+                "整理 ETS 目录为 main、detail、more 与 charts 分层，并移除已退出编译流程的旧页面和旧分享入口",
                 "新增带有效期的 API 磁盘缓存与网络失败回退提示；清除缓存覆盖 API 缓存、ArkWeb 存储和 Cookie",
                 "修复缓存写入、点击事件与图表尺寸命名导致的 ArkTS 编译错误，并为文件、窗口、网络、弹窗和设备能力调用补齐异常回退与统一日志",
                 "按 600vp 与 840vp 断点完善手机、平板和 2in1 响应式布局，并补充中文无障碍播报标签",
@@ -407,10 +413,12 @@ struct appLog {
                     if(this.vibrationON) vibration.dotVibration()
             return false;
         })
+        .titleMode(HdsNavigationTitleMode.MINI)
+        .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .titleBar({
             style: {
                 scrollEffectOpts: {
-                    enableScrollEffect: true,
+                    enableScrollEffect: false,
                     scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
                     blurEffectiveStartOffset: LengthMetrics.vp(0),
                     blurEffectiveEndOffset: LengthMetrics.vp(20),
@@ -461,6 +469,7 @@ struct appLog {
             content: {
                 title: {
                     mainTitle: "App更新日志",
+                    mainTitleSize: TitleSize.TITLE_S,
                 },
                 menu: {
                     value: [
@@ -519,7 +528,7 @@ struct appLog {
                 backIcon: {
                     action: () => {
                                 if(this.vibrationON) vibration.dotVibration()
-                        this.pageStack.pop()
+                        popPathSafely(this.pageStack, 'pages/more/appLog')
                     },
                 },
             },

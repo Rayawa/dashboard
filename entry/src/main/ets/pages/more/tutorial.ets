@@ -1,15 +1,21 @@
-import KnockShareGuideCard, { CardRes } from '../component/KnockShareGuideCard';
-import { vibration } from '../common/vibration';
+import KnockShareGuideCard, { CardRes } from '../../component/KnockShareGuideCard';
+import { vibration } from '../../common/vibration';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { mainPage } from '../common/constants';
-import { hdsMaterial, HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
+import { mainPage } from '../../common/constants';
+import {
+  hdsMaterial,
+  HdsNavDestination,
+  HdsNavigationTitleMode,
+  ScrollEffectType,
+  TitleSize,
+} from '@kit.UIDesignKit';
+import { popPathSafely } from '../../common/safeNavigation';
 
 @Component
 export struct tutorial {
   @Consume('pageStack') pageStack: NavPathStack;
-  @StorageLink("isSplitMode") isSplitMode: boolean = false;
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
   PromptAction: PromptAction = this.getUIContext().getPromptAction();
@@ -211,13 +217,15 @@ export struct tutorial {
       .height("100%")
 
     }
+    .titleMode(HdsNavigationTitleMode.MINI)
+    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onWillDisappear(() => {
       if (this.vibrationON) vibration.dotVibration();
     })
     .titleBar({
       style: {
         scrollEffectOpts: {
-          enableScrollEffect: true,
+          enableScrollEffect: false,
           scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
           blurEffectiveStartOffset: LengthMetrics.vp(0),
           blurEffectiveEndOffset: LengthMetrics.vp(20),
@@ -246,13 +254,12 @@ export struct tutorial {
       content: {
         title: {
           mainTitle: "教程页面",
+          mainTitleSize: TitleSize.TITLE_S,
         },
         backIcon: {
           action: () => {
             if(this.vibrationON) vibration.dotVibration()
-            this.pageStack.pop();
-            const hasSplitPage = this.pageStack.getIndexByName("UserPage").length > 0 || this.pageStack.getIndexByName("TutorialPage").length > 0;
-            if (!hasSplitPage) this.isSplitMode = false;
+            popPathSafely(this.pageStack, 'pages/more/tutorial');
           },
         },
       },

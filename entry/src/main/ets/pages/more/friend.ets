@@ -1,9 +1,10 @@
-import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
-import { vibration } from '../common/vibration';
+import { HdsNavDestination, HdsNavigationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
+import { vibration } from '../../common/vibration';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } from '../common/constants';
+import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } from '../../common/constants';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
+import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 
 interface FriendWebParams {
   url: string;
@@ -83,7 +84,7 @@ struct friend {
           "url": site.url,
           "title": site.title
         }
-        this.pageStack.pushPathByName("FriendPageWeb", params);
+        pushPathSafely(this.pageStack, "FriendPageWeb", params, 'pages/more/friend');
       })
       .height(50)
       .width("100%")
@@ -208,19 +209,21 @@ struct friend {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
+    .titleMode(HdsNavigationTitleMode.MINI)
+    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {
       if (this.isExiting) {
         return true;
       }
       if(this.vibrationON) vibration.dotVibration()
       this.isExiting = true;
-      this.pageStack.pop();
+      popPathSafely(this.pageStack, 'pages/more/friend');
       return true;
     })
     .titleBar({
       style: {
         scrollEffectOpts: {
-          enableScrollEffect: true,
+          enableScrollEffect: false,
           scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
           blurEffectiveStartOffset: LengthMetrics.vp(0),
           blurEffectiveEndOffset: LengthMetrics.vp(20),
@@ -247,13 +250,13 @@ struct friend {
         } : { }
       },
       content: {
-        title: { mainTitle: "友情链接" },
+        title: { mainTitle: "友情链接", mainTitleSize: TitleSize.TITLE_S },
         backIcon: {
           action: () => {
             if (this.isExiting) return;
             if(this.vibrationON) vibration.dotVibration()
             this.isExiting = true;
-            this.pageStack.pop();
+            popPathSafely(this.pageStack, 'pages/more/friend');
           },
         },
       },

@@ -46,81 +46,15 @@
             "domainVerify": true
           }
         ]
-      },
-      {
-        "name": "submitEntryAbility",
-        "srcEntry": "./ets/ability/submitEntry.ets",
-        "description": "$string:shareEntryAbility_desc",
-        "icon": "$media:layered_image",
-        "label": "$string:shareEntryAbility_label",
-        "excludeFromMissions": true,
-        "removeMissionAfterTerminate": true,
-        "startWindowIcon": "$media:startIcon",
-        "startWindowBackground": "$color:start_window_background"
-      },
-      {
-        "name": "queryEntryAbility",
-        "srcEntry": "./ets/ability/queryEntry.ets",
-        "description": "$string:queryEntryAbility_desc",
-        "icon": "$media:layered_image",
-        "label": "$string:queryEntryAbility_label",
-        "excludeFromMissions": true,
-        "removeMissionAfterTerminate": true,
-        "startWindowIcon": "$media:startIcon",
-        "startWindowBackground": "$color:start_window_background",
-        "exported": true
       }
     ],
     "extensionAbilities": [
       {
-        "name": "query_ability",
-        "srcEntry": "./ets/ability/query.ets",
-        "description": "查看应用数据",
-        "label": "$string:query_label",
-        "type": "share",
-        "exported": true,
-        "skills": [
-          {
-            "actions": [
-              "ohos.want.action.sendData"
-            ],
-            "uris": [
-              {
-                "scheme": "file",
-                "utd": "general.hyperlink",
-                "maxFileSupported": 1
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "simple_share_ability",
-        "srcEntry": "./ets/ability/simpleSubmit.ets",
-        "description": "简单投稿页面",
-        "label": "$string:simple_share_label",
-        "type": "share",
-        "exported": true,
-        "skills": [
-          {
-            "actions": [
-              "ohos.want.action.sendData"
-            ],
-            "uris": [
-              {
-                "scheme": "file",
-                "utd": "general.hyperlink",
-                "maxFileSupported": 1
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "complex_share_ability",
-        "srcEntry": "./ets/ability/complexSubmit.ets",
-        "description": "复杂投稿页面",
-        "label": "$string:complex_share_label",
+        "name": "shareAbility",
+        "srcEntry": "./ets/ability/shareAbility.ets",
+        "description": "$string:shareAbility_desc",
+        "label": "$string:shareAbility_label",
+        "icon": "$media:layered_image",
         "type": "share",
         "exported": true,
         "skills": [
@@ -158,7 +92,7 @@
         "reason": "$string:vibrate_permission_reason",
         "usedScene": {
           "abilities": [
-            "EntryAbility","shareEntryAbility"
+            "EntryAbility","shareAbility"
           ],
           "when": "always"
         }
@@ -168,7 +102,7 @@
         "reason": "$string:STORAGE_distributed_permission_reason",
         "usedScene": {
           "abilities": [
-            "EntryAbility","shareEntryAbility"
+            "EntryAbility","shareAbility"
           ],
           "when": "always"
         }

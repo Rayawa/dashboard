@@ -1,38 +1,27 @@
 import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import {
-  hdsEffect, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType
+  hdsEffect,
+  HdsNavDestination,
+  HdsNavigationTitleMode,
+  ScrollEffectType,
+  TitleSize,
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { curves, display, LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { vibration } from '../common/vibration';
+import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { vibration } from '../../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { WebShareManager } from '../common/shareControl';
-import { customUserAgent, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../common/constants';
-import {
-  setButtonPosition
-} from '../common/storage';
-import { harmonyShare } from '@kit.ShareKit';
-import { common } from '@kit.AbilityKit';
-import { consumeQueryTargetUrl, getContinuationState } from '../common/appState';
+import { common, Want } from '@kit.AbilityKit';
+import { customUserAgent, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../../common/constants';
+import { setButtonPosition } from '../../common/storage';
+import { popPathSafely } from '../../common/safeNavigation';
 
-@Entry({ useSharedStorage: true })
 @Component
-struct continueWeb {
+struct aboutWeb {
+  @Consume('pageStack') pageStack: NavPathStack;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  private shareManager?: WebShareManager;
-  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-  @State @Watch('onUrlChanged') url: string = '';
-  @State scrollDistance: number = 0;
-  onUrlChanged() {
-    if (this.url && this.web_controller) {
-      try {
-        this.web_controller.loadUrl(this.url);
-      } catch (e) {
-        console.error('[Dashboard][abilityPages/continueWeb][ERROR]', 'loadUrl failed:', e);
-      }
-    }
-  }
+  @Prop url: string = '';
+  @Prop title: string = '';
 
   @State progress: number = 0;
   @State showButton: boolean = true;
@@ -103,19 +92,19 @@ struct continueWeb {
                 this.funcOpacity = 0;
               });
             } else {
-              console.info('[Dashboard][abilityPages/continueWeb][INFO]', '未满2秒，拦截频繁握持手势切换');
+              console.info('[Dashboard][pages/more/aboutWeb][INFO]', '未满2秒，拦截频繁握持手势切换');
             }
           }
-          console.info('[Dashboard][abilityPages/continueWeb][INFO]', `握持手状态变化: ${data}`);
+          console.info('[Dashboard][pages/more/aboutWeb][INFO]', `握持手状态变化: ${data}`);
         };
         motion.on('holdingHandChanged', this.holdingHandCallback);
-        console.info('[Dashboard][abilityPages/continueWeb][INFO]', '成功订阅握持手状态变化');
+        console.info('[Dashboard][pages/more/aboutWeb][INFO]', '成功订阅握持手状态变化');
       } else {
         setButtonPosition(false);
-        console.warn('[Dashboard][abilityPages/continueWeb][WARN]', '当前设备不支持智感握持能力');
+        console.warn('[Dashboard][pages/more/aboutWeb][WARN]', '当前设备不支持智感握持能力');
       }
     } catch (e) {
-      console.error('[Dashboard][abilityPages/continueWeb][ERROR]', '订阅握持手状态变化失败:', e);
+      console.error('[Dashboard][pages/more/aboutWeb][ERROR]', '订阅握持手状态变化失败:', e);
     }
   }
   unsubscribeHoldingHand() {
@@ -123,14 +112,14 @@ struct continueWeb {
       if (!canIUse('SystemCapability.MultimodalAwareness.Motion')) {
         this.holdingHandCallback = null;
         setButtonPosition(false);
-        console.warn('[Dashboard][abilityPages/continueWeb][WARN]', '当前设备不支持智感握持，已仅复位本地订阅状态');
+        console.warn('[Dashboard][pages/more/aboutWeb][WARN]', '当前设备不支持智感握持，已仅复位本地订阅状态');
         return;
       }
       try {
         motion.off('holdingHandChanged', this.holdingHandCallback);
-        console.info('[Dashboard][abilityPages/continueWeb][INFO]', '已成功取消订阅握持手状态变化');
+        console.info('[Dashboard][pages/more/aboutWeb][INFO]', '已成功取消订阅握持手状态变化');
       } catch (e) {
-        console.error('[Dashboard][abilityPages/continueWeb][ERROR]', '取消订阅握持手状态变化失败:', e);
+        console.error('[Dashboard][pages/more/aboutWeb][ERROR]', '取消订阅握持手状态变化失败:', e);
       } finally {
         this.holdingHandCallback = null;
       }
@@ -140,65 +129,14 @@ struct continueWeb {
   async aboutToAppear() {
     this.isRightHand = this.buttonPositionRIGHT;
     if (this.holdCheckON) this.subscribeHoldingHand();
-    const continuation = getContinuationState();
-    this.url = continuation.pageUrl;
-    this.scrollDistance = continuation.scrollDistance;
-    const params = this.getUIContext().getRouter().getParams() as Record<string, string>;
-    if (params && params.url) {
-      this.url = params.url;
-    }
-    else {
-      const storageUrl = consumeQueryTargetUrl();
-      if (storageUrl) {
-        this.url = storageUrl;
-      }
-    }
-    console.info('[Dashboard][abilityPages/continueWeb][INFO]', "continueWebReport",this.url," ",this.scrollDistance)
-    //分享
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-    this.shareManager = WebShareManager.getInstance(context);
-    this.shareManager.enablePassiveShare();
-    this.context.eventHub.on("onFocus", () => {
-      this.shareManager?.enablePassiveShare();
-    });
-    this.context.eventHub.on("onBackGround", () => {
-      this.onBackGround();
-      this.shareManager?.disablePassiveShare();
-    });
   }
-
-  private backToMain() {
-    if(this.vibrationON) vibration.dotVibration()
-    this.getUIContext().getRouter().replaceUrl({
-      url: 'pages/Dashboard'
-    }).catch((err: BusinessError) => {
-      console.error('[Dashboard][abilityPages/continueWeb][ERROR]', `Failed to jump to Dashboard. Code: ${err.code}`);
-    })
-  }
-  onBackPress(): boolean | void {
-    this.backToMain()
-    return true;
-  }
-
   aboutToDisappear() {
-    this.shareManager?.disablePassiveShare();
-    const hostContext = this.context;
-    hostContext.eventHub.off("onFocus");
-    hostContext.eventHub.off("onBackGround");
-    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
-      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
-    });
     if (this.buttonAnimationTimer !== -1) { clearTimeout(this.buttonAnimationTimer); this.buttonAnimationTimer = -1; }
     this.unsubscribeHoldingHand(); // 取消订阅握持手
   }
-  onBackGround() {
-    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
-      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
-    });
-  }
 
   build() {
-    HdsNavigation() {
+    HdsNavDestination() {
       Stack(){
         if (this.isLoading) {
           Progress({ value: this.progress, total: 100 })
@@ -209,19 +147,12 @@ struct continueWeb {
         }
         Scroll(this.scroller) {
           Column() {
-            Blank()
-              .height(40)
-              .width("100%")
-              .expandSafeArea(
-                [SafeAreaType.SYSTEM],
-                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
-              )
             Web({
               src: this.url,
               controller: this.web_controller,
               renderMode: RenderMode.SYNC_RENDER,
             })
-              .id(`HmDashboard_onContinue`)
+              .id(`HmDashboard_web_user`)
               .onControllerAttached(() => {
                 try {
                   if (this.url !== "") {
@@ -229,32 +160,9 @@ struct continueWeb {
                   }
                   this.web_controller.setCustomUserAgent(customUserAgent);
                 } catch (e) {
-                  console.error('[Dashboard][abilityPages/continueWeb][ERROR]', `WebController attach error: ${e}`);
+                  console.error('[Dashboard][pages/more/aboutWeb][ERROR]', `WebController attach error: ${e}`);
                 }
               })
-              .onPageBegin(() => (this.isLoading = true))
-              .onPageEnd(() => {
-                this.isLoading = false;
-                if (this.scrollDistance > 0) {
-                  let attempts = 0;
-                  const maxAttempts = 10;
-                  const tryScroll = () => {
-                    this.scroller.scrollTo({
-                      xOffset: 0,
-                      yOffset: this.scrollDistance,
-                      animation: { duration: 150, curve: Curve.Ease }
-                    });
-                    if (Math.abs(this.scroller.currentOffset().yOffset - this.scrollDistance) > 5 && attempts < maxAttempts) {
-                      attempts++;
-                      setTimeout(tryScroll, 100);
-                    }
-                  };
-
-                  setTimeout(tryScroll, 100);
-                }
-              })
-
-              .onProgressChange((p) => (this.progress = p.newProgress))
               .layoutMode(WebLayoutMode.FIT_CONTENT)
               .nestedScroll({
                 scrollForward: NestedScrollMode.SELF_FIRST,
@@ -269,8 +177,10 @@ struct continueWeb {
               .forceDarkAccess(true)
               .width("100%")
               .backgroundColor($r("app.color.backcolor"))
+              .onProgressChange((p) => (this.progress = p.newProgress))
+              .onPageBegin(() => (this.isLoading = true))
+              .onPageEnd(() => (this.isLoading = false))
               .metaViewport(true)
-
           }
 
         }
@@ -356,7 +266,7 @@ struct continueWeb {
                     this.web_controller.removeCache(false),
                   ]);
                 } catch (error) {
-                  console.warn('[Dashboard][abilityPages/continueWeb][WARN]', `hm dashboard e: ${error}`);
+                  console.warn('[Dashboard][pages/more/aboutWeb][WARN]', `网页加载过程异常: ${error}`);
                 }
                 this.isLoading = true;
                 if (this.vibrationON) vibration.dotVibration()
@@ -525,12 +435,23 @@ struct continueWeb {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
-    .navBarWidth("100%")
+    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .titleMode(HdsNavigationTitleMode.MINI)
+    .onBackPressed(() => {
+      if(this.vibrationON) vibration.dotVibration()
+      if (this.web_controller.accessStep(-1)) {
+        console.info('[Dashboard][pages/more/aboutWeb][INFO]', "网页可以返回，执行后退");
+        this.web_controller.backward();
+        this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
+        return true;
+      } else {
+        return false;
+      }
+    })
     .titleBar({
       style: {
         scrollEffectOpts: {
-          enableScrollEffect: true,
+          enableScrollEffect: false,
           scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
           blurEffectiveStartOffset: LengthMetrics.vp(0),
           blurEffectiveEndOffset: LengthMetrics.vp(20),
@@ -580,30 +501,58 @@ struct continueWeb {
       },
       content: {
         title: {
-          mainTitle: "Dashboard应用看板",
+          mainTitle: this.title,
+          mainTitleSize: TitleSize.TITLE_S,
         },
         menu: {
           value: [
             {
               content: {
-                label: "share",
-                icon: $r("sys.symbol.share"),
+                label: "openlink",
+                icon: $r("sys.symbol.worldclock"),
                 isEnabled: true,
-                action: () => {
+                action: async () => {
                   if(this.vibrationON) vibration.dotVibration()
-                  this.shareManager?.showSystemShare(this.url);
+                  const url = this.url;
+                  const ui_content = this.getUIContext();
+                  try {
+                    this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                    let context = ui_content.getHostContext() as common.UIAbilityContext;
+                    await context.startAbility({
+                      action: "ohos.want.action.viewData",
+                      entities: ["entity.system.browsable"],
+                      uri: url,
+                    } as Want);
+                  } catch (error) {
+                    console.error('[Dashboard][pages/more/aboutWeb][ERROR]', "打开链接失败:", (error as BusinessError).message);
+                    this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                  }
                 },
               },
             },
-          ]
+          ],
         },
         backIcon: {
           action: () => {
-            this.backToMain()
+            if(this.vibrationON) vibration.dotVibration()
+            popPathSafely(this.pageStack, 'pages/more/aboutWeb')
           },
         },
       },
-    });
-  }
+    })
+    .onReady((context: NavDestinationContext) => {
+      const params = context.pathInfo.param as Record<string, string>;
+      if (params) {
+        this.url = params.url;
+        this.title = params.title;
+        console.info('[Dashboard][pages/more/aboutWeb][INFO]', `成功加载网页: ${this.title}, 地址: ${this.url}`);
+      }
+    })
 
+  }
+}
+
+@Builder
+export function AboutWebBuilder(){
+  aboutWeb()
 }

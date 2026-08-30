@@ -1,14 +1,15 @@
 import { LengthMetrics, PromptAction, promptAction } from '@kit.ArkUI';
-import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
+import { HdsNavDestination, HdsNavigationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { webview } from '@kit.ArkWeb';
-import { WebViewParam } from './about';
+import { WebViewParam } from '../../common/types';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { setFirstLaunch } from '../../common/storage';
 import { privacyManager } from '@kit.StoreKit';
 import { showToastSafely } from '../../common/safeUi';
+import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
 
 @Component
 export struct HTML {
@@ -19,7 +20,7 @@ export struct HTML {
   @State params: WebViewParam = new WebViewParam('', '');
 
   aboutToAppear() {
-    const pathInfo = this.pageStack.getParamByName('HTMLPage') as Array<WebViewParam>;
+    const pathInfo = getPathParamsSafely<WebViewParam>(this.pageStack, 'HTMLPage', 'pages/more/htmlPage');
     if (pathInfo && pathInfo.length > 0) {
       this.params = pathInfo[0];
     }
@@ -43,13 +44,13 @@ export struct HTML {
           privacyManager.disableService();
           showToastSafely(this.PromptAction, `${this.params.title}已撤销，即将退出`, 2000, 'HtmlPage');
           context.terminateSelf().then(() => {
-            console.info('[Dashboard][pages/user/htmlPage][INFO]', 'Ability 销毁指令发送成功');
+            console.info('[Dashboard][pages/more/htmlPage][INFO]', 'Ability 销毁指令发送成功');
           }).catch((err: BusinessError) => {
-            console.error('[Dashboard][pages/user/htmlPage][ERROR]', `销毁失败: ${err.code}`);
+            console.error('[Dashboard][pages/more/htmlPage][ERROR]', `销毁失败: ${err.code}`);
           });
         } catch (error) {
           const err = error as BusinessError;
-          console.error('[Dashboard][pages/user/htmlPage][ERROR]', `撤销服务失败: ${err.message} (Code: ${err.code})`);
+          console.error('[Dashboard][pages/more/htmlPage][ERROR]', `撤销服务失败: ${err.message} (Code: ${err.code})`);
           showToastSafely(
             this.PromptAction,
             `撤销失败: ${err.message} (Code: ${err.code})`,
@@ -59,41 +60,49 @@ export struct HTML {
         }
       }
     } catch (error) {
-      console.error('[Dashboard][pages/user/htmlPage][ERROR]', `撤销确认弹窗显示失败: ${JSON.stringify(error)}`);
+      console.error('[Dashboard][pages/more/htmlPage][ERROR]', `撤销确认弹窗显示失败: ${JSON.stringify(error)}`);
       showToastSafely(this.PromptAction, '暂时无法打开确认窗口，请稍后重试', 2000, 'HtmlPage');
     }
   }
 
   build() {
     HdsNavDestination() {
-      Column() {
-        Blank()
-          .height(80)
-          .width("100%")
-          .expandSafeArea(
-            [SafeAreaType.SYSTEM],
-            [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
-          )
-        Web({ src: this.params.url, controller: this.controller })
-          .domStorageAccess(true)
-          .fileAccess(true)
-          .mixedMode(MixedMode.All)
-          .width('100%')
-          .layoutWeight(1)
+      Scroll() {
+        Column() {
+          Blank()
+            .height(80)
+            .width("100%")
+            .expandSafeArea(
+              [SafeAreaType.SYSTEM],
+              [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
+            )
+          Web({ src: this.params.url, controller: this.controller })
+            .domStorageAccess(true)
+            .fileAccess(true)
+            .mixedMode(MixedMode.All)
+            .width('100%')
+            .layoutWeight(1)
+        }
+        .width('100%')
+        .height('100%')
       }
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.None)
       .width('100%')
       .height('100%')
+      .accessibilityText('可滚动的协议正文')
     }
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+    .titleMode(HdsNavigationTitleMode.MINI)
     .onBackPressed(() => {
       if(this.vibrationON) vibration.dotVibration()
-      this.pageStack.pop();
+      popPathSafely(this.pageStack, 'pages/more/htmlPage');
       return true;
     })
     .titleBar({
       style: {
         scrollEffectOpts: {
-          enableScrollEffect: true,
+          enableScrollEffect: false,
           scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
           blurEffectiveStartOffset: LengthMetrics.vp(0),
           blurEffectiveEndOffset: LengthMetrics.vp(20),
@@ -144,6 +153,7 @@ export struct HTML {
       content: {
         title: {
           mainTitle: this.params.title,
+          mainTitleSize: TitleSize.TITLE_S,
         },
         menu: {
           value: [
@@ -163,7 +173,7 @@ export struct HTML {
         backIcon: {
           action: () => {
             if(this.vibrationON) vibration.dotVibration()
-            this.pageStack.pop()
+            popPathSafely(this.pageStack, 'pages/more/htmlPage')
           },
         },
       },

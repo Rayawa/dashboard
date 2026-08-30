@@ -1,6 +1,16 @@
 import { PromptAction } from '@kit.ArkUI';
-import { BACKGROUND_REFRESH_DELAY_MS, CONTENT_MAX_WIDTH } from '../../common/constants';
-import { consumeSearchTarget, setDetailTarget } from '../../common/appState';
+import {
+    BACKGROUND_REFRESH_DELAY_MS,
+    CONTENT_MAX_WIDTH,
+    CONTINUATION_ROUTE_MAIN,
+    MAIN_TAB_SEARCH,
+} from '../../common/constants';
+import {
+    consumeSearchTarget,
+    getContinuationState,
+    setContinuationView,
+    setDetailTarget,
+} from '../../common/appState';
 import { fetchAppById, fetchAppByPackage, fetchAppsPage, submitApp } from '../../common/MarketApi';
 import { formatCount, formatDateTime } from '../../common/format';
 import { parseInputSplitLinksPkgsAndAppIds } from '../../common/utils';
@@ -14,12 +24,14 @@ import type {
     PageInfo,
     SearchTarget,
 } from '../../common/types';
+import { vibration } from '../../common/vibration';
 
 @Component
 export struct SearchPage {
     @Consume('pageStack') private pageStack: NavPathStack;
     @Link @Watch('onRequestVersionChanged') requestVersion: number;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
+    private scroller: Scroller = new Scroller();
     @StorageLink('username') private username: string = '';
     @State private input: string = '';
     @State private note: string = '';
@@ -31,6 +43,21 @@ export struct SearchPage {
     @State private fromCache: boolean = false;
     private activeTarget: AppRouteTarget = {};
     private openDetailAfterSearch: boolean = false;
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    private restoredScroll: boolean = false;
+
+    private vibrate(): void {
+        if (this.vibrationEnabled) vibration.dotVibration();
+    }
+
+    private decodeInputValue(value: string): string {
+        try {
+            return decodeURIComponent(value);
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/SearchPage][WARN]', `输入链接参数解码失败，保留原值: ${JSON.stringify(error)}`);
+            return value;
+        }
+    }
 
     private onRequestVersionChanged(): void {
         this.consumePendingTarget();
@@ -50,6 +77,14 @@ export struct SearchPage {
     }
 
     private targetFromInput(): AppRouteTarget {
+        const dashboardAppId = this.input.match(/[?&#]app_id=([^&#]+)/);
+        if (dashboardAppId && dashboardAppId[1]) {
+            return { appId: this.decodeInputValue(dashboardAppId[1]) };
+        }
+        const dashboardPackage = this.input.match(/[?&#]pkg=([^&#]+)/);
+        if (dashboardPackage && dashboardPackage[1]) {
+            return { packageName: this.decodeInputValue(dashboardPackage[1]) };
+        }
         const parsed = parseInputSplitLinksPkgsAndAppIds(this.input);
         if (parsed.app_ids.length > 0) {
             const appId = parsed.app_ids[parsed.app_ids.length - 1];
@@ -60,7 +95,7 @@ export struct SearchPage {
         }
         const idMatch = this.input.match(/[?&]id=([^&#]+)/);
         if (idMatch && idMatch[1]) {
-            return { packageName: decodeURIComponent(idMatch[1]) };
+            return { packageName: this.decodeInputValue(idMatch[1]) };
         }
         return {};
     }
@@ -166,7 +201,7 @@ export struct SearchPage {
             const message = (error as Error).message;
             this.errorMessage = message;
             this.status = '搜索或投稿未完成';
-            console.error('[Dashboard][pages/v3/SearchPage][ERROR]', `搜索或投稿失败: ${message}`);
+            console.error('[Dashboard][pages/main/SearchPage][ERROR]', `搜索或投稿失败: ${message}`);
             showToastSafely(this.prompt, message, 2600, 'V3Search');
         } finally {
             this.loading = false;
@@ -177,8 +212,18 @@ export struct SearchPage {
         if (!this.resultApp) {
             return;
         }
-        setDetailTarget({ appId: this.resultApp.app_id, packageName: this.resultApp.pkg_name });
-        this.pageStack.pushPathByName('AppDetailPage', null);
+        this.vibrate();
+        setDetailTarget({
+            appId: this.resultApp.app_id,
+            packageName: this.resultApp.pkg_name,
+            backgroundRefreshHandled: true,
+        });
+        try {
+            this.pageStack.pushPathByName('AppDetailPage', null);
+        } catch (error) {
+            console.error('[Dashboard][pages/main/SearchPage][ERROR]', `打开应用详情失败: ${JSON.stringify(error)}`);
+            showToastSafely(this.prompt, '暂时无法打开应用详情，请重试', 1800, 'SearchPage');
+        }
     }
 
     private openDetailIfRequested(): void {
@@ -190,7 +235,7 @@ export struct SearchPage {
     }
 
     build() {
-        Scroll() {
+        Scroll(this.scroller) {
             Column({ space: 14 }) {
                 Column({ space: 5 }) {
                     Text('搜索、投稿与更新')
@@ -219,7 +264,10 @@ export struct SearchPage {
                         .searchButton('查找')
                         .backgroundColor($r('app.color.v3_surface_alt'))
                         .onChange((value: string) => this.input = value)
-                        .onSubmit(() => this.search())
+                        .onSubmit(() => {
+                            this.vibrate();
+                            this.search();
+                        })
                         .accessibilityText('输入应用名称包名App ID或应用市场链接')
                     TextInput({ text: this.note, placeholder: '投稿备注（可选）' })
                         .width('100%')
@@ -232,7 +280,10 @@ export struct SearchPage {
                         .height(46)
                         .enabled(!this.loading)
                         .backgroundColor($r('app.color.v3_accent_blue'))
-                        .onClick(() => this.search())
+                        .onClick(() => {
+                            this.vibrate();
+                            this.search();
+                        })
                         .accessibilityText(this.loading ? '正在处理搜索投稿或更新' : '查找应用并自动投稿或更新')
                 }
                 .width('100%')
@@ -336,11 +387,11 @@ export struct SearchPage {
                         .fontColor($r('app.color.v3_text_primary'))
                         .width('100%')
                         .accessibilityText('支持的分享入口')
-                    Text('• 查询该应用数据：查找后进入统一详情页')
+                    Text('• 唯一系统分享入口：自动识别分享内容并进入本页处理')
                         .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
-                    Text('• 直接投稿到看板：新应用 simple 投稿，已有应用 query 更新')
+                    Text('• 新应用：自动执行 simple 投稿并打开统一详情页')
                         .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
-                    Text('• 填写信息投稿：自动填充到本页后再处理')
+                    Text('• 已有应用：自动执行 query 更新并打开统一详情页')
                         .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
                 }
                 .width('100%')
@@ -348,18 +399,33 @@ export struct SearchPage {
                 .borderRadius(16)
                 .backgroundColor($r('app.color.v3_surface_alt'))
                 .accessibilityGroup(true)
-                .accessibilityText('查询直接投稿和填写信息投稿三个分享入口说明')
+                .accessibilityText('唯一系统分享入口的自动投稿和更新说明')
 
                 Blank().height(96)
             }
             .width('100%')
             .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
             .padding({ left: 14, right: 14 })
-            .onAppear(() => this.consumePendingTarget())
+            .onAppear(() => {
+                this.consumePendingTarget();
+                if (!this.restoredScroll) {
+                    this.restoredScroll = true;
+                    const continuation = getContinuationState();
+                    if (continuation.mainTab === MAIN_TAB_SEARCH && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
+                        continuation.scrollDistance > 0) {
+                        setTimeout(() => this.scroller.scrollTo({
+                            xOffset: 0,
+                            yOffset: continuation.scrollDistance,
+                            animation: { duration: 0 },
+                        }), 80);
+                    }
+                }
+            })
         }
         .width('100%')
         .height('100%')
         .scrollBar(BarState.Off)
+        .onDidScroll(() => setContinuationView(MAIN_TAB_SEARCH, this.scroller.currentOffset().yOffset))
         .backgroundColor($r('app.color.background'))
         .accessibilityText('搜索投稿与更新页面')
     }

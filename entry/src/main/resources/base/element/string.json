@@ -17,6 +17,14 @@
       "value": "应用市场发起投稿界面"
     },
     {
+      "name": "shareAbility_desc",
+      "value": "查找应用，并自动投稿或更新后打开原生详情"
+    },
+    {
+      "name": "shareAbility_label",
+      "value": "分享到应用看板"
+    },
+    {
       "name": "queryEntryAbility_desc",
       "value": "查询应用界面"
     },

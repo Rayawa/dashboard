@@ -243,6 +243,17 @@ export interface ApiDataResult<T> {
 export interface AppRouteTarget {
     appId?: string;
     packageName?: string;
+    backgroundRefreshHandled?: boolean;
+}
+
+export class WebViewParam {
+    url: string | Resource;
+    title: string;
+
+    constructor(url: string | Resource, title: string) {
+        this.url = url;
+        this.title = title;
+    }
 }
 
 export interface SearchTarget extends AppRouteTarget {

@@ -1,10 +1,16 @@
 import { PromptAction } from '@kit.ArkUI';
-import { APP_LIST_PAGE_SIZE, CONTENT_MAX_WIDTH } from '../../common/constants';
-import { setDetailTarget } from '../../common/appState';
+import {
+    APP_LIST_PAGE_SIZE,
+    CONTENT_MAX_WIDTH,
+    CONTINUATION_ROUTE_MAIN,
+    MAIN_TAB_APPS,
+} from '../../common/constants';
+import { getContinuationState, setContinuationView, setDetailTarget } from '../../common/appState';
 import { fetchAppsPage } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import type { BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
+import { vibration } from '../../common/vibration';
 
 interface SortChoice {
     label: string;
@@ -16,6 +22,7 @@ struct AppTableRow {
     app: MarketApp = {} as MarketApp;
     index: number = 0;
     onOpen: (app: MarketApp) => void = () => {};
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
     private rating(): string {
         const value = Number(this.app.average_rating ?? 0);
@@ -94,7 +101,11 @@ struct AppTableRow {
         .height(58)
         .padding({ left: 8, right: 8 })
         .border({ width: { bottom: 1 }, color: $r('app.color.v3_chart_grid') })
-        .onClick(() => this.onOpen(this.app))
+        .backgroundColor(this.index % 2 === 0 ? $r('app.color.v3_surface_alt') : $r('app.color.v3_surface'))
+        .onClick(() => {
+            if (this.vibrationEnabled) vibration.dotVibration();
+            this.onOpen(this.app);
+        })
         .accessibilityGroup(true)
         .accessibilityText(`打开${this.app.name || '未知应用'}详情`)
     }
@@ -104,6 +115,7 @@ struct AppTableRow {
 export struct AppsPage {
     @Consume('pageStack') private pageStack: NavPathStack;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
+    private pageScroller: Scroller = new Scroller();
     @State private apps: MarketApp[] = [];
     @State private page: number = 1;
     @State private total: number = 0;
@@ -114,6 +126,12 @@ export struct AppsPage {
     @State private descending: boolean = true;
     @State private jumpText: string = '';
     @State private quickSearch: string = '';
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    private restoredScroll: boolean = false;
+
+    private vibrate(): void {
+        if (this.vibrationEnabled) vibration.dotVibration();
+    }
 
     private sortChoices(): SortChoice[] {
         return [
@@ -158,12 +176,13 @@ export struct AppsPage {
             this.fromCache = result.stale;
             this.loaded = true;
         }).catch((error: Error) => {
-            console.error('[Dashboard][pages/v3/AppsPage][ERROR]', `应用总表加载失败: ${error.message}`);
+            console.error('[Dashboard][pages/main/AppsPage][ERROR]', `应用总表加载失败: ${error.message}`);
             showToastSafely(this.prompt, `应用总表加载失败：${error.message}`, 2500, 'V3Apps');
         }).finally(() => this.loading = false);
     }
 
     private jump(): void {
+        this.vibrate();
         const target = Number(this.jumpText);
         if (!Number.isInteger(target) || target < 1 || target > this.totalPages()) {
             showToastSafely(this.prompt, `请输入 1 到 ${this.totalPages()} 之间的页码`, 1800, 'V3Apps');
@@ -175,11 +194,17 @@ export struct AppsPage {
 
     private openDetail(app: MarketApp): void {
         setDetailTarget({ appId: app.app_id, packageName: app.pkg_name });
-        this.pageStack.pushPathByName('AppDetailPage', null);
+        try {
+            this.pageStack.pushPathByName('AppDetailPage', null);
+        } catch (error) {
+            console.error('[Dashboard][pages/main/AppsPage][ERROR]', `打开应用详情失败: ${JSON.stringify(error)}`);
+            showToastSafely(this.prompt, '暂时无法打开应用详情，请重试', 1800, 'AppsPage');
+        }
     }
 
     build() {
-        Column({ space: 12 }) {
+        Scroll(this.pageScroller) {
+          Column({ space: 12 }) {
             Row() {
                 Column({ space: 4 }) {
                     Text('应用总表')
@@ -197,7 +222,10 @@ export struct AppsPage {
                 Button('刷新')
                     .backgroundColor($r('app.color.v3_accent_blue'))
                     .enabled(!this.loading)
-                    .onClick(() => this.load(true))
+                    .onClick(() => {
+                        this.vibrate();
+                        this.load(true);
+                    })
                     .accessibilityText('刷新应用总表')
             }
             .width('100%')
@@ -212,6 +240,7 @@ export struct AppsPage {
                     .searchButton('筛选')
                     .onChange((value: string) => this.quickSearch = value)
                     .onSubmit(() => {
+                        this.vibrate();
                         this.page = 1;
                         this.load(false);
                     })
@@ -223,6 +252,7 @@ export struct AppsPage {
                     .margin(4)
                     .backgroundColor($r('app.color.v3_surface'))
                     .onSelect((index: number) => {
+                        this.vibrate();
                         this.sortIndex = index;
                         this.page = 1;
                         this.load(false);
@@ -234,6 +264,7 @@ export struct AppsPage {
                     .fontColor($r('app.color.v3_accent_blue'))
                     .backgroundColor($r('app.color.v3_surface'))
                     .onClick(() => {
+                        this.vibrate();
                         this.descending = !this.descending;
                         this.page = 1;
                         this.load(false);
@@ -286,7 +317,6 @@ export struct AppsPage {
                 .scrollBar(BarState.Auto)
                 .edgeEffect(EdgeEffect.None)
                 .width('100%')
-                .height('100%')
                 .accessibilityText('可横向滚动的应用总表')
 
                 if (this.loading) {
@@ -306,7 +336,6 @@ export struct AppsPage {
                     .accessibilityGroup(true)
                 }
             }
-            .layoutWeight(1)
             .width('100%')
             .borderRadius(16)
             .clip(true)
@@ -320,6 +349,7 @@ export struct AppsPage {
                     .backgroundColor($r('app.color.v3_surface_alt'))
                     .fontColor($r('app.color.v3_text_primary'))
                     .onClick(() => {
+                        this.vibrate();
                         this.page--;
                         this.load(false);
                     })
@@ -334,6 +364,7 @@ export struct AppsPage {
                     .enabled(this.page < this.totalPages() && !this.loading)
                     .backgroundColor($r('app.color.v3_accent_blue'))
                     .onClick(() => {
+                        this.vibrate();
                         this.page++;
                         this.load(false);
                     })
@@ -355,19 +386,38 @@ export struct AppsPage {
                     .accessibilityText('跳转到指定页')
             }
             .width('100%')
-            .padding({ bottom: 92 })
+            .padding({ bottom: 110 })
             .accessibilityText('应用总表分页控件')
+          }
+          .width('100%')
+          .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
+          .padding({ left: 14, right: 14 })
+          .backgroundColor($r('app.color.background'))
+          .onAppear(() => {
+              if (!this.loaded) {
+                  this.load(false);
+              }
+              if (!this.restoredScroll) {
+                  this.restoredScroll = true;
+                  const continuation = getContinuationState();
+                  if (continuation.mainTab === MAIN_TAB_APPS && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
+                      continuation.scrollDistance > 0) {
+                      setTimeout(() => this.pageScroller.scrollTo({
+                          xOffset: 0,
+                          yOffset: continuation.scrollDistance,
+                          animation: { duration: 0 },
+                      }), 80);
+                  }
+              }
+          })
+          .accessibilityText('应用总表页面')
         }
         .width('100%')
         .height('100%')
-        .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
-        .padding({ left: 14, right: 14 })
+        .scrollBar(BarState.Auto)
+        .edgeEffect(EdgeEffect.Spring)
+        .onDidScroll(() => setContinuationView(MAIN_TAB_APPS, this.pageScroller.currentOffset().yOffset))
         .backgroundColor($r('app.color.background'))
-        .onAppear(() => {
-            if (!this.loaded) {
-                this.load(false);
-            }
-        })
-        .accessibilityText('应用总表页面')
+        .accessibilityText('可上下滚动的应用总表页面')
     }
 }

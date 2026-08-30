@@ -11,14 +11,13 @@ Dashboard 应用看板是 `harmony_get_market` 的 HarmonyOS 原生客户端。�
 
 ## 3.0.0 界面结构
 
-主页面使用 `HdsNavigation`，子页面使用 `HdsNavDestination`，六个主页面由 `HdsTabs` 串联：
+主页面使用 `HdsNavigation`，子页面使用 `HdsNavDestination`，五个主页面由固定标题栏的 `HdsTabs` 串联（切换动画已关闭）：
 
 1. **S站**：保留原有 ArkWeb 访问逻辑。
-2. **首页**：欢迎信息、市场核心指标、最后更新时间、同步状态与进度。
-3. **应用概况**：评分、最低 SDK、目标 SDK 分布图，可选择 API 和日期的历史趋势图，以及总下载榜、非华为应用下载榜。
-4. **搜索**：合并搜索、投稿、更新和三个系统分享入口。搜索结果完整加载后会在后台触发一次更新；新应用执行 simple 投稿，已有应用执行 query 更新。
-5. **应用总表**：分页应用列表，支持名称筛选、多字段升降序排序、上一页/下一页和指定页码跳转。
-6. **我的**：合并用户与关于页面，依次展示应用信息、用户名、设置、更多栏目、版本/版权/备案信息。
+2. **首页**：欢迎信息、市场核心指标、最后更新时间、同步状态，以及评分/SDK 分布、API 历史、下载榜等图表。各数据源独立加载，单个接口失败不会拖垮整页。
+3. **搜索**：合并搜索、投稿、更新和系统分享入口。搜索结果完整加载后只触发一次后台更新；新应用执行 simple 投稿，已有应用执行 query 更新。
+4. **应用总表**：可纵向浏览的分页应用表，支持名称筛选、多字段升降序排序、横向查看全部列和指定页码跳转。
+5. **我的**：依次展示 AppIcon、中英文名称、设置、更多栏目、版本/版权/备案信息。用户名是第一项设置，仅在主动点击编辑时显示输入框。
 
 应用总表、搜索结果和系统分享入口都使用同一公用详情模板：
 
@@ -26,7 +25,9 @@ Dashboard 应用看板是 `harmony_get_market` 的 HarmonyOS 原生客户端。�
 查找应用 → API 加载（显示加载状态）→ 注入数据 → 原生详情模板
 ```
 
-详情页包含应用概要、版本和 SDK 信息、下载与评分、截图、下载量历史、应用介绍和新版特性。
+详情页包含应用概要、紧凑的“标签＋文字”信息区、截图、下载量历史、应用介绍和新版特性。按钮分享、碰一碰和隔空传送仅在详情页启用，分享地址为 S 站实际使用的 `?app_id=...` 格式，并附带标题、说明与图标缩略图。
+
+跨设备接续会保存当前主标签、原生详情目标和滚动位置；目标设备统一恢复 `pages/Dashboard`，再导航至对应标签或详情位置。
 
 ## 数据、缓存与弱网策略
 
@@ -68,7 +69,8 @@ Dashboard 应用看板是 `harmony_get_market` 的 HarmonyOS 原生客户端。�
 
 ```text
 entry/src/main/ets/
-├── ability/                  UIAbility 与三个分享入口
+├── ability/                  EntryAbility 与唯一 shareAbility
+├── abilityPages/             分享会话加载页
 ├── common/
 │   ├── MarketApi.ets         统一 API 客户端
 │   ├── CacheService.ets      文件缓存、容量统计与完整清理
@@ -77,17 +79,19 @@ entry/src/main/ets/
 │   ├── safeUi.ets            PromptAction 安全调用与日志回退
 │   ├── constants.ets         跨文件常量
 │   └── types.ets             API、页面和路由类型
-├── component/settings.ets    设置和缓存管理
+├── component/
+│   ├── charts/               首页原生图表组件
+│   └── settings.ets          设置和缓存管理
 └── pages/
-    ├── Dashboard.ets         HdsNavigation + 六个 HdsTabs
-    └── v3/
-        ├── SStationPage.ets
-        ├── HomePage.ets
-        ├── OverviewPage.ets
-        ├── SearchPage.ets
-        ├── AppsPage.ets
-        ├── MyPage.ets
-        └── AppDetailPage.ets
+    ├── Dashboard.ets         HdsNavigation + 五个固定 HdsTabs
+    ├── main/
+    │   ├── SStationPage.ets
+    │   ├── HomePage.ets
+    │   ├── SearchPage.ets
+    │   ├── AppsPage.ets
+    │   └── MyPage.ets
+    ├── detail/               公用原生应用详情页
+    └── more/                 教程、友链、网页说明、日志与协议子页面
 ```
 
 ## API 对照
@@ -113,7 +117,7 @@ entry/src/main/ets/
 2. 安装项目指定的 HarmonyOS API 23 SDK 与 HMS SDK。
 3. 检查签名配置是否指向本机有效文件；仓库内的其他开发者绝对路径不能直接使用。
 4. 选择 phone、tablet 或 2in1 目标进行构建和真机/模拟器验证。
-5. 重点验证：弱网回退、缓存清除、深浅色、600/840vp 断点、三种分享入口、表格页码跳转和无障碍播报。
+5. 重点验证：弱网回退、缓存清除、深浅色、600/840vp 断点、唯一分享入口、详情页三类分享、接续位置、表格滚动/页码跳转和无障碍播报。
 
 ## 隐私与说明
 

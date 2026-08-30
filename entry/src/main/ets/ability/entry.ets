@@ -3,12 +3,20 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { loadPersistedState } from '../common/storage';
 import {
+    CONTINUATION_ROUTE_DETAIL,
+    CONTINUATION_ROUTE_MAIN,
     DEFAULT_WINDOW_HEIGHT,
     DEFAULT_WINDOW_WIDTH,
     LOCAL_STORAGE_KEY_WINDOW_HEIGHT,
     LOCAL_STORAGE_KEY_WINDOW_WIDTH,
 } from '../common/constants';
-import { getContinuationState, setContinuationState, setDetailTarget, setSearchTarget } from '../common/appState';
+import {
+    getContinuationState,
+    setContinuationState,
+    setDetailTarget,
+    setMainTab,
+    setSearchTarget,
+} from '../common/appState';
 import { initializeCache } from '../common/CacheService';
 
 const DOMAIN = 0x0000;
@@ -23,17 +31,36 @@ export default class EntryAbility extends UIAbility {
 
         wantParam['targetUrl'] = current.pageUrl;
         wantParam['scrollOffset'] = current.scrollDistance;
+        wantParam['mainTabIndex'] = current.mainTab;
+        wantParam['routeName'] = current.routeName;
+        wantParam['detailAppId'] = current.detailAppId;
+        wantParam['detailPackage'] = current.detailPackageName;
         return AbilityConstant.OnContinueResult.AGREE;
     }
     private restoreContinuationParams(want: Want, launchParam?: AbilityConstant.LaunchParam): void {
         if (launchParam?.launchReason === AbilityConstant.LaunchReason.CONTINUATION || want.parameters?.['targetUrl']) {
             this.isContinuation = true;
         }
-        if (want.parameters?.['targetUrl'] || want.parameters?.['scrollOffset'] !== undefined) {
+        if (this.isContinuation) {
+            const mainTab = want.parameters?.['mainTabIndex'] as number | undefined;
+            const routeName = want.parameters?.['routeName'] as string || CONTINUATION_ROUTE_MAIN;
+            const detailAppId = want.parameters?.['detailAppId'] as string || '';
+            const detailPackageName = want.parameters?.['detailPackage'] as string || '';
             setContinuationState({
                 pageUrl: want.parameters?.['targetUrl'] as string || '',
                 scrollDistance: want.parameters?.['scrollOffset'] as number || 0,
+                mainTab: mainTab ?? 1,
+                routeName,
+                detailAppId,
+                detailPackageName,
             });
+            setMainTab(mainTab ?? 1);
+            if (routeName === CONTINUATION_ROUTE_DETAIL && (detailAppId || detailPackageName)) {
+                setDetailTarget({
+                    appId: detailAppId || undefined,
+                    packageName: detailPackageName || undefined,
+                });
+            }
         }
     }
 
@@ -48,9 +75,22 @@ export default class EntryAbility extends UIAbility {
         this.restoreContinuationParams(want, launchParam);
         this.applyV3LaunchParams(want);
     }
+    private decodeUriValue(value: string): string {
+        try {
+            return decodeURIComponent(value);
+        } catch (error) {
+            console.warn('[Dashboard][ability/entry][WARN]', `忽略无法解码的启动参数: ${JSON.stringify(error)}`);
+            return value;
+        }
+    }
     private applyV3LaunchParams(want: Want): void {
-        const detailAppId = want.parameters?.['detailAppId'] as string || '';
-        const detailPackage = want.parameters?.['detailPackage'] as string || '';
+        const incomingUri = want.uri || '';
+        const uriAppId = incomingUri.match(/[?&#]app_id=([^&#]+)/);
+        const uriPackage = incomingUri.match(/[?&#]pkg=([^&#]+)/);
+        const uriDetailAppId = uriAppId && uriAppId[1] ? this.decodeUriValue(uriAppId[1]) : '';
+        const uriDetailPackage = uriPackage && uriPackage[1] ? this.decodeUriValue(uriPackage[1]) : '';
+        const detailAppId = want.parameters?.['detailAppId'] as string || uriDetailAppId;
+        const detailPackage = want.parameters?.['detailPackage'] as string || uriDetailPackage;
         const searchText = want.parameters?.['searchText'] as string || '';
         const searchAutoRun = want.parameters?.['searchAutoRun'] as boolean | undefined;
         const openDetailOnSuccess = want.parameters?.['openDetailOnSuccess'] as boolean | undefined;
@@ -85,7 +125,7 @@ export default class EntryAbility extends UIAbility {
             });
     }
     private loadCurrentPage(windowStage: window.WindowStage): void {
-        this.loadContent(windowStage, this.isContinuation ? 'abilityPages/continueWeb' : 'pages/Dashboard');
+        this.loadContent(windowStage, 'pages/Dashboard');
     }
     private async bindWindowStorage(windowStage: window.WindowStage): Promise<void> {
         this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, DEFAULT_WINDOW_WIDTH);

@@ -23,6 +23,9 @@ export const APP_STATE_KEY_SHARE_REQUEST = 'shareRequest';
 export const APP_STATE_KEY_DETAIL_TARGET = 'detailTarget';
 export const APP_STATE_KEY_SEARCH_TARGET = 'searchTarget';
 export const APP_STATE_KEY_MAIN_TAB = 'mainTabIndex';
+export const APP_STATE_KEY_CONTINUATION_ROUTE = 'continuationRoute';
+export const APP_STATE_KEY_CONTINUATION_DETAIL_ID = 'continuationDetailAppId';
+export const APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE = 'continuationDetailPackage';
 export const LOCAL_STORAGE_KEY_WINDOW_WIDTH = 'winWidth';
 export const LOCAL_STORAGE_KEY_WINDOW_HEIGHT = 'winHeight';
 
@@ -49,6 +52,14 @@ export const CACHE_TTL_DETAIL_MS = 30 * 60 * 1000;
 export const CACHE_TTL_CHART_MS = 30 * 60 * 1000;
 export const CACHE_MAX_STALE_MS = 30 * 24 * 60 * 60 * 1000;
 export const BACKGROUND_REFRESH_DELAY_MS = 180;
+export const MAIN_TAB_S_STATION = 0;
+export const MAIN_TAB_HOME = 1;
+export const MAIN_TAB_SEARCH = 2;
+export const MAIN_TAB_APPS = 3;
+export const MAIN_TAB_MY = 4;
+export const MAIN_TAB_DEFAULT = MAIN_TAB_HOME;
+export const CONTINUATION_ROUTE_MAIN = 'main';
+export const CONTINUATION_ROUTE_DETAIL = 'detail';
 
 export function createSubmitFormData(): FormData {
     return { appLink: '', packageName: '', appId: '', remark: '' };
@@ -83,6 +94,7 @@ export const TELEMETRY_INGEST_URL = new URL("/api/v0/telemetry/report", SBaseURL
 export const MEOW_CHANNEL_URL = new URL("https://www.chuckfang.com/MeoW/appLinking?channelId=8bbba7f53bf9458284a41d04f295450b");
 export const MIIT_ICP_URL = new URL("https://beian.miit.gov.cn/#/Integrated/index");
 export const HUAWEI_APP_DETAIL_URL_PREFIX = "https://appgallery.huawei.com/app/detail?id=";
+export const S_SITE_APP_DETAIL_QUERY = '?app_id=';
 
 // UA
 export const customUserAgent: string = `${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion}) API:${deviceInfo.sdkApiVersion} | ${deviceInfo.productModel}/${deviceInfo.productModelAlias}/${deviceInfo.softwareModel}/${deviceInfo.hardwareModel} | ${deviceInfo.deviceType}/${deviceInfo.marketName}/${deviceInfo.chipType}`;
