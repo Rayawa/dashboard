@@ -36,6 +36,7 @@ export default class shareEntryAbility extends UIAbility {
                 .getApplicationContext()
                 .setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
         } catch (err) {
+            console.warn('[Dashboard][ability/submitEntry][WARN]', `颜色模式设置失败，保留系统当前模式: ${JSON.stringify(err)}`);
             hilog.error(
                 DOMAIN,
                 "dashboard",
@@ -70,6 +71,7 @@ export default class shareEntryAbility extends UIAbility {
                 isNavigationBarLightIcon: true,
             });
         } catch (err) {
+            console.warn('[Dashboard][ability/submitEntry][WARN]', `沉浸式系统栏设置不可用，保留系统默认样式: ${JSON.stringify(err)}`);
             hilog.error(
                 DOMAIN,
                 "dashboard",
@@ -86,6 +88,7 @@ export default class shareEntryAbility extends UIAbility {
             const avoidArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
             hilog.info(DOMAIN, "dashboard", "Avoid area: %{public}s", JSON.stringify(avoidArea));
         } catch (err) {
+            console.warn('[Dashboard][ability/submitEntry][WARN]', `挖孔区域设置不可用，使用系统默认安全区: ${JSON.stringify(err)}`);
             hilog.error(
                 DOMAIN,
                 "dashboard",
@@ -107,6 +110,7 @@ export default class shareEntryAbility extends UIAbility {
                 });
             }
         } catch (err) {
+            console.warn('[Dashboard][ability/submitEntry][WARN]', `系统栏恢复失败，保留当前窗口样式: ${JSON.stringify(err)}`);
             hilog.error(
                 DOMAIN,
                 "dashboard",
@@ -120,6 +124,8 @@ export default class shareEntryAbility extends UIAbility {
         this.resetImmersiveMode();
     }
     onBackground() {
-        this.context.terminateSelf();
+        this.context.terminateSelf().catch((error: Error) => {
+            console.error('[Dashboard][ability/submitEntry][ERROR]', `投稿 Ability 后台退出失败: ${error.message}`);
+        });
     }
 }

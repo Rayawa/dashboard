@@ -35,18 +35,18 @@ export struct warn {
           }
         })
         Column() {
-          Text("重要提示").fontSize(24).fontColor(Color.Red).fontWeight(FontWeight.Bold).margin({ bottom: 5 })
+          Text("重要提示").fontSize(24).fontColor($r('app.color.v3_accent_red')).fontWeight(FontWeight.Bold).margin({ bottom: 5 })
 
           Column() {
             Text("Harmony Dashboard数据来源于网络。\n不保证来源准确性、完整性和真实性，仅供参考。")
               .fontSize(14)
-              .fontColor(Color.Red)
+              .fontColor($r('app.color.v3_accent_red'))
               .fontWeight(FontWeight.Medium)
               .margin({ bottom: 12 })
             Text("详情查看：项目总网页")
               .fontSize(14)
-              .decoration({ type: TextDecorationType.Underline, color: Color.Blue })
-              .fontColor(Color.Blue)
+              .decoration({ type: TextDecorationType.Underline, color: $r('app.color.v3_accent_blue') })
+              .fontColor($r('app.color.v3_accent_blue'))
               .margin({ left: 5, top: 10, bottom: 20 })
               .onClick(async () => {
                 if (this.vibrationON) vibration.dotVibration()
@@ -60,7 +60,7 @@ export struct warn {
                     uri: mainPage.toString(),
                   } as Want);
                 } catch (error) {
-                  console.error("打开链接失败:", (error as BusinessError).message);
+                  console.error('[Dashboard][component/warn][ERROR]', "打开链接失败:", (error as BusinessError).message);
                   this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
                 }
               })
@@ -86,7 +86,7 @@ export struct warn {
               .fontWeight(FontWeight.Bold)
               .margin({ bottom: 8 })
             Text("所有数据由第三方测算，不代表华为官方立场！")
-              .fontColor(Color.Red)
+              .fontColor($r('app.color.v3_accent_red'))
               .fontWeight(FontWeight.Bold)
               .fontSize(15)
               .margin({ bottom: 5 })
@@ -124,7 +124,7 @@ export struct warn {
         .backgroundColor($r("app.color.backcolor"))
         .shadow({
           radius: 20,
-          color: Color.Gray,
+          color: $r('app.color.v3_shadow'),
           offsetX: 0,
           offsetY: 4,
         });
@@ -140,7 +140,7 @@ export struct warn {
           })
           Text("* 点击外部区域或向下滑动关闭页面")
             .fontSize(14)
-            .fontColor(Color.Grey)
+            .fontColor($r('app.color.v3_text_secondary'))
             .hitTestBehavior(HitTestMode.None)
             .onClick(() => {
               if (this.vibrationON) vibration.dotVibration();
@@ -149,6 +149,8 @@ export struct warn {
         }
       }
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      .accessibilityGroup(true)
+      .accessibilityText('应用数据来源和免责重要提示')
       .transition(this.effect)
       .gesture(
         SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(() => {

@@ -4,6 +4,7 @@ import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { setFirstLaunch, getFirstLaunch } from '../common/storage';
 import { privacyManager } from '@kit.StoreKit';
+import { showToastSafely } from '../common/safeUi';
 
 @Component
 export struct confirmButtons {
@@ -46,32 +47,32 @@ export struct confirmButtons {
             }
         } catch (err) {
             let error = err as BusinessError;
-            console.error("Index", "检查失败", JSON.stringify(error));
+            console.error('[Dashboard][component/confirmButtons][ERROR]', "Index", "检查失败", JSON.stringify(error));
             this.isConfirmEnabled = true;
         }
     }
 
     private async handleCancel() {
         this.isExiting = true;
-        this.PromptAction.showToast({ message: "退出应用..." });
+        showToastSafely(this.PromptAction, '退出应用…', 2000, 'PrivacyConfirm');
         try {
             await setFirstLaunch(true);
 
-            console.info("Index", "用户点击取消，标记位重置为true。");
+            console.info('[Dashboard][component/confirmButtons][INFO]', "Index", "用户点击取消，标记位重置为true。");
         } catch (err) {
-            console.error("获取失败");
+            console.error('[Dashboard][component/confirmButtons][ERROR]', "获取失败");
         }
         setTimeout(() => {
             try {
                 privacyManager.disableService();
                 const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
                 context.terminateSelf().then(() => {
-                    console.info('Ability 销毁指令发送成功');
+                    console.info('[Dashboard][component/confirmButtons][INFO]', 'Ability 销毁指令发送成功');
                 }).catch((err: BusinessError) => {
-                    console.error(`销毁失败: ${err.code}`);
+                    console.error('[Dashboard][component/confirmButtons][ERROR]', `销毁失败: ${err.code}`);
                 });
             } catch (err) {
-                console.error(`撤回隐私协议失败: ${err.code}`);
+                console.error('[Dashboard][component/confirmButtons][ERROR]', `撤回隐私协议失败: ${err.code}`);
             }
         }, 500);
     }
@@ -82,7 +83,7 @@ export struct confirmButtons {
             await setFirstLaunch(false);
 
             this.isShow = false;
-            console.info("Index", "用户已同意协议，标记位已更新。");
+            console.info('[Dashboard][component/confirmButtons][INFO]', "Index", "用户已同意协议，标记位已更新。");
         } catch (err) {
         }
         this.isProcessing = true;

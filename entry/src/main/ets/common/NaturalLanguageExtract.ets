@@ -29,12 +29,12 @@ export class NaturalLanguageExtractor {
     static async extractAppInfoFromText(inputText: string): Promise<AppInfo[]> {
         // 1. 输入验证
         if (!inputText || inputText.trim().length === 0) {
-            console.log("错误：请输入文本");
+            console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', "错误：请输入文本");
             return [];
         }
 
         if (inputText.length > 1000) {
-            console.log(`错误：文本长度${inputText.length}超过1000字符限制`);
+            console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', `错误：文本长度${inputText.length}超过1000字符限制`);
             return [];
         }
 
@@ -73,10 +73,10 @@ export class NaturalLanguageExtractor {
                 dates,
             );
 
-            console.log(`提取完成，找到 ${extractedApps.length} 个应用`);
+            console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', `提取完成，找到 ${extractedApps.length} 个应用`);
             return extractedApps;
         } catch (error) {
-            console.error("实体抽取失败:", error);
+            console.error('[Dashboard][common/NaturalLanguageExtract][ERROR]', "实体抽取失败:", error);
             return [];
         }
     }
@@ -133,8 +133,8 @@ export class NaturalLanguageExtractor {
     // 提取AppID - C开头 + 数字
     private static extractAppIDs(text: string): string[] {
         const sampleText = text.substring(0, Math.min(200, text.length));
-        console.log("[提取调试] 输入文本样本:", sampleText);
-        console.log("[提取调试] 文本总长度:", text.length);
+        console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', "[提取调试] 输入文本样本:", sampleText);
+        console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', "[提取调试] 文本总长度:", text.length);
 
         const patterns: PatternItem[] = [
             { name: "严格模式 (C+10-25数字)", pattern: /\bC\d{10,25}\b/g },
@@ -153,22 +153,22 @@ export class NaturalLanguageExtractor {
             pattern.lastIndex = 0;
             const matches = text.match(pattern);
             if (matches && matches.length > 0) {
-                console.log(`[提取调试] "${name}" 匹配到:`, matches);
+                console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', `[提取调试] "${name}" 匹配到:`, matches);
                 const uniqueNew = matches.filter((m) => !allMatches.includes(m));
                 allMatches.push(...uniqueNew);
                 if (name.startsWith("严格模式") || name.startsWith("忽略大小写")) {
                     break;
                 }
             } else {
-                console.log(`[提取调试] "${name}" 未匹配到结果。`);
+                console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', `[提取调试] "${name}" 未匹配到结果。`);
             }
         }
 
         if (allMatches.length === 0) {
-            console.log("[提取调试] 常规模式均未匹配，尝试查找所有长数字序列...");
+            console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', "[提取调试] 常规模式均未匹配，尝试查找所有长数字序列...");
             const allNumberGroups = text.match(/\d{10,25}/g);
             if (allNumberGroups) {
-                console.log("[提取调试] 文本中找到的长数字序列:", allNumberGroups);
+                console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', "[提取调试] 文本中找到的长数字序列:", allNumberGroups);
 
                 for (const numStr of allNumberGroups) {
                     const index = text.indexOf(numStr);
@@ -185,7 +185,7 @@ export class NaturalLanguageExtractor {
 
         // 4. 最终结果处理与日志
         const finalResults = Array.from(new Set(allMatches)); // 去重
-        console.log("[提取调试] === 最终提取结果 ===:", finalResults);
+        console.info('[Dashboard][common/NaturalLanguageExtract][INFO]', "[提取调试] === 最终提取结果 ===:", finalResults);
         return finalResults;
     }
 

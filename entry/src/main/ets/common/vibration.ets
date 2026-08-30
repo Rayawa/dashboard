@@ -5,12 +5,12 @@ export class vibration{
   static dotVibration(): void {
     vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
       if (err) {
-        console.error(
+        console.error('[Dashboard][common/vibration][ERROR]',
           `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
         );
         return;
       }
-      console.info("Succeed in querying effect");
+      console.info('[Dashboard][common/vibration][INFO]', "Succeed in querying effect");
       if (state) {
         try {
           vibrator.startVibration(
@@ -23,16 +23,16 @@ export class vibration{
             { usage: "touch" },
             (error: BusinessError) => {
               if (error) {
-                console.error(
+                console.error('[Dashboard][common/vibration][ERROR]',
                   `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
                 );
               } else {
-                console.info("Succeed in starting vibration");
+                console.info('[Dashboard][common/vibration][INFO]', "Succeed in starting vibration");
               }
             },
           );
         } catch (tryError) {
-          console.error(`An unexpected error occurred in try block: ${tryError}`);
+          console.error('[Dashboard][common/vibration][ERROR]', `An unexpected error occurred in try block: ${tryError}`);
         }
       }
     });
@@ -43,12 +43,12 @@ export class vibration{
       "haptic.effect.hard",
       (err: BusinessError, state: boolean) => {
         if (err) {
-          console.error(
+          console.error('[Dashboard][common/vibration][ERROR]',
             `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
           );
           return;
         }
-        console.info("Succeed in querying effect");
+        console.info('[Dashboard][common/vibration][INFO]', "Succeed in querying effect");
         if (state) {
           try {
             vibrator.startVibration(
@@ -61,16 +61,16 @@ export class vibration{
               { usage: "touch" },
               (error: BusinessError) => {
                 if (error) {
-                  console.error(
+                  console.error('[Dashboard][common/vibration][ERROR]',
                     `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
                   );
                 } else {
-                  console.info("Succeed in starting vibration");
+                  console.info('[Dashboard][common/vibration][INFO]', "Succeed in starting vibration");
                 }
               },
             );
           } catch (tryError) {
-            console.error(
+            console.error('[Dashboard][common/vibration][ERROR]',
               `An unexpected error occurred in try block: ${tryError}`,
             );
           }
@@ -92,17 +92,17 @@ export class vibration{
         },
         (error: BusinessError) => {
           if (error) {
-            console.error(
+            console.error('[Dashboard][common/vibration][ERROR]',
               `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
             );
             return;
           }
-          console.info("Succeed in starting vibration");
+          console.info('[Dashboard][common/vibration][INFO]', "Succeed in starting vibration");
         },
       );
     } catch (err) {
       let e: BusinessError = err as BusinessError;
-      console.error(
+      console.error('[Dashboard][common/vibration][ERROR]',
         `An unexpected error occurred. Code: ${e.code}, message: ${e.message}`,
       );
     }

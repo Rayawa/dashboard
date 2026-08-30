@@ -71,6 +71,66 @@
     {
       "name": "nd_bar_track",
       "value": "#EAF0F8"
+    },
+    {
+      "name": "v3_surface",
+      "value": "#FFFFFFFF"
+    },
+    {
+      "name": "v3_surface_alt",
+      "value": "#FFF0F4FA"
+    },
+    {
+      "name": "v3_text_primary",
+      "value": "#FF172033"
+    },
+    {
+      "name": "v3_text_secondary",
+      "value": "#FF5F6B7A"
+    },
+    {
+      "name": "v3_accent_blue",
+      "value": "#FF0A59F7"
+    },
+    {
+      "name": "v3_accent_cyan",
+      "value": "#FF007D8A"
+    },
+    {
+      "name": "v3_accent_green",
+      "value": "#FF00875A"
+    },
+    {
+      "name": "v3_accent_orange",
+      "value": "#FFB54708"
+    },
+    {
+      "name": "v3_accent_red",
+      "value": "#FFCF2634"
+    },
+    {
+      "name": "v3_accent_purple",
+      "value": "#FF7048E8"
+    },
+    {
+      "name": "v3_chart_grid",
+      "value": "#FFD8E0EB"
+    },
+    {
+      "name": "v3_scrim",
+      "value": "#66000000"
+    },
+    {
+      "name": "v3_success_bg",
+      "value": "#FFE8F7EF"
+    },
+    {
+      "name": "v3_warning_bg",
+      "value": "#FFFFF4DE"
+    },
+    {
+      "name": "v3_shadow",
+      "value": "#1A1A2B45"
     }
   ]
 }

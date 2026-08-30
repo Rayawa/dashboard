@@ -38,9 +38,9 @@ struct friend {
     };
 
     context.startAbility(want).then(() => {
-      console.info(`queryResult [Market] 跳转成功: ${appId}`);
+      console.info('[Dashboard][pages/friend][INFO]', `queryResult [Market] 跳转成功: ${appId}`);
     }).catch((err: Error) => {
-      console.error(`queryResult [Market] 跳转失败: ${err.message}`);
+      console.error('[Dashboard][pages/friend][ERROR]', `queryResult [Market] 跳转失败: ${err.message}`);
       this.PromptAction.showToast({ message: "无法打开应用市场" });
     });
   }

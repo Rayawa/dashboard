@@ -20,6 +20,25 @@ struct appLog {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
     private updateLogs: UpdateLog[] = [
         {
+            version: "V3.0.0",
+            date: "2026-8-28",
+            type: "release",
+            isRelease: true,
+            items: [
+                "主界面重构为 HdsNavigation 与六个 HdsTabs：S站、首页、应用概况、搜索、应用总表、我的",
+                "新增原生首页与同步状态卡片，展示最后更新时间、服务状态和市场核心指标",
+                "新增交互式评分、SDK 分布图、Harmony API 历史折线图、总下载榜与非华为应用下载榜",
+                "搜索、投稿、更新与三个系统分享入口合并；新应用自动 simple 投稿，已有应用自动 query 更新",
+                "新增公用原生应用详情模板，统一查询、列表和分享入口的详情展示流程",
+                "应用总表新增多字段升降序排序、名称筛选和跳转指定页数",
+                "合并用户与关于页面，并在清除缓存项中显示缓存文件总大小",
+                "新增带有效期的 API 磁盘缓存与网络失败回退提示；清除缓存覆盖 API 缓存、ArkWeb 存储和 Cookie",
+                "修复缓存写入、点击事件与图表尺寸命名导致的 ArkTS 编译错误，并为文件、窗口、网络、弹窗和设备能力调用补齐异常回退与统一日志",
+                "按 600vp 与 840vp 断点完善手机、平板和 2in1 响应式布局，并补充中文无障碍播报标签",
+                "版本更新为 3.0.0，构建号更新为 30000001",
+            ],
+        },
+        {
             version: "V2.2.1-beta.1",
             date: "2026-8-16",
             type: "beta",

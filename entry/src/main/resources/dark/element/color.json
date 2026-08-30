@@ -46,6 +46,14 @@
       "value": "#4A9CE2"
     },
     {
+      "name": "gradient_start_color",
+      "value": "#FFD45F84"
+    },
+    {
+      "name": "gradient_end_color",
+      "value": "#FF8A68D8"
+    },
+    {
       "name": "nd_card_bg",
       "value": "#16202B"
     },
@@ -64,6 +72,66 @@
     {
       "name": "nd_bar_track",
       "value": "#233046"
+    },
+    {
+      "name": "v3_surface",
+      "value": "#FF182231"
+    },
+    {
+      "name": "v3_surface_alt",
+      "value": "#FF101927"
+    },
+    {
+      "name": "v3_text_primary",
+      "value": "#FFF1F4F8"
+    },
+    {
+      "name": "v3_text_secondary",
+      "value": "#FFA8B4C3"
+    },
+    {
+      "name": "v3_accent_blue",
+      "value": "#FF74A7FF"
+    },
+    {
+      "name": "v3_accent_cyan",
+      "value": "#FF55C7D3"
+    },
+    {
+      "name": "v3_accent_green",
+      "value": "#FF52C999"
+    },
+    {
+      "name": "v3_accent_orange",
+      "value": "#FFFFB75E"
+    },
+    {
+      "name": "v3_accent_red",
+      "value": "#FFFF8792"
+    },
+    {
+      "name": "v3_accent_purple",
+      "value": "#FFB69AFF"
+    },
+    {
+      "name": "v3_chart_grid",
+      "value": "#FF344358"
+    },
+    {
+      "name": "v3_scrim",
+      "value": "#99000000"
+    },
+    {
+      "name": "v3_success_bg",
+      "value": "#FF15392D"
+    },
+    {
+      "name": "v3_warning_bg",
+      "value": "#FF3E3017"
+    },
+    {
+      "name": "v3_shadow",
+      "value": "#66000000"
     }
   ]
 }

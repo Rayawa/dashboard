@@ -16,11 +16,13 @@ export const STORAGE_KEY_HOLD_CHECK = 'holdCheckON';
 export const STORAGE_KEY_BUTTON_RIGHT = 'buttonPositionRIGHT';
 export const STORAGE_KEY_TAB_BAR_AUTO = 'tabBarAutoON';
 export const STORAGE_KEY_IMMERSIVE = 'immersiveTextureON';
-
 export const APP_STATE_KEY_PAGE_URL = 'pageUrl';
 export const APP_STATE_KEY_SCROLL_DISTANCE = 'scrollDistance';
 export const APP_STATE_KEY_QUERY_URL = 'queryUrlFromAbility';
 export const APP_STATE_KEY_SHARE_REQUEST = 'shareRequest';
+export const APP_STATE_KEY_DETAIL_TARGET = 'detailTarget';
+export const APP_STATE_KEY_SEARCH_TARGET = 'searchTarget';
+export const APP_STATE_KEY_MAIN_TAB = 'mainTabIndex';
 export const LOCAL_STORAGE_KEY_WINDOW_WIDTH = 'winWidth';
 export const LOCAL_STORAGE_KEY_WINDOW_HEIGHT = 'winHeight';
 
@@ -36,6 +38,17 @@ export const DEFAULT_NETWORK_TIMEOUT_MS = 10000;
 export const DEFAULT_QUERY_TIMEOUT_MS = 5000;
 export const FORM_DEBOUNCE_DELAY_MS = 800;
 export const DASHBOARD_MIN_CONTENT_WIDTH = 423;
+export const RESPONSIVE_BREAKPOINT_MEDIUM = '600vp';
+export const RESPONSIVE_BREAKPOINT_LARGE = '840vp';
+export const CONTENT_MAX_WIDTH = 1440;
+export const APP_LIST_PAGE_SIZE = 20;
+export const CACHE_DIRECTORY_NAME = 'market_api_v3';
+export const CACHE_TTL_HOME_MS = 5 * 60 * 1000;
+export const CACHE_TTL_LIST_MS = 2 * 60 * 1000;
+export const CACHE_TTL_DETAIL_MS = 30 * 60 * 1000;
+export const CACHE_TTL_CHART_MS = 30 * 60 * 1000;
+export const CACHE_MAX_STALE_MS = 30 * 24 * 60 * 60 * 1000;
+export const BACKGROUND_REFRESH_DELAY_MS = 180;
 
 export function createSubmitFormData(): FormData {
     return { appLink: '', packageName: '', appId: '', remark: '' };
@@ -60,7 +73,8 @@ export const OpenStoreURL = new URL("https://next.betahub.tech/");
 export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
 
 // dev
-export const APP_VERSION: string = "2.2.1";
+export const APP_VERSION: string = "3.0.0";
+export const APP_BUILD_NUMBER: number = 30000001;
 export const APP_BUNDLE_NAME: string = "top.rayawa.dashboard"
 export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
 export const SAPIReportURL = new URL("/telemtry/report", SAPIBaseURL);

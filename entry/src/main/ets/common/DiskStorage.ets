@@ -24,7 +24,7 @@ class DiskStorage {
             throw new Error("DiskStorage: Context is required for first-time initialization");
         }
         this._context = context;
-        console.log("DiskStorage: Instance created");
+        console.info('[Dashboard][common/DiskStorage][INFO]', "DiskStorage: Instance created");
     }
 
     // 初始化存储
@@ -50,7 +50,7 @@ class DiskStorage {
                 throw new Error("DiskStorage: Cannot initialize without context");
             }
 
-            console.log(
+            console.info('[Dashboard][common/DiskStorage][INFO]',
                 "DiskStorage: Initializing with context type:",
                 this._context.constructor.name,
             );
@@ -60,21 +60,21 @@ class DiskStorage {
                 this._context,
                 this.preference_name,
             );
-            console.log("DiskStorage: Preferences initialized successfully");
+            console.info('[Dashboard][common/DiskStorage][INFO]', "DiskStorage: Preferences initialized successfully");
 
             // // 预读用户名到缓存
             // try {
             //     const username = await this._preference.get(DiskStorage.USERNAME_KEY, '');
             //     if (username && typeof username === 'string' && username.trim().length > 0) {
             //         this._usernameCache = username.trim();
-            //         console.log('DiskStorage: Cached username:', this._usernameCache);
+            //         console.info('[Dashboard][common/DiskStorage][INFO]', 'DiskStorage: Cached username:', this._usernameCache);
             //     }
             // } catch (readError) {
-            //     console.warn('DiskStorage: Failed to pre-read username:', readError);
+            //     console.warn('[Dashboard][common/DiskStorage][WARN]', 'DiskStorage: Failed to pre-read username:', readError);
             // }
         } catch (error) {
             const err: BusinessError = error as BusinessError;
-            console.error(
+            console.error('[Dashboard][common/DiskStorage][ERROR]',
                 `DiskStorage: Failed to initialize: code=${err.code}, message=${err.message}`,
             );
             throw new Error(`Initialization failed: ${err.message}`);
@@ -163,7 +163,7 @@ class DiskStorage {
                     this._context["removePreferencesFromCache"](this.preference_name);
                 }
             } catch (error) {
-                console.warn("DiskStorage: Failed to remove preferences from cache:", error);
+                console.warn('[Dashboard][common/DiskStorage][WARN]', "DiskStorage: Failed to remove preferences from cache:", error);
             }
         }
 
@@ -172,7 +172,7 @@ class DiskStorage {
         this._context = undefined;
         instances.delete(this.preference_name);
 
-        console.log("DiskStorage: Destroyed");
+        console.info('[Dashboard][common/DiskStorage][INFO]', "DiskStorage: Destroyed");
     }
 }
 
@@ -189,9 +189,9 @@ export default function getDiskStorageInstance(instance_name: string, context?: 
 export async function clearAll(instance_name: string, context: common.Context): Promise<void> {
     try {
         await preferences.deletePreferences(context, instance_name);
-        console.log("DiskStorage: All data cleared");
+        console.info('[Dashboard][common/DiskStorage][INFO]', "DiskStorage: All data cleared");
     } catch (error) {
-        console.error("DiskStorage: Failed to clear all data:", error);
+        console.error('[Dashboard][common/DiskStorage][ERROR]', "DiskStorage: Failed to clear all data:", error);
     }
 }
 

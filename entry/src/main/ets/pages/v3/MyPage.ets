@@ -1,0 +1,244 @@
+import { common, Want } from '@kit.AbilityKit';
+import { PromptAction } from '@kit.ArkUI';
+import { settings } from '../../component/settings';
+import { warn } from '../../component/warn';
+import { APP_BUILD_NUMBER, APP_VERSION, CONTENT_MAX_WIDTH, MIIT_ICP_URL, SBaseURL } from '../../common/constants';
+import { setUsername } from '../../common/storage';
+import { WebViewParam } from '../user/about';
+import URL from '../../common/url';
+import { showToastSafely } from '../../common/safeUi';
+
+interface MoreItem {
+    title: string;
+    icon: Resource;
+    action: () => void;
+}
+
+@Component
+struct MoreRow {
+    item: MoreItem = { title: '', icon: $r('app.media.info'), action: () => {} };
+
+    build() {
+        Row({ space: 12 }) {
+            Image(this.item.icon)
+                .width(24)
+                .height(24)
+                .objectFit(ImageFit.Contain)
+                .accessibilityText(`${this.item.title}图标`)
+            Text(this.item.title)
+                .fontSize(16)
+                .fontColor($r('app.color.v3_text_primary'))
+                .layoutWeight(1)
+                .accessibilityText(this.item.title)
+            Image($r('app.media.right'))
+                .width(16)
+                .height(16)
+                .objectFit(ImageFit.Contain)
+                .accessibilityText('进入')
+        }
+        .width('100%')
+        .height(54)
+        .padding({ left: 16, right: 16 })
+        .onClick(() => this.item.action())
+        .accessibilityGroup(true)
+        .accessibilityText(`进入${this.item.title}`)
+    }
+}
+
+@Component
+export struct MyPage {
+    @Consume('pageStack') private pageStack: NavPathStack;
+    private prompt: PromptAction = this.getUIContext().getPromptAction();
+    @StorageLink('username') private username: string = '';
+    @State private showWarning: boolean = false;
+
+    private moreItems(): MoreItem[] {
+        return [
+            {
+                title: '重要提示',
+                icon: $r('app.media.attention'),
+                action: () => this.showWarning = true,
+            },
+            {
+                title: 'API 文档说明',
+                icon: $r('app.media.api'),
+                action: () => {
+                    const url = new URL('docs', SBaseURL);
+                    this.pageStack.pushPathByName('AboutWebPage', new WebViewParam(url.toString(), 'API 文档说明'));
+                },
+            },
+            {
+                title: 'App 更新日志',
+                icon: $r('app.media.app_log'),
+                action: () => this.pageStack.pushPathByName('AppLogPage', null),
+            },
+            {
+                title: '隐私政策',
+                icon: $r('app.media.privacy'),
+                action: () => this.pageStack.pushPathByName(
+                    'HTMLPage',
+                    new WebViewParam($rawfile('privacy.html'), '隐私政策'),
+                ),
+            },
+        ];
+    }
+
+    private async openIcp(): Promise<void> {
+        try {
+            showToastSafely(this.prompt, '正在跳转…', 600, 'V3My');
+            const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+            await context.startAbility({
+                action: 'ohos.want.action.viewData',
+                entities: ['entity.system.browsable'],
+                uri: MIIT_ICP_URL.toString(),
+            } as Want);
+        } catch (error) {
+            console.error('[Dashboard][pages/v3/MyPage][ERROR]', `打开备案页面失败: ${JSON.stringify(error)}`);
+            showToastSafely(this.prompt, '打开备案页面失败', 1500, 'V3My');
+        }
+    }
+
+    build() {
+        Stack() {
+            Scroll() {
+                Column({ space: 14 }) {
+                    Column({ space: 8 }) {
+                        Image($r('app.media.app_icon'))
+                            .width(92)
+                            .height(92)
+                            .borderRadius(22)
+                            .accessibilityText('Dashboard应用看板图标')
+                        Text('Dashboard 应用看板')
+                            .fontSize(26)
+                            .fontWeight(FontWeight.Bold)
+                            .fontColor($r('app.color.v3_text_primary'))
+                            .accessibilityText('Dashboard应用看板')
+                        Text('Harmony Dashboard')
+                            .fontSize(15)
+                            .fontColor($r('app.color.v3_text_secondary'))
+                            .accessibilityText('Harmony Dashboard')
+                    }
+                    .width('100%')
+                    .padding({ top: 24, bottom: 10 })
+                    .accessibilityGroup(true)
+                    .accessibilityText('关于应用')
+
+                    Row({ space: 12 }) {
+                        Image($r('app.media.user'))
+                            .width(24)
+                            .height(24)
+                            .objectFit(ImageFit.Contain)
+                            .accessibilityText('用户名图标')
+                        Text('用户名')
+                            .fontSize(16)
+                            .fontColor($r('app.color.v3_text_primary'))
+                            .accessibilityText('用户名')
+                        TextInput({ text: this.username, placeholder: '设置用户名' })
+                            .layoutWeight(1)
+                            .height(42)
+                            .backgroundColor($r('app.color.v3_surface_alt'))
+                            .onChange((value: string) => {
+                                this.username = value;
+                                setUsername(value);
+                            })
+                            .accessibilityText('设置投稿时使用的用户名')
+                    }
+                    .width('100%')
+                    .padding(16)
+                    .borderRadius(16)
+                    .backgroundColor($r('app.color.v3_surface'))
+                    .border({ width: 1, color: $r('app.color.nd_card_border') })
+                    .accessibilityGroup(true)
+                    .accessibilityText(`用户名设置，当前${this.username || '未设置'}`)
+
+                    Text('设置')
+                        .fontSize(14)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor($r('app.color.v3_accent_blue'))
+                        .width('100%')
+                        .padding({ left: 4 })
+                        .accessibilityText('设置')
+                    settings()
+
+                    Text('更多')
+                        .fontSize(14)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor($r('app.color.v3_accent_blue'))
+                        .width('100%')
+                        .padding({ left: 4, top: 6 })
+                        .accessibilityText('更多')
+                    Column() {
+                        ForEach(this.moreItems(), (item: MoreItem, index: number) => {
+                            MoreRow({ item })
+                            if (index < this.moreItems().length - 1) {
+                                Divider()
+                                    .color($r('app.color.v3_chart_grid'))
+                                    .margin({ left: 16, right: 16 })
+                                    .accessibilityText('更多栏目分隔线')
+                            }
+                        }, (item: MoreItem) => item.title)
+                    }
+                    .width('100%')
+                    .borderRadius(16)
+                    .backgroundColor($r('app.color.v3_surface'))
+                    .border({ width: 1, color: $r('app.color.nd_card_border') })
+                    .clip(true)
+                    .accessibilityGroup(true)
+                    .accessibilityText('更多栏目')
+
+                    Column({ space: 5 }) {
+                        Text(`版本 ${APP_VERSION} · 构建 ${APP_BUILD_NUMBER}`)
+                            .fontSize(12)
+                            .fontColor($r('app.color.v3_text_secondary'))
+                            .accessibilityText(`版本${APP_VERSION}构建号${APP_BUILD_NUMBER}`)
+                        Text('Designed & Developed by Ray Chen (Rayawa)')
+                            .fontSize(12)
+                            .fontColor($r('app.color.v3_text_secondary'))
+                            .accessibilityText('Designed and Developed by Ray Chen Rayawa')
+                        Text('Copyright © 2026. All rights reserved.')
+                            .fontSize(12)
+                            .fontColor($r('app.color.v3_text_secondary'))
+                            .accessibilityText('版权所有2026')
+                        Text('本应用备案域名：rayawa.top')
+                            .fontSize(12)
+                            .fontColor($r('app.color.v3_text_secondary'))
+                            .accessibilityText('本应用备案域名rayawa点top')
+                        Text('京ICP备2025153453号')
+                            .fontSize(12)
+                            .fontColor($r('app.color.v3_accent_blue'))
+                            .decoration({ type: TextDecorationType.Underline, color: $r('app.color.v3_accent_blue') })
+                            .onClick(() => this.openIcp())
+                            .accessibilityText('京ICP备2025153453号，点击打开工信部备案页面')
+                    }
+                    .width('100%')
+                    .padding({ top: 14, bottom: 110 })
+                    .accessibilityGroup(true)
+                    .accessibilityText('版本版权和备案信息')
+                }
+                .width('100%')
+                .constraintSize({ maxWidth: Math.min(CONTENT_MAX_WIDTH, 900) })
+                .padding({ left: 14, right: 14 })
+            }
+            .width('100%')
+            .height('100%')
+            .scrollBar(BarState.Off)
+            .backgroundColor($r('app.color.background'))
+            .accessibilityText('我的页面')
+
+            if (this.showWarning) {
+                Column()
+                    .width('100%')
+                    .height('100%')
+                    .backgroundColor($r('app.color.v3_scrim'))
+                    .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
+                    .onClick(() => this.showWarning = false)
+                    .accessibilityText('点击关闭重要提示')
+                warn({ isShow: this.showWarning })
+            }
+        }
+        .width('100%')
+        .height('100%')
+        .backgroundColor($r('app.color.background'))
+        .accessibilityText('我的与关于页面')
+    }
+}

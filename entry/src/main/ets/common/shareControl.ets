@@ -97,15 +97,32 @@ export class WebShareManager {
    */
   public async disablePassiveShare() {
     if (!this.isListening) return;
+    if (!canIUse('SystemCapability.Collaboration.HarmonyShare')) {
+      this.isListening = false;
+      Logger.warn(TAG, 'HarmonyShare: Capability unavailable; local listener state reset.');
+      return;
+    }
 
-    const win = await window.getLastWindow(this.context);
-    const windowId = win.getWindowProperties().id;
-
-    harmonyShare.off('knockShare');
-    harmonyShare.off('gesturesShare', { windowId: windowId });
-
-    this.isListening = false;
-    Logger.info(TAG, "HarmonyShare: Passive sharing disabled.");
+    try {
+      const win = await window.getLastWindow(this.context);
+      const windowId = win.getWindowProperties().id;
+      try {
+        harmonyShare.off('knockShare');
+      } catch (err) {
+        Logger.error(TAG, `HarmonyShare: Knock listener cleanup failed: ${(err as BusinessError).message}`);
+      }
+      try {
+        harmonyShare.off('gesturesShare', { windowId });
+      } catch (err) {
+        Logger.error(TAG, `HarmonyShare: Gesture listener cleanup failed: ${(err as BusinessError).message}`);
+      }
+    } catch (err) {
+      // 窗口已经销毁时无法取得 windowId；状态仍需复位，避免后续页面无法重新订阅。
+      Logger.error(TAG, `HarmonyShare: Window unavailable while disabling listeners: ${(err as BusinessError).message}`);
+    } finally {
+      this.isListening = false;
+      Logger.info(TAG, "HarmonyShare: Passive sharing state reset.");
+    }
   }
 
   /**

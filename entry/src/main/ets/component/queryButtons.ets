@@ -6,6 +6,7 @@ import type { FormData } from '../common/types';
 import { URL } from "../common/url";
 import { DEFAULT_QUERY_TIMEOUT_MS, SAPIBaseURL, createQueryFormData } from '../common/constants';
 import { resolveDashboardAppDetailUrl } from '../common/dashboardConfig';
+import { showToastSafely } from '../common/safeUi';
 
 interface QueryWebParams {
   url: string;
@@ -69,7 +70,7 @@ export struct queryButtons {
     const regex = /[?&]id=([^&]+)/;
     const match = url.match(regex);
     const pkg = match ? match[1] : null;
-    console.info(`queryResult [Extract] 包名结果: ${pkg}`);
+    console.info('[Dashboard][component/queryButtons][INFO]', `queryResult [Extract] 包名结果: ${pkg}`);
     return pkg;
   }
   async getAppIdByName(appName: string): Promise<string> {
@@ -80,7 +81,7 @@ export struct queryButtons {
       const params = `?page_size=5&detail=false&search_key=name&search_value=${encodeURIComponent(appName)}&search_exact=false`;
       const fullUrl = baseUrl + params;
 
-      console.info(`queryResult [Name API] Requesting URL: ${fullUrl}`);
+      console.info('[Dashboard][component/queryButtons][INFO]', `queryResult [Name API] Requesting URL: ${fullUrl}`);
 
       httpRequest.request(
         fullUrl,
@@ -92,7 +93,7 @@ export struct queryButtons {
         (err: BusinessError, data: http.HttpResponse) => {
           if (!err && data.responseCode === 200) {
             const rawResult = data.result.toString();
-            console.info(`queryResult [Name API] Raw Response: ${rawResult}`);
+            console.info('[Dashboard][component/queryButtons][INFO]', `queryResult [Name API] Raw Response: ${rawResult}`);
 
             try {
               const res = JSON.parse(rawResult) as SearchResponse;
@@ -101,21 +102,21 @@ export struct queryButtons {
                 const firstApp = res.data.data[0];
                 const rawId = firstApp.app_id;
 
-                console.info(`queryResult [Name API] Match Found: ${firstApp.name}, ID: ${rawId}`);
+                console.info('[Dashboard][component/queryButtons][INFO]', `queryResult [Name API] Match Found: ${firstApp.name}, ID: ${rawId}`);
 
                 const finalId = rawId.startsWith('C') ? rawId : `C${rawId}`;
                 resolve(finalId);
               } else {
-                console.warn(`queryResult [Name API] No match found in the list.`);
+                console.warn('[Dashboard][component/queryButtons][WARN]', `queryResult [Name API] No match found in the list.`);
                 reject(new Error("未找到匹配的应用名称"));
               }
             } catch (e) {
-              console.error(`queryResult [Name API] JSON Parse Error: ${e.message}`);
+              console.error('[Dashboard][component/queryButtons][ERROR]', `queryResult [Name API] JSON Parse Error: ${e.message}`);
               reject(new Error("返回数据结构解析失败"));
             }
           } else {
             const errorMsg = err ? err.message : `HTTP ${data?.responseCode}`;
-            console.error(`queryResult [Name API] Network Error: ${errorMsg}`);
+            console.error('[Dashboard][component/queryButtons][ERROR]', `queryResult [Name API] Network Error: ${errorMsg}`);
             reject(new Error(`网络请求失败: ${errorMsg}`));
           }
           httpRequest.destroy();
@@ -141,7 +142,7 @@ export struct queryButtons {
   }
 
   async verifyAppIdExists(appId: string): Promise<boolean> {
-    console.info(`queryResult [Verify Start] 正在校验 AppID 真实性: ${appId}`);
+    console.info('[Dashboard][component/queryButtons][INFO]', `queryResult [Verify Start] 正在校验 AppID 真实性: ${appId}`);
     return new Promise((resolve) => {
       let httpRequest = http.createHttp();
       const apiUrl = new URL(`apps/app_id/${appId}`, SAPIBaseURL).toString();
@@ -149,7 +150,7 @@ export struct queryButtons {
         if (!err && data.responseCode === 200) {
           try {
             const res = JSON.parse(data.result.toString()) as ApiResponse;
-            console.info(`queryResult [Verify Response] success: ${res.success}`);
+            console.info('[Dashboard][component/queryButtons][INFO]', `queryResult [Verify Response] success: ${res.success}`);
             resolve(res.success);
           } catch (e) { resolve(false); }
         } else { resolve(false); }
@@ -224,7 +225,8 @@ export struct queryButtons {
       if(this.vibrationON){
         vibration.errorVibration()
       }
-      this.PromptAction.showToast({ message: `查询失败！${error.message}` });
+      console.error('[Dashboard][component/queryButtons][ERROR]', `查询失败: ${error.message}`);
+      showToastSafely(this.PromptAction, `查询失败！${error.message}`, 2000, 'QueryButtons');
     }
   }
   async clearForm(): Promise<void> {
@@ -243,10 +245,7 @@ export struct queryButtons {
       if(this.vibrationON){
         vibration.waveVibration()
       }
-      this.PromptAction.showToast({
-        message: "表单已清空",
-        duration: 1500,
-      });
+      showToastSafely(this.PromptAction, '表单已清空', 1500, 'QueryButtons');
     }, 700);
   }
 

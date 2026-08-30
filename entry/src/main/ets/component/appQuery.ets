@@ -155,7 +155,7 @@ export struct appQuery {
               iterations: -1,
               autoPlay: true,
               onFinish: () => {
-                console.info("Succeeded in finishing");
+                console.info('[Dashboard][component/appQuery][INFO]', "Succeeded in finishing");
               },
             },
             controller: this.controller,
@@ -307,7 +307,7 @@ export struct appQuery {
         this.autoFillForm();
       }
     } catch (error) {
-      console.error("自动提取失败:", error);
+      console.error('[Dashboard][component/appQuery][ERROR]', "自动提取失败:", error);
     } finally {
       this.isProcessing = false;
     }

@@ -8,7 +8,8 @@ import {
     LOCAL_STORAGE_KEY_WINDOW_HEIGHT,
     LOCAL_STORAGE_KEY_WINDOW_WIDTH,
 } from '../common/constants';
-import { getContinuationState, setContinuationState } from '../common/appState';
+import { getContinuationState, setContinuationState, setDetailTarget, setSearchTarget } from '../common/appState';
+import { initializeCache } from '../common/CacheService';
 
 const DOMAIN = 0x0000;
 
@@ -38,22 +39,50 @@ export default class EntryAbility extends UIAbility {
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         this.restoreContinuationParams(want, launchParam);
+        this.applyV3LaunchParams(want);
+        initializeCache(this.context);
         // UI 绑定前完成持久化设置迁移和运行时状态水合。
         this.startupTask = loadPersistedState(this.context);
     }
     onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         this.restoreContinuationParams(want, launchParam);
+        this.applyV3LaunchParams(want);
+    }
+    private applyV3LaunchParams(want: Want): void {
+        const detailAppId = want.parameters?.['detailAppId'] as string || '';
+        const detailPackage = want.parameters?.['detailPackage'] as string || '';
+        const searchText = want.parameters?.['searchText'] as string || '';
+        const searchAutoRun = want.parameters?.['searchAutoRun'] as boolean | undefined;
+        const openDetailOnSuccess = want.parameters?.['openDetailOnSuccess'] as boolean | undefined;
+        if (detailAppId || detailPackage) {
+            setDetailTarget({ appId: detailAppId || undefined, packageName: detailPackage || undefined });
+        }
+        if (searchText) {
+            setSearchTarget({
+                rawText: searchText,
+                autoRun: searchAutoRun ?? true,
+                openDetailOnSuccess: openDetailOnSuccess ?? false,
+            });
+        }
     }
     onWindowStageCreate(windowStage: window.WindowStage): void {
-        console.info('Ability onWindowStageCreate.');
+        console.info('[Dashboard][ability/entry][INFO]', 'Ability onWindowStageCreate.');
         this.startupTask
             .then(() => this.bindWindowStorage(windowStage))
-            .then(() => this.loadCurrentPage(windowStage));
+            .then(() => this.loadCurrentPage(windowStage))
+            .catch((error: Error) => {
+                console.error('[Dashboard][ability/entry][ERROR]', `窗口初始化失败，继续使用默认尺寸: ${error.message}`);
+                this.loadCurrentPage(windowStage);
+            });
     }
     onWindowStageRestore(windowStage: window.WindowStage): void {
         this.startupTask
             .then(() => this.bindWindowStorage(windowStage))
-            .then(() => this.loadCurrentPage(windowStage));
+            .then(() => this.loadCurrentPage(windowStage))
+            .catch((error: Error) => {
+                console.error('[Dashboard][ability/entry][ERROR]', `窗口恢复失败，继续使用默认尺寸: ${error.message}`);
+                this.loadCurrentPage(windowStage);
+            });
     }
     private loadCurrentPage(windowStage: window.WindowStage): void {
         this.loadContent(windowStage, this.isContinuation ? 'abilityPages/continueWeb' : 'pages/Dashboard');
@@ -61,22 +90,30 @@ export default class EntryAbility extends UIAbility {
     private async bindWindowStorage(windowStage: window.WindowStage): Promise<void> {
         this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, DEFAULT_WINDOW_WIDTH);
         this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, DEFAULT_WINDOW_HEIGHT);
-        const windowClass = await windowStage.getMainWindow();
-        const rect = windowClass.getWindowProperties().windowRect;
-        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, rect.width);
-        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, rect.height);
-        windowClass.on('windowSizeChange', (windowSize) => {
-            this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, windowSize.width);
-            this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, windowSize.height);
-        });
+        try {
+            const windowClass = await windowStage.getMainWindow();
+            const rect = windowClass.getWindowProperties().windowRect;
+            this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, rect.width);
+            this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, rect.height);
+            windowClass.on('windowSizeChange', (windowSize) => {
+                this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, windowSize.width);
+                this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, windowSize.height);
+            });
+        } catch (error) {
+            console.warn('[Dashboard][ability/entry][WARN]', `无法读取或监听窗口尺寸，使用默认尺寸: ${JSON.stringify(error)}`);
+        }
     }
     private loadContent(windowStage: window.WindowStage, path: string) {
-        windowStage.loadContent(path, this.storage, (err) => {
-            if (err.code) {
-                hilog.error(DOMAIN, "EntryAbility", `Failed to load ${path}. Cause: %{public}s`, JSON.stringify(err));
-                return;
-            }
-            hilog.info(DOMAIN, "EntryAbility", `Succeeded in loading ${path}.`);
-        });
+        try {
+            windowStage.loadContent(path, this.storage, (err) => {
+                if (err.code) {
+                    hilog.error(DOMAIN, "EntryAbility", `Failed to load ${path}. Cause: %{public}s`, JSON.stringify(err));
+                    return;
+                }
+                hilog.info(DOMAIN, "EntryAbility", `Succeeded in loading ${path}.`);
+            });
+        } catch (error) {
+            console.error('[Dashboard][ability/entry][ERROR]', `页面 ${path} 加载调用失败: ${JSON.stringify(error)}`);
+        }
     }
 }

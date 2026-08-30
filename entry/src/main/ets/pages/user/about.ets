@@ -39,15 +39,19 @@ struct about {
     fetchDashboardConfig().then((config) => {
       this.showTSite = config.showTSite;
     }).catch((error: Error) => {
-      console.warn(`Dashboard config load failed on about page: ${error.message}`);
+      console.warn('[Dashboard][pages/user/about][WARN]', `Dashboard config load failed on about page: ${error.message}`);
       this.showTSite = false;
     });
     //获取屏幕尺寸
-    const displayInfo = display.getDefaultDisplaySync();
-    const screenWidthVp = this.getUIContext().px2vp(displayInfo.width);
-    const screenHeightVp = this.getUIContext().px2vp(displayInfo.height);
-    this.WVp = screenWidthVp;
-    this.HVp = screenHeightVp;
+    try {
+      const displayInfo = display.getDefaultDisplaySync();
+      this.WVp = this.getUIContext().px2vp(displayInfo.width);
+      this.HVp = this.getUIContext().px2vp(displayInfo.height);
+    } catch (error) {
+      this.WVp = 376;
+      this.HVp = 376;
+      console.warn('[Dashboard][pages/user/about][WARN]', `屏幕尺寸读取失败，使用默认布局尺寸: ${JSON.stringify(error)}`);
+    }
   }
 
   build() {
@@ -206,7 +210,7 @@ struct about {
                       uri: url,
                     } as Want);
                   } catch (error) {
-                    console.error("打开链接失败:", (error as BusinessError).message);
+                    console.error('[Dashboard][pages/user/about][ERROR]', "打开链接失败:", (error as BusinessError).message);
                     this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
                   }
                 })

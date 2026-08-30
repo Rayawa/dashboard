@@ -1,16 +1,16 @@
 import { vibration } from '../common/vibration';
-import { webview } from '@kit.ArkWeb';
 import { common } from '@kit.AbilityKit';
-import { BusinessError, deviceInfo } from '@kit.BasicServicesKit';
+import { deviceInfo } from '@kit.BasicServicesKit';
 import {
-  resetAllSettings,
   setButtonPosition,
-  setFirstLaunch,
   setHoldCheckEnabled,
   setImmersiveTexture,
   setTabBarAuto,
   setVibrationEnabled
 } from '../common/storage';
+import { clearCompleteCache, getCacheSizeBytes } from '../common/CacheService';
+import { formatBytes } from '../common/format';
+import { showToastSafely } from '../common/safeUi';
 
 @Component
 export struct settings {
@@ -21,43 +21,45 @@ export struct settings {
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
 
     @State handlePopupTrash: boolean = false;
+    @State cacheSize: string = '计算中…';
 
     async aboutToAppear() {
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+        this.cacheSize = formatBytes(getCacheSizeBytes(context));
         if(deviceInfo.sdkApiVersion >= 23){
-            console.info("settings, api23 true! API: ", deviceInfo.sdkApiVersion)
+            console.info('[Dashboard][component/settings][INFO]', "settings, api23 true! API: ", deviceInfo.sdkApiVersion)
         } else {
             await setImmersiveTexture(false);
-            console.info("settings, api23 false! API: ", deviceInfo.sdkApiVersion)
+            console.info('[Dashboard][component/settings][INFO]', "settings, api23 false! API: ", deviceInfo.sdkApiVersion)
         }
     }
 
     private trash() {
         const ui_content = this.getUIContext();
-        ui_content.showAlertDialog({
-            message: "此操作会关闭应用",
-            primaryButton: { value: "取消", action: () => {} },
-            secondaryButton: {
-                value: "继续",
-                action: async () => {
-                    try {
-                        webview.WebStorage.deleteAllData();
-                        webview.WebCookieManager.clearAllCookiesSync();
-                        // 偏好数据一并复位：设置回默认值，下次启动重新弹隐私协议
-                        await resetAllSettings();
-                        await setFirstLaunch(true);
+        const prompt = ui_content.getPromptAction();
+        try {
+            ui_content.showAlertDialog({
+                message: "将清除 API 离线缓存、S站网页存储与 Cookie。用户名和设置会保留。",
+                primaryButton: { value: "取消", action: () => {} },
+                secondaryButton: {
+                    value: "继续",
+                    action: async () => {
                         const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-                        context.terminateSelf().then(() => {
-                            console.info('Ability 销毁指令发送成功');
-                        }).catch((err: BusinessError) => {
-                            console.error(`销毁失败: ${err.code}`);
-                        });
-                    } catch (error) {
-                        const err = error as BusinessError;
-                        console.error(`ErrorCode: ${err.code}, Message: ${err.message}`);
-                    }
+                        try {
+                            await clearCompleteCache(context);
+                            showToastSafely(prompt, '缓存已完全清除', 1800, 'Settings');
+                        } catch (error) {
+                            console.error('[Dashboard][component/settings][ERROR]', `清除缓存失败: ${JSON.stringify(error)}`);
+                            showToastSafely(prompt, '部分缓存文件正在使用，请稍后重试', 2200, 'Settings');
+                        }
+                        this.cacheSize = formatBytes(getCacheSizeBytes(context));
+                    },
                 },
-            },
-        });
+            });
+        } catch (error) {
+            console.error('[Dashboard][component/settings][ERROR]', `清除缓存确认窗口显示失败: ${JSON.stringify(error)}`);
+            showToastSafely(prompt, '暂时无法打开清除缓存窗口，请稍后重试', 2000, 'Settings');
+        }
     }
 
     build() {
@@ -120,7 +122,9 @@ export struct settings {
         .borderRadius(16)
         .borderWidth(0.5)
         .borderColor($r("app.color.border"))
-        .shadow({ radius: 8, color: "#1a000000", offsetY: 2 })
+        .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
+        .accessibilityGroup(true)
+        .accessibilityText('应用设置')
     }
 
     @Builder
@@ -128,24 +132,36 @@ export struct settings {
         Row() {
             Row({ space: 12 }) {
                 Image($r("app.media.trash")).height(24).width(24).objectFit(ImageFit.Contain)
+                    .accessibilityText('清除缓存图标')
                 Text("清除缓存").fontSize(16)
+                    .accessibilityText('清除缓存')
             }
-            Image($r("app.media.question"))
-                .height(24).width(24).objectFit(ImageFit.Contain)
-                .onClick(() => {
-                    if (this.vibrationON) vibration.dotVibration();
-                    this.handlePopupTrash = !this.handlePopupTrash;
-                })
-                .bindPopup(this.handlePopupTrash, {
-                    message: '如遇页面加载失败时可尝试清除缓存',
-                    onStateChange: (e) => { if (!e.isVisible) this.handlePopupTrash = false }
-                })
+            Row({ space: 8 }) {
+                Text(this.cacheSize)
+                    .fontSize(13)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .accessibilityText(`缓存文件总大小${this.cacheSize}`)
+                Image($r("app.media.question"))
+                    .height(24).width(24).objectFit(ImageFit.Contain)
+                    .accessibilityText('查看清除缓存说明')
+                    .onClick(() => {
+                        if (this.vibrationON) vibration.dotVibration();
+                        this.handlePopupTrash = !this.handlePopupTrash;
+                    })
+                    .monopolizeEvents(true)
+                    .bindPopup(this.handlePopupTrash, {
+                        message: '清除 API 离线缓存、网页存储与 Cookie；用户名和设置不会被删除',
+                        onStateChange: (e) => { if (!e.isVisible) this.handlePopupTrash = false }
+                    })
+            }
         }
         .height(52).width("100%").justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
         .onClick(() => {
             if (this.vibrationON) vibration.dotVibration();
             this.trash();
         })
+        .accessibilityGroup(true)
+        .accessibilityText(`清除缓存，当前缓存文件总大小${this.cacheSize}`)
     }
 }
 
@@ -167,15 +183,18 @@ struct SettingItem {
             Row() {
                 Row({ space: 12 }) {
                     Image(this.icon).height(24).width(24).objectFit(ImageFit.Contain)
+                        .accessibilityText(`${this.title}图标`)
                     Text(this.title).fontSize(16)
+                        .accessibilityText(this.title)
                 }
                 Row({ space: 8 }) {
-                    Text(this.offText).fontSize(14).fontColor("#888").width(24).textAlign(TextAlign.Center)
+                    Text(this.offText).fontSize(14).fontColor($r('app.color.v3_text_secondary')).width(24).textAlign(TextAlign.Center)
                     Toggle({ type: ToggleType.Switch, isOn: this.isOn })
                         .selectedColor($r("app.color.diff_content"))
                         .switchStyle({
                             unselectedColor: this.both? $r("app.color.diff_content") : undefined
                         })
+                        .accessibilityText(`${this.title}开关，当前${this.isOn ? this.onText : this.offText}`)
                         .onChange(async (checked: boolean) => {
                             if (this.canVibrate) vibration.dotVibration();
                             await this.onToggle(checked);
@@ -186,13 +205,15 @@ struct SettingItem {
                                 });
                             }
                         })
-                    Text(this.onText).fontSize(14).fontColor("#888").width(24).textAlign(TextAlign.Center)
+                    Text(this.onText).fontSize(14).fontColor($r('app.color.v3_text_secondary')).width(24).textAlign(TextAlign.Center)
                 }
             }
             .height(52)
             .width("100%")
             .justifyContent(FlexAlign.SpaceBetween)
             .padding({ left: 16, right: 16 })
+            .accessibilityGroup(true)
+            .accessibilityText(`${this.title}设置`)
 
         }
     }

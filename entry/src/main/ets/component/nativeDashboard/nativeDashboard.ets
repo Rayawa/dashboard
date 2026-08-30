@@ -466,17 +466,17 @@ export struct NativeDashboard {
             }
             this.ratingBars = entries;
         }).catch((e: Error) => {
-            console.error(`[nativeDashboard] 评分分布加载失败: ${e.message}`);
+            console.error('[Dashboard][component/nativeDashboard/nativeDashboard][ERROR]', `[nativeDashboard] 评分分布加载失败: ${e.message}`);
         });
         fetchSdkDist('min_sdk').then((buckets: SdkBucket[]) => {
             this.minSdkBars = this.toDistBars(buckets);
         }).catch((e: Error) => {
-            console.error(`[nativeDashboard] min_sdk 分布加载失败: ${e.message}`);
+            console.error('[Dashboard][component/nativeDashboard/nativeDashboard][ERROR]', `[nativeDashboard] min_sdk 分布加载失败: ${e.message}`);
         });
         fetchSdkDist('target_sdk').then((buckets: SdkBucket[]) => {
             this.targetSdkBars = this.toDistBars(buckets);
         }).catch((e: Error) => {
-            console.error(`[nativeDashboard] target_sdk 分布加载失败: ${e.message}`);
+            console.error('[Dashboard][component/nativeDashboard/nativeDashboard][ERROR]', `[nativeDashboard] target_sdk 分布加载失败: ${e.message}`);
         });
     }
 

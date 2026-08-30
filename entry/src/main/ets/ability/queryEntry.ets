@@ -28,26 +28,39 @@ export default class QueryEntryAbility extends UIAbility {
     this.startupTask
       .then(() => this.bindWindowStorage(windowStage))
       .then(() => {
-        windowStage.loadContent('abilityPages/queryWeb', this.storage, (err) => {
-          if (err.code) {
-            console.error('Failed to load content. Cause: ' + JSON.stringify(err));
-          }
-        });
+        try {
+          windowStage.loadContent('abilityPages/queryWeb', this.storage, (err) => {
+            if (err.code) {
+              console.error('[Dashboard][ability/queryEntry][ERROR]', '查询页加载失败: ' + JSON.stringify(err));
+            }
+          });
+        } catch (error) {
+          console.error('[Dashboard][ability/queryEntry][ERROR]', `查询页加载调用失败: ${JSON.stringify(error)}`);
+        }
+      })
+      .catch((error: Error) => {
+        console.error('[Dashboard][ability/queryEntry][ERROR]', `查询窗口初始化失败，保留默认尺寸: ${error.message}`);
       });
   }
   private async bindWindowStorage(windowStage: window.WindowStage): Promise<void> {
     this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, DEFAULT_WINDOW_WIDTH);
     this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, DEFAULT_WINDOW_HEIGHT);
-    const windowClass = await windowStage.getMainWindow();
-    const rect = windowClass.getWindowProperties().windowRect;
-    this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, rect.width);
-    this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, rect.height);
-    windowClass.on('windowSizeChange', (windowSize) => {
-      this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, windowSize.width);
-      this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, windowSize.height);
-    });
+    try {
+      const windowClass = await windowStage.getMainWindow();
+      const rect = windowClass.getWindowProperties().windowRect;
+      this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, rect.width);
+      this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, rect.height);
+      windowClass.on('windowSizeChange', (windowSize) => {
+        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, windowSize.width);
+        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, windowSize.height);
+      });
+    } catch (error) {
+      console.warn('[Dashboard][ability/queryEntry][WARN]', `查询窗口尺寸读取失败，使用默认尺寸: ${JSON.stringify(error)}`);
+    }
   }
   onBackground() {
-    this.context.terminateSelf();
+    this.context.terminateSelf().catch((error: Error) => {
+      console.error('[Dashboard][ability/queryEntry][ERROR]', `查询 Ability 后台退出失败: ${error.message}`);
+    });
   }
 }

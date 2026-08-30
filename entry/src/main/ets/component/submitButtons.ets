@@ -4,6 +4,7 @@ import type { AppDetailInfo, BaseAPIResponse, CommentInfo, FormData, SubmitAppBo
 import { createSubmitFormData, SAPIBaseURL, SUBMIT_PLATFORM } from '../common/constants';
 import URL from '../common/url';
 import { http } from '@kit.NetworkKit';
+import { showToastSafely } from '../common/safeUi';
 
 interface Scale {
     x: number;
@@ -30,7 +31,7 @@ export async function submit_app(
         pkg_name: data.pkg_name,
         comment: final_comment,
     };
-    console.log("submit data:", JSON.stringify(final_data));
+    console.info('[Dashboard][component/submitButtons][INFO]', "submit data:", JSON.stringify(final_data));
     const path = new URL("submit", SAPIBaseURL);
     const request = http.createHttp();
     try {
@@ -43,7 +44,7 @@ export async function submit_app(
             },
             extraData: final_data,
         });
-        console.info(`request response code: ${response.responseCode}`);
+        console.info('[Dashboard][component/submitButtons][INFO]', `request response code: ${response.responseCode}`);
         const res: object =
             typeof response.result === "string" ? JSON.parse(response.result) : response.result;
         try {
@@ -52,7 +53,7 @@ export async function submit_app(
             return null;
         }
     } catch (e) {
-        console.warn(`error ${e}`);
+        console.warn('[Dashboard][component/submitButtons][WARN]', `error ${e}`);
     } finally {
         request.destroy();
     }
@@ -87,10 +88,7 @@ export struct submitButtons {
             if(this.vibrationON){
                 vibration.waveVibration()
             }
-            this.PromptAction.showToast({
-                message: "表单已清空",
-                duration: 1500,
-            });
+            showToastSafely(this.PromptAction, '表单已清空', 1500, 'SubmitButtons');
         }, 700);
     }
 
@@ -100,10 +98,7 @@ export struct submitButtons {
         }
 
         if (!this.formData.packageName.trim()) {
-            this.PromptAction.showToast({
-                message: "请输入包名",
-                duration: 2000,
-            });
+            showToastSafely(this.PromptAction, '请输入包名', 2000, 'SubmitButtons');
             return;
         }
 
@@ -127,22 +122,16 @@ export struct submitButtons {
             if(this.vibrationON){
                 vibration.waveVibration()
             }
-            this.PromptAction.showToast({
-                message: "提交成功，感谢您的投稿！",
-                duration: 1500,
-            });
+            showToastSafely(this.PromptAction, '提交成功，感谢您的投稿！', 1500, 'SubmitButtons');
 
             this.formData = createSubmitFormData();
             this.inputText = "";
         } catch (error) {
-            console.error("提交失败:", error);
+            console.error('[Dashboard][component/submitButtons][ERROR]', "提交失败:", error);
             if(this.vibrationON){
                 vibration.errorVibration()
             }
-            this.PromptAction.showToast({
-                message: "提交失败，请稍后重试",
-                duration: 2000,
-            });
+            showToastSafely(this.PromptAction, '提交失败，请稍后重试', 2000, 'SubmitButtons');
         } finally {
             setTimeout(() => {
                 this.isSubmitting = false;
