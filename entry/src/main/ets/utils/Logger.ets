@@ -1,24 +1,25 @@
-//Rayawa的分享相关log
-import { hilog } from "@kit.PerformanceAnalysisKit";
-
 export class Logger {
-    private static domain: number = 0xff00;
-    private static prefix: string = "KnockShareLogTag";
-    private static format: string = "%{public}s, %{public}s";
+    private static prefix: string = '[Dashboard]';
+
+    private static format(level: string, args: string[]): string {
+        const scope = args.length > 1 ? args[0] : 'App';
+        const message = args.length > 1 ? args.slice(1).join(' ') : (args[0] ?? '');
+        return `${Logger.prefix}[${scope}][${level}] ${message}`;
+    }
 
     static debug(...args: string[]): void {
-        hilog.debug(Logger.domain, Logger.prefix, Logger.format, args);
+        console.info(Logger.format('DEBUG', args));
     }
 
     static info(...args: string[]): void {
-        hilog.info(Logger.domain, Logger.prefix, Logger.format, args);
+        console.info(Logger.format('INFO', args));
     }
 
     static warn(...args: string[]): void {
-        hilog.warn(Logger.domain, Logger.prefix, Logger.format, args);
+        console.warn(Logger.format('WARN', args));
     }
 
     static error(...args: string[]): void {
-        hilog.error(Logger.domain, Logger.prefix, Logger.format, args);
+        console.error(Logger.format('ERROR', args));
     }
 }

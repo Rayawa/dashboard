@@ -2,6 +2,7 @@ import { PromptAction } from '@kit.ArkUI';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { vibration } from '../common/vibration';
+import { showToastSafely } from '../common/safeUi';
 
 @Component
 export struct contact {
@@ -54,7 +55,8 @@ export struct contact {
                         uri: url,
                     } as Want);
                 } catch (e) {
-                    this.PromptAction.showToast({ message: "跳转失败" });
+                    console.error('[Dashboard][component/contact][ERROR]', `赞助页面跳转失败: ${JSON.stringify(e)}`);
+                    showToastSafely(this.PromptAction, '跳转失败', 2000, 'Contact');
                 }
             })
 
@@ -66,9 +68,10 @@ export struct contact {
         try {
             let pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text);
             await pasteboard.getSystemPasteboard().setData(pasteData);
-            this.PromptAction.showToast({ message: `已复制${label}`, duration: 2000 });
+            showToastSafely(this.PromptAction, `已复制${label}`, 2000, 'Contact');
         } catch (error) {
-            this.PromptAction.showToast({ message: "复制失败" });
+            console.error('[Dashboard][component/contact][ERROR]', `复制${label}失败: ${JSON.stringify(error)}`);
+            showToastSafely(this.PromptAction, '复制失败', 2000, 'Contact');
         }
     }
 }

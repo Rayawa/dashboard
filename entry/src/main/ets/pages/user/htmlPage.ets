@@ -8,6 +8,7 @@ import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { setFirstLaunch } from '../../common/storage';
 import { privacyManager } from '@kit.StoreKit';
+import { showToastSafely } from '../../common/safeUi';
 
 @Component
 export struct HTML {
@@ -26,31 +27,41 @@ export struct HTML {
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
 
   private async closePage() {
-    this.PromptAction.showDialog({
-      title: `撤销${this.params.title}`,
-      message: '撤销后应用将清除本地缓存退出，确定要撤销吗？',
-      buttons: [
-        { text: '取消', color: '#1E6FCD' },
-        { text: '撤销', color: '#E60012' }
-      ]
-    }).then(async (result: promptAction.ShowDialogSuccessResponse) => {
+    try {
+      const result: promptAction.ShowDialogSuccessResponse = await this.PromptAction.showDialog({
+        title: `撤销${this.params.title}`,
+        message: '撤销后应用将清除本地缓存退出，确定要撤销吗？',
+        buttons: [
+          { text: '取消', color: '#1E6FCD' },
+          { text: '撤销', color: '#E60012' }
+        ]
+      });
       if (result.index === 1) {
         try {
           await setFirstLaunch(true);
           const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
           privacyManager.disableService();
-          this.PromptAction.showToast({ message: `${this.params.title}已撤销，即将退出` });
+          showToastSafely(this.PromptAction, `${this.params.title}已撤销，即将退出`, 2000, 'HtmlPage');
           context.terminateSelf().then(() => {
-            console.info('Ability 销毁指令发送成功');
+            console.info('[Dashboard][pages/user/htmlPage][INFO]', 'Ability 销毁指令发送成功');
           }).catch((err: BusinessError) => {
-            console.error(`销毁失败: ${err.code}`);
+            console.error('[Dashboard][pages/user/htmlPage][ERROR]', `销毁失败: ${err.code}`);
           });
         } catch (error) {
           const err = error as BusinessError;
-          this.PromptAction.showToast({ message: `撤销失败: ${err.message} (Code: ${err.code})` });
+          console.error('[Dashboard][pages/user/htmlPage][ERROR]', `撤销服务失败: ${err.message} (Code: ${err.code})`);
+          showToastSafely(
+            this.PromptAction,
+            `撤销失败: ${err.message} (Code: ${err.code})`,
+            2500,
+            'HtmlPage',
+          );
         }
       }
-    });
+    } catch (error) {
+      console.error('[Dashboard][pages/user/htmlPage][ERROR]', `撤销确认弹窗显示失败: ${JSON.stringify(error)}`);
+      showToastSafely(this.PromptAction, '暂时无法打开确认窗口，请稍后重试', 2000, 'HtmlPage');
+    }
   }
 
   build() {

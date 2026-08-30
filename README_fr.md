@@ -2,7 +2,7 @@
 
 Dépôt du front-end HarmonyOS. Le projet global est un écosystème multi-plateforme piloté par un back end Rust, comprenant des éditions HarmonyOS, iOS, Android et Web ; ce dépôt ne contient que le front-end HarmonyOS.
 
-Le nom de bundle actuel de l'application est `top.rayawa.dashboard`, la version actuelle est `2.2.1`, et le module principal utilise le modèle Stage de HarmonyOS.
+Le nom de bundle actuel de l'application est `top.rayawa.dashboard`, la version actuelle est `3.0.0` (build `30000001`), et le module principal utilise le modèle Stage de HarmonyOS.
 
 [![HarmonyOS API](https://img.shields.io/badge/HarmonyOS-API%2023%2B-blue)](#)
 [![Languages](https://img.shields.io/badge/Language-ArkTS%20%7C%20Rust-orange)](#)

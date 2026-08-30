@@ -111,7 +111,7 @@ async function migrateLegacyData(ctx?: common.Context): Promise<void> {
         copied.push(KEY_FIRST_LAUNCH);
     }
     await target.set(KEY_MIGRATED, true);
-    console.info(`[storage] 旧数据迁移完成: ${copied.length > 0 ? copied.join(', ') : '全新安装，无需迁移'}`);
+    console.info('[Dashboard][common/storage][INFO]', `[storage] 旧数据迁移完成: ${copied.length > 0 ? copied.join(', ') : '全新安装，无需迁移'}`);
 }
 
 async function copyLegacyKey(target: DiskStorageInstance, legacyFile: string, key: string, ctx?: common.Context, targetKey: string = key): Promise<boolean> {
@@ -123,7 +123,7 @@ async function copyLegacyKey(target: DiskStorageInstance, legacyFile: string, ke
             return true;
         }
     } catch (error) {
-        console.warn(`[storage] 跳过旧文件 ${legacyFile} 的 ${key}: ${JSON.stringify(error)}`);
+        console.warn('[Dashboard][common/storage][WARN]', `[storage] 跳过旧文件 ${legacyFile} 的 ${key}: ${JSON.stringify(error)}`);
     }
     return false;
 }
@@ -157,7 +157,7 @@ export function getDeviceName(): string {
         const productModel = deviceInfo.productModel;
         return productModel && productModel.trim().length > 0 ? productModel : "HarmonyOS设备";
     } catch (error) {
-        console.error("Failed to get device name:", error);
+        console.error('[Dashboard][common/storage][ERROR]', "Failed to get device name:", error);
         return "我的设备";
     }
 }
@@ -288,6 +288,6 @@ export async function loadPersistedState(ctx?: common.Context): Promise<void> {
         AppStorage.setOrCreate(KEY_IMMERSIVE, await getImmersiveTexture());
         AppStorage.setOrCreate(KEY_USERNAME, await getUsername());
     } catch (error) {
-        console.error(`[storage] AppStorage 水合失败: ${JSON.stringify(error)}`);
+        console.error('[Dashboard][common/storage][ERROR]', `[storage] AppStorage 水合失败: ${JSON.stringify(error)}`);
     }
 }

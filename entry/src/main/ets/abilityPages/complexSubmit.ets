@@ -8,6 +8,7 @@ import { PromptAction } from '@kit.ArkUI';
 import { consumeShareRequest } from '../common/appState';
 import { createSubmitFormData, FORM_DEBOUNCE_DELAY_MS } from '../common/constants';
 import { setUsername } from '../common/storage';
+import { showToastSafely } from '../common/safeUi';
 
 @Entry
 @Component
@@ -27,7 +28,7 @@ struct complexSubmit {
 
     aboutToAppear() {
         const shareRequest = consumeShareRequest();
-        console.log("complexSubmit接受取到的所有参数:", JSON.stringify(shareRequest));
+        console.info('[Dashboard][abilityPages/complexSubmit][INFO]', "complexSubmit接受取到的所有参数:", JSON.stringify(shareRequest));
         this.inputText = shareRequest.shareUrl;
         this.formData = createSubmitFormData();
         this.formData.appLink = shareRequest.shareUrl.replace(
@@ -40,9 +41,9 @@ struct complexSubmit {
     onPageHide(): void {
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
         context.terminateSelf().then(() => {
-            console.info('Ability 销毁指令发送成功');
+            console.info('[Dashboard][abilityPages/complexSubmit][INFO]', 'Ability 销毁指令发送成功');
         }).catch((err: BusinessError) => {
-            console.error(`销毁失败: ${err.code}`);
+            console.error('[Dashboard][abilityPages/complexSubmit][ERROR]', `销毁失败: ${err.code}`);
         });
     }
 
@@ -51,16 +52,16 @@ struct complexSubmit {
     private closePage() {
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
         context.terminateSelf().then(() => {
-            console.info('Ability 销毁指令发送成功');
+            console.info('[Dashboard][abilityPages/complexSubmit][INFO]', 'Ability 销毁指令发送成功');
         }).catch((err: BusinessError) => {
-            console.error(`销毁失败: ${err.code}`);
+            console.error('[Dashboard][abilityPages/complexSubmit][ERROR]', `销毁失败: ${err.code}`);
         });
     }
     onBackPress(): boolean | void {
         const currentTime = new Date().getTime();
         if (currentTime - this.firstBackTime > this.waitTime) {
             this.firstBackTime = currentTime;
-            this.PromptAction.showToast({ message: "再按一次退出", duration: this.waitTime });
+            showToastSafely(this.PromptAction, '再按一次退出', this.waitTime, 'ComplexSubmit');
             if(this.vibrationON) vibration.dotVibration()
             return true;
         } else {
@@ -241,7 +242,7 @@ struct complexSubmit {
                                 iterations: -1,
                                 autoPlay: true,
                                 onFinish: () => {
-                                    console.info("Succeeded in finishing");
+                                    console.info('[Dashboard][abilityPages/complexSubmit][INFO]', "Succeeded in finishing");
                                 },
                             },
                             controller: this.controller,
@@ -415,7 +416,7 @@ struct complexSubmit {
     private async handleAutoExtract() {
         // 1. 增加检查：如果输入为空，或正在处理，直接返回
         if (this.isProcessing || !this.inputText.trim()) {
-            console.log("跳过提取：状态为处理中或输入为空");
+            console.info('[Dashboard][abilityPages/complexSubmit][INFO]', "跳过提取：状态为处理中或输入为空");
             return;
         }
 
@@ -424,11 +425,11 @@ struct complexSubmit {
         this.extractedApps = [];
 
         try {
-            console.log("开始自动提取，文本长度：", this.inputText.length);
+            console.info('[Dashboard][abilityPages/complexSubmit][INFO]', "开始自动提取，文本长度：", this.inputText.length);
             // 3. 调用自然语言提取器
             const apps = await NaturalLanguageExtractor.extractAppInfoFromText(this.inputText);
             this.extractedApps = apps;
-            console.log("自动提取完成，找到应用数：", apps.length);
+            console.info('[Dashboard][abilityPages/complexSubmit][INFO]', "自动提取完成，找到应用数：", apps.length);
 
             // 4. 自动填充到表单
             if (this.extractedApps.length > 0) {
@@ -438,7 +439,7 @@ struct complexSubmit {
                 this.autoFillForm();
             }
         } catch (error) {
-            console.error("自动提取失败:", error);
+            console.error('[Dashboard][abilityPages/complexSubmit][ERROR]', "自动提取失败:", error);
         } finally {
             // 5. 确保无论成功失败，都重置处理状态
             this.isProcessing = false;

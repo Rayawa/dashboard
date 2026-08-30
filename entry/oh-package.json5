@@ -1,10 +1,9 @@
 {
   "name": "entry",
-  "version": "2.2.1",
+  "version": "3.0.0",
   "description": "鸿蒙应用市场看板",
   "main": "",
   "author": "",
   "license": "",
   "dependencies": {}
 }
-

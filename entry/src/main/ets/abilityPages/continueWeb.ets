@@ -29,7 +29,7 @@ struct continueWeb {
       try {
         this.web_controller.loadUrl(this.url);
       } catch (e) {
-        console.error('loadUrl failed:', e);
+        console.error('[Dashboard][abilityPages/continueWeb][ERROR]', 'loadUrl failed:', e);
       }
     }
   }
@@ -103,29 +103,36 @@ struct continueWeb {
                 this.funcOpacity = 0;
               });
             } else {
-              console.info('未满2秒，拦截频繁握持手势切换');
+              console.info('[Dashboard][abilityPages/continueWeb][INFO]', '未满2秒，拦截频繁握持手势切换');
             }
           }
-          console.info(`握持手状态变化: ${data}`);
+          console.info('[Dashboard][abilityPages/continueWeb][INFO]', `握持手状态变化: ${data}`);
         };
         motion.on('holdingHandChanged', this.holdingHandCallback);
-        console.info('成功订阅握持手状态变化');
+        console.info('[Dashboard][abilityPages/continueWeb][INFO]', '成功订阅握持手状态变化');
       } else {
         setButtonPosition(false);
-        console.warn('当前设备不支持智感握持能力');
+        console.warn('[Dashboard][abilityPages/continueWeb][WARN]', '当前设备不支持智感握持能力');
       }
     } catch (e) {
-      console.error('订阅握持手状态变化失败:', e);
+      console.error('[Dashboard][abilityPages/continueWeb][ERROR]', '订阅握持手状态变化失败:', e);
     }
   }
   unsubscribeHoldingHand() {
     if (this.holdingHandCallback !== null) {
+      if (!canIUse('SystemCapability.MultimodalAwareness.Motion')) {
+        this.holdingHandCallback = null;
+        setButtonPosition(false);
+        console.warn('[Dashboard][abilityPages/continueWeb][WARN]', '当前设备不支持智感握持，已仅复位本地订阅状态');
+        return;
+      }
       try {
         motion.off('holdingHandChanged', this.holdingHandCallback);
-        this.holdingHandCallback = null;
-        console.info('已成功取消订阅握持手状态变化');
+        console.info('[Dashboard][abilityPages/continueWeb][INFO]', '已成功取消订阅握持手状态变化');
       } catch (e) {
-        console.error('取消订阅握持手状态变化失败:', e);
+        console.error('[Dashboard][abilityPages/continueWeb][ERROR]', '取消订阅握持手状态变化失败:', e);
+      } finally {
+        this.holdingHandCallback = null;
       }
     }
   }
@@ -146,7 +153,7 @@ struct continueWeb {
         this.url = storageUrl;
       }
     }
-    console.log("continueWebReport",this.url," ",this.scrollDistance)
+    console.info('[Dashboard][abilityPages/continueWeb][INFO]', "continueWebReport",this.url," ",this.scrollDistance)
     //分享
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     this.shareManager = WebShareManager.getInstance(context);
@@ -165,7 +172,7 @@ struct continueWeb {
     this.getUIContext().getRouter().replaceUrl({
       url: 'pages/Dashboard'
     }).catch((err: BusinessError) => {
-      console.error(`Failed to jump to Dashboard. Code: ${err.code}`);
+      console.error('[Dashboard][abilityPages/continueWeb][ERROR]', `Failed to jump to Dashboard. Code: ${err.code}`);
     })
   }
   onBackPress(): boolean | void {
@@ -222,7 +229,7 @@ struct continueWeb {
                   }
                   this.web_controller.setCustomUserAgent(customUserAgent);
                 } catch (e) {
-                  console.error(`WebController attach error: ${e}`);
+                  console.error('[Dashboard][abilityPages/continueWeb][ERROR]', `WebController attach error: ${e}`);
                 }
               })
               .onPageBegin(() => (this.isLoading = true))
@@ -349,7 +356,7 @@ struct continueWeb {
                     this.web_controller.removeCache(false),
                   ]);
                 } catch (error) {
-                  console.warn(`hm dashboard e: ${error}`);
+                  console.warn('[Dashboard][abilityPages/continueWeb][WARN]', `hm dashboard e: ${error}`);
                 }
                 this.isLoading = true;
                 if (this.vibrationON) vibration.dotVibration()

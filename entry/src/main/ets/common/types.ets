@@ -140,6 +140,117 @@ export interface AppDetailInfo {
     new_rating: boolean;
 }
 
+export interface SyncDuration {
+    secs: number;
+    nanos: number;
+}
+
+export interface SyncStatusInfo {
+    elapsed_time?: SyncDuration;
+    estimated_total_time?: SyncDuration;
+    is_syncing_all: boolean;
+    next_sync_countdown?: number;
+    progress?: number[];
+    total_failed: number;
+    total_inserted: number;
+    total_processed: number;
+    total_skipped: number;
+}
+
+export interface MarketCountInfo {
+    apps: number;
+    atomic_services: number;
+    max_download_count: number;
+    total: number;
+}
+
+export interface MarketInfo {
+    app_count: MarketCountInfo;
+    crate_version: string;
+    developer_count: number;
+    page_size_max: number;
+    substance_count: number;
+    sync_status: SyncStatusInfo;
+}
+
+export interface ScreenshotInfo {
+    url: string;
+    resolution: string;
+    rotated: number;
+}
+
+export interface MarketApp extends AppInfo {
+    alliance_app_id?: string;
+    brief_desc?: string;
+    privacy_url?: string;
+    screen_shots?: string[];
+    new_screen_shots?: ScreenshotInfo[];
+    new_features?: string;
+    upgrade_msg?: string;
+    price?: number | string;
+    iap?: boolean;
+    hms?: boolean;
+    is_pay?: boolean;
+    min_hmos_api_level?: number;
+    api_release_type?: string;
+    info_score?: number | string;
+    info_rate_count?: number;
+}
+
+export interface AppDetailPayload extends AppDetailInfo {
+    full_info: MarketApp;
+    cached?: boolean;
+}
+
+export interface PageInfo<T> {
+    data: T[];
+    total_count: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+}
+
+export interface RatingDistribution {
+    star_1: number;
+    star_2: number;
+    star_3: number;
+    star_4: number;
+    star_5: number;
+}
+
+export interface AppMetric {
+    version: string;
+    version_code: number;
+    size_bytes: number;
+    download_count: number;
+    price: number | string;
+    release_date: number;
+    target_sdk: number;
+    minsdk: number;
+    compile_sdk_version: number;
+    min_hmos_api_level: number;
+    api_release_type: string;
+    created_at: string;
+}
+
+export interface ApiDataResult<T> {
+    data: T;
+    fromCache: boolean;
+    cachedAt: number;
+    stale: boolean;
+}
+
+export interface AppRouteTarget {
+    appId?: string;
+    packageName?: string;
+}
+
+export interface SearchTarget extends AppRouteTarget {
+    rawText?: string;
+    autoRun?: boolean;
+    openDetailOnSuccess?: boolean;
+}
+
 export interface FormData {
     appName?: string,
     appLink: string;

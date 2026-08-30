@@ -57,7 +57,7 @@ export struct tutorial {
                     uri: mainPage.toString(),
                   } as Want);
                 } catch (error) {
-                  console.error("打开链接失败:", (error as BusinessError).message);
+                  console.error('[Dashboard][pages/tutorial][ERROR]', "打开链接失败:", (error as BusinessError).message);
                   this.PromptAction.showToast({
                     message: "打开链接失败",
                     duration: 1000

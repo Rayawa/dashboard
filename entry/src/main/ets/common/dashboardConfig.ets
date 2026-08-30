@@ -42,8 +42,9 @@ export function createRestrictedDashboardConfig(): DashboardVisibilityConfig {
 }
 
 export async function fetchDashboardConfig(): Promise<DashboardVisibilityConfig> {
-    const request = http.createHttp();
+    let request: http.HttpRequest | undefined = undefined;
     try {
+        request = http.createHttp();
         const response = await request.request(
             `${SAPIBaseURL.toString()}dashboard/config`,
             {
@@ -70,8 +71,17 @@ export async function fetchDashboardConfig(): Promise<DashboardVisibilityConfig>
             showAppDownloadMetrics: result.data.show_app_download_metrics === true,
             showTSite: result.data.show_t_site === true,
         };
+    } catch (error) {
+        console.warn('[Dashboard][common/dashboardConfig][WARN]', `看板配置请求失败，使用受限安全配置: ${JSON.stringify(error)}`);
+        return createRestrictedDashboardConfig();
     } finally {
-        request.destroy();
+        if (request) {
+            try {
+                request.destroy();
+            } catch (error) {
+                console.warn('[Dashboard][common/dashboardConfig][WARN]', `看板配置请求对象释放失败: ${JSON.stringify(error)}`);
+            }
+        }
     }
 }
 
@@ -81,7 +91,7 @@ export async function resolveDashboardAppDetailUrl(appId: string): Promise<strin
         config = await fetchDashboardConfig();
     } catch (error) {
         const message = (error as Error).message;
-        console.warn(`Dashboard config load failed while resolving detail URL: ${message}`);
+        console.warn('[Dashboard][common/dashboardConfig][WARN]', `Dashboard config load failed while resolving detail URL: ${message}`);
     }
     const encodedAppId = encodeURIComponent(appId);
     return config.showTSite

@@ -154,7 +154,7 @@ export struct appSubmit {
                             iterations: -1,
                             autoPlay: true,
                             onFinish: () => {
-                                console.info("Succeeded in finishing");
+                                console.info('[Dashboard][component/appSubmit][INFO]', "Succeeded in finishing");
                             },
                         },
                         controller: this.controller,
@@ -312,7 +312,7 @@ export struct appSubmit {
                 this.autoFillForm();
             }
         } catch (error) {
-            console.error("自动提取失败:", error);
+            console.error('[Dashboard][component/appSubmit][ERROR]', "自动提取失败:", error);
         } finally {
             this.isProcessing = false;
         }

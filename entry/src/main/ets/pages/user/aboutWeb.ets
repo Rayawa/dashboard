@@ -89,29 +89,36 @@ struct aboutWeb {
                 this.funcOpacity = 0;
               });
             } else {
-              console.info('未满2秒，拦截频繁握持手势切换');
+              console.info('[Dashboard][pages/user/aboutWeb][INFO]', '未满2秒，拦截频繁握持手势切换');
             }
           }
-          console.info(`握持手状态变化: ${data}`);
+          console.info('[Dashboard][pages/user/aboutWeb][INFO]', `握持手状态变化: ${data}`);
         };
         motion.on('holdingHandChanged', this.holdingHandCallback);
-        console.info('成功订阅握持手状态变化');
+        console.info('[Dashboard][pages/user/aboutWeb][INFO]', '成功订阅握持手状态变化');
       } else {
         setButtonPosition(false);
-        console.warn('当前设备不支持智感握持能力');
+        console.warn('[Dashboard][pages/user/aboutWeb][WARN]', '当前设备不支持智感握持能力');
       }
     } catch (e) {
-      console.error('订阅握持手状态变化失败:', e);
+      console.error('[Dashboard][pages/user/aboutWeb][ERROR]', '订阅握持手状态变化失败:', e);
     }
   }
   unsubscribeHoldingHand() {
     if (this.holdingHandCallback !== null) {
+      if (!canIUse('SystemCapability.MultimodalAwareness.Motion')) {
+        this.holdingHandCallback = null;
+        setButtonPosition(false);
+        console.warn('[Dashboard][pages/user/aboutWeb][WARN]', '当前设备不支持智感握持，已仅复位本地订阅状态');
+        return;
+      }
       try {
         motion.off('holdingHandChanged', this.holdingHandCallback);
-        this.holdingHandCallback = null;
-        console.info('已成功取消订阅握持手状态变化');
+        console.info('[Dashboard][pages/user/aboutWeb][INFO]', '已成功取消订阅握持手状态变化');
       } catch (e) {
-        console.error('取消订阅握持手状态变化失败:', e);
+        console.error('[Dashboard][pages/user/aboutWeb][ERROR]', '取消订阅握持手状态变化失败:', e);
+      } finally {
+        this.holdingHandCallback = null;
       }
     }
   }
@@ -176,7 +183,7 @@ struct aboutWeb {
                   }
                   this.web_controller.setCustomUserAgent(customUserAgent);
                 } catch (e) {
-                  console.error(`WebController attach error: ${e}`);
+                  console.error('[Dashboard][pages/user/aboutWeb][ERROR]', `WebController attach error: ${e}`);
                 }
               })
               .layoutMode(WebLayoutMode.FIT_CONTENT)
@@ -282,7 +289,7 @@ struct aboutWeb {
                     this.web_controller.removeCache(false),
                   ]);
                 } catch (error) {
-                  console.warn(`hm dashboard e: ${error}`);
+                  console.warn('[Dashboard][pages/user/aboutWeb][WARN]', `hm dashboard e: ${error}`);
                 }
                 this.isLoading = true;
                 if (this.vibrationON) vibration.dotVibration()
@@ -455,7 +462,7 @@ struct aboutWeb {
     .onBackPressed(() => {
       if(this.vibrationON) vibration.dotVibration()
       if (this.web_controller.accessStep(-1)) {
-        console.info("网页可以返回，执行后退");
+        console.info('[Dashboard][pages/user/aboutWeb][INFO]', "网页可以返回，执行后退");
         this.web_controller.backward();
         this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
         return true;
@@ -538,7 +545,7 @@ struct aboutWeb {
                       uri: url,
                     } as Want);
                   } catch (error) {
-                    console.error("打开链接失败:", (error as BusinessError).message);
+                    console.error('[Dashboard][pages/user/aboutWeb][ERROR]', "打开链接失败:", (error as BusinessError).message);
                     this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
                   }
                 },
@@ -571,7 +578,7 @@ struct aboutWeb {
       if (params) {
         this.url = params.url;
         this.title = params.title;
-        console.info(`成功加载网页: ${this.title}, 地址: ${this.url}`);
+        console.info('[Dashboard][pages/user/aboutWeb][INFO]', `成功加载网页: ${this.title}, 地址: ${this.url}`);
       }
     })
 

@@ -15,6 +15,7 @@ import { common } from '@kit.AbilityKit';
 import { WebShareManager } from '../common/shareControl';
 import { harmonyShare } from '@kit.ShareKit';
 import { consumeQueryTargetUrl } from '../common/appState';
+import { showToastSafely } from '../common/safeUi';
 
 @Entry({ useSharedStorage: true })
 @Component
@@ -94,29 +95,36 @@ struct queryWeb {
                 this.funcOpacity = 0;
               });
             } else {
-              console.info('未满2秒，拦截频繁握持手势切换');
+              console.info('[Dashboard][abilityPages/queryWeb][INFO]', '未满2秒，拦截频繁握持手势切换');
             }
           }
-          console.info(`握持手状态变化: ${data}`);
+          console.info('[Dashboard][abilityPages/queryWeb][INFO]', `握持手状态变化: ${data}`);
         };
         motion.on('holdingHandChanged', this.holdingHandCallback);
-        console.info('成功订阅握持手状态变化');
+        console.info('[Dashboard][abilityPages/queryWeb][INFO]', '成功订阅握持手状态变化');
       } else {
         setButtonPosition(false);
-        console.warn('当前设备不支持智感握持能力');
+        console.warn('[Dashboard][abilityPages/queryWeb][WARN]', '当前设备不支持智感握持能力');
       }
     } catch (e) {
-      console.error('订阅握持手状态变化失败:', e);
+      console.error('[Dashboard][abilityPages/queryWeb][ERROR]', '订阅握持手状态变化失败:', e);
     }
   }
   unsubscribeHoldingHand() {
     if (this.holdingHandCallback !== null) {
+      if (!canIUse('SystemCapability.MultimodalAwareness.Motion')) {
+        this.holdingHandCallback = null;
+        setButtonPosition(false);
+        console.warn('[Dashboard][abilityPages/queryWeb][WARN]', '当前设备不支持智感握持，已仅复位本地订阅状态');
+        return;
+      }
       try {
         motion.off('holdingHandChanged', this.holdingHandCallback);
-        this.holdingHandCallback = null;
-        console.info('已成功取消订阅握持手状态变化');
+        console.info('[Dashboard][abilityPages/queryWeb][INFO]', '已成功取消订阅握持手状态变化');
       } catch (e) {
-        console.error('取消订阅握持手状态变化失败:', e);
+        console.error('[Dashboard][abilityPages/queryWeb][ERROR]', '取消订阅握持手状态变化失败:', e);
+      } finally {
+        this.holdingHandCallback = null;
       }
     }
   }
@@ -134,7 +142,7 @@ struct queryWeb {
         this.url = storageUrl;
       }
     }
-    console.log("continueWebReport",this.url)
+    console.info('[Dashboard][abilityPages/queryWeb][INFO]', "continueWebReport",this.url)
     //分享
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     this.shareManager = WebShareManager.getInstance(context);
@@ -159,16 +167,16 @@ struct queryWeb {
   private closePage() {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     context.terminateSelf().then(() => {
-      console.info('Ability 销毁指令发送成功');
+      console.info('[Dashboard][abilityPages/queryWeb][INFO]', 'Ability 销毁指令发送成功');
     }).catch((err: BusinessError) => {
-      console.error(`销毁失败: ${err.code}`);
+      console.error('[Dashboard][abilityPages/queryWeb][ERROR]', `销毁失败: ${err.code}`);
     });
   }
   onBackPress(): boolean | void {
     const currentTime = new Date().getTime();
     if (currentTime - this.firstBackTime > this.waitTime) {
       this.firstBackTime = currentTime;
-      this.PromptAction.showToast({ message: "再按一次退出", duration: this.waitTime });
+      showToastSafely(this.PromptAction, '再按一次退出', this.waitTime, 'AbilityQueryWeb');
       if(this.vibrationON) vibration.dotVibration()
       return true;
     } else {
@@ -221,7 +229,7 @@ struct queryWeb {
                   }
                   this.web_controller.setCustomUserAgent(customUserAgent);
                 } catch (e) {
-                  console.error(`WebController attach error: ${e}`);
+                  console.error('[Dashboard][abilityPages/queryWeb][ERROR]', `WebController attach error: ${e}`);
                 }
               })
               .layoutMode(WebLayoutMode.FIT_CONTENT)
@@ -327,7 +335,7 @@ struct queryWeb {
                     this.web_controller.removeCache(false),
                   ]);
                 } catch (error) {
-                  console.warn(`hm dashboard e: ${error}`);
+                  console.warn('[Dashboard][abilityPages/queryWeb][WARN]', `hm dashboard e: ${error}`);
                 }
                 this.isLoading = true;
                 if (this.vibrationON) vibration.dotVibration()
