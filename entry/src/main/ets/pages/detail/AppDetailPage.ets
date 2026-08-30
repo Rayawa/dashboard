@@ -22,6 +22,7 @@ import {
 import { fetchAppById, fetchAppByPackage, fetchAppMetrics } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
+import { pushPathSafely } from '../../common/safeNavigation';
 import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
 import type {
@@ -212,6 +213,11 @@ export struct AppDetailPage {
         }
     }
 
+    private openTutorial(): void {
+        this.vibrate();
+        pushPathSafely(this.pageStack, 'TutorialPage');
+    }
+
     private request(force: boolean): Promise<ApiDataResult<BaseAPIResponse<AppDetailPayload>>> {
         if (this.target.appId) {
             return fetchAppById(this.target.appId, force);
@@ -331,6 +337,7 @@ export struct AppDetailPage {
         HdsNavDestination() {
             Scroll(this.scroller) {
                 Column({ space: 14 }) {
+                    Blank().height(40).width('100%')
                     if (this.loading && !this.app) {
                         Column({ space: 12 }) {
                             LoadingProgress()
@@ -427,16 +434,6 @@ export struct AppDetailPage {
                                     this.openMarket();
                                 })
                                 .accessibilityText('在华为应用市场打开此应用')
-                            Button(this.refreshing ? '更新中…' : '更新数据')
-                                .margin(4)
-                                .enabled(!this.refreshing)
-                                .fontColor($r('app.color.v3_text_primary'))
-                                .backgroundColor($r('app.color.v3_surface_alt'))
-                                .onClick(() => {
-                                    this.vibrate();
-                                    this.load(true, true);
-                                })
-                                .accessibilityText(this.refreshing ? '应用数据更新中' : '从API更新此应用数据')
                             if (this.app.privacy_url) {
                                 Button('隐私政策')
                                     .margin(4)
@@ -579,15 +576,20 @@ export struct AppDetailPage {
             .width('100%')
             .height('100%')
             .scrollBar(BarState.Off)
-            .onDidScroll(() => {
-                const continuation = getContinuationState();
-                setContinuationView(
-                    continuation.mainTab,
-                    this.scroller.currentOffset().yOffset,
-                    CONTINUATION_ROUTE_DETAIL,
-                    this.target,
-                    this.shareUrl(),
-                );
+            .onDidScroll((): void => {
+                try {
+                    const continuation = getContinuationState();
+                    setContinuationView(
+                        continuation.mainTab,
+                        this.scroller.currentOffset().yOffset,
+                        CONTINUATION_ROUTE_DETAIL,
+                        this.target,
+                        this.shareUrl(),
+                    );
+                } catch (error) {
+                    console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]',
+                        `保存详情页滚动位置失败: ${JSON.stringify(error)}`);
+                }
             })
             .backgroundColor($r('app.color.background'))
             .accessibilityText('公用应用详情页')
@@ -607,14 +609,35 @@ export struct AppDetailPage {
                     mainTitleSize: TitleSize.TITLE_S,
                 },
                 menu: {
-                    value: [{
-                        content: {
-                            label: 'share',
-                            icon: $r('sys.symbol.share'),
-                            isEnabled: this.app !== undefined,
-                            action: () => this.showShare(),
+                    value: [
+                        {
+                            content: {
+                                label: '更新应用数据',
+                                icon: $r('app.media.refresh'),
+                                isEnabled: this.app !== undefined && !this.refreshing,
+                                action: () => {
+                                    this.vibrate();
+                                    this.load(true, true);
+                                },
+                            },
                         },
-                    }],
+                        {
+                            content: {
+                                label: '打开教程',
+                                icon: $r('sys.symbol.questionmark_circle'),
+                                isEnabled: true,
+                                action: () => this.openTutorial(),
+                            },
+                        },
+                        {
+                            content: {
+                                label: '分享应用详情',
+                                icon: $r('sys.symbol.share'),
+                                isEnabled: this.app !== undefined,
+                                action: () => this.showShare(),
+                            },
+                        },
+                    ],
                 },
                 backIcon: {
                     action: () => this.closePage(),

@@ -12,9 +12,14 @@ export struct warn {
   @Link isShow: boolean;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("vibrationON") vibrationON: boolean = true;
-  private is_first_launch: boolean = true;
-  async aboutToAppear() {
-    this.is_first_launch = await getFirstLaunch();
+  @State private isFirstLaunch: boolean = true;
+  async aboutToAppear(): Promise<void> {
+    try {
+      this.isFirstLaunch = await getFirstLaunch();
+    } catch (error) {
+      this.isFirstLaunch = true;
+      console.warn('[Dashboard][component/warn][WARN]', `读取重要提示状态失败: ${JSON.stringify(error)}`);
+    }
   }
 
   private readonly effect: TransitionEffect = TransitionEffect.OPACITY.combine(
@@ -27,7 +32,7 @@ export struct warn {
     if (this.isShow) {
       Column() {
         Blank().height(60).onClick(() => {
-          if(this.is_first_launch){
+          if(this.isFirstLaunch){
             this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
           } else {
             if(this.vibrationON) vibration.dotVibration();
@@ -110,7 +115,7 @@ export struct warn {
           .padding(10)
           .alignItems(HorizontalAlign.Start)
 
-          if (this.is_first_launch) confirmButtons({ isShow: this.isShow })
+          if (this.isFirstLaunch) confirmButtons({ isShow: this.isShow })
 
         }
         .width(350)
@@ -129,9 +134,9 @@ export struct warn {
           offsetY: 4,
         });
 
-        if (this.is_first_launch) {
+        if (this.isFirstLaunch) {
           Blank().height(15).onClick(() => {
-            if(this.is_first_launch){
+            if(this.isFirstLaunch){
               this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
             } else {
               if(this.vibrationON) vibration.dotVibration();
@@ -154,7 +159,7 @@ export struct warn {
       .transition(this.effect)
       .gesture(
         SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(() => {
-          if(this.is_first_launch){
+          if(this.isFirstLaunch){
             this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
           } else {
             if(this.vibrationON) vibration.dotVibration();

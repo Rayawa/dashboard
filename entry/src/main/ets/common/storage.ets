@@ -7,10 +7,10 @@ import { common } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import getDiskStorageInstance, { DiskStorageInstance } from './DiskStorage';
 import {
+    APP_VERSION,
     DEFAULT_BUTTON_RIGHT,
     DEFAULT_HOLD_CHECK_ENABLED,
     DEFAULT_IMMERSIVE_TEXTURE,
-    DEFAULT_TAB_BAR_AUTO,
     DEFAULT_VIBRATION_ENABLED,
     LEGACY_APP_SETTINGS_FILE_NAME,
     LEGACY_PROFILE_FILE_NAME,
@@ -21,7 +21,7 @@ import {
     STORAGE_KEY_HOLD_CHECK,
     STORAGE_KEY_IMMERSIVE,
     STORAGE_KEY_LEGACY_MIGRATED,
-    STORAGE_KEY_TAB_BAR_AUTO,
+    STORAGE_KEY_NOTICE_VERSION,
     STORAGE_KEY_USERNAME,
     STORAGE_KEY_VIBRATION,
 } from './constants';
@@ -31,17 +31,16 @@ const STORE_NAME = STORAGE_FILE_NAME;
 const KEY_MIGRATED = STORAGE_KEY_LEGACY_MIGRATED;
 const KEY_USERNAME = STORAGE_KEY_USERNAME;
 const KEY_FIRST_LAUNCH = STORAGE_KEY_FIRST_LAUNCH;
+const KEY_NOTICE_VERSION = STORAGE_KEY_NOTICE_VERSION;
 const KEY_VIBRATION = STORAGE_KEY_VIBRATION;
 const KEY_HOLD_CHECK = STORAGE_KEY_HOLD_CHECK;
 const KEY_BUTTON_RIGHT = STORAGE_KEY_BUTTON_RIGHT;
-const KEY_TAB_BAR_AUTO = STORAGE_KEY_TAB_BAR_AUTO;
 const KEY_IMMERSIVE = STORAGE_KEY_IMMERSIVE;
 
 export interface AppSettings {
     vibrationON: boolean;
     holdCheckON: boolean;
     buttonPositionRIGHT: boolean;
-    tabBarAutoON: boolean;
     immersiveTextureON: boolean;
 }
 
@@ -50,7 +49,6 @@ const DEFAULT_SETTINGS: AppSettings = {
     vibrationON: DEFAULT_VIBRATION_ENABLED,
     holdCheckON: DEFAULT_HOLD_CHECK_ENABLED,
     buttonPositionRIGHT: DEFAULT_BUTTON_RIGHT,
-    tabBarAutoON: DEFAULT_TAB_BAR_AUTO,
     immersiveTextureON: DEFAULT_IMMERSIVE_TEXTURE
 };
 
@@ -100,7 +98,7 @@ async function migrateLegacyData(ctx?: common.Context): Promise<void> {
         copied.push(KEY_USERNAME);
     }
     // 旧 settings 文件：设置开关（新旧 key 同名）
-    const settingKeys: string[] = [KEY_VIBRATION, KEY_HOLD_CHECK, KEY_BUTTON_RIGHT, KEY_TAB_BAR_AUTO, KEY_IMMERSIVE];
+    const settingKeys: string[] = [KEY_VIBRATION, KEY_HOLD_CHECK, KEY_BUTTON_RIGHT, KEY_IMMERSIVE];
     for (const key of settingKeys) {
         if (await copyLegacyKey(target, LEGACY_SETTINGS_FILE_NAME, key, ctx)) {
             copied.push(key);
@@ -143,12 +141,15 @@ export function initialize(ctx?: common.Context): void {
 // ===== 首启标志（原 myAppSettings 文件 / isFirstLaunch）=====
 export async function getFirstLaunch(): Promise<boolean> {
     const s = await ensureReady();
-    return (await s.get(KEY_FIRST_LAUNCH, true)) as boolean;
+    const firstLaunch = (await s.get(KEY_FIRST_LAUNCH, true)) as boolean;
+    const acceptedVersion = (await s.get(KEY_NOTICE_VERSION, '')) as string;
+    return firstLaunch || acceptedVersion !== APP_VERSION;
 }
 
 export async function setFirstLaunch(first: boolean): Promise<void> {
     const s = await ensureReady();
     await s.set(KEY_FIRST_LAUNCH, first);
+    await s.set(KEY_NOTICE_VERSION, first ? '' : APP_VERSION);
 }
 
 // ===== 用户名（原 profile 文件 / username）=====
@@ -222,17 +223,6 @@ export async function setButtonPosition(isRight: boolean): Promise<void> {
     AppStorage.setOrCreate(KEY_BUTTON_RIGHT, isRight);
 }
 
-export async function getTabBarAuto(): Promise<boolean> {
-    const s = await ensureReady();
-    return (await s.get(KEY_TAB_BAR_AUTO, DEFAULT_SETTINGS.tabBarAutoON)) as boolean;
-}
-
-export async function setTabBarAuto(enabled: boolean): Promise<void> {
-    const s = await ensureReady();
-    await s.set(KEY_TAB_BAR_AUTO, enabled);
-    AppStorage.setOrCreate(KEY_TAB_BAR_AUTO, enabled);
-}
-
 export async function getImmersiveTexture(): Promise<boolean> {
     const s = await ensureReady();
     return (await s.get(KEY_IMMERSIVE, DEFAULT_SETTINGS.immersiveTextureON)) as boolean;
@@ -249,7 +239,6 @@ export async function getAllSettings(): Promise<AppSettings> {
         vibrationON: await getVibrationEnabled(),
         holdCheckON: await getHoldCheckEnabled(),
         buttonPositionRIGHT: await getButtonPosition(),
-        tabBarAutoON: await getTabBarAuto(),
         immersiveTextureON: await getImmersiveTexture(),
     };
 }
@@ -263,9 +252,6 @@ export async function updateSettings(settings: Partial<AppSettings>): Promise<vo
     }
     if (settings.buttonPositionRIGHT !== undefined) {
         await setButtonPosition(settings.buttonPositionRIGHT);
-    }
-    if (settings.tabBarAutoON !== undefined) {
-        await setTabBarAuto(settings.tabBarAutoON);
     }
     if (settings.immersiveTextureON !== undefined) {
         await setImmersiveTexture(settings.immersiveTextureON);
@@ -284,7 +270,6 @@ export async function loadPersistedState(ctx?: common.Context): Promise<void> {
         AppStorage.setOrCreate(KEY_VIBRATION, await getVibrationEnabled());
         AppStorage.setOrCreate(KEY_HOLD_CHECK, await getHoldCheckEnabled());
         AppStorage.setOrCreate(KEY_BUTTON_RIGHT, await getButtonPosition());
-        AppStorage.setOrCreate(KEY_TAB_BAR_AUTO, await getTabBarAuto());
         AppStorage.setOrCreate(KEY_IMMERSIVE, await getImmersiveTexture());
         AppStorage.setOrCreate(KEY_USERNAME, await getUsername());
     } catch (error) {

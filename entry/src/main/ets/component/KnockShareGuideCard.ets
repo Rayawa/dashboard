@@ -48,6 +48,7 @@ export struct KnockShareSingleGuideCard {
                 .fontWeight(FontWeight.Medium)
                 .lineHeight(19)
                 .maxFontScale(1)
+                .accessibilityText('可碰一碰分享')
             Text() {
                 Span(this.res.text)
                     .fontColor($r("sys.color.ohos_id_color_text_secondary"))
@@ -63,6 +64,7 @@ export struct KnockShareSingleGuideCard {
             .wordBreak(WordBreak.BREAK_WORD)
             .textAlign(TextAlign.Start)
             .width("100%")
+            .accessibilityText(`${this.res.text}`)
         }
         .alignItems(HorizontalAlign.Start)
         .padding({
@@ -111,7 +113,9 @@ export struct KnockShareSingleGuideCard {
         .borderColor(this.getColor($r("sys.color.icon_primary"), 0.05))
         .clip(true)
         .height("auto")
-        .margin({ left: 16, right: 16 });
+        .margin({ left: 16, right: 16 })
+        .accessibilityGroup(true)
+        .accessibilityText('碰一碰分享操作说明');
     }
 
     private getColor(
@@ -155,7 +159,8 @@ export struct KnockShareSingleGuideCard {
         try {
             const fd = await contextFaker.resourceManager.getRawFd(path);
             imageSource = image.createImageSource(fd);
-            src = await imageSource.createPixelMapUsingAllocator({}, image.AllocatorType.DMA);
+            const decodingOptions: image.DecodingOptions = {};
+            src = await imageSource.createPixelMapUsingAllocator(decodingOptions, image.AllocatorType.DMA);
         } catch (err) {
             Logger.error(`Failed to load by rawfile: ${err?.code}, ${err?.message}`);
         } finally {

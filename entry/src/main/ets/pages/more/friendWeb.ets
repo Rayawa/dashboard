@@ -23,7 +23,7 @@ import {
   getVibrationEnabled,
   initializeSettings
 } from '../../common/storage';
-import { popPathSafely } from '../../common/safeNavigation';
+import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 
 @Component
 export struct friendWeb {
@@ -106,28 +106,29 @@ export struct friendWeb {
             .width("100%")
             .height(90)
             .position({ y: 5 })
-            .zIndex(99);
+            .zIndex(99)
+            .accessibilityText(`友情链接网页加载进度百分之${this.progress}`);
         }
         Scroll(this.scroller) {
           Column(){
             Blank()
-              .height(80)
+              .height(40)
               .width("100%")
               .expandSafeArea(
                 [SafeAreaType.SYSTEM],
                 [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],)
             Web({
-              src: this.url,
+              src: 'about:blank',
               controller: this.web_controller,
               renderMode: RenderMode.SYNC_RENDER,
             })
               .id(`HmDashboard_web_friends`)
               .onControllerAttached(() => {
                 try {
+                  this.web_controller.setCustomUserAgent(customUserAgent);
                   if (this.url !== "") {
                     this.web_controller.loadUrl(this.url);
                   }
-                  this.web_controller.setCustomUserAgent(customUserAgent);
                 } catch (e) {
                   console.error('[Dashboard][pages/more/friendWeb][ERROR]', `WebController attach error: ${e}`);
                 }
@@ -149,10 +150,12 @@ export struct friendWeb {
               .onProgressChange((p) => (this.progress = p.newProgress))
               .onPageBegin(() => (this.isLoading = true))
               .onPageEnd(() => (this.isLoading = false))
+              .accessibilityText(`${this.title || '友情链接'}网页内容`)
           }
 
         }
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+        .accessibilityText(`可滚动的${this.title || '友情链接'}网页`)
         // ==========================悬浮按钮==========================
         if (this.showButton) {
           Column({ space: 10 }) {
@@ -205,6 +208,7 @@ export struct friendWeb {
               color: $r('app.color.button_border')
             })
             .borderRadius(22.5)
+            .accessibilityText('友情链接网页回到顶部')
             Button() {
               Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
                 .width(24)
@@ -276,6 +280,7 @@ export struct friendWeb {
               color: $r('app.color.button_border')
             })
             .borderRadius(22.5)
+            .accessibilityText(this.isLoading ? '停止加载友情链接网页' : '刷新友情链接网页')
           }
           .position({
             x: this.isRightHand ? (this.getUIContext().px2vp(this.winWidth) - 45 - 8) : 8,
@@ -478,7 +483,18 @@ export struct friendWeb {
           value: [
             {
               content: {
-                label: "openlink",
+                label: '教程',
+                icon: $r('sys.symbol.questionmark_circle'),
+                isEnabled: true,
+                action: () => {
+                  if (this.vibrationON) vibration.dotVibration();
+                  pushPathSafely(this.pageStack, 'TutorialPage');
+                },
+              },
+            },
+            {
+              content: {
+                label: "在浏览器打开",
                 icon: $r("sys.symbol.worldclock"),
                 isEnabled: true,
                 action: async () => {
@@ -518,6 +534,7 @@ export struct friendWeb {
         console.info('[Dashboard][pages/more/friendWeb][INFO]', `成功加载网页: ${this.title}, 地址: ${this.url}`);
       }
     })
+    .accessibilityText(`${this.title || '友情链接'}网页导航页`)
   }
 }
 

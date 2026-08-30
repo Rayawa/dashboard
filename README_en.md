@@ -4,19 +4,19 @@ This repository contains the HarmonyOS native client for `harmony_get_market`. I
 
 - Bundle: `top.rayawa.dashboard`
 - Version: `3.0.0`
-- Build: `30000001`
+- Build: `30000005`
 - Target and compatible SDK: HarmonyOS `6.1.0(23)` (API 23)
 - Devices: phone, tablet, and 2in1
 - Development branch: `v3.0.0(23)`, created from `shenjack`
 
 ## Version 3 interface
 
-The root uses `HdsNavigation`, child destinations use `HdsNavDestination`, and a fixed-title `HdsTabs` hosts five tabs with tab-transition animation disabled:
+The root uses `HdsNavigation`, child destinations use `HdsNavDestination`, and a fixed-title `HdsTabs` hosts five tabs. The bottom bar no longer auto-hides or receives a manual size:
 
 1. S Site — existing ArkWeb behavior.
 2. Home — welcome/status information and native charts; chart sources load independently.
-3. Search — search, simple submission, query update, and the single system-share entry.
-4. App Table — filtering, multi-field sorting, horizontal/vertical scrolling, pagination, and direct page jump.
+3. Search — search, simple submission, query update, and the single system-share entry, with up to 20 relevance-ranked results.
+4. App Table — 20/50/100-row pages, multi-field sorting, horizontal/vertical scrolling, pagination, and direct page jump.
 5. My — icon and names, settings, restored More links, and version/copyright/ICP details.
 
 Every list, search, deep-link, and share flow uses one native detail template:
@@ -29,9 +29,11 @@ The detail page uses compact tag-and-text metadata, screenshots, download histor
 
 Continuation saves the selected main tab, detail target, and scroll offset. The target device restores `pages/Dashboard` before returning to the corresponding native location.
 
+Every title bar except the S Site and Tutorial itself provides a Tutorial button. Re-tapping the current bottom tab scrolls that page to the top; re-tapping S Site returns to its home URL. Version 3.0.0 shows the important notice once after upgrade.
+
 ## Network and cache behavior
 
-- One `common/MarketApi.ets` client owns API calls.
+- One `common/MarketApi.ets` client owns API calls and attaches the app User-Agent to every request.
 - Home data is fresh for 5 minutes, list data for 2 minutes, and detail/chart data for 30 minutes.
 - A failed network request may fall back to a cache entry up to 30 days old, with an explicit offline-cache notice.
 - Submission requests are never cached; background update requests bypass a fresh cache.

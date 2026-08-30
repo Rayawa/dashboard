@@ -12,7 +12,7 @@ import { vibration } from '../../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { customUserAgent, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../../common/constants';
-import { popPathSafely } from '../../common/safeNavigation';
+import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 
 @Component
 struct aboutWeb {
@@ -62,22 +62,26 @@ struct aboutWeb {
             .width("100%")
             .height(90)
             .position({ y: 5 })
-            .zIndex(99);
+            .zIndex(99)
+            .accessibilityText(`网页加载进度百分之${this.progress}`);
         }
         Scroll(this.scroller) {
           Column() {
+            Blank()
+              .height(40)
+              .width('100%')
             Web({
-              src: this.url,
+              src: 'about:blank',
               controller: this.web_controller,
               renderMode: RenderMode.SYNC_RENDER,
             })
               .id(`HmDashboard_web_user`)
               .onControllerAttached(() => {
                 try {
+                  this.web_controller.setCustomUserAgent(customUserAgent);
                   if (this.url !== "") {
                     this.web_controller.loadUrl(this.url);
                   }
-                  this.web_controller.setCustomUserAgent(customUserAgent);
                 } catch (e) {
                   console.error('[Dashboard][pages/more/aboutWeb][ERROR]', `WebController attach error: ${e}`);
                 }
@@ -99,10 +103,12 @@ struct aboutWeb {
               .onProgressChange((p) => (this.progress = p.newProgress))
               .onPageBegin(() => (this.isLoading = true))
               .onPageEnd(() => (this.isLoading = false))
+              .accessibilityText(`${this.title || '说明'}网页内容`)
           }
 
         }
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+        .accessibilityText(`可滚动的${this.title || '说明'}网页`)
         // ==========================悬浮按钮==========================
         if (this.showButton) {
           Column({ space: 10 }) {
@@ -155,6 +161,7 @@ struct aboutWeb {
               color: $r('app.color.button_border')
             })
             .borderRadius(22.5)
+            .accessibilityText('网页回到顶部')
             Button() {
               Image(this.isLoading ? $r("app.media.stop") : $r("app.media.refresh"))
                 .width(24)
@@ -226,6 +233,7 @@ struct aboutWeb {
               color: $r('app.color.button_border')
             })
             .borderRadius(22.5)
+            .accessibilityText(this.isLoading ? '停止加载网页' : '刷新网页')
           }
           .position({
             x: this.isRightHand ? (this.getUIContext().px2vp(this.winWidth) - 45 - 8) : 8,
@@ -426,7 +434,18 @@ struct aboutWeb {
           value: [
             {
               content: {
-                label: "openlink",
+                label: '教程',
+                icon: $r('sys.symbol.questionmark_circle'),
+                isEnabled: true,
+                action: () => {
+                  if (this.vibrationON) vibration.dotVibration();
+                  pushPathSafely(this.pageStack, 'TutorialPage');
+                },
+              },
+            },
+            {
+              content: {
+                label: "在浏览器打开",
                 icon: $r("sys.symbol.worldclock"),
                 isEnabled: true,
                 action: async () => {
@@ -466,6 +485,7 @@ struct aboutWeb {
         console.info('[Dashboard][pages/more/aboutWeb][INFO]', `成功加载网页: ${this.title}, 地址: ${this.url}`);
       }
     })
+    .accessibilityText(`${this.title || '说明'}网页导航页`)
 
   }
 }

@@ -2,7 +2,7 @@ import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
-import { popPathSafely } from '../../common/safeNavigation';
+import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 
 interface UpdateLog {
     version: string;
@@ -32,17 +32,21 @@ struct appLog {
                 "搜索、投稿、更新与系统分享入口合并为唯一 shareAbility；新应用自动 simple 投稿，已有应用自动 query 更新",
                 "新增公用原生应用详情模板，统一查询、列表、深链和分享入口的详情展示流程",
                 "详情信息改为高密度标签与文字组合，并补齐按钮分享、碰一碰、隔空传送及图标卡片预览",
-                "应用总表新增多字段升降序排序、名称筛选和跳转指定页数，修复表格高度受限与无法上下滑动",
+                "应用总表移除重复搜索，新增20/50/100条分页、多字段升降序排序和指定页数跳转，修复高度受限与无法上下滑动",
                 "我的页面恢复旧版栏目、分割线与统一卡片样式；用户名并入设置首项且仅在主动编辑时弹出键盘",
                 "清除缓存项恢复说明问号并显示缓存文件总大小",
                 "原生主页面和详情页补齐振动反馈，并按页面与滚动位置恢复跨设备接续",
                 "全部子页面统一使用 Scroll、MINI 标题模式、TITLE_S 主标题和系统上下安全区忽略配置",
+                "恢复首次进入重要提示与各页面教程入口；再次点击当前标签返回顶部，S站返回首页",
+                "统一所有API请求的User-Agent，修复S站子资源失败误报与网页显示比例问题",
+                "分享卡片改用详细预览并附带32KB以内的应用AppIcon缩略图",
+                "移除底部栏自动隐藏设置，恢复根导航渐变模糊与diff_content全局光效",
                 "整理 ETS 目录为 main、detail、more 与 charts 分层，并移除已退出编译流程的旧页面和旧分享入口",
                 "新增带有效期的 API 磁盘缓存与网络失败回退提示；清除缓存覆盖 API 缓存、ArkWeb 存储和 Cookie",
                 "修复缓存写入、点击事件与图表尺寸命名导致的 ArkTS 编译错误，并为文件、窗口、网络、弹窗和设备能力调用补齐异常回退与统一日志",
                 "修复导航参数对象、滚动恢复回调和 HdsNavDestination 标题模式的 ArkTS 类型错误，移除 2in1 不可用的视口配置与不兼容设备能力监听",
                 "按 600vp 与 840vp 断点完善手机、平板和 2in1 响应式布局，并补充中文无障碍播报标签",
-                "版本更新为 3.0.0，构建号更新为 30000001",
+                "版本更新为 3.0.0，构建号更新为 30000005",
             ],
         },
         {
@@ -296,11 +300,11 @@ struct appLog {
     @State private showRelease: boolean = true;
     @State private filteredLogs: UpdateLog[] = [];
 
-    aboutToAppear() {
+    aboutToAppear(): void {
         this.updateFilteredLogs();
     }
 
-    toggleFilter(type: "beta" | "rc" | "release") {
+    toggleFilter(type: "beta" | "rc" | "release"): void {
                 if(this.vibrationON) vibration.dotVibration()
         switch (type) {
             case "beta":
@@ -320,6 +324,7 @@ struct appLog {
         HdsNavDestination() {
             Scroll() {
                 Column() {
+                    Blank().height(40).width('100%')
                     Column() {
                         ForEach(this.filteredLogs, (log: UpdateLog) => {
                             Column() {
@@ -401,7 +406,7 @@ struct appLog {
                         .alignItems(HorizontalAlign.Center);
                     }
                 }
-                .margin({ top: 60, bottom: 20 })
+                .margin({ bottom: 20 })
                 .width("100%")
                 .alignItems(HorizontalAlign.Center)
             }
@@ -409,6 +414,7 @@ struct appLog {
             .width("100%")
             .height("100%")
             .backgroundColor($r("app.color.backcolor"))
+            .accessibilityText('可滚动的应用更新日志')
         }
         .onBackPressed(() => {
                     if(this.vibrationON) vibration.dotVibration()
@@ -476,7 +482,18 @@ struct appLog {
                     value: [
                         {
                             content: {
-                                label: "beta",
+                                label: '教程',
+                                icon: $r('sys.symbol.questionmark_circle'),
+                                isEnabled: true,
+                                action: () => {
+                                    if (this.vibrationON) vibration.dotVibration();
+                                    pushPathSafely(this.pageStack, 'TutorialPage');
+                                },
+                            },
+                        },
+                        {
+                            content: {
+                                label: "筛选Beta日志",
                                 icon: this.showBeta ? $r("app.media.betaON") : $r("app.media.beta"),
                                 isEnabled: true,
                                 action: () => {
@@ -492,7 +509,7 @@ struct appLog {
                         },
                         {
                             content: {
-                                label: "rc",
+                                label: "筛选RC日志",
                                 icon: this.showRc ? $r("app.media.rcON") : $r("app.media.rc"),
                                 isEnabled: true,
                                 action: () => {
@@ -508,7 +525,7 @@ struct appLog {
                         },
                         {
                             content: {
-                                label: "release",
+                                label: "筛选正式版日志",
                                 icon: this.showRelease
                                     ? $r("app.media.releaseON")
                                     : $r("app.media.release"),
@@ -533,11 +550,12 @@ struct appLog {
                     },
                 },
             },
-        });
+        })
+        .accessibilityText('应用更新日志导航页');
 
     }
 
-    private updateFilteredLogs() {
+    private updateFilteredLogs(): void {
         this.filteredLogs = this.updateLogs.filter((log) => {
             switch (log.type) {
                 case "beta":

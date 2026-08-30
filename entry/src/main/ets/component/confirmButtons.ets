@@ -17,17 +17,17 @@ export struct confirmButtons {
     @State isProcessing: boolean = false;
     private timerId: number = -1;
 
-    aboutToAppear() {
+    aboutToAppear(): void {
         this.startCountDown();
     }
 
-    aboutToDisappear() {
+    aboutToDisappear(): void {
         if (this.timerId !== -1) {
             clearInterval(this.timerId);
         }
     }
 
-    private async startCountDown() {
+    private async startCountDown(): Promise<void> {
         try {
             let isFirstLaunch = await getFirstLaunch();
 
@@ -52,7 +52,7 @@ export struct confirmButtons {
         }
     }
 
-    private async handleCancel() {
+    private async handleCancel(): Promise<void> {
         this.isExiting = true;
         showToastSafely(this.PromptAction, '退出应用…', 2000, 'PrivacyConfirm');
         try {
@@ -77,14 +77,18 @@ export struct confirmButtons {
         }, 500);
     }
 
-    private async handleConfirm() {
+    private async handleConfirm(): Promise<void> {
         if (!this.isConfirmEnabled) return;
         try {
             await setFirstLaunch(false);
 
             this.isShow = false;
             console.info('[Dashboard][component/confirmButtons][INFO]', "Index", "用户已同意协议，标记位已更新。");
-        } catch (err) {
+        } catch (error) {
+            console.error('[Dashboard][component/confirmButtons][ERROR]',
+                `保存重要提示同意状态失败: ${JSON.stringify(error)}`);
+            showToastSafely(this.PromptAction, '保存同意状态失败，请重试', 2000, 'PrivacyConfirm');
+            return;
         }
         this.isProcessing = true;
         this.isShow = false;
@@ -107,6 +111,7 @@ export struct confirmButtons {
                     if(this.vibrationON) vibration.dotVibration()
                     this.handleCancel();
                 })
+                .accessibilityText(this.isExiting ? '正在退出应用' : '取消重要提示并退出应用')
 
             Button(
                 this.isProcessing ? "处理中..." : (this.isConfirmEnabled ? "确定且不再显示" : `确定(${this.countDown}s)`),
@@ -122,9 +127,12 @@ export struct confirmButtons {
                     if(this.vibrationON) vibration.dotVibration()
                     this.handleConfirm();
                 })
+                .accessibilityText(this.isConfirmEnabled ? '同意重要提示且不再显示' : `请等待${this.countDown}秒后同意`)
         }
         .width("100%")
         .justifyContent(FlexAlign.SpaceEvenly)
-        .margin({ top: 15 });
+        .margin({ top: 15 })
+        .accessibilityGroup(true)
+        .accessibilityText('重要提示确认按钮');
     }
 }

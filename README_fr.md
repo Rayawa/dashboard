@@ -4,19 +4,19 @@ Ce dépôt contient le client natif HarmonyOS de `harmony_get_market`. Il utilis
 
 - Bundle : `top.rayawa.dashboard`
 - Version : `3.0.0`
-- Build : `30000001`
+- Build : `30000005`
 - SDK cible et compatible : HarmonyOS `6.1.0(23)` (API 23)
 - Appareils : téléphone, tablette et 2in1
 - Branche de développement : `v3.0.0(23)`, issue de `shenjack`
 
 ## Interface de la version 3
 
-La racine utilise `HdsNavigation`, les pages enfants utilisent `HdsNavDestination`, et cinq onglets sont réunis dans un `HdsTabs` à titre fixe, sans animation de transition :
+La racine utilise `HdsNavigation`, les pages enfants utilisent `HdsNavDestination`, et cinq onglets sont réunis dans un `HdsTabs` à titre fixe. La barre inférieure ne se masque plus automatiquement et ne reçoit plus de taille manuelle :
 
 1. Site S — comportement ArkWeb existant.
 2. Accueil — bienvenue, état du service et graphiques natifs chargés indépendamment.
-3. Recherche — recherche, soumission simple, mise à jour query et unique entrée de partage système.
-4. Tableau des applications — filtre, tri multi-colonnes, défilement horizontal/vertical, pagination et accès direct à une page.
+3. Recherche — recherche, soumission simple, mise à jour query et unique entrée de partage système, avec au plus 20 résultats classés par pertinence.
+4. Tableau des applications — pages de 20/50/100 lignes, tri multi-colonnes, défilement horizontal/vertical, pagination et accès direct à une page.
 5. Mon espace — icône et noms, réglages, liens « Plus » restaurés et informations de version/copyright/ICP.
 
 Les listes, recherches, liens profonds et partages utilisent un modèle natif de détail commun :
@@ -29,9 +29,11 @@ La page de détail présente des métadonnées compactes sous forme d’étiquet
 
 La continuité inter-appareils mémorise l’onglet, la cible de détail et la position de défilement, puis restaure `pages/Dashboard` à l’emplacement natif correspondant.
 
+Toutes les barres de titre sauf celles du site S et du tutoriel offrent un bouton Tutoriel. Un nouvel appui sur l’onglet courant remonte la page ; pour le site S, il revient à l’accueil. La version 3.0.0 réaffiche une fois l’avertissement important après mise à niveau.
+
 ## Réseau et cache
 
-- `common/MarketApi.ets` centralise les appels API.
+- `common/MarketApi.ets` centralise les appels API et ajoute le User-Agent de l’application à chaque requête.
 - Durée de fraîcheur : accueil 5 minutes, liste 2 minutes, détails et graphiques 30 minutes.
 - En cas d’échec réseau, un cache âgé de 30 jours au plus peut être utilisé avec un avertissement explicite.
 - Les soumissions ne sont jamais mises en cache et les mises à jour en arrière-plan ignorent le cache frais.

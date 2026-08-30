@@ -6,7 +6,6 @@ import {
   setHoldCheckEnabled,
   setImmersiveTexture,
   setUsername,
-  setTabBarAuto,
   setVibrationEnabled
 } from '../common/storage';
 import { clearCompleteCache, getCacheSizeBytes } from '../common/CacheService';
@@ -18,7 +17,6 @@ export struct settings {
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("holdCheckON") holdCheckON: boolean = false;
     @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
-    @StorageLink("tabBarAutoON") tabBarAutoON: boolean = false;
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
     @StorageLink('username') username: string = '';
 
@@ -27,7 +25,7 @@ export struct settings {
     @State showUsernameEditor: boolean = false;
     @State usernameDraft: string = '';
 
-    async aboutToAppear() {
+    async aboutToAppear(): Promise<void> {
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
         this.cacheSize = formatBytes(getCacheSizeBytes(context));
         if(deviceInfo.sdkApiVersion >= 23){
@@ -38,7 +36,7 @@ export struct settings {
         }
     }
 
-    private trash() {
+    private trash(): void {
         const ui_content = this.getUIContext();
         const prompt = ui_content.getPromptAction();
         try {
@@ -101,15 +99,6 @@ export struct settings {
                 })
                 Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
             }
-
-            SettingItem({
-                icon: $r("app.media.autoBar"),
-                title: "自动隐藏底部栏",
-                isOn: this.tabBarAutoON,
-                onToggle: async (val) => { await setTabBarAuto(val); }
-            })
-            Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
-
 
             SettingItem({
                 icon: $r("app.media.immersive"),
@@ -178,11 +167,11 @@ export struct settings {
     @Builder
     UsernameEditor() {
         Column({ space: 16 }) {
-            Text('此用户名会随投稿备注一并提交')
+            Text('此用户名会随投稿与更新请求提交')
                 .fontSize(13)
                 .fontColor($r('app.color.v3_text_secondary'))
                 .width('100%')
-                .accessibilityText('此用户名会随投稿备注一并提交')
+                .accessibilityText('此用户名会随投稿与更新请求提交')
             TextInput({ text: this.usernameDraft, placeholder: '设置用户名' })
                 .width('100%')
                 .height(46)

@@ -9,7 +9,8 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { setFirstLaunch } from '../../common/storage';
 import { privacyManager } from '@kit.StoreKit';
 import { showToastSafely } from '../../common/safeUi';
-import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
+import { customUserAgent } from '../../common/constants';
+import { getPathParamsSafely, popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 
 @Component
 export struct HTML {
@@ -70,13 +71,21 @@ export struct HTML {
       Scroll() {
         Column() {
           Blank()
-            .height(80)
+            .height(40)
             .width("100%")
             .expandSafeArea(
               [SafeAreaType.SYSTEM],
               [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],
             )
           Web({ src: this.params.url, controller: this.controller })
+            .onControllerAttached(() => {
+              try {
+                this.controller.setCustomUserAgent(customUserAgent);
+              } catch (error) {
+                console.warn('[Dashboard][pages/more/htmlPage][WARN]',
+                  `设置网页User-Agent失败: ${JSON.stringify(error)}`);
+              }
+            })
             .domStorageAccess(true)
             .fileAccess(true)
             .mixedMode(MixedMode.All)
@@ -159,7 +168,18 @@ export struct HTML {
           value: [
             {
               content: {
-                label: "recall",
+                label: '教程',
+                icon: $r('sys.symbol.questionmark_circle'),
+                isEnabled: true,
+                action: () => {
+                  if (this.vibrationON) vibration.dotVibration();
+                  pushPathSafely(this.pageStack, 'TutorialPage');
+                },
+              },
+            },
+            {
+              content: {
+                label: "撤销隐私同意",
                 icon: $r("sys.symbol.xmark_circle"),
                 isEnabled: true,
                 action: () => {
