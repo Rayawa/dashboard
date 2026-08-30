@@ -195,7 +195,6 @@ export async function submitApp(data: SubmitAppBody): Promise<BaseAPIResponse<Ap
         pkg_name: data.pkg_name,
         comment: {
             user: data.comment?.user,
-            note: data.comment?.note,
             platform: SUBMIT_PLATFORM,
         },
     };

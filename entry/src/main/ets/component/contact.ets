@@ -24,6 +24,8 @@ export struct contact {
             if(this.vibrationON) vibration.dotVibration()
             await this.copyToClipboard(copyContent, toastLabel);
         })
+        .accessibilityGroup(true)
+        .accessibilityText(`${title}，${name}，${detail}，点击复制${toastLabel}`)
     }
 
     build() {
@@ -59,9 +61,16 @@ export struct contact {
                     showToastSafely(this.PromptAction, '跳转失败', 2000, 'Contact');
                 }
             })
+            .accessibilityGroup(true)
+            .accessibilityText('赞助我们，点击打开爱发电赞助页面')
 
 
-        }.width("100%").padding(5).margin({ bottom: 20 })
+        }
+        .width("100%")
+        .padding(5)
+        .margin({ bottom: 20 })
+        .accessibilityGroup(true)
+        .accessibilityText('联系我们')
     }
 
     async copyToClipboard(text: string, label: string): Promise<void> {

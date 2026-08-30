@@ -1,55 +1,199 @@
 import { webview } from '@kit.ArkWeb';
-import { customUserAgent, SBaseURL } from '../../common/constants';
+import {
+    customUserAgent,
+    CONTINUATION_ROUTE_MAIN,
+    MAIN_TAB_S_STATION,
+    SBaseURL,
+    S_STATION_COMMAND_HOME,
+    S_STATION_COMMAND_REFRESH,
+    S_STATION_COMMAND_SCROLL_TOP,
+} from '../../common/constants';
+import {
+    getContinuationState,
+    setContinuationPageUrl,
+    setContinuationScrollDistance,
+    setMainTab,
+} from '../../common/appState';
 import { vibration } from '../../common/vibration';
 
 @Component
 export struct SStationPage {
     private controller: webview.WebviewController = new webview.WebviewController();
+    private scroller: Scroller = new Scroller();
+    @Prop command: number = 0;
+    @Prop @Watch('onCommandVersionChanged') commandVersion: number = 0;
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     @State private progress: number = 0;
     @State private loading: boolean = true;
     @State private errorMessage: string = '';
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @State private currentUrl: string = SBaseURL.toString();
+    private pendingScrollDistance: number = 0;
+    private restoredScroll: boolean = false;
+
+    aboutToAppear(): void {
+        try {
+            const continuation = getContinuationState();
+            if (continuation.mainTab === MAIN_TAB_S_STATION &&
+                continuation.routeName === CONTINUATION_ROUTE_MAIN) {
+                this.currentUrl = continuation.pageUrl || SBaseURL.toString();
+                this.pendingScrollDistance = Math.max(0, continuation.scrollDistance);
+            }
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                `读取S站接续位置失败: ${JSON.stringify(error)}`);
+        }
+    }
+
+    private restoreScrollPosition(): void {
+        if (this.restoredScroll || this.pendingScrollDistance <= 0) {
+            return;
+        }
+        this.restoredScroll = true;
+        setTimeout((): void => {
+            try {
+                this.scroller.scrollTo({
+                    xOffset: 0,
+                    yOffset: this.pendingScrollDistance,
+                    animation: { duration: 0 },
+                });
+            } catch (error) {
+                console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                    `恢复S站滚动位置失败: ${JSON.stringify(error)}`);
+            }
+        }, 80);
+    }
+
+    private onCommandVersionChanged(): void {
+        if (this.commandVersion <= 0) {
+            return;
+        }
+        try {
+            if (this.command === S_STATION_COMMAND_REFRESH) {
+                this.errorMessage = '';
+                this.loading = true;
+                this.controller.loadUrl(this.currentUrl);
+            } else if (this.command === S_STATION_COMMAND_SCROLL_TOP) {
+                this.scroller.scrollTo({
+                    xOffset: 0,
+                    yOffset: 0,
+                    animation: { duration: 300, curve: Curve.Ease },
+                });
+            } else if (this.command === S_STATION_COMMAND_HOME) {
+                this.errorMessage = '';
+                this.loading = true;
+                this.currentUrl = SBaseURL.toString();
+                setContinuationPageUrl(this.currentUrl);
+                this.controller.loadUrl(this.currentUrl);
+                this.scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 250 } });
+            }
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/SStationPage][WARN]', `执行S站标题栏操作失败: ${JSON.stringify(error)}`);
+        }
+    }
 
     build() {
         Stack({ alignContent: Alignment.Top }) {
-            Web({
-                src: SBaseURL.toString(),
-                controller: this.controller,
-            })
+            Scroll(this.scroller) {
+                Column() {
+                    Blank()
+                        .height(80)
+                        .width('100%')
+                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                        .accessibilityText('S站标题栏安全区域')
+                    Web({
+                        src: 'about:blank',
+                        controller: this.controller,
+                        renderMode: RenderMode.SYNC_RENDER,
+                    })
+                        .id('HmDashboard_SStation')
+                        .width('100%')
+                        .backgroundColor($r('app.color.backcolor'))
+                        .onControllerAttached(() => {
+                            try {
+                                this.controller.setCustomUserAgent(customUserAgent);
+                                this.controller.loadUrl(this.currentUrl);
+                            } catch (error) {
+                                console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                                    `初始化ArkWeb失败: ${JSON.stringify(error)}`);
+                            }
+                        })
+                        .onNavigationEntryCommitted((event) => {
+                            if (event?.url && event.url !== 'about:blank') {
+                                this.currentUrl = event.url;
+                                setContinuationPageUrl(event.url);
+                            }
+                        })
+                        .onPageBegin((event) => {
+                            this.loading = true;
+                            this.errorMessage = '';
+                            if (event?.url && event.url !== 'about:blank') {
+                                this.currentUrl = event.url;
+                                setContinuationPageUrl(event.url);
+                            }
+                        })
+                        .onPageEnd((event) => {
+                            this.loading = false;
+                            this.errorMessage = '';
+                            if (event?.url && event.url !== 'about:blank') {
+                                this.currentUrl = event.url;
+                                setContinuationPageUrl(event.url);
+                                this.restoreScrollPosition();
+                            }
+                        })
+                        .onErrorReceive((event) => {
+                            if (!event) {
+                                return;
+                            }
+                            try {
+                                if (!event.request.isMainFrame()) {
+                                    return;
+                                }
+                            } catch (error) {
+                                console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                                    `无法判断网页错误来源，忽略本次错误提示: ${JSON.stringify(error)}`);
+                                return;
+                            }
+                            this.loading = false;
+                            this.errorMessage = '网页主页面加载失败，请检查网络连接后重试';
+                            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                                `S站主页面加载失败: ${JSON.stringify(event.error)}`);
+                        })
+                        .onProgressChange((event) => {
+                            this.progress = event.newProgress;
+                        })
+                        .layoutMode(WebLayoutMode.FIT_CONTENT)
+                        .nestedScroll({
+                            scrollForward: NestedScrollMode.SELF_FIRST,
+                            scrollBackward: NestedScrollMode.SELF_FIRST,
+                        })
+                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                        .domStorageAccess(true)
+                        .darkMode(WebDarkMode.Auto)
+                        .forceDarkAccess(true)
+                        .accessibilityText('S站网页内容')
+                }
                 .width('100%')
-                .height('100%')
-                .backgroundColor($r('app.color.backcolor'))
-                .domStorageAccess(true)
-                .darkMode(WebDarkMode.Auto)
-                .forceDarkAccess(true)
-                .onControllerAttached(() => {
-                    try {
-                        this.controller.setCustomUserAgent(customUserAgent);
-                    } catch (error) {
-                        console.warn('[Dashboard][pages/main/SStationPage][WARN]', `设置 User-Agent 失败: ${JSON.stringify(error)}`);
-                    }
-                })
-                .onPageBegin(() => {
-                    this.loading = true;
-                    this.errorMessage = '';
-                })
-                .onPageEnd(() => {
-                    this.loading = false;
-                })
-                .onErrorReceive(() => {
-                    this.loading = false;
-                    this.errorMessage = '网页加载失败，请检查网络连接后重试';
-                })
-                .onProgressChange((event) => {
-                    this.progress = event.newProgress;
-                })
-                .accessibilityText('S站网页内容')
+            }
+            .width('100%')
+            .height('100%')
+            .scrollBar(BarState.Off)
+            .onDidScroll((): void => {
+                try {
+                    setMainTab(MAIN_TAB_S_STATION);
+                    setContinuationScrollDistance(this.scroller.currentOffset().yOffset);
+                } catch (error) {
+                    console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                        `保存S站滚动位置失败: ${JSON.stringify(error)}`);
+                }
+            })
+            .accessibilityText('可滚动的S站页面')
 
             if (this.loading) {
                 Progress({ value: this.progress, total: 100 })
                     .width('100%')
                     .height(4)
-                    .color($r('app.color.v3_accent_blue'))
+                    .position({ y: 76 })
+                    .color($r('app.color.diff_content'))
                     .accessibilityText(`S站加载进度百分之${this.progress}`)
             }
 
@@ -66,11 +210,17 @@ export struct SStationPage {
                         .textAlign(TextAlign.Center)
                         .accessibilityText(this.errorMessage)
                     Button('重新加载')
-                        .backgroundColor($r('app.color.v3_accent_blue'))
+                        .backgroundColor($r('app.color.diff_content'))
                         .onClick(() => {
                             if (this.vibrationEnabled) vibration.dotVibration();
                             this.errorMessage = '';
-                            this.controller.refresh();
+                            this.loading = true;
+                            try {
+                                this.controller.loadUrl(this.currentUrl);
+                            } catch (error) {
+                                console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                                    `重新加载S站失败: ${JSON.stringify(error)}`);
+                            }
                         })
                         .accessibilityText('重新加载S站')
                 }
@@ -80,7 +230,7 @@ export struct SStationPage {
                 .position({ x: '10%', y: '35%' })
                 .width('80%')
                 .accessibilityGroup(true)
-                .accessibilityText('S站网络错误提示')
+                .accessibilityText('S站主页面网络错误提示')
             }
         }
         .width('100%')

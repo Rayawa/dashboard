@@ -4,9 +4,9 @@ import { uniformTypeDescriptor } from '@kit.ArkData';
 import { common } from '@kit.AbilityKit';
 import { Logger } from '../utils/Logger';
 import { window } from '@kit.ArkUI';
-import { webview } from '@kit.ArkWeb';
 
 const TAG = 'WebShareManager';
+const SHARE_THUMBNAIL_MAX_BYTES = 32 * 1024;
 
 export class WebShareManager {
   private static instance: WebShareManager;
@@ -22,7 +22,7 @@ export class WebShareManager {
     this.context = context;
   }
 
-  public updateShareData(url: string, title: string = '应用看板链接分享', description: string = '') {
+  public updateShareData(url: string, title: string = '应用看板链接分享', description: string = ''): void {
     this.currentUrl = url;
     this.currentTitle = title;
     this.currentDescription = description || url;
@@ -33,7 +33,12 @@ export class WebShareManager {
   private async loadDefaultThumbnail(): Promise<void> {
     if (this.currentThumbnail) return;
     try {
-      this.currentThumbnail = await this.context.resourceManager.getMediaContent($r('app.media.share_icon').id);
+      const thumbnail = await this.context.resourceManager.getMediaContent($r('app.media.share_icon').id);
+      if (thumbnail.length >= SHARE_THUMBNAIL_MAX_BYTES) {
+        Logger.warn(TAG, `分享卡片图标超过32KB限制: ${thumbnail.length} bytes`);
+        return;
+      }
+      this.currentThumbnail = thumbnail;
     } catch (error) {
       Logger.warn(TAG, `分享卡片图标读取失败: ${(error as BusinessError).message}`);
     }
@@ -49,7 +54,7 @@ export class WebShareManager {
   /**
    * 1. 系统分享按钮触发方法 (使用注入的数据)
    */
-  public async showSystemShare(url?: string) {
+  public async showSystemShare(url?: string): Promise<void> {
     try {
       const finalUrl = url || this.currentUrl;
 
@@ -70,7 +75,7 @@ export class WebShareManager {
 
       let controller: systemShare.ShareController = new systemShare.ShareController(shareData);
       await controller.show(this.context, {
-        previewMode: systemShare.SharePreviewMode.DEFAULT,
+        previewMode: systemShare.SharePreviewMode.DETAIL,
         selectionMode: systemShare.SelectionMode.SINGLE,
       });
     } catch (err) {
@@ -81,7 +86,7 @@ export class WebShareManager {
   /**
    * 2. 开启被动分享监听 (碰一碰 + 隔空传送)
    */
-  public async enablePassiveShare() {
+  public async enablePassiveShare(): Promise<void> {
     if (!canIUse('SystemCapability.Collaboration.HarmonyShare') || this.isListening) return;
 
     try {
@@ -105,7 +110,7 @@ export class WebShareManager {
   /**
    * 3. 关闭所有监听
    */
-  public async disablePassiveShare() {
+  public async disablePassiveShare(): Promise<void> {
     if (!this.isListening) return;
     if (!canIUse('SystemCapability.Collaboration.HarmonyShare')) {
       this.isListening = false;
@@ -138,13 +143,14 @@ export class WebShareManager {
   /**
    * 内部统一执行被动分享逻辑 (碰一碰、隔空传送)
    */
-  private executePassiveShare(target: harmonyShare.SharableTarget) {
+  private async executePassiveShare(target: harmonyShare.SharableTarget): Promise<void> {
     if (!this.currentUrl || this.currentUrl === "about:blank") {
       Logger.error(TAG, "Passive share failed: No URL cached");
       return;
     }
 
     try {
+      await this.loadDefaultThumbnail();
       const shareData = new systemShare.SharedData({
         utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
         content: this.currentUrl,

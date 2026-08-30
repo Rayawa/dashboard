@@ -8,10 +8,9 @@ import {
 } from '../../common/constants';
 import { getContinuationState, setContinuationView } from '../../common/appState';
 import { fetchMarketInfo } from '../../common/MarketApi';
-import { formatCount, formatDateTime, formatPercent } from '../../common/format';
+import { formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
 import type { BaseAPIResponse, MarketInfo } from '../../common/types';
-import { vibration } from '../../common/vibration';
 import { OverviewSection } from '../../component/charts/OverviewSection';
 
 interface HomeStat {
@@ -52,6 +51,8 @@ struct HomeStatCard {
 
 @Component
 export struct HomePage {
+    @Prop @Watch('onRefreshVersionChanged') refreshVersion: number = 0;
+    @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     @StorageLink('username') private username: string = '';
@@ -62,13 +63,34 @@ export struct HomePage {
     @State private cachedAt: number = 0;
     @State private lastUpdated: string = '';
     @State private loaded: boolean = false;
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     private restoredScroll: boolean = false;
 
-    private vibrate(): void {
-        if (this.vibrationEnabled) {
-            vibration.dotVibration();
+    private onRefreshVersionChanged(): void {
+        if (this.refreshVersion > 0) {
+            this.load(true);
         }
+    }
+
+    private onScrollToTopVersionChanged(): void {
+        if (this.scrollToTopVersion <= 0) {
+            return;
+        }
+        try {
+            this.scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 300 } });
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/HomePage][WARN]', `返回顶部失败: ${JSON.stringify(error)}`);
+        }
+    }
+
+    private greeting(): string {
+        const hour = new Date().getHours();
+        if (hour >= 6 && hour < 12) {
+            return '上午好';
+        }
+        if (hour >= 12 && hour < 18) {
+            return '下午好';
+        }
+        return '晚上好';
     }
 
     private load(force: boolean): void {
@@ -111,14 +133,14 @@ export struct HomePage {
     build() {
         Scroll(this.scroller) {
             Column({ space: 14 }) {
+                Blank().height(40).width('100%')
                 Row() {
                     Column({ space: 5 }) {
-                        Text(`你好，${this.username || 'HarmonyOS 用户'}`)
+                        Text(`${this.greeting()}，${this.username || 'HarmonyOS 用户'}`)
                             .fontSize(26)
-                            .margin({top:100})
                             .fontWeight(FontWeight.Bold)
                             .fontColor($r('app.color.v3_text_primary'))
-                            .accessibilityText(`欢迎，${this.username || 'HarmonyOS 用户'}`)
+                            .accessibilityText(`${this.greeting()}，${this.username || 'HarmonyOS 用户'}`)
                         Text('欢迎来到鸿蒙应用市场数据看板')
                             .fontSize(14)
                             .fontColor($r('app.color.v3_text_secondary'))
@@ -126,24 +148,9 @@ export struct HomePage {
                     }
                     .alignItems(HorizontalAlign.Start)
                     .layoutWeight(1)
-                    Button({ type: ButtonType.Circle }) {
-                        Text('↻')
-                            .fontSize(24)
-                            .fontColor($r('app.color.v3_accent_blue'))
-                            .accessibilityText('刷新图标')
-                    }
-                    .width(44)
-                    .height(44)
-                    .backgroundColor($r('app.color.v3_surface_alt'))
-                    .enabled(!this.loading)
-                    .onClick(() => {
-                        this.vibrate();
-                        this.load(true);
-                    })
-                    .accessibilityText(this.loading ? '正在刷新' : '刷新首页数据')
                 }
                 .width('100%')
-                .padding({ top: 20, left: 4, right: 4 })
+                .padding({ left: 4, right: 4 })
                 .accessibilityGroup(true)
 
                 if (this.stale) {
@@ -233,17 +240,7 @@ export struct HomePage {
                         }
                         .width('100%')
 
-                        if (this.market.sync_status.progress && this.market.sync_status.progress!.length >= 2) {
-                            Progress({
-                                value: this.market.sync_status.progress![0],
-                                total: Math.max(1, this.market.sync_status.progress![1]),
-                                type: ProgressType.Linear,
-                            })
-                                .width('100%')
-                                .height(10)
-                                .color($r('app.color.v3_accent_blue'))
-                                .backgroundColor($r('app.color.v3_chart_grid'))
-                                .accessibilityText(`同步进度${formatPercent(this.market.sync_status.progress![0], this.market.sync_status.progress![1])}`)
+                        if (this.market.sync_status.is_syncing_all) {
                             Text(`已处理 ${formatCount(this.market.sync_status.total_processed)} · 新增 ${formatCount(this.market.sync_status.total_inserted)} · 失败 ${formatCount(this.market.sync_status.total_failed)}`)
                                 .fontSize(13)
                                 .fontColor($r('app.color.v3_text_secondary'))
@@ -276,7 +273,7 @@ export struct HomePage {
                     .color($r('app.color.border'))
                     .accessibilityText('首页概览与图表分隔线')
 
-                OverviewSection()
+                OverviewSection({ refreshVersion: this.refreshVersion })
 
                 Blank().height(96)
             }
@@ -311,8 +308,13 @@ export struct HomePage {
         .width('100%')
         .height('100%')
         .scrollBar(BarState.Off)
-        .onDidScroll(() => {
-            setContinuationView(MAIN_TAB_HOME, this.scroller.currentOffset().yOffset);
+        .onDidScroll((): void => {
+            try {
+                setContinuationView(MAIN_TAB_HOME, this.scroller.currentOffset().yOffset);
+            } catch (error) {
+                console.warn('[Dashboard][pages/main/HomePage][WARN]',
+                    `保存滚动位置失败: ${JSON.stringify(error)}`);
+            }
         })
         .backgroundColor($r('app.color.background'))
         .accessibilityText('首页')

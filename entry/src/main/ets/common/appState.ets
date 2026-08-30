@@ -5,10 +5,8 @@ import {
     APP_STATE_KEY_CONTINUATION_DETAIL_ID,
     APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE,
     APP_STATE_KEY_CONTINUATION_ROUTE,
-    APP_STATE_KEY_QUERY_URL,
     APP_STATE_KEY_SEARCH_TARGET,
     APP_STATE_KEY_SCROLL_DISTANCE,
-    APP_STATE_KEY_SHARE_REQUEST,
     DEFAULT_SCROLL_DISTANCE,
     CONTINUATION_ROUTE_MAIN,
     MAIN_TAB_DEFAULT,
@@ -23,11 +21,6 @@ export interface ContinuationState {
     routeName: string;
     detailAppId: string;
     detailPackageName: string;
-}
-
-export interface ShareRequest {
-    sharePackageName: string;
-    shareUrl: string;
 }
 
 /**
@@ -59,10 +52,12 @@ export function setContinuationView(
     scrollDistance: number,
     routeName: string = CONTINUATION_ROUTE_MAIN,
     detail: AppRouteTarget = {},
-    pageUrl: string = '',
+    pageUrl?: string,
 ): void {
+    const resolvedPageUrl = pageUrl === undefined ?
+        (AppStorage.get<string>(APP_STATE_KEY_PAGE_URL) ?? '') : pageUrl;
     setContinuationState({
-        pageUrl,
+        pageUrl: resolvedPageUrl,
         scrollDistance,
         mainTab,
         routeName,
@@ -77,32 +72,6 @@ export function setContinuationPageUrl(pageUrl: string): void {
 
 export function setContinuationScrollDistance(scrollDistance: number): void {
     AppStorage.setOrCreate(APP_STATE_KEY_SCROLL_DISTANCE, scrollDistance);
-}
-
-export function setQueryTargetUrl(url: string): void {
-    AppStorage.setOrCreate(APP_STATE_KEY_QUERY_URL, url);
-}
-
-export function consumeQueryTargetUrl(): string {
-    const url = AppStorage.get<string>(APP_STATE_KEY_QUERY_URL) ?? '';
-    AppStorage.setOrCreate(APP_STATE_KEY_QUERY_URL, '');
-    return url;
-}
-
-export function setShareRequest(request: ShareRequest): void {
-    AppStorage.setOrCreate<ShareRequest>(APP_STATE_KEY_SHARE_REQUEST, request);
-}
-
-export function consumeShareRequest(): ShareRequest {
-    const request = AppStorage.get<ShareRequest>(APP_STATE_KEY_SHARE_REQUEST) ?? {
-        sharePackageName: '',
-        shareUrl: '',
-    };
-    AppStorage.setOrCreate<ShareRequest>(APP_STATE_KEY_SHARE_REQUEST, {
-        sharePackageName: '',
-        shareUrl: '',
-    });
-    return request;
 }
 
 export function setDetailTarget(target: AppRouteTarget): void {

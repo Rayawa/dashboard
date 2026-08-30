@@ -323,6 +323,7 @@ struct ApiHistoryChart {
 @Component
 export struct OverviewSection {
     @Consume('pageStack') private pageStack: NavPathStack;
+    @Prop @Watch('onRefreshVersionChanged') refreshVersion: number = 0;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     @State private loading: boolean = false;
     @State private loaded: boolean = false;
@@ -335,6 +336,12 @@ export struct OverviewSection {
     @State private topApps: MarketApp[] = [];
     @State private nonHuaweiApps: MarketApp[] = [];
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+
+    private onRefreshVersionChanged(): void {
+        if (this.refreshVersion > 0) {
+            this.load(true);
+        }
+    }
     private pendingLoads: number = 0;
     private failedLoads: number = 0;
 
@@ -460,31 +467,20 @@ export struct OverviewSection {
 
     build() {
         Column({ space: 14 }) {
-                Row() {
-                    Column({ space: 4 }) {
-                        Text('应用概况')
-                            .fontSize(26)
-                            .fontWeight(FontWeight.Bold)
-                            .fontColor($r('app.color.v3_text_primary'))
-                            .accessibilityText('应用概况')
-                        Text('点击图例、选择 API 或拖动时间轴查看详细数据')
-                            .fontSize(13)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText('图表支持点击图例选择API和拖动时间轴交互')
-                    }
-                    .alignItems(HorizontalAlign.Start)
-                    .layoutWeight(1)
-                    Button('刷新')
-                        .backgroundColor($r('app.color.v3_accent_blue'))
-                        .enabled(!this.loading)
-                        .onClick(() => {
-                            this.vibrate();
-                            this.load(true);
-                        })
-                        .accessibilityText(this.loading ? '图表正在刷新' : '刷新全部图表')
+                Column({ space: 4 }) {
+                    Text('应用概况')
+                        .fontSize(22)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor($r('app.color.v3_text_primary'))
+                        .accessibilityText('应用概况')
+                    Text('点击图例、选择 API 或拖动时间轴查看详细数据')
+                        .fontSize(13)
+                        .fontColor($r('app.color.v3_text_secondary'))
+                        .accessibilityText('图表支持点击图例选择API和拖动时间轴交互')
                 }
                 .width('100%')
-                .padding({ top: 20, left: 4, right: 4 })
+                .alignItems(HorizontalAlign.Start)
+                .padding({ top: 12, left: 4, right: 4 })
 
                 if (this.fromCache) {
                     Text('网络不可用，当前图表来自本地离线缓存')

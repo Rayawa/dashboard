@@ -143,7 +143,7 @@ export default class EntryAbility extends UIAbility {
             console.warn('[Dashboard][ability/entry][WARN]', `无法读取或监听窗口尺寸，使用默认尺寸: ${JSON.stringify(error)}`);
         }
     }
-    private loadContent(windowStage: window.WindowStage, path: string) {
+    private loadContent(windowStage: window.WindowStage, path: string): void {
         try {
             windowStage.loadContent(path, this.storage, (err) => {
                 if (err.code) {

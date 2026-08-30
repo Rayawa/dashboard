@@ -41,10 +41,3 @@ export function formatDateTime(value: string | undefined): string {
     const minute = String(date.getMinutes()).padStart(2, '0');
     return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
 }
-
-export function formatPercent(current: number, total: number): string {
-    if (total <= 0) {
-        return '0%';
-    }
-    return `${Math.min(100, Math.max(0, current / total * 100)).toFixed(1)}%`;
-}

@@ -31,19 +31,25 @@ struct friend {
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
   private isExiting: boolean = false;
 
-  private jumpToMarket(appId: string) {
+  private jumpToMarket(appId: string): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     const want: Want = {
       action: 'ohos.want.action.appdetail',
       uri: `store://appgallery.huawei.com/app/detail?id=${appId}`
     };
 
-    context.startAbility(want).then(() => {
-      console.info('[Dashboard][pages/friend][INFO]', `queryResult [Market] 跳转成功: ${appId}`);
-    }).catch((err: Error) => {
-      console.error('[Dashboard][pages/friend][ERROR]', `queryResult [Market] 跳转失败: ${err.message}`);
+    try {
+      context.startAbility(want).then(() => {
+        console.info('[Dashboard][pages/more/friend][INFO]', `queryResult [Market] 跳转成功: ${appId}`);
+      }).catch((err: Error) => {
+        console.error('[Dashboard][pages/more/friend][ERROR]', `queryResult [Market] 跳转失败: ${err.message}`);
+        this.PromptAction.showToast({ message: "无法打开应用市场" });
+      });
+    } catch (error) {
+      console.error('[Dashboard][pages/more/friend][ERROR]',
+        `启动应用市场调用失败: ${JSON.stringify(error)}`);
       this.PromptAction.showToast({ message: "无法打开应用市场" });
-    });
+    }
   }
 
 
@@ -90,6 +96,8 @@ struct friend {
       .width("100%")
       .justifyContent(FlexAlign.SpaceBetween)
       .padding({ left: 16, right: 16 })
+      .accessibilityGroup(true)
+      .accessibilityText(`打开友情链接${site.title}`)
       Divider()
         .strokeWidth(0.5)
         .color($r("app.color.border"))
@@ -123,6 +131,8 @@ struct friend {
       .width("100%")
       .justifyContent(FlexAlign.SpaceBetween)
       .padding({ left: 16, right: 16 })
+      .accessibilityGroup(true)
+      .accessibilityText(`在应用市场打开${site.title}`)
       Divider()
         .strokeWidth(0.5)
         .color($r("app.color.border"))
@@ -135,7 +145,7 @@ struct friend {
     HdsNavDestination() {
       Scroll(){
         Column() {
-          Blank().height(70)
+          Blank().height(40)
           Column(){
             Text("重要提示：\n您正在访问友情链接")
               .fontWeight(700)
@@ -247,10 +257,23 @@ struct friend {
         systemMaterialEffect: this.immersiveTextureON ? {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-        } : { }
+        } : undefined
       },
       content: {
         title: { mainTitle: "友情链接", mainTitleSize: TitleSize.TITLE_S },
+        menu: {
+          value: [{
+            content: {
+              label: '教程',
+              icon: $r('sys.symbol.questionmark_circle'),
+              isEnabled: true,
+              action: () => {
+                if (this.vibrationON) vibration.dotVibration();
+                pushPathSafely(this.pageStack, 'TutorialPage');
+              },
+            },
+          }],
+        },
         backIcon: {
           action: () => {
             if (this.isExiting) return;
@@ -260,7 +283,8 @@ struct friend {
           },
         },
       },
-    });
+    })
+    .accessibilityText('友情链接导航页');
 
   }
 }

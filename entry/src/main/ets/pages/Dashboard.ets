@@ -4,15 +4,31 @@ import {
     HdsNavigationTitleMode,
     HdsTabs,
     HdsTabsController,
+    ScrollEffectType,
     TitleSize,
 } from '@kit.UIDesignKit';
+import { curves, LengthMetrics } from '@kit.ArkUI';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { getFirstLaunch } from '../common/storage';
-import { consumeMainTab, setContinuationView, setMainTab } from '../common/appState';
-import { APP_STATE_KEY_DETAIL_TARGET, MAIN_TAB_DEFAULT } from '../common/constants';
+import { consumeMainTab, getContinuationState, setContinuationView, setMainTab } from '../common/appState';
+import {
+    APP_STATE_KEY_DETAIL_TARGET,
+    CONTINUATION_ROUTE_DETAIL,
+    MAIN_TAB_APPS,
+    MAIN_TAB_DEFAULT,
+    MAIN_TAB_HOME,
+    MAIN_TAB_MY,
+    MAIN_TAB_SEARCH,
+    MAIN_TAB_S_STATION,
+    S_STATION_COMMAND_HOME,
+    S_STATION_COMMAND_NONE,
+    S_STATION_COMMAND_REFRESH,
+    S_STATION_COMMAND_SCROLL_TOP,
+} from '../common/constants';
 import type { AppRouteTarget } from '../common/types';
 import { warn } from '../component/warn';
 import { vibration } from '../common/vibration';
+import { pushPathSafely } from '../common/safeNavigation';
 import { SStationPage } from './main/SStationPage';
 import { HomePage } from './main/HomePage';
 import { SearchPage } from './main/SearchPage';
@@ -31,6 +47,17 @@ interface MainTab {
     icon: Resource;
 }
 
+interface MainTitleMenuContent {
+    label: string;
+    icon: Resource;
+    isEnabled: boolean;
+    action: () => void;
+}
+
+interface MainTitleMenuItem {
+    content: MainTitleMenuContent;
+}
+
 @Entry({ useSharedStorage: true })
 @Component
 struct Dashboard {
@@ -41,6 +68,11 @@ struct Dashboard {
     @State private selectedIndex: number = MAIN_TAB_DEFAULT;
     @State private searchRequestVersion: number = 0;
     @State private showWarning: boolean = false;
+    @State private mainActionIndex: number = -1;
+    @State private mainActionVersion: number = 0;
+    @State private homeRefreshVersion: number = 0;
+    @State private sStationCommand: number = S_STATION_COMMAND_NONE;
+    @State private sStationCommandVersion: number = 0;
 
     private tabs(): MainTab[] {
         return [
@@ -52,8 +84,98 @@ struct Dashboard {
         ];
     }
 
+    private mainTitle(): string {
+        return `鸿蒙应用看板-${this.tabs()[this.selectedIndex]?.label ?? '首页'}`;
+    }
+
+    private vibrate(): void {
+        if (this.vibrationEnabled) vibration.dotVibration();
+    }
+
+    private openTutorial(): void {
+        this.vibrate();
+        pushPathSafely(this.pageStack, 'TutorialPage');
+    }
+
+    private dispatchSStationCommand(command: number): void {
+        this.vibrate();
+        this.sStationCommand = command;
+        this.sStationCommandVersion++;
+    }
+
+    private refreshHome(): void {
+        this.vibrate();
+        this.homeRefreshVersion++;
+    }
+
+    private handleTabBarClick(index: number): void {
+        if (index !== this.selectedIndex) {
+            return;
+        }
+        if (index === MAIN_TAB_S_STATION) {
+            this.dispatchSStationCommand(S_STATION_COMMAND_HOME);
+            return;
+        }
+        this.vibrate();
+        this.mainActionIndex = index;
+        this.mainActionVersion++;
+    }
+
+    private titleMenuItems(): MainTitleMenuItem[] {
+        if (this.selectedIndex === MAIN_TAB_S_STATION) {
+            return [
+                {
+                    content: {
+                        label: '刷新S站',
+                        icon: $r('app.media.refresh'),
+                        isEnabled: true,
+                        action: (): void => this.dispatchSStationCommand(S_STATION_COMMAND_REFRESH),
+                    },
+                },
+                {
+                    content: {
+                        label: 'S站回到顶部',
+                        icon: $r('app.media.arrow_up'),
+                        isEnabled: true,
+                        action: (): void => this.dispatchSStationCommand(S_STATION_COMMAND_SCROLL_TOP),
+                    },
+                },
+            ];
+        }
+        if (this.selectedIndex === MAIN_TAB_HOME) {
+            return [
+                {
+                    content: {
+                        label: '刷新首页',
+                        icon: $r('app.media.refresh'),
+                        isEnabled: true,
+                        action: (): void => this.refreshHome(),
+                    },
+                },
+                {
+                    content: {
+                        label: '打开教程',
+                        icon: $r('sys.symbol.questionmark_circle'),
+                        isEnabled: true,
+                        action: (): void => this.openTutorial(),
+                    },
+                },
+            ];
+        }
+        return [{
+            content: {
+                label: '打开教程',
+                icon: $r('sys.symbol.questionmark_circle'),
+                isEnabled: true,
+                action: (): void => this.openTutorial(),
+            },
+        }];
+    }
+
     private async handlePageShow(): Promise<void> {
         this.selectedIndex = consumeMainTab(this.selectedIndex);
+        // consumeMainTab 用于读取 Ability/接续指定页；立即写回，供各标签页恢复滚动位置。
+        setMainTab(this.selectedIndex);
         this.searchRequestVersion++;
         try {
             this.showWarning = await getFirstLaunch();
@@ -108,31 +230,44 @@ struct Dashboard {
             Stack() {
                 HdsTabs({ controller: this.tabsController, index: this.selectedIndex }) {
                     TabContent() {
-                        SStationPage()
+                        SStationPage({
+                            command: this.sStationCommand,
+                            commandVersion: this.sStationCommandVersion,
+                        })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[0].icon, this.tabs()[0].label))
                     .accessibilityText('S站标签页')
 
                     TabContent() {
-                        HomePage()
+                        HomePage({
+                            refreshVersion: this.homeRefreshVersion,
+                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_HOME ? this.mainActionVersion : 0,
+                        })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[1].icon, this.tabs()[1].label))
                     .accessibilityText('首页标签页')
 
                     TabContent() {
-                        SearchPage({ requestVersion: this.searchRequestVersion })
+                        SearchPage({
+                            requestVersion: this.searchRequestVersion,
+                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_SEARCH ? this.mainActionVersion : 0,
+                        })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[2].icon, this.tabs()[2].label))
                     .accessibilityText('搜索标签页')
 
                     TabContent() {
-                        AppsPage()
+                        AppsPage({
+                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
+                        })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[3].icon, this.tabs()[3].label))
                     .accessibilityText('应用总表标签页')
 
                     TabContent() {
-                        MyPage()
+                        MyPage({
+                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_MY ? this.mainActionVersion : 0,
+                        })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[4].icon, this.tabs()[4].label))
                     .accessibilityText('我的标签页')
@@ -141,26 +276,28 @@ struct Dashboard {
                 .vertical(false)
                 .barOverlap(true)
                 .blurStrategy(BlurStrategy.ENABLE)
-                .animation({ duration: 0 })
+                .animation({ curve: curves.springMotion(0.8, 0.8), duration: 400 })
                 .barFloatingStyle({
-                    barBottomMargin: 18,
-                    lightColor: $r('app.color.light_color'),
-                    gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 84 },
+                    barBottomMargin: 28,
+                    lightColor: $r('app.color.diff_content'),
+                    gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
                     systemMaterialEffect: this.immersiveTexture ? {
                         materialType: hdsMaterial.MaterialType.IMMERSIVE,
                         materialLevel: hdsMaterial.MaterialLevel.EXQUISITE,
                     } : undefined,
                 })
+                .onTabBarClick((index: number) => this.handleTabBarClick(index))
                 .onChange((index: number) => {
                     this.selectedIndex = index;
                     setMainTab(index);
-                    setContinuationView(index, 0);
+                    const continuation = getContinuationState();
+                    if (continuation.routeName !== CONTINUATION_ROUTE_DETAIL) {
+                        setContinuationView(index, 0);
+                    }
                     if (this.vibrationEnabled) {
                         vibration.dotVibration();
                     }
                 })
-                .width('100%')
-                .height('100%')
                 .accessibilityText('主界面五个标签页')
 
                 if (this.showWarning) {
@@ -186,19 +323,52 @@ struct Dashboard {
         .divider({ color: $r('app.color.border') })
         .titleBar({
             style: {
-                scrollEffectOpts: { enableScrollEffect: false },
+                scrollEffectOpts: {
+                    enableScrollEffect: true,
+                    scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
+                    blurEffectiveStartOffset: LengthMetrics.vp(0),
+                    blurEffectiveEndOffset: LengthMetrics.vp(20),
+                },
                 originalStyle: {
+                    backgroundStyle: {
+                        backgroundColor: $r('sys.color.ohos_id_color_background'),
+                    },
                     contentStyle: {
                         titleStyle: {
-                            mainTitleColor: $r('app.color.diff_content'),
+                            mainTitleColor: $r('sys.color.font_primary'),
+                        },
+                        menuStyle: {
+                            backgroundColor: $r('sys.color.comp_background_tertiary'),
+                            iconColor: $r('sys.color.icon_primary'),
                         },
                     },
                 },
+                scrollEffectStyle: {
+                    backgroundStyle: {
+                        backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
+                    },
+                    contentStyle: {
+                        titleStyle: {
+                            mainTitleColor: $r('sys.color.font_primary'),
+                        },
+                        menuStyle: {
+                            backgroundColor: $r('sys.color.comp_background_tertiary'),
+                            iconColor: $r('sys.color.icon_primary'),
+                        },
+                    },
+                },
+                systemMaterialEffect: this.immersiveTexture ? {
+                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE,
+                } : undefined,
             },
             content: {
                 title: {
-                    mainTitle: 'Dashboard应用看板',
+                    mainTitle: this.mainTitle(),
                     mainTitleSize: TitleSize.TITLE_S,
+                },
+                menu: {
+                    value: this.titleMenuItems(),
                 },
             },
         })

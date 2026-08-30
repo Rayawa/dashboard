@@ -65,12 +65,24 @@ struct MoreRow {
 @Component
 export struct MyPage {
     @Consume('pageStack') private pageStack: NavPathStack;
+    @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     @State private showWarning: boolean = false;
     @State private showContact: boolean = false;
     private restoredScroll: boolean = false;
+
+    private onScrollToTopVersionChanged(): void {
+        if (this.scrollToTopVersion <= 0) {
+            return;
+        }
+        try {
+            this.scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 300 } });
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/MyPage][WARN]', `返回顶部失败: ${JSON.stringify(error)}`);
+        }
+    }
 
     private vibrate(): void {
         if (this.vibrationEnabled) vibration.dotVibration();
@@ -174,24 +186,25 @@ export struct MyPage {
         Stack() {
             Scroll(this.scroller) {
                 Column({ space: 14 }) {
+                    Blank().height(40).width('100%')
                     Column({ space: 8 }) {
                         Image($r('app.media.app_icon'))
                             .width(92)
                             .height(92)
                             .borderRadius(22)
                             .accessibilityText('Dashboard应用看板图标')
-                        Text('Dashboard 应用看板')
-                            .fontSize(26)
+                        Text('鸿蒙应用看板')
+                            .fontSize(22)
                             .fontWeight(FontWeight.Bold)
                             .fontColor($r('app.color.diff_content'))
-                            .accessibilityText('Dashboard应用看板')
+                            .accessibilityText('鸿蒙应用看板')
                         Text('Harmony Dashboard')
                             .fontSize(15)
                             .fontColor($r('app.color.v3_text_secondary'))
                             .accessibilityText('Harmony Dashboard')
                     }
                     .width('100%')
-                    .padding({ top: 24, bottom: 10 })
+                    .padding({ bottom: 10 })
                     .accessibilityGroup(true)
                     .accessibilityText('关于应用')
 
@@ -306,7 +319,14 @@ export struct MyPage {
             .width('100%')
             .height('100%')
             .scrollBar(BarState.Off)
-            .onDidScroll(() => setContinuationView(MAIN_TAB_MY, this.scroller.currentOffset().yOffset))
+            .onDidScroll((): void => {
+                try {
+                    setContinuationView(MAIN_TAB_MY, this.scroller.currentOffset().yOffset);
+                } catch (error) {
+                    console.warn('[Dashboard][pages/main/MyPage][WARN]',
+                        `保存滚动位置失败: ${JSON.stringify(error)}`);
+                }
+            })
             .backgroundColor($r('app.color.background'))
             .accessibilityText('我的页面')
 

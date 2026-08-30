@@ -1,5 +1,6 @@
 import { PromptAction } from '@kit.ArkUI';
 import {
+    APP_LIST_PAGE_SIZE,
     BACKGROUND_REFRESH_DELAY_MS,
     CONTENT_MAX_WIDTH,
     CONTINUATION_ROUTE_MAIN,
@@ -23,28 +24,47 @@ import type {
     MarketApp,
     PageInfo,
     SearchTarget,
+    SubmitAppBody,
 } from '../../common/types';
 import { vibration } from '../../common/vibration';
+
+interface NameSearchResult {
+    apps: MarketApp[];
+    stale: boolean;
+}
 
 @Component
 export struct SearchPage {
     @Consume('pageStack') private pageStack: NavPathStack;
-    @Link @Watch('onRequestVersionChanged') requestVersion: number;
+    @Prop @Watch('onRequestVersionChanged') requestVersion: number;
+    @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     @StorageLink('username') private username: string = '';
     @State private input: string = '';
-    @State private note: string = '';
     @State private loading: boolean = false;
     @State private backgroundUpdating: boolean = false;
     @State private status: string = '输入应用名称、包名、App ID 或华为应用市场链接';
     @State private errorMessage: string = '';
+    @State private results: MarketApp[] = [];
     @State private resultApp: MarketApp | undefined = undefined;
     @State private fromCache: boolean = false;
     private activeTarget: AppRouteTarget = {};
     private openDetailAfterSearch: boolean = false;
+    private backgroundUpdateToken: number = 0;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     private restoredScroll: boolean = false;
+
+    private onScrollToTopVersionChanged(): void {
+        if (this.scrollToTopVersion <= 0) {
+            return;
+        }
+        try {
+            this.scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 300 } });
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/SearchPage][WARN]', `返回顶部失败: ${JSON.stringify(error)}`);
+        }
+    }
 
     private vibrate(): void {
         if (this.vibrationEnabled) vibration.dotVibration();
@@ -112,42 +132,89 @@ export struct SearchPage {
         return Promise.reject(new Error('缺少应用标识'));
     }
 
-    private async findByName(name: string): Promise<AppRouteTarget> {
-        const listResult = await fetchAppsPage(1, 8, 'updated_at', true, 'name', name, false, true);
+    private relevance(app: MarketApp, query: string): number {
+        const normalized = query.trim().toLowerCase();
+        const name = (app.name || '').toLowerCase();
+        const packageName = (app.pkg_name || '').toLowerCase();
+        if (name === normalized || packageName === normalized) return 0;
+        if (name.startsWith(normalized)) return 1;
+        if (packageName.startsWith(normalized)) return 2;
+        if (name.includes(normalized)) return 3;
+        if (packageName.includes(normalized)) return 4;
+        return 5;
+    }
+
+    private async findByName(name: string): Promise<NameSearchResult> {
+        const listResult = await fetchAppsPage(
+            1,
+            100,
+            'download_count',
+            true,
+            'name',
+            name,
+            false,
+            true,
+        );
         const response = listResult.data as BaseAPIResponse<PageInfo<MarketApp>>;
-        const first = response.data?.data?.[0];
-        if (!response.success || !first) {
+        const matches = response.data?.data ?? [];
+        if (!response.success || matches.length === 0) {
             throw new Error('未找到同名应用；如需投稿，请输入包名、App ID 或应用市场链接');
         }
-        return { appId: first.app_id, packageName: first.pkg_name };
+        return {
+            apps: matches
+                .sort((left: MarketApp, right: MarketApp) => this.relevance(left, name) - this.relevance(right, name))
+                .slice(0, APP_LIST_PAGE_SIZE),
+            stale: listResult.stale,
+        };
     }
 
     private async submitNew(target: AppRouteTarget): Promise<void> {
-        this.status = '发现新应用，正在进行 simple 投稿…';
-        const response = await submitApp({
-            app_id: target.appId,
-            pkg_name: target.packageName,
-            comment: { user: this.username, note: this.note.trim() || undefined },
-        });
+        this.status = '正在静默同步新应用数据…';
+        const body: SubmitAppBody = { comment: { user: this.username } };
+        if (target.appId) {
+            body.app_id = target.appId;
+        } else if (target.packageName) {
+            body.pkg_name = target.packageName;
+        } else {
+            throw new Error('投稿缺少应用标识');
+        }
+        const response = await submitApp(body);
         if (!response.success || !response.data?.full_info) {
             throw new Error('投稿接口未返回有效应用数据');
         }
         this.resultApp = response.data.full_info;
+        this.results = [response.data.full_info];
         this.activeTarget = {
             appId: response.data.full_info.app_id,
             packageName: response.data.full_info.pkg_name,
         };
         this.fromCache = false;
-        this.status = '新应用已投稿并完成数据加载';
+        this.status = '应用数据已完成加载';
+    }
+
+    private replaceResult(app: MarketApp): void {
+        this.results = this.results.map((item: MarketApp) => item.app_id === app.app_id ? app : item);
     }
 
     private updateExisting(): void {
+        const token = this.backgroundUpdateToken;
+        const target: AppRouteTarget = {
+            appId: this.activeTarget.appId,
+            packageName: this.activeTarget.packageName,
+        };
         this.backgroundUpdating = true;
         this.status = '结果已显示，正在后台 query 并更新数据…';
-        setTimeout(() => {
-            this.detailRequest(this.activeTarget, true).then((fresh) => {
+        setTimeout((): void => {
+            if (token !== this.backgroundUpdateToken) {
+                return;
+            }
+            this.detailRequest(target, true).then((fresh) => {
+                if (token !== this.backgroundUpdateToken) {
+                    return;
+                }
                 if (fresh.data.success && fresh.data.data?.full_info) {
                     this.resultApp = fresh.data.data.full_info;
+                    this.replaceResult(fresh.data.data.full_info);
                     this.fromCache = fresh.stale;
                     this.status = fresh.fromCache ?
                         '后台更新失败，继续使用离线缓存' : '后台 query 更新完成';
@@ -155,9 +222,19 @@ export struct SearchPage {
                     this.status = '结果已显示；后台更新未返回新数据';
                 }
             }).catch((error: Error) => {
-                this.status = `结果已显示；后台更新失败：${error.message}`;
-            }).finally(() => this.backgroundUpdating = false);
+                if (token === this.backgroundUpdateToken) {
+                    this.status = `结果已显示；后台更新失败：${error.message}`;
+                }
+            }).finally(() => {
+                if (token === this.backgroundUpdateToken) {
+                    this.backgroundUpdating = false;
+                }
+            });
         }, BACKGROUND_REFRESH_DELAY_MS);
+    }
+
+    private isMissingApplication(error: Error): boolean {
+        return error.message.includes('404') || error.message.includes('未找到');
     }
 
     private async search(): Promise<void> {
@@ -169,24 +246,53 @@ export struct SearchPage {
             return;
         }
         this.loading = true;
+        this.backgroundUpdateToken++;
+        this.backgroundUpdating = false;
         this.errorMessage = '';
+        this.results = [];
         this.resultApp = undefined;
         this.status = '正在查找应用…';
         try {
-            let target = this.targetFromInput();
+            const target = this.targetFromInput();
             if (!target.appId && !target.packageName) {
                 this.status = '正在按应用名称检索…';
-                target = await this.findByName(raw);
+                const searchResult = await this.findByName(raw);
+                const matches = searchResult.apps;
+                this.results = matches;
+                this.resultApp = matches[0];
+                this.activeTarget = {
+                    appId: matches[0].app_id,
+                    packageName: matches[0].pkg_name,
+                };
+                this.fromCache = searchResult.stale;
+                this.status = searchResult.stale ?
+                    `网络不佳，已从缓存加载 ${matches.length} 个匹配结果` :
+                    `已加载 ${matches.length} 个匹配结果，正在静默更新最相关应用…`;
+                this.updateExisting();
+                this.openDetailIfRequested();
+                return;
             }
             this.activeTarget = target;
             this.status = '已定位应用，正在从 API 获取完整数据…';
-            const detail = await this.detailRequest(target, false);
+            let detail: ApiDataResult<BaseAPIResponse<AppDetailPayload>>;
+            try {
+                detail = await this.detailRequest(target, false);
+            } catch (error) {
+                const requestError = error as Error;
+                if (this.isMissingApplication(requestError)) {
+                    await this.submitNew(target);
+                    this.openDetailIfRequested();
+                    return;
+                }
+                throw requestError;
+            }
             if (!detail.data.success || !detail.data.data?.full_info) {
                 await this.submitNew(target);
                 this.openDetailIfRequested();
                 return;
             }
             this.resultApp = detail.data.data.full_info;
+            this.results = [detail.data.data.full_info];
             this.activeTarget = {
                 appId: this.resultApp.app_id,
                 packageName: this.resultApp.pkg_name,
@@ -210,15 +316,17 @@ export struct SearchPage {
         }
     }
 
-    private openDetail(): void {
-        if (!this.resultApp) {
+    private openDetail(app?: MarketApp): void {
+        const targetApp = app ?? this.resultApp;
+        if (!targetApp) {
             return;
         }
         this.vibrate();
+        const backgroundRefreshHandled = this.resultApp?.app_id === targetApp.app_id;
         setDetailTarget({
-            appId: this.resultApp.app_id,
-            packageName: this.resultApp.pkg_name,
-            backgroundRefreshHandled: true,
+            appId: targetApp.app_id,
+            packageName: targetApp.pkg_name,
+            backgroundRefreshHandled,
         });
         try {
             this.pageStack.pushPathByName('AppDetailPage', null);
@@ -238,25 +346,69 @@ export struct SearchPage {
         }, 0);
     }
 
+    @Builder
+    resultCard(app: MarketApp): void {
+        Row({ space: 12 }) {
+            Image(app.icon_url || $r('app.media.startIcon'))
+                .width(58)
+                .height(58)
+                .borderRadius(14)
+                .objectFit(ImageFit.Cover)
+                .alt($r('app.media.startIcon'))
+                .accessibilityText(`${app.name || '未知应用'}应用图标`)
+            Column({ space: 4 }) {
+                Text(app.name || '未知应用')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor($r('app.color.v3_text_primary'))
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    .accessibilityText(app.name || '未知应用')
+                Text(app.developer_name || '未知开发者')
+                    .fontSize(12)
+                    .fontColor($r('app.color.diff_content'))
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    .accessibilityText(`开发者${app.developer_name || '未知'}`)
+                Text(`${app.pkg_name} · ${formatCount(app.download_count)} 下载`)
+                    .fontSize(11)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    .accessibilityText(`包名${app.pkg_name}下载量${formatCount(app.download_count)}`)
+                Text(`更新：${formatDateTime(app.updated_at)}`)
+                    .fontSize(11)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .accessibilityText(`数据更新时间${formatDateTime(app.updated_at)}`)
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1)
+            Image($r('app.media.right'))
+                .width(16)
+                .height(16)
+                .accessibilityText('进入详情')
+        }
+        .width('100%')
+        .padding(14)
+        .borderRadius(16)
+        .backgroundColor($r('app.color.v3_surface'))
+        .border({ width: 1, color: $r('app.color.nd_card_border') })
+        .onClick(() => this.openDetail(app))
+        .accessibilityGroup(true)
+        .accessibilityText(`打开${app.name || '未知应用'}详情`)
+    }
+
     build() {
         Scroll(this.scroller) {
             Column({ space: 14 }) {
-                Column({ space: 5 }) {
-                    Text('搜索、投稿与更新')
-                        .fontSize(26)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.v3_text_primary'))
-                        .width('100%')
-                        .accessibilityText('搜索投稿与更新')
-                    Text('搜索结果完整加载后，会自动在后台更新；分享入口也统一使用此流程')
-                        .fontSize(13)
-                        .fontColor($r('app.color.v3_text_secondary'))
-                        .width('100%')
-                        .accessibilityText('搜索结果完整加载后会自动在后台更新，分享入口也使用此流程')
-                }
-                .padding({ top: 20, left: 4, right: 4 })
-                .alignItems(HorizontalAlign.Start)
-                .accessibilityGroup(true)
+                Blank().height(40).width('100%')
+                Text('搜索结果完整加载后会静默完成后台更新；名称搜索最多展示相关度最高的 20 个结果。')
+                    .fontSize(13)
+                    .lineHeight(20)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .width('100%')
+                    .padding({ left: 4, right: 4 })
+                    .accessibilityText('搜索结果完整加载后静默后台更新，最多展示二十个结果')
 
                 Column({ space: 12 }) {
                     Search({
@@ -265,6 +417,7 @@ export struct SearchPage {
                     })
                         .width('100%')
                         .height(48)
+                        .defaultFocus(false)
                         .searchButton('查找')
                         .backgroundColor($r('app.color.v3_surface_alt'))
                         .onChange((value: string) => this.input = value)
@@ -273,12 +426,6 @@ export struct SearchPage {
                             this.search();
                         })
                         .accessibilityText('输入应用名称包名App ID或应用市场链接')
-                    TextInput({ text: this.note, placeholder: '投稿备注（可选）' })
-                        .width('100%')
-                        .height(44)
-                        .backgroundColor($r('app.color.v3_surface_alt'))
-                        .onChange((value: string) => this.note = value)
-                        .accessibilityText('输入投稿备注，可选')
                     Button(this.loading ? '处理中…' : '查找并自动投稿或更新')
                         .width('100%')
                         .height(46)
@@ -325,7 +472,7 @@ export struct SearchPage {
                 .accessibilityGroup(true)
                 .accessibilityText('搜索处理状态')
 
-                if (this.resultApp) {
+                if (this.results.length > 0) {
                     Column({ space: 12 }) {
                         if (this.fromCache) {
                             Text('此结果来自离线缓存')
@@ -334,54 +481,20 @@ export struct SearchPage {
                                 .width('100%')
                                 .accessibilityText('此搜索结果来自离线缓存')
                         }
-                        Row({ space: 14 }) {
-                            Image(this.resultApp.icon_url || $r('app.media.startIcon'))
-                                .width(72)
-                                .height(72)
-                                .borderRadius(16)
-                                .objectFit(ImageFit.Cover)
-                                .alt($r('app.media.startIcon'))
-                                .accessibilityText(`${this.resultApp.name}应用图标`)
-                            Column({ space: 5 }) {
-                                Text(this.resultApp.name || '未知应用')
-                                    .fontSize(21)
-                                    .fontWeight(FontWeight.Bold)
-                                    .fontColor($r('app.color.v3_text_primary'))
-                                    .maxLines(2)
-                                    .accessibilityText(this.resultApp.name || '未知应用')
-                                Text(this.resultApp.developer_name || '未知开发者')
-                                    .fontSize(13)
-                                    .fontColor($r('app.color.v3_accent_blue'))
-                                    .maxLines(1)
-                                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                                    .accessibilityText(`开发者${this.resultApp.developer_name || '未知'}`)
-                                Text(`${this.resultApp.pkg_name} · ${formatCount(this.resultApp.download_count)} 下载`)
-                                    .fontSize(12)
-                                    .fontColor($r('app.color.v3_text_secondary'))
-                                    .maxLines(1)
-                                    .accessibilityText(`包名${this.resultApp.pkg_name}下载量${formatCount(this.resultApp.download_count)}`)
-                                Text(`数据更新：${formatDateTime(this.resultApp.updated_at)}`)
-                                    .fontSize(12)
-                                    .fontColor($r('app.color.v3_text_secondary'))
-                                    .accessibilityText(`数据更新时间${formatDateTime(this.resultApp.updated_at)}`)
-                            }
-                            .alignItems(HorizontalAlign.Start)
-                            .layoutWeight(1)
-                        }
-                        .width('100%')
-                        Button('打开统一应用详情页')
+                        Text(`匹配结果 ${this.results.length} 个`)
+                            .fontSize(14)
+                            .fontWeight(FontWeight.Medium)
+                            .fontColor($r('app.color.v3_text_primary'))
                             .width('100%')
-                            .backgroundColor($r('app.color.v3_accent_cyan'))
-                            .onClick(() => this.openDetail())
-                            .accessibilityText(`打开${this.resultApp.name}的统一应用详情页`)
+                            .accessibilityText(`匹配结果${this.results.length}个`)
+                        ForEach(this.results, (app: MarketApp) => {
+                            this.resultCard(app)
+                        }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
                     }
                     .width('100%')
-                    .padding(18)
-                    .borderRadius(18)
-                    .backgroundColor($r('app.color.v3_surface'))
-                    .border({ width: 1, color: $r('app.color.nd_card_border') })
+                    .padding({ top: 4 })
                     .accessibilityGroup(true)
-                    .accessibilityText(`${this.resultApp.name}搜索结果`)
+                    .accessibilityText('应用搜索结果列表')
                 }
 
                 Column({ space: 8 }) {
@@ -436,7 +549,14 @@ export struct SearchPage {
         .width('100%')
         .height('100%')
         .scrollBar(BarState.Off)
-        .onDidScroll(() => setContinuationView(MAIN_TAB_SEARCH, this.scroller.currentOffset().yOffset))
+        .onDidScroll((): void => {
+            try {
+                setContinuationView(MAIN_TAB_SEARCH, this.scroller.currentOffset().yOffset);
+            } catch (error) {
+                console.warn('[Dashboard][pages/main/SearchPage][WARN]',
+                    `保存滚动位置失败: ${JSON.stringify(error)}`);
+            }
+        })
         .backgroundColor($r('app.color.background'))
         .accessibilityText('搜索投稿与更新页面')
     }
