@@ -1,17 +1,29 @@
 import { common, Want } from '@kit.AbilityKit';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
+import {
+    HdsNavDestination,
+    HdsNavigationTitleMode,
+    ScrollEffectType,
+    TitleSize,
+} from '@kit.UIDesignKit';
 import {
     BACKGROUND_REFRESH_DELAY_MS,
     CONTENT_MAX_WIDTH,
+    CONTINUATION_ROUTE_DETAIL,
     HUAWEI_APP_DETAIL_URL_PREFIX,
-    RESPONSIVE_BREAKPOINT_LARGE,
-    RESPONSIVE_BREAKPOINT_MEDIUM,
+    SBaseURL,
+    S_SITE_APP_DETAIL_QUERY,
 } from '../../common/constants';
-import { consumeDetailTarget } from '../../common/appState';
+import {
+    consumeDetailTarget,
+    getContinuationState,
+    setContinuationView,
+} from '../../common/appState';
 import { fetchAppById, fetchAppByPackage, fetchAppMetrics } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
+import { WebShareManager } from '../../common/shareControl';
+import { vibration } from '../../common/vibration';
 import type {
     ApiDataResult,
     AppDetailPayload,
@@ -28,9 +40,39 @@ interface DetailField {
 }
 
 @Component
+struct CompactDetailRow {
+    field: DetailField = { label: '', value: '-' };
+
+    build() {
+        Row({ space: 10 }) {
+            Text(this.field.label)
+                .fontSize(11)
+                .fontWeight(FontWeight.Medium)
+                .fontColor($r('app.color.diff_content'))
+                .padding({ left: 9, right: 9, top: 4, bottom: 4 })
+                .borderRadius(10)
+                .backgroundColor($r('app.color.v3_surface_alt'))
+                .accessibilityText(this.field.label)
+            Text(this.field.value)
+                .fontSize(14)
+                .fontColor($r('app.color.v3_text_primary'))
+                .maxLines(3)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .layoutWeight(1)
+                .accessibilityText(`${this.field.label}${this.field.value}`)
+        }
+        .width('100%')
+        .padding({ top: 8, bottom: 8 })
+        .accessibilityGroup(true)
+        .accessibilityText(`${this.field.label}，${this.field.value}`)
+    }
+}
+
+@Component
 struct MetricBars {
     @Prop metrics: AppMetric[] = [];
     @State private selected: number = 0;
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
     private visible(): AppMetric[] {
         return this.metrics.slice(Math.max(0, this.metrics.length - 12));
@@ -73,7 +115,10 @@ struct MetricBars {
                         .height(140)
                         .layoutWeight(1)
                         .justifyContent(FlexAlign.End)
-                        .onClick(() => this.selected = index)
+                        .onClick(() => {
+                            if (this.vibrationEnabled) vibration.dotVibration();
+                            this.selected = index;
+                        })
                         .accessibilityText(`查看${formatDateTime(metric.created_at)}下载量`)
                     }, (metric: AppMetric) => `${metric.created_at}-${metric.download_count}`)
                 }
@@ -106,6 +151,8 @@ struct MetricBars {
 export struct AppDetailPage {
     @Consume('pageStack') private pageStack: NavPathStack;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
+    private scroller: Scroller = new Scroller();
+    private shareManager?: WebShareManager;
     private target: AppRouteTarget = {};
     @State private app: MarketApp | undefined = undefined;
     @State private metrics: AppMetric[] = [];
@@ -114,6 +161,56 @@ export struct AppDetailPage {
     @State private fromCache: boolean = false;
     @State private errorMessage: string = '';
     @State private started: boolean = false;
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+
+    private vibrate(): void {
+        if (this.vibrationEnabled) {
+            vibration.dotVibration();
+        }
+    }
+
+    private shareUrl(): string {
+        if (!this.app) {
+            return SBaseURL.toString();
+        }
+        return `${SBaseURL.toString()}${S_SITE_APP_DETAIL_QUERY}${encodeURIComponent(this.app.app_id)}`;
+    }
+
+    private syncShareData(): void {
+        if (!this.app) {
+            return;
+        }
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+        this.shareManager = WebShareManager.getInstance(context);
+        this.shareManager.updateShareData(
+            this.shareUrl(),
+            `${this.app.name}｜Dashboard应用看板`,
+            `${this.app.developer_name || '未知开发者'} · ${this.app.pkg_name}`,
+        );
+        this.shareManager.enablePassiveShare();
+    }
+
+    private showShare(): void {
+        this.vibrate();
+        if (!this.app) {
+            showToastSafely(this.prompt, '详情加载完成后才能分享', 1500, 'V3AppDetail');
+            return;
+        }
+        this.syncShareData();
+        this.shareManager?.showSystemShare(this.shareUrl());
+    }
+
+    private closePage(): void {
+        this.vibrate();
+        const continuation = getContinuationState();
+        setContinuationView(continuation.mainTab, 0);
+        try {
+            this.pageStack.pop();
+        } catch (error) {
+            console.error('[Dashboard][pages/detail/AppDetailPage][ERROR]', `关闭详情页失败: ${JSON.stringify(error)}`);
+            showToastSafely(this.prompt, '暂时无法返回，请重试', 1600, 'AppDetailPage');
+        }
+    }
 
     private request(force: boolean): Promise<ApiDataResult<BaseAPIResponse<AppDetailPayload>>> {
         if (this.target.appId) {
@@ -138,14 +235,15 @@ export struct AppDetailPage {
             }
             this.app = result.data.data.full_info;
             this.fromCache = result.stale;
+            this.syncShareData();
             if (this.app.pkg_name) {
                 fetchAppMetrics(this.app.pkg_name, force).then((metricResult) => {
                     if (metricResult.data.success) {
                         this.metrics = metricResult.data.data ?? [];
                     }
-                }).catch((error: Error) => console.warn('[Dashboard][pages/v3/AppDetailPage][WARN]', `[detail] 指标加载失败: ${error.message}`));
+                }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `指标加载失败: ${error.message}`));
             }
-            if (!force) {
+            if (!force && !this.target.backgroundRefreshHandled) {
                 setTimeout(() => this.load(true, true), BACKGROUND_REFRESH_DELAY_MS);
             }
         }).catch((error: Error) => {
@@ -210,7 +308,7 @@ export struct AppDetailPage {
                 uri,
             } as Want);
         } catch (error) {
-            console.error('[Dashboard][pages/v3/AppDetailPage][ERROR]', `${failureMessage}: ${JSON.stringify(error)}`);
+            console.error('[Dashboard][pages/detail/AppDetailPage][ERROR]', `${failureMessage}: ${JSON.stringify(error)}`);
             showToastSafely(this.prompt, failureMessage, 1800, 'V3AppDetail');
         }
     }
@@ -223,9 +321,13 @@ export struct AppDetailPage {
         await this.openExternal(`${HUAWEI_APP_DETAIL_URL_PREFIX}${id}`, '无法打开应用市场详情');
     }
 
+    aboutToDisappear(): void {
+        this.shareManager?.disablePassiveShare();
+    }
+
     build() {
         HdsNavDestination() {
-            Scroll() {
+            Scroll(this.scroller) {
                 Column({ space: 14 }) {
                     if (this.loading && !this.app) {
                         Column({ space: 12 }) {
@@ -254,7 +356,10 @@ export struct AppDetailPage {
                                 .accessibilityText(this.errorMessage)
                             Button('重新加载')
                                 .backgroundColor($r('app.color.v3_accent_blue'))
-                                .onClick(() => this.load(true))
+                                .onClick(() => {
+                                    this.vibrate();
+                                    this.load(true);
+                                })
                                 .accessibilityText('重新加载应用详情')
                         }
                         .height(360)
@@ -315,60 +420,52 @@ export struct AppDetailPage {
                             Button('在华为应用市场打开')
                                 .margin(4)
                                 .backgroundColor($r('app.color.v3_accent_blue'))
-                                .onClick(() => this.openMarket())
+                                .onClick(() => {
+                                    this.vibrate();
+                                    this.openMarket();
+                                })
                                 .accessibilityText('在华为应用市场打开此应用')
                             Button(this.refreshing ? '更新中…' : '更新数据')
                                 .margin(4)
                                 .enabled(!this.refreshing)
                                 .fontColor($r('app.color.v3_text_primary'))
                                 .backgroundColor($r('app.color.v3_surface_alt'))
-                                .onClick(() => this.load(true, true))
+                                .onClick(() => {
+                                    this.vibrate();
+                                    this.load(true, true);
+                                })
                                 .accessibilityText(this.refreshing ? '应用数据更新中' : '从API更新此应用数据')
                             if (this.app.privacy_url) {
                                 Button('隐私政策')
                                     .margin(4)
                                     .fontColor($r('app.color.v3_text_primary'))
                                     .backgroundColor($r('app.color.v3_surface_alt'))
-                                    .onClick(() => this.openExternal(this.app!.privacy_url!, '无法打开应用隐私政策'))
+                                    .onClick(() => {
+                                        this.vibrate();
+                                        this.openExternal(this.app!.privacy_url!, '无法打开应用隐私政策');
+                                    })
                                     .accessibilityText(`打开${this.app.name}隐私政策`)
                             }
                         }
                         .width('100%')
                         .accessibilityText('应用详情操作')
 
-                        GridRow({
-                            columns: { xs: 4, sm: 8, md: 12 },
-                            gutter: { x: 10, y: 10 },
-                            breakpoints: {
-                                value: [RESPONSIVE_BREAKPOINT_MEDIUM, RESPONSIVE_BREAKPOINT_LARGE],
-                                reference: BreakpointsReference.WindowSize,
-                            },
-                        }) {
-                            ForEach(this.fields(), (field: DetailField) => {
-                                GridCol({ span: { xs: 4, sm: 4, md: 4 } }) {
-                                    Column({ space: 5 }) {
-                                        Text(field.label)
-                                            .fontSize(12)
-                                            .fontColor($r('app.color.v3_text_secondary'))
-                                            .accessibilityText(field.label)
-                                        Text(field.value)
-                                            .fontSize(14)
-                                            .fontWeight(FontWeight.Medium)
-                                            .fontColor($r('app.color.v3_text_primary'))
-                                            .maxLines(2)
-                                            .textOverflow({ overflow: TextOverflow.Ellipsis })
-                                            .accessibilityText(`${field.label}${field.value}`)
-                                    }
-                                    .alignItems(HorizontalAlign.Start)
-                                    .width('100%')
-                                    .padding(14)
-                                    .borderRadius(12)
-                                    .backgroundColor($r('app.color.v3_surface'))
-                                    .accessibilityGroup(true)
+                        Column() {
+                            ForEach(this.fields(), (field: DetailField, index: number) => {
+                                CompactDetailRow({ field })
+                                if (index < this.fields().length - 1) {
+                                    Divider()
+                                        .strokeWidth(0.5)
+                                        .color($r('app.color.border'))
+                                        .accessibilityText('应用信息分隔线')
                                 }
                             }, (field: DetailField) => field.label)
                         }
                         .width('100%')
+                        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+                        .borderRadius(16)
+                        .backgroundColor($r('app.color.v3_surface'))
+                        .border({ width: 1, color: $r('app.color.nd_card_border') })
                         .accessibilityText('应用详细字段')
 
                         if (this.screenshots().length > 0) {
@@ -449,28 +546,75 @@ export struct AppDetailPage {
                     if (!this.started) {
                         this.started = true;
                         this.target = consumeDetailTarget();
+                        const continuation = getContinuationState();
+                        setContinuationView(
+                            continuation.mainTab,
+                            0,
+                            CONTINUATION_ROUTE_DETAIL,
+                            this.target,
+                            this.shareUrl(),
+                        );
                         setTimeout(() => this.load(false), 0);
+                        if (continuation.routeName === CONTINUATION_ROUTE_DETAIL && continuation.scrollDistance > 0) {
+                            setTimeout(() => this.scroller.scrollTo({
+                                xOffset: 0,
+                                yOffset: continuation.scrollDistance,
+                                animation: { duration: 0 },
+                            }), 80);
+                        }
                     }
                 })
             }
             .width('100%')
             .height('100%')
+            .scrollBar(BarState.Off)
+            .onDidScroll(() => {
+                const continuation = getContinuationState();
+                setContinuationView(
+                    continuation.mainTab,
+                    this.scroller.currentOffset().yOffset,
+                    CONTINUATION_ROUTE_DETAIL,
+                    this.target,
+                    this.shareUrl(),
+                );
+            })
             .backgroundColor($r('app.color.background'))
             .accessibilityText('公用应用详情页')
         }
         .titleBar({
             style: {
                 scrollEffectOpts: {
-                    enableScrollEffect: true,
+                    enableScrollEffect: false,
                     scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
                     blurEffectiveStartOffset: LengthMetrics.vp(0),
                     blurEffectiveEndOffset: LengthMetrics.vp(20),
                 },
             },
             content: {
-                title: { mainTitle: this.app?.name || '应用详情' },
-                backIcon: { action: () => this.pageStack.pop() },
+                title: {
+                    mainTitle: this.app?.name || '应用详情',
+                    mainTitleSize: TitleSize.TITLE_S,
+                },
+                menu: {
+                    value: [{
+                        content: {
+                            label: 'share',
+                            icon: $r('sys.symbol.share'),
+                            isEnabled: this.app !== undefined,
+                            action: () => this.showShare(),
+                        },
+                    }],
+                },
+                backIcon: {
+                    action: () => this.closePage(),
+                },
             },
+        })
+        .titleMode(HdsNavigationTitleMode.MINI)
+        .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+        .onBackPressed(() => {
+            this.closePage();
+            return true;
         })
         .accessibilityText('应用详情导航页')
     }

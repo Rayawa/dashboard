@@ -1,11 +1,13 @@
 import { common } from '@kit.AbilityKit';
 import { PromptAction } from '@kit.ArkUI';
-import { CONTENT_MAX_WIDTH, RESPONSIVE_BREAKPOINT_LARGE, RESPONSIVE_BREAKPOINT_MEDIUM } from '../../common/constants';
+import { RESPONSIVE_BREAKPOINT_LARGE, RESPONSIVE_BREAKPOINT_MEDIUM } from '../../common/constants';
 import { setDetailTarget } from '../../common/appState';
 import { fetchApiHistory, fetchAppsPage, fetchRatingDistribution, fetchSdkDistribution } from '../../common/MarketApi';
 import { formatCount } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
+import { vibration } from '../../common/vibration';
 import type { BaseAPIResponse, MarketApp, PageInfo, RatingDistribution } from '../../common/types';
+import { pushPathSafely } from '../../common/safeNavigation';
 
 interface DistributionChart {
     title: string;
@@ -23,6 +25,7 @@ interface HistoryPoint {
 struct DistributionPanel {
     chart: DistributionChart = { title: '', labels: [], values: [], total: 1 };
     @State private selected: number = 0;
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
     private colors(): ResourceColor[] {
         return [
@@ -71,7 +74,10 @@ struct DistributionPanel {
                             .backgroundColor(index === this.selected ? this.colors()[index % this.colors().length] : $r('app.color.v3_surface_alt'))
                             .height(34)
                             .margin(3)
-                            .onClick(() => this.selected = index)
+                            .onClick(() => {
+                                if (this.vibrationEnabled) vibration.dotVibration();
+                                this.selected = index;
+                            })
                             .accessibilityText(`查看${label}，数量${formatCount(this.chart.values[index])}`)
                     }, (label: string) => `${this.chart.title}-${label}`)
                 }
@@ -183,6 +189,7 @@ struct ApiHistoryChart {
     @State private canvasHeight: number = 210;
     @State private selectedApiIndex: number = 0;
     @State private selectedDateIndex: number = 0;
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
     private options(): SelectOption[] {
         return this.apiKeys.map((key: string) => ({ value: `API ${key}` } as SelectOption));
@@ -212,7 +219,7 @@ struct ApiHistoryChart {
             lineColor = host.resourceManager.getColorSync($r('app.color.v3_accent_blue').id);
             gridColor = host.resourceManager.getColorSync($r('app.color.v3_chart_grid').id);
         } catch (error) {
-            console.warn('[Dashboard][pages/v3/OverviewPage][WARN]', `[overview] 图表颜色资源读取失败，使用内置配色: ${JSON.stringify(error)}`);
+            console.warn('[Dashboard][component/charts/OverviewSection][WARN]', `图表颜色资源读取失败，使用内置配色: ${JSON.stringify(error)}`);
         }
         const left = 28;
         const top = 16;
@@ -262,6 +269,7 @@ struct ApiHistoryChart {
                     .value(`API ${this.currentKey()}`)
                     .backgroundColor($r('app.color.v3_surface_alt'))
                     .onSelect((index: number) => {
+                        if (this.vibrationEnabled) vibration.dotVibration();
                         this.selectedApiIndex = index;
                         setTimeout(() => this.draw(), 0);
                     })
@@ -309,7 +317,7 @@ struct ApiHistoryChart {
 }
 
 @Component
-export struct OverviewPage {
+export struct OverviewSection {
     @Consume('pageStack') private pageStack: NavPathStack;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     @State private loading: boolean = false;
@@ -322,6 +330,15 @@ export struct OverviewPage {
     @State private apiKeys: string[] = [];
     @State private topApps: MarketApp[] = [];
     @State private nonHuaweiApps: MarketApp[] = [];
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    private pendingLoads: number = 0;
+    private failedLoads: number = 0;
+
+    private vibrate(): void {
+        if (this.vibrationEnabled) {
+            vibration.dotVibration();
+        }
+    }
 
     private distribution(title: string, source: number[][]): DistributionChart {
         const sorted = source.slice().sort((a: number[], b: number[]) => b[1] - a[1]);
@@ -344,26 +361,66 @@ export struct OverviewPage {
             return;
         }
         this.loading = true;
-        Promise.all([
-            fetchRatingDistribution(force),
-            fetchSdkDistribution('min_sdk', force),
-            fetchSdkDistribution('target_sdk', force),
-            fetchApiHistory(force),
-            fetchAppsPage(1, 10, 'download_count', true, undefined, undefined, false, force, false),
-            fetchAppsPage(1, 10, 'download_count', true, undefined, undefined, false, force, true),
-        ]).then((results) => {
-            const ratingResponse = results[0].data as BaseAPIResponse<RatingDistribution>;
+        this.fromCache = false;
+        this.pendingLoads = 6;
+        this.failedLoads = 0;
+        const finish = (): void => {
+            this.pendingLoads--;
+            if (this.pendingLoads <= 0) {
+                this.loading = false;
+                this.loaded = true;
+                if (this.failedLoads > 0) {
+                    showToastSafely(
+                        this.prompt,
+                        `${this.failedLoads} 项图表数据暂不可用，其余内容已正常显示`,
+                        2500,
+                        'V3Overview',
+                    );
+                }
+            }
+        };
+        const failed = (name: string, error: Error): void => {
+            this.failedLoads++;
+            console.error('[Dashboard][component/charts/OverviewSection][ERROR]', `${name}加载失败: ${error.message}`);
+        };
+
+        fetchRatingDistribution(force).then((result) => {
+            const ratingResponse = result.data as BaseAPIResponse<RatingDistribution>;
+            if (!ratingResponse.success || !ratingResponse.data) {
+                throw new Error('评分接口未返回有效数据');
+            }
             const rating = ratingResponse.data;
             const ratingValues = [rating.star_1, rating.star_2, rating.star_3, rating.star_4, rating.star_5];
             this.ratingChart = {
                 title: '应用评分分布',
-                labels: ['无评分', '[1–2) 星', '[2–3) 星', '[3–4) 星', '[4–5] 星'],
+                labels: ['1 星', '2 星', '3 星', '4 星', '5 星'],
                 values: ratingValues,
                 total: ratingValues.reduce((sum: number, value: number) => sum + value, 0),
             };
-            this.minSdkChart = this.distribution('最低 SDK 分布', results[1].data.data as number[][]);
-            this.targetSdkChart = this.distribution('目标 SDK 分布', results[2].data.data as number[][]);
-            const rawHistory = results[3].data.data as object[];
+            this.fromCache = this.fromCache || result.stale;
+        }).catch((error: Error) => failed('评分分布', error)).finally(() => finish());
+
+        fetchSdkDistribution('min_sdk', force).then((result) => {
+            if (!result.data.success || !result.data.data) {
+                throw new Error('最低 SDK 接口未返回有效数据');
+            }
+            this.minSdkChart = this.distribution('最低 SDK 分布', result.data.data as number[][]);
+            this.fromCache = this.fromCache || result.stale;
+        }).catch((error: Error) => failed('最低 SDK 分布', error)).finally(() => finish());
+
+        fetchSdkDistribution('target_sdk', force).then((result) => {
+            if (!result.data.success || !result.data.data) {
+                throw new Error('目标 SDK 接口未返回有效数据');
+            }
+            this.targetSdkChart = this.distribution('目标 SDK 分布', result.data.data as number[][]);
+            this.fromCache = this.fromCache || result.stale;
+        }).catch((error: Error) => failed('目标 SDK 分布', error)).finally(() => finish());
+
+        fetchApiHistory(force).then((result) => {
+            if (!result.data.success || !result.data.data) {
+                throw new Error('API 历史接口未返回有效数据');
+            }
+            const rawHistory = result.data.data as object[];
             const history: HistoryPoint[] = [];
             rawHistory.forEach((raw: object) => {
                 const tuple = raw as object[];
@@ -375,21 +432,30 @@ export struct OverviewPage {
             if (history.length > 0) {
                 this.apiKeys = Object.keys(history[history.length - 1].values).sort((a: string, b: string) => Number(a) - Number(b));
             }
-            const topResponse = results[4].data as BaseAPIResponse<PageInfo<MarketApp>>;
-            const nonHuaweiResponse = results[5].data as BaseAPIResponse<PageInfo<MarketApp>>;
+            this.fromCache = this.fromCache || result.stale;
+        }).catch((error: Error) => failed('Harmony API 历史', error)).finally(() => finish());
+
+        fetchAppsPage(1, 10, 'download_count', true, undefined, undefined, false, force, false).then((result) => {
+            const topResponse = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
+            if (!topResponse.success || !topResponse.data) {
+                throw new Error('下载榜接口未返回有效数据');
+            }
             this.topApps = topResponse.data.data ?? [];
+            this.fromCache = this.fromCache || result.stale;
+        }).catch((error: Error) => failed('总下载榜', error)).finally(() => finish());
+
+        fetchAppsPage(1, 10, 'download_count', true, undefined, undefined, false, force, true).then((result) => {
+            const nonHuaweiResponse = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
+            if (!nonHuaweiResponse.success || !nonHuaweiResponse.data) {
+                throw new Error('非华为下载榜接口未返回有效数据');
+            }
             this.nonHuaweiApps = nonHuaweiResponse.data.data ?? [];
-            this.fromCache = results.some((item) => item.stale);
-            this.loaded = true;
-        }).catch((error: Error) => {
-            console.error('[Dashboard][pages/v3/OverviewPage][ERROR]', `图表加载失败: ${error.message}`);
-            showToastSafely(this.prompt, `图表加载失败：${error.message}`, 2500, 'V3Overview');
-        }).finally(() => this.loading = false);
+            this.fromCache = this.fromCache || result.stale;
+        }).catch((error: Error) => failed('非华为下载榜', error)).finally(() => finish());
     }
 
     build() {
-        Scroll() {
-            Column({ space: 14 }) {
+        Column({ space: 14 }) {
                 Row() {
                     Column({ space: 4 }) {
                         Text('应用概况')
@@ -407,7 +473,10 @@ export struct OverviewPage {
                     Button('刷新')
                         .backgroundColor($r('app.color.v3_accent_blue'))
                         .enabled(!this.loading)
-                        .onClick(() => this.load(true))
+                        .onClick(() => {
+                            this.vibrate();
+                            this.load(true);
+                        })
                         .accessibilityText(this.loading ? '图表正在刷新' : '刷新全部图表')
                 }
                 .width('100%')
@@ -482,26 +551,19 @@ export struct OverviewPage {
                 .width('100%')
                 .accessibilityText('应用下载排行榜')
 
-                Blank().height(96)
-            }
-            .width('100%')
-            .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
-            .padding({ left: 14, right: 14 })
-            .onAppear(() => {
-                if (!this.loaded) {
-                    this.load(false);
-                }
-            })
         }
         .width('100%')
-        .height('100%')
-        .scrollBar(BarState.Off)
-        .backgroundColor($r('app.color.background'))
+        .onAppear(() => {
+            if (!this.loaded) {
+                this.load(false);
+            }
+        })
         .accessibilityText('应用概况页面')
     }
 
     private openDetail(app: MarketApp): void {
+        this.vibrate();
         setDetailTarget({ appId: app.app_id, packageName: app.pkg_name });
-        this.pageStack.pushPathByName('AppDetailPage', null);
+        pushPathSafely(this.pageStack, 'AppDetailPage', {}, 'component/charts/OverviewSection');
     }
 }

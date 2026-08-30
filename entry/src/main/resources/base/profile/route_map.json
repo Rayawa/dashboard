@@ -2,50 +2,32 @@
   "routerMap": [
     {
       "name": "TutorialPage",
-      "pageSourceFile": "src/main/ets/pages/tutorial.ets",
+      "pageSourceFile": "src/main/ets/pages/more/tutorial.ets",
       "buildFunction": "TutorialPageBuilder"
     },
     {
       "name": "FriendPage",
-      "pageSourceFile": "src/main/ets/pages/friend.ets",
+      "pageSourceFile": "src/main/ets/pages/more/friend.ets",
       "buildFunction": "FriendPageBuilder"
     },
     {
       "name": "FriendPageWeb",
-      "pageSourceFile": "src/main/ets/pages/friendWeb.ets",
+      "pageSourceFile": "src/main/ets/pages/more/friendWeb.ets",
       "buildFunction": "FriendPageWebBuilder"
-    },
-
-    {
-      "name": "QueryPage",
-      "pageSourceFile": "src/main/ets/pages/queryWeb.ets",
-      "buildFunction": "QueryPageBuilder"
-    },
-
-
-    {
-      "name": "UserPage",
-      "pageSourceFile": "src/main/ets/pages/user.ets",
-      "buildFunction": "UserPageBuilder"
-    },
-    {
-      "name": "AboutPage",
-      "pageSourceFile": "src/main/ets/pages/user/about.ets",
-      "buildFunction": "AboutPageBuilder"
     },
     {
       "name": "HTMLPage",
-      "pageSourceFile": "src/main/ets/pages/user/htmlPage.ets",
+      "pageSourceFile": "src/main/ets/pages/more/htmlPage.ets",
       "buildFunction": "HTMLBuilder"
     },
     {
       "name": "AboutWebPage",
-      "pageSourceFile": "src/main/ets/pages/user/aboutWeb.ets",
+      "pageSourceFile": "src/main/ets/pages/more/aboutWeb.ets",
       "buildFunction": "AboutWebBuilder"
     },
     {
       "name": "AppLogPage",
-      "pageSourceFile": "src/main/ets/pages/user/appLog.ets",
+      "pageSourceFile": "src/main/ets/pages/more/appLog.ets",
       "buildFunction": "AppLogBuilder"
     }
   ]

@@ -1,5 +1,6 @@
 import { webview } from '@kit.ArkWeb';
 import { customUserAgent, SBaseURL } from '../../common/constants';
+import { vibration } from '../../common/vibration';
 
 @Component
 export struct SStationPage {
@@ -7,6 +8,7 @@ export struct SStationPage {
     @State private progress: number = 0;
     @State private loading: boolean = true;
     @State private errorMessage: string = '';
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
     build() {
         Stack({ alignContent: Alignment.Top }) {
@@ -25,7 +27,7 @@ export struct SStationPage {
                     try {
                         this.controller.setCustomUserAgent(customUserAgent);
                     } catch (error) {
-                        console.warn('[Dashboard][pages/v3/SStationPage][WARN]', `[S站] 设置 User-Agent 失败: ${JSON.stringify(error)}`);
+                        console.warn('[Dashboard][pages/main/SStationPage][WARN]', `设置 User-Agent 失败: ${JSON.stringify(error)}`);
                     }
                 })
                 .onPageBegin(() => {
@@ -67,6 +69,7 @@ export struct SStationPage {
                     Button('重新加载')
                         .backgroundColor($r('app.color.v3_accent_blue'))
                         .onClick(() => {
+                            if (this.vibrationEnabled) vibration.dotVibration();
                             this.errorMessage = '';
                             this.controller.refresh();
                         })

@@ -4,25 +4,27 @@ import {
     HdsNavigationTitleMode,
     HdsTabs,
     HdsTabsController,
+    TitleSize,
 } from '@kit.UIDesignKit';
-import { curves } from '@kit.ArkUI';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { getFirstLaunch } from '../common/storage';
-import { consumeMainTab, setMainTab } from '../common/appState';
-import { APP_STATE_KEY_DETAIL_TARGET } from '../common/constants';
+import { consumeMainTab, setContinuationView, setMainTab } from '../common/appState';
+import { APP_STATE_KEY_DETAIL_TARGET, MAIN_TAB_DEFAULT } from '../common/constants';
 import type { AppRouteTarget } from '../common/types';
 import { warn } from '../component/warn';
 import { vibration } from '../common/vibration';
-import { SStationPage } from './v3/SStationPage';
-import { HomePage } from './v3/HomePage';
-import { OverviewPage } from './v3/OverviewPage';
-import { SearchPage } from './v3/SearchPage';
-import { AppsPage } from './v3/AppsPage';
-import { MyPage } from './v3/MyPage';
-import { AppDetailPage } from './v3/AppDetailPage';
-import { AboutWebBuilder } from './user/aboutWeb';
-import { AppLogBuilder } from './user/appLog';
-import { HTMLBuilder } from './user/htmlPage';
+import { SStationPage } from './main/SStationPage';
+import { HomePage } from './main/HomePage';
+import { SearchPage } from './main/SearchPage';
+import { AppsPage } from './main/AppsPage';
+import { MyPage } from './main/MyPage';
+import { AppDetailPage } from './detail/AppDetailPage';
+import { AboutWebBuilder } from './more/aboutWeb';
+import { AppLogBuilder } from './more/appLog';
+import { HTMLBuilder } from './more/htmlPage';
+import { TutorialPageBuilder } from './more/tutorial';
+import { FriendPageBuilder } from './more/friend';
+import { FriendPageWebBuilder } from './more/friendWeb';
 
 interface MainTab {
     label: string;
@@ -36,7 +38,7 @@ struct Dashboard {
     private tabsController: HdsTabsController = new HdsTabsController();
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
-    @State private selectedIndex: number = 1;
+    @State private selectedIndex: number = MAIN_TAB_DEFAULT;
     @State private searchRequestVersion: number = 0;
     @State private showWarning: boolean = false;
 
@@ -44,7 +46,6 @@ struct Dashboard {
         return [
             { label: 'S站', icon: $r('app.media.api') },
             { label: '首页', icon: $r('app.media.startIcon') },
-            { label: '应用概况', icon: $r('app.media.AGstatistics') },
             { label: '搜索', icon: $r('app.media.search') },
             { label: '应用总表', icon: $r('app.media.log') },
             { label: '我的', icon: $r('app.media.user') },
@@ -61,11 +62,21 @@ struct Dashboard {
         }
         const detail = AppStorage.get<AppRouteTarget>(APP_STATE_KEY_DETAIL_TARGET) ?? {};
         if (detail.appId || detail.packageName) {
-            const existing = this.pageStack.getIndexByName('AppDetailPage');
-            if (existing.length > 0) {
-                this.pageStack.removeByName('AppDetailPage');
+            try {
+                const existing = this.pageStack.getIndexByName('AppDetailPage');
+                if (existing.length > 0) {
+                    this.pageStack.removeByName('AppDetailPage');
+                }
+                setTimeout(() => {
+                    try {
+                        this.pageStack.pushPathByName('AppDetailPage', null);
+                    } catch (error) {
+                        console.error('[Dashboard][pages/Dashboard][ERROR]', `恢复应用详情失败: ${JSON.stringify(error)}`);
+                    }
+                }, 0);
+            } catch (error) {
+                console.error('[Dashboard][pages/Dashboard][ERROR]', `检查详情导航栈失败: ${JSON.stringify(error)}`);
             }
-            setTimeout(() => this.pageStack.pushPathByName('AppDetailPage', null), 0);
         }
     }
 
@@ -83,6 +94,12 @@ struct Dashboard {
             AppLogBuilder()
         } else if (name === 'HTMLPage') {
             HTMLBuilder()
+        } else if (name === 'TutorialPage') {
+            TutorialPageBuilder()
+        } else if (name === 'FriendPage') {
+            FriendPageBuilder()
+        } else if (name === 'FriendPageWeb') {
+            FriendPageWebBuilder()
         }
     }
 
@@ -103,34 +120,28 @@ struct Dashboard {
                     .accessibilityText('首页标签页')
 
                     TabContent() {
-                        OverviewPage()
-                    }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[2].icon, this.tabs()[2].label))
-                    .accessibilityText('应用概况标签页')
-
-                    TabContent() {
                         SearchPage({ requestVersion: this.searchRequestVersion })
                     }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[3].icon, this.tabs()[3].label))
+                    .tabBar(new BottomTabBarStyle(this.tabs()[2].icon, this.tabs()[2].label))
                     .accessibilityText('搜索标签页')
 
                     TabContent() {
                         AppsPage()
                     }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[4].icon, this.tabs()[4].label))
+                    .tabBar(new BottomTabBarStyle(this.tabs()[3].icon, this.tabs()[3].label))
                     .accessibilityText('应用总表标签页')
 
                     TabContent() {
                         MyPage()
                     }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[5].icon, this.tabs()[5].label))
+                    .tabBar(new BottomTabBarStyle(this.tabs()[4].icon, this.tabs()[4].label))
                     .accessibilityText('我的标签页')
                 }
                 .barPosition(BarPosition.End)
                 .vertical(false)
                 .barOverlap(true)
                 .blurStrategy(BlurStrategy.ENABLE)
-                .animation({ curve: curves.springMotion(0.8, 0.8), duration: 360 })
+                .animation({ duration: 0 })
                 .barFloatingStyle({
                     barBottomMargin: 18,
                     lightColor: $r('app.color.light_color'),
@@ -143,13 +154,14 @@ struct Dashboard {
                 .onChange((index: number) => {
                     this.selectedIndex = index;
                     setMainTab(index);
+                    setContinuationView(index, 0);
                     if (this.vibrationEnabled) {
                         vibration.dotVibration();
                     }
                 })
                 .width('100%')
                 .height('100%')
-                .accessibilityText('主界面六个标签页')
+                .accessibilityText('主界面五个标签页')
 
                 if (this.showWarning) {
                     Column()
@@ -172,6 +184,24 @@ struct Dashboard {
         .titleMode(HdsNavigationTitleMode.MINI)
         .hideBackButton(true)
         .divider({ color: $r('app.color.border') })
+        .titleBar({
+            style: {
+                scrollEffectOpts: { enableScrollEffect: false },
+                originalStyle: {
+                    contentStyle: {
+                        titleStyle: {
+                            mainTitleColor: $r('app.color.diff_content'),
+                        },
+                    },
+                },
+            },
+            content: {
+                title: {
+                    mainTitle: 'Dashboard应用看板',
+                    mainTitleSize: TitleSize.TITLE_S,
+                },
+            },
+        })
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.background'))

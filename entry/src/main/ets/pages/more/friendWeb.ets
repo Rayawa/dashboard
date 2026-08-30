@@ -1,24 +1,38 @@
 import { webview } from '@kit.ArkWeb';
 import { motion } from '@kit.MultimodalAwarenessKit';
 import {
-  hdsEffect, HdsNavDestination, ScrollEffectType
+  hdsEffect,
+  HdsNavDestination,
+  HdsNavigationTitleMode,
+  HdsSnackBar,
+  ScrollEffectType,
+  SnackBarIconOptions,
+  SnackBarMessageOptions,
+  SnackBarOperationOptions,
+  SnackBarOperationType,
+  SnackBarStyleOptions,
+  TitleSize,
 } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { vibration } from '../../common/vibration';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
-import { harmonyShare } from '@kit.ShareKit';
-import { WebShareManager } from '../../common/shareControl';
 import { customUserAgent, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../../common/constants';
-import { setButtonPosition } from '../../common/storage';
+import {
+  getButtonPosition,
+  getHoldCheckEnabled,
+  getVibrationEnabled,
+  initializeSettings
+} from '../../common/storage';
+import { popPathSafely } from '../../common/safeNavigation';
 
 @Component
-struct aboutWeb {
+export struct friendWeb {
   @Consume('pageStack') pageStack: NavPathStack;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  @Prop url: string = '';
-  @Prop title: string = '';
+  @State url: string = '';
+  @State title: string = '';
 
   @State progress: number = 0;
   @State showButton: boolean = true;
@@ -89,71 +103,79 @@ struct aboutWeb {
                 this.funcOpacity = 0;
               });
             } else {
-              console.info('[Dashboard][pages/user/aboutWeb][INFO]', '未满2秒，拦截频繁握持手势切换');
+              console.info('[Dashboard][pages/more/friendWeb][INFO]', '未满2秒，拦截频繁握持手势切换');
             }
           }
-          console.info('[Dashboard][pages/user/aboutWeb][INFO]', `握持手状态变化: ${data}`);
+          console.info('[Dashboard][pages/more/friendWeb][INFO]', `握持手状态变化: ${data}`);
         };
         motion.on('holdingHandChanged', this.holdingHandCallback);
-        console.info('[Dashboard][pages/user/aboutWeb][INFO]', '成功订阅握持手状态变化');
+        console.info('[Dashboard][pages/more/friendWeb][INFO]', '成功订阅握持手状态变化');
       } else {
-        setButtonPosition(false);
-        console.warn('[Dashboard][pages/user/aboutWeb][WARN]', '当前设备不支持智感握持能力');
+        this.buttonPositionRIGHT = false;
+        console.warn('[Dashboard][pages/more/friendWeb][WARN]', '当前设备不支持智感握持能力');
       }
     } catch (e) {
-      console.error('[Dashboard][pages/user/aboutWeb][ERROR]', '订阅握持手状态变化失败:', e);
+      console.error('[Dashboard][pages/more/friendWeb][ERROR]', '订阅握持手状态变化失败:', e);
     }
   }
   unsubscribeHoldingHand() {
     if (this.holdingHandCallback !== null) {
       if (!canIUse('SystemCapability.MultimodalAwareness.Motion')) {
         this.holdingHandCallback = null;
-        setButtonPosition(false);
-        console.warn('[Dashboard][pages/user/aboutWeb][WARN]', '当前设备不支持智感握持，已仅复位本地订阅状态');
+        this.buttonPositionRIGHT = false;
+        console.warn('[Dashboard][pages/more/friendWeb][WARN]', '当前设备不支持智感握持，已仅复位本地订阅状态');
         return;
       }
       try {
         motion.off('holdingHandChanged', this.holdingHandCallback);
-        console.info('[Dashboard][pages/user/aboutWeb][INFO]', '已成功取消订阅握持手状态变化');
+        console.info('[Dashboard][pages/more/friendWeb][INFO]', '已成功取消订阅握持手状态变化');
       } catch (e) {
-        console.error('[Dashboard][pages/user/aboutWeb][ERROR]', '取消订阅握持手状态变化失败:', e);
+        console.error('[Dashboard][pages/more/friendWeb][ERROR]', '取消订阅握持手状态变化失败:', e);
       } finally {
         this.holdingHandCallback = null;
       }
     }
   }
 
-  private shareManager?: WebShareManager;
-  private context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-  async aboutToAppear() {
-    this.isRightHand = this.buttonPositionRIGHT;
-    if (this.holdCheckON) this.subscribeHoldingHand();
-    //分享
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-    this.shareManager = WebShareManager.getInstance(context);
-    this.shareManager.enablePassiveShare();
-    this.context.eventHub.on("onFocus", () => {
-      this.shareManager?.enablePassiveShare();
-    });
-    this.context.eventHub.on("onBackGround", () => {
-      this.onBackGround();
-      this.shareManager?.disablePassiveShare();
-    });
+  private async loadSettings() {
+    try {
+      this.vibrationON = await getVibrationEnabled();
+      this.holdCheckON = await getHoldCheckEnabled();
+      this.buttonPositionRIGHT = await getButtonPosition();
+    } catch (error) {
+      console.error('[Dashboard][pages/more/friendWeb][ERROR]', "加载设置失败:", error);
+    }
+  }
+  private uiContext: UIContext = this.getUIContext();
+  private hdsSnackBar: HdsSnackBar = new HdsSnackBar(this.uiContext);
+  icon: SnackBarIconOptions = {
+    icon: $r('sys.symbol.exclamationmark_circle')
+  }
+  message: SnackBarMessageOptions = {
+    title: "您正在访问其他站点",
+    content: "网站设计与展示内容均与看板无关！",
+  }
+  operation: SnackBarOperationOptions = {
+    operationType: SnackBarOperationType.TEXT_WITH_CLOSE,
+  }
+  style: SnackBarStyleOptions = {
+    backgroundBlurStyle: BlurStyle.Thin,
+    nextFocusId: 'button',
+    duration: 7000
   }
 
-  onBackGround() {
-    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
-      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
-    });
+  async aboutToAppear() {
+    initializeSettings();
+    await this.loadSettings();
+    this.isRightHand = this.buttonPositionRIGHT;
+    if (this.holdCheckON) this.subscribeHoldingHand();
+  }
+  async onPageShow(): Promise<void> {
+    setTimeout(() => {
+      this.hdsSnackBar.show(this.icon, this.message, this.operation, this.style);
+    },1000)
   }
   aboutToDisappear() {
-    this.shareManager?.disablePassiveShare();
-    const hostContext = this.context;
-    hostContext.eventHub.off("onFocus");
-    hostContext.eventHub.off("onBackGround");
-    harmonyShare.on("knockShare", (sharableTarget: harmonyShare.SharableTarget) => {
-      sharableTarget.reject(harmonyShare.SharableErrorCode.NO_CONTENT_ERROR);
-    });
     if (this.buttonAnimationTimer !== -1) { clearTimeout(this.buttonAnimationTimer); this.buttonAnimationTimer = -1; }
     this.unsubscribeHoldingHand(); // 取消订阅握持手
   }
@@ -169,13 +191,19 @@ struct aboutWeb {
             .zIndex(99);
         }
         Scroll(this.scroller) {
-          Column() {
+          Column(){
+            Blank()
+              .height(80)
+              .width("100%")
+              .expandSafeArea(
+                [SafeAreaType.SYSTEM],
+                [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],)
             Web({
               src: this.url,
               controller: this.web_controller,
               renderMode: RenderMode.SYNC_RENDER,
             })
-              .id(`HmDashboard_web_user`)
+              .id(`HmDashboard_web_friends`)
               .onControllerAttached(() => {
                 try {
                   if (this.url !== "") {
@@ -183,7 +211,7 @@ struct aboutWeb {
                   }
                   this.web_controller.setCustomUserAgent(customUserAgent);
                 } catch (e) {
-                  console.error('[Dashboard][pages/user/aboutWeb][ERROR]', `WebController attach error: ${e}`);
+                  console.error('[Dashboard][pages/more/friendWeb][ERROR]', `WebController attach error: ${e}`);
                 }
               })
               .layoutMode(WebLayoutMode.FIT_CONTENT)
@@ -289,7 +317,7 @@ struct aboutWeb {
                     this.web_controller.removeCache(false),
                   ]);
                 } catch (error) {
-                  console.warn('[Dashboard][pages/user/aboutWeb][WARN]', `hm dashboard e: ${error}`);
+                  console.warn('[Dashboard][pages/more/friendWeb][WARN]', `网页加载过程异常: ${error}`);
                 }
                 this.isLoading = true;
                 if (this.vibrationON) vibration.dotVibration()
@@ -458,11 +486,12 @@ struct aboutWeb {
       .backgroundColor($r("app.color.backcolor"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
+    .titleMode(HdsNavigationTitleMode.MINI)
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {
       if(this.vibrationON) vibration.dotVibration()
       if (this.web_controller.accessStep(-1)) {
-        console.info('[Dashboard][pages/user/aboutWeb][INFO]', "网页可以返回，执行后退");
+        console.info('[Dashboard][pages/more/friendWeb][INFO]', "网页可以返回，执行后退");
         this.web_controller.backward();
         this.PromptAction.showToast({ message: "返回上一页", duration: 1000 });
         return true;
@@ -470,10 +499,11 @@ struct aboutWeb {
         return false;
       }
     })
+
     .titleBar({
       style: {
         scrollEffectOpts: {
-          enableScrollEffect: true,
+          enableScrollEffect: false,
           scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
           blurEffectiveStartOffset: LengthMetrics.vp(0),
           blurEffectiveEndOffset: LengthMetrics.vp(20),
@@ -524,8 +554,10 @@ struct aboutWeb {
       content: {
         title: {
           mainTitle: this.title,
+          mainTitleSize: TitleSize.TITLE_S,
         },
         menu: {
+
           value: [
             {
               content: {
@@ -545,21 +577,9 @@ struct aboutWeb {
                       uri: url,
                     } as Want);
                   } catch (error) {
-                    console.error('[Dashboard][pages/user/aboutWeb][ERROR]', "打开链接失败:", (error as BusinessError).message);
+                    console.error('[Dashboard][pages/more/friendWeb][ERROR]', "打开链接失败:", (error as BusinessError).message);
                     this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
                   }
-                },
-              },
-            },
-            {
-              content: {
-                label: "share",
-                icon: $r("sys.symbol.share"),
-                isEnabled: true,
-                action: () => {
-                  if(this.vibrationON) vibration.dotVibration()
-                  const realUrl = this.web_controller.getUrl();
-                  this.shareManager?.showSystemShare(realUrl);
                 },
               },
             },
@@ -568,7 +588,7 @@ struct aboutWeb {
         backIcon: {
           action: () => {
             if(this.vibrationON) vibration.dotVibration()
-            this.pageStack.pop()
+            popPathSafely(this.pageStack, 'pages/more/friendWeb')
           },
         },
       },
@@ -578,14 +598,13 @@ struct aboutWeb {
       if (params) {
         this.url = params.url;
         this.title = params.title;
-        console.info('[Dashboard][pages/user/aboutWeb][INFO]', `成功加载网页: ${this.title}, 地址: ${this.url}`);
+        console.info('[Dashboard][pages/more/friendWeb][INFO]', `成功加载网页: ${this.title}, 地址: ${this.url}`);
       }
     })
-
   }
 }
 
 @Builder
-export function AboutWebBuilder(){
-  aboutWeb()
+export function FriendPageWebBuilder(){
+  friendWeb()
 }

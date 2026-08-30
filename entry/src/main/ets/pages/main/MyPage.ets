@@ -1,12 +1,24 @@
 import { common, Want } from '@kit.AbilityKit';
 import { PromptAction } from '@kit.ArkUI';
 import { settings } from '../../component/settings';
+import { contact } from '../../component/contact';
 import { warn } from '../../component/warn';
-import { APP_BUILD_NUMBER, APP_VERSION, CONTENT_MAX_WIDTH, MIIT_ICP_URL, SBaseURL } from '../../common/constants';
-import { setUsername } from '../../common/storage';
-import { WebViewParam } from '../user/about';
+import {
+    APP_BUILD_NUMBER,
+    APP_VERSION,
+    CONTENT_MAX_WIDTH,
+    CONTINUATION_ROUTE_MAIN,
+    mainPage,
+    MAIN_TAB_MY,
+    MEOW_CHANNEL_URL,
+    MIIT_ICP_URL,
+    SBaseURL,
+} from '../../common/constants';
+import { getContinuationState, setContinuationView } from '../../common/appState';
+import { WebViewParam } from '../../common/types';
 import URL from '../../common/url';
 import { showToastSafely } from '../../common/safeUi';
+import { vibration } from '../../common/vibration';
 
 interface MoreItem {
     title: string;
@@ -17,6 +29,7 @@ interface MoreItem {
 @Component
 struct MoreRow {
     item: MoreItem = { title: '', icon: $r('app.media.info'), action: () => {} };
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
     build() {
         Row({ space: 12 }) {
@@ -39,7 +52,10 @@ struct MoreRow {
         .width('100%')
         .height(54)
         .padding({ left: 16, right: 16 })
-        .onClick(() => this.item.action())
+        .onClick(() => {
+            if (this.vibrationEnabled) vibration.dotVibration();
+            this.item.action();
+        })
         .accessibilityGroup(true)
         .accessibilityText(`进入${this.item.title}`)
     }
@@ -49,8 +65,38 @@ struct MoreRow {
 export struct MyPage {
     @Consume('pageStack') private pageStack: NavPathStack;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink('username') private username: string = '';
+    private scroller: Scroller = new Scroller();
+    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     @State private showWarning: boolean = false;
+    @State private showContact: boolean = false;
+    private restoredScroll: boolean = false;
+
+    private vibrate(): void {
+        if (this.vibrationEnabled) vibration.dotVibration();
+    }
+
+    private async openExternal(uri: string, label: string): Promise<void> {
+        try {
+            const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+            await context.startAbility({
+                action: 'ohos.want.action.viewData',
+                entities: ['entity.system.browsable'],
+                uri,
+            } as Want);
+        } catch (error) {
+            console.error('[Dashboard][pages/main/MyPage][ERROR]', `打开${label}失败: ${JSON.stringify(error)}`);
+            showToastSafely(this.prompt, `无法打开${label}`, 1600, 'V3My');
+        }
+    }
+
+    private pushPage(name: string, param: Object = {}): void {
+        try {
+            this.pageStack.pushPathByName(name, param);
+        } catch (error) {
+            console.error('[Dashboard][pages/main/MyPage][ERROR]', `打开${name}失败: ${JSON.stringify(error)}`);
+            showToastSafely(this.prompt, '暂时无法打开该页面，请重试', 1800, 'MyPage');
+        }
+    }
 
     private moreItems(): MoreItem[] {
         return [
@@ -60,22 +106,47 @@ export struct MyPage {
                 action: () => this.showWarning = true,
             },
             {
+                title: '网站首页',
+                icon: $r('app.media.app_icon'),
+                action: () => this.openExternal(mainPage.toString(), '网站首页'),
+            },
+            {
+                title: 'MeoW 频道',
+                icon: $r('app.media.MeoW'),
+                action: () => this.openExternal(MEOW_CHANNEL_URL.toString(), 'MeoW频道'),
+            },
+            {
+                title: '查看教程',
+                icon: $r('app.media.tutorial'),
+                action: () => this.pushPage('TutorialPage'),
+            },
+            {
+                title: '友情链接',
+                icon: $r('app.media.sponsor'),
+                action: () => this.pushPage('FriendPage'),
+            },
+            {
                 title: 'API 文档说明',
                 icon: $r('app.media.api'),
                 action: () => {
                     const url = new URL('docs', SBaseURL);
-                    this.pageStack.pushPathByName('AboutWebPage', new WebViewParam(url.toString(), 'API 文档说明'));
+                    this.pushPage('AboutWebPage', new WebViewParam(url.toString(), 'API 文档说明'));
                 },
             },
             {
-                title: 'App 更新日志',
+                title: '更新日志',
                 icon: $r('app.media.app_log'),
-                action: () => this.pageStack.pushPathByName('AppLogPage', null),
+                action: () => this.pushPage('AppLogPage'),
+            },
+            {
+                title: '联系我们',
+                icon: $r('app.media.contact'),
+                action: () => this.showContact = true,
             },
             {
                 title: '隐私政策',
                 icon: $r('app.media.privacy'),
-                action: () => this.pageStack.pushPathByName(
+                action: () => this.pushPage(
                     'HTMLPage',
                     new WebViewParam($rawfile('privacy.html'), '隐私政策'),
                 ),
@@ -93,14 +164,14 @@ export struct MyPage {
                 uri: MIIT_ICP_URL.toString(),
             } as Want);
         } catch (error) {
-            console.error('[Dashboard][pages/v3/MyPage][ERROR]', `打开备案页面失败: ${JSON.stringify(error)}`);
+            console.error('[Dashboard][pages/main/MyPage][ERROR]', `打开备案页面失败: ${JSON.stringify(error)}`);
             showToastSafely(this.prompt, '打开备案页面失败', 1500, 'V3My');
         }
     }
 
     build() {
         Stack() {
-            Scroll() {
+            Scroll(this.scroller) {
                 Column({ space: 14 }) {
                     Column({ space: 8 }) {
                         Image($r('app.media.app_icon'))
@@ -111,7 +182,7 @@ export struct MyPage {
                         Text('Dashboard 应用看板')
                             .fontSize(26)
                             .fontWeight(FontWeight.Bold)
-                            .fontColor($r('app.color.v3_text_primary'))
+                            .fontColor($r('app.color.diff_content'))
                             .accessibilityText('Dashboard应用看板')
                         Text('Harmony Dashboard')
                             .fontSize(15)
@@ -123,47 +194,29 @@ export struct MyPage {
                     .accessibilityGroup(true)
                     .accessibilityText('关于应用')
 
-                    Row({ space: 12 }) {
-                        Image($r('app.media.user'))
-                            .width(24)
-                            .height(24)
-                            .objectFit(ImageFit.Contain)
-                            .accessibilityText('用户名图标')
-                        Text('用户名')
-                            .fontSize(16)
-                            .fontColor($r('app.color.v3_text_primary'))
-                            .accessibilityText('用户名')
-                        TextInput({ text: this.username, placeholder: '设置用户名' })
-                            .layoutWeight(1)
-                            .height(42)
-                            .backgroundColor($r('app.color.v3_surface_alt'))
-                            .onChange((value: string) => {
-                                this.username = value;
-                                setUsername(value);
-                            })
-                            .accessibilityText('设置投稿时使用的用户名')
-                    }
-                    .width('100%')
-                    .padding(16)
-                    .borderRadius(16)
-                    .backgroundColor($r('app.color.v3_surface'))
-                    .border({ width: 1, color: $r('app.color.nd_card_border') })
-                    .accessibilityGroup(true)
-                    .accessibilityText(`用户名设置，当前${this.username || '未设置'}`)
+                    Divider()
+                        .margin({ top: 4, bottom: 4 })
+                        .color($r('app.color.border'))
+                        .accessibilityText('应用信息与设置分隔线')
 
                     Text('设置')
                         .fontSize(14)
                         .fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.v3_accent_blue'))
+                        .fontColor($r('app.color.diff_content'))
                         .width('100%')
                         .padding({ left: 4 })
                         .accessibilityText('设置')
                     settings()
 
+                    Divider()
+                        .margin({ top: 6, bottom: 4 })
+                        .color($r('app.color.border'))
+                        .accessibilityText('设置与更多分隔线')
+
                     Text('更多')
                         .fontSize(14)
                         .fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.v3_accent_blue'))
+                        .fontColor($r('app.color.diff_content'))
                         .width('100%')
                         .padding({ left: 4, top: 6 })
                         .accessibilityText('更多')
@@ -182,9 +235,15 @@ export struct MyPage {
                     .borderRadius(16)
                     .backgroundColor($r('app.color.v3_surface'))
                     .border({ width: 1, color: $r('app.color.nd_card_border') })
+                    .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
                     .clip(true)
                     .accessibilityGroup(true)
                     .accessibilityText('更多栏目')
+
+                    Divider()
+                        .margin({ top: 6, bottom: 4 })
+                        .color($r('app.color.border'))
+                        .accessibilityText('更多与版本信息分隔线')
 
                     Column({ space: 5 }) {
                         Text(`版本 ${APP_VERSION} · 构建 ${APP_BUILD_NUMBER}`)
@@ -205,9 +264,12 @@ export struct MyPage {
                             .accessibilityText('本应用备案域名rayawa点top')
                         Text('京ICP备2025153453号')
                             .fontSize(12)
-                            .fontColor($r('app.color.v3_accent_blue'))
-                            .decoration({ type: TextDecorationType.Underline, color: $r('app.color.v3_accent_blue') })
-                            .onClick(() => this.openIcp())
+                            .fontColor($r('app.color.diff_content'))
+                            .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
+                            .onClick(() => {
+                                this.vibrate();
+                                this.openIcp();
+                            })
                             .accessibilityText('京ICP备2025153453号，点击打开工信部备案页面')
                     }
                     .width('100%')
@@ -218,10 +280,25 @@ export struct MyPage {
                 .width('100%')
                 .constraintSize({ maxWidth: Math.min(CONTENT_MAX_WIDTH, 900) })
                 .padding({ left: 14, right: 14 })
+                .onAppear(() => {
+                    if (!this.restoredScroll) {
+                        this.restoredScroll = true;
+                        const continuation = getContinuationState();
+                        if (continuation.mainTab === MAIN_TAB_MY && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
+                            continuation.scrollDistance > 0) {
+                            setTimeout(() => this.scroller.scrollTo({
+                                xOffset: 0,
+                                yOffset: continuation.scrollDistance,
+                                animation: { duration: 0 },
+                            }), 80);
+                        }
+                    }
+                })
             }
             .width('100%')
             .height('100%')
             .scrollBar(BarState.Off)
+            .onDidScroll(() => setContinuationView(MAIN_TAB_MY, this.scroller.currentOffset().yOffset))
             .backgroundColor($r('app.color.background'))
             .accessibilityText('我的页面')
 
@@ -240,5 +317,21 @@ export struct MyPage {
         .height('100%')
         .backgroundColor($r('app.color.background'))
         .accessibilityText('我的与关于页面')
+        .bindSheet($$this.showContact, this.ContactSheet(), {
+            title: { title: '联系我们' },
+            height: SheetSize.FIT_CONTENT,
+            onWillDisappear: () => this.showContact = false,
+        })
+    }
+
+    @Builder
+    ContactSheet() {
+        Column() {
+            contact()
+        }
+        .width('100%')
+        .padding({ top: 8, bottom: 20 })
+        .accessibilityGroup(true)
+        .accessibilityText('联系我们内容')
     }
 }

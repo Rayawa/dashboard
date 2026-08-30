@@ -14,14 +14,29 @@ export class WebShareManager {
   private isListening: boolean = false;
 
   private currentUrl: string = "";
+  private currentTitle: string = '应用看板链接分享';
+  private currentDescription: string = '';
+  private currentThumbnail?: Uint8Array;
 
   private constructor(context: common.UIAbilityContext) {
     this.context = context;
   }
 
-  public updateShareData(url: string) {
+  public updateShareData(url: string, title: string = '应用看板链接分享', description: string = '') {
     this.currentUrl = url;
+    this.currentTitle = title;
+    this.currentDescription = description || url;
+    this.loadDefaultThumbnail();
     Logger.info(TAG, `URL 缓存已更新: ${url}`);
+  }
+
+  private async loadDefaultThumbnail(): Promise<void> {
+    if (this.currentThumbnail) return;
+    try {
+      this.currentThumbnail = await this.context.resourceManager.getMediaContent($r('app.media.share_icon').id);
+    } catch (error) {
+      Logger.warn(TAG, `分享卡片图标读取失败: ${(error as BusinessError).message}`);
+    }
   }
 
   public static getInstance(context: common.UIAbilityContext): WebShareManager {
@@ -43,19 +58,14 @@ export class WebShareManager {
         return;
       }
 
-      let iconData: Uint8Array | undefined = undefined;
-      try {
-        iconData = await this.context.resourceManager.getMediaContent($r("app.media.share_icon").id);
-      } catch (e) {
-        Logger.error(TAG, "HarmonyShare: Get icon failed");
-      }
+      await this.loadDefaultThumbnail();
 
       let shareData: systemShare.SharedData = new systemShare.SharedData({
         utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
         content: finalUrl,
-        title: "应用看板链接分享",
-        description: finalUrl,
-        thumbnail: iconData
+        title: this.currentTitle,
+        description: this.currentDescription || finalUrl,
+        thumbnail: this.currentThumbnail
       });
 
       let controller: systemShare.ShareController = new systemShare.ShareController(shareData);
@@ -134,17 +144,22 @@ export class WebShareManager {
       return;
     }
 
-    const shareData = new systemShare.SharedData({
-      utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
-      content: this.currentUrl,
-      title: "应用看板链接分享",
-      description: this.currentUrl,
-    });
+    try {
+      const shareData = new systemShare.SharedData({
+        utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
+        content: this.currentUrl,
+        title: this.currentTitle,
+        description: this.currentDescription || this.currentUrl,
+        thumbnail: this.currentThumbnail,
+      });
 
-    target.share(shareData).then(() => {
-      Logger.info(TAG, "HarmonyShare: Passive share success.");
-    }).catch((err: BusinessError) => {
-      Logger.error(TAG, `HarmonyShare: Passive share failed: ${err.message}`);
-    });
+      target.share(shareData).then(() => {
+        Logger.info(TAG, "HarmonyShare: Passive share success.");
+      }).catch((err: BusinessError) => {
+        Logger.error(TAG, `HarmonyShare: Passive share failed: ${err.message}`);
+      });
+    } catch (err) {
+      Logger.error(TAG, `HarmonyShare: Passive share could not start: ${(err as BusinessError).message}`);
+    }
   }
 }
