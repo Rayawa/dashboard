@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit';
-import { formatCount } from '../../common/format';
 import { vibration } from '../../common/vibration';
 
 export interface LineChartPoint {
@@ -41,13 +40,16 @@ export struct InteractiveLineChart {
 
     private valueLabel(value: number): string {
         if (this.unit === '%') return `${value.toFixed(1)}%`;
-        if (this.unit === '分') return value.toFixed(2);
-        return formatCount(value);
+        if (this.unit === '分') return value.toFixed(1);
+        if (value >= 100000000) return `${(value / 100000000).toFixed(1)}亿`;
+        if (value >= 100000) return `${Math.round(value / 10000)}万`;
+        if (value >= 10000) return `${(value / 10000).toFixed(1)}万`;
+        return String(Math.round(value));
     }
 
     private dimensions(): number[] {
-        const left = 64;
-        const right = 18;
+        const left = 52;
+        const right = 6;
         return [left, right, Math.max(1, this.canvasWidth - left - right)];
     }
 
@@ -99,13 +101,13 @@ export struct InteractiveLineChart {
         const left = dimensions[0];
         const drawWidth = dimensions[2];
         const top = 18;
-        const bottom = 46;
+        const bottom = 48;
         const drawHeight = Math.max(1, height - top - bottom);
         const maximum = this.maximum();
         this.context.strokeStyle = gridColor;
         this.context.fillStyle = textColor;
         this.context.lineWidth = 1;
-        this.context.font = '13px sans-serif';
+        this.context.font = '16px sans-serif';
         for (let row = 0; row <= 4; row++) {
             const y = top + drawHeight * row / 4;
             this.context.beginPath();
@@ -134,7 +136,7 @@ export struct InteractiveLineChart {
             if (index === 0) this.context.moveTo(x, y); else this.context.lineTo(x, y);
         }
         this.context.stroke();
-        const labelStep = Math.max(1, Math.ceil(this.points.length / Math.max(2, Math.floor(drawWidth / 92))));
+        const labelStep = Math.max(1, Math.ceil(this.points.length / Math.max(2, Math.floor(drawWidth / 108))));
         for (let index = 0; index < this.points.length; index++) {
             const x = this.pointX(index);
             if (x < left - 6 || x > left + drawWidth + 6) continue;
@@ -216,7 +218,7 @@ export struct InteractiveLineChart {
                     .accessibilityText(`暂无${this.title}`)
             }
         }
-        .width('100%').padding(18).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
+        .width('100%').padding(14).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
         .accessibilityGroup(true)
         .accessibilityText(this.points.length > 0 ?

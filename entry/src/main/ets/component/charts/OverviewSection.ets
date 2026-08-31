@@ -89,7 +89,7 @@ struct ApiHistoryChart {
     private currentKey(): string { return this.apiKeys[this.selectedApiIndex] ?? ''; }
     private points(): LineChartPoint[] {
         const key = this.currentKey();
-        return this.history.map((point: HistoryPoint) => {
+        return this.history.map((point: HistoryPoint): LineChartPoint => {
             const value = point.values[key] ?? 0;
             return { label: point.date, value, detail: `${point.date} · API ${key} 占比 ${value.toFixed(2)}%` };
         });

@@ -40,7 +40,9 @@ export struct HdsTitleBarSegment {
         items: this.items,
         selectedIndex: this.selectedIndex(),
         $selectedIndex: (index: number): void => {
-          this.selectedIndexes = [index];
+          this.getUIContext().animateTo({ duration: 240, curve: Curve.EaseInOut }, (): void => {
+            this.selectedIndexes = [index];
+          });
         },
         onItemClicked: this.onItemClicked,
         itemMaxFontScale: this.maxFontScale,

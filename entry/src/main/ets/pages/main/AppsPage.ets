@@ -103,19 +103,18 @@ export struct AppsPage {
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     @Prop @Watch('onSearchCommandVersionChanged') searchCommandVersion: number = 0;
     @Prop @Watch('onRequestVersionChanged') requestVersion: number = 0;
+    @Prop @Watch('onSearchCloseVersionChanged') searchCloseVersion: number = 0;
     onSearchVisibilityChanged?: (visible: boolean) => void;
+    onSearchOpenChanged?: (open: boolean) => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private pageScroller: Scroller = new Scroller();
-    private overviewScroller: Scroller = new Scroller();
     private segmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
         { text: '应用概况', accessibilityText: '应用概况' },
         { text: '应用列表', accessibilityText: '应用列表' },
     ]);
     @State private selectedIndexes: number[] = [0];
-    @State private overviewRefreshVersion: number = 0;
-    @State private overviewRefreshing: boolean = false;
-    @State private listRefreshing: boolean = false;
     @State private searchExpanded: boolean = false;
+    @State private searchPullRefreshing: boolean = false;
     @State private titleSearchVisible: boolean = false;
     @State private apps: MarketApp[] = [];
     @State private page: number = 1;
@@ -141,8 +140,7 @@ export struct AppsPage {
     private onScrollToTopVersionChanged(): void {
         if (this.scrollToTopVersion <= 0) return;
         try {
-            const scroller = this.selectedIndexes[0] === 0 ? this.overviewScroller : this.pageScroller;
-            scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 300 } });
+            this.pageScroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 300 } });
         } catch (error) {
             console.warn('[Dashboard][pages/main/AppsPage][WARN]', `返回顶部失败: ${JSON.stringify(error)}`);
         }
@@ -151,25 +149,38 @@ export struct AppsPage {
     private onRequestVersionChanged(): void {
         if (this.requestVersion > 0 && hasPendingSearchTarget()) this.openSearch(false);
     }
+    private onSearchCloseVersionChanged(): void {
+        if (this.searchCloseVersion > 0 && this.searchExpanded) this.closeSearch();
+    }
     private openSearch(withFeedback: boolean = true): void {
         if (this.searchExpanded) return;
         if (withFeedback) this.vibrate();
         this.titleSearchVisible = false;
         if (this.onSearchVisibilityChanged) this.onSearchVisibilityChanged(false);
+        if (this.onSearchOpenChanged) this.onSearchOpenChanged(true);
         this.getUIContext().animateTo({
             curve: curves.interpolatingSpring(0, 1, 342, 38),
         }, (): void => { this.searchExpanded = true; });
     }
+    private pullOpenSearch(): void {
+        this.searchPullRefreshing = true;
+        this.openSearch();
+    }
     private closeSearch(): void {
+        this.searchPullRefreshing = false;
+        if (this.onSearchOpenChanged) this.onSearchOpenChanged(false);
         this.getUIContext().animateTo({
             curve: curves.interpolatingSpring(0, 1, 342, 38),
         }, (): void => {
             this.searchExpanded = false;
-            const scroller = this.selectedIndexes[0] === 0 ? this.overviewScroller : this.pageScroller;
-            this.updateTitleSearch(scroller.currentOffset().yOffset);
+            this.updateTitleSearch(this.pageScroller);
         });
     }
-    private updateTitleSearch(offset: number): void {
+    private safeOffset(scroller: Scroller): number {
+        try { return scroller.currentOffset().yOffset; } catch (_error) { return 0; }
+    }
+    private updateTitleSearch(scroller: Scroller): void {
+        const offset = this.safeOffset(scroller);
         const visible = offset > 10;
         if (visible === this.titleSearchVisible) return;
         this.titleSearchVisible = visible;
@@ -249,8 +260,6 @@ export struct AppsPage {
                 this.reloadAfterCurrent = false;
                 this.reloadForce = false;
                 setTimeout((): void => { this.load(forceNext); }, 0);
-            } else {
-                this.listRefreshing = false;
             }
         }
     }
@@ -290,11 +299,19 @@ export struct AppsPage {
     private recordScroll(scroller: Scroller): void {
         try {
             const offset = scroller.currentOffset().yOffset;
-            this.updateTitleSearch(offset);
+            this.updateTitleSearch(scroller);
             setContinuationView(MAIN_TAB_APPS, offset);
         } catch (error) {
             console.warn('[Dashboard][pages/main/AppsPage][WARN]', `保存滚动位置失败: ${JSON.stringify(error)}`);
         }
+    }
+
+    @Builder
+    private searchPullHint(): void {
+        Column()
+            .width('100%')
+            .height(36)
+            .accessibilityText('下拉打开应用搜索')
     }
 
     @Builder
@@ -317,10 +334,11 @@ export struct AppsPage {
                     experimentalHeight: 52,
                     onItemClicked: (index: number): void => {
                         this.vibrate();
-                        this.selectedIndexes = [index];
+                        this.getUIContext().animateTo({ duration: 240, curve: Curve.EaseInOut }, (): void => {
+                            this.selectedIndexes = [index];
+                        });
                         setAppsViewIndex(index);
-                        const scroller = index === 0 ? this.overviewScroller : this.pageScroller;
-                        this.updateTitleSearch(scroller.currentOffset().yOffset);
+                        this.updateTitleSearch(this.pageScroller);
                     },
                 })
             }
@@ -440,78 +458,68 @@ export struct AppsPage {
 
     build() {
         Stack({ alignContent: Alignment.Top }) {
-            if (this.selectedIndexes[0] === 0) {
-                Refresh({ refreshing: $$this.overviewRefreshing }) {
-                    Scroll(this.overviewScroller) {
-                        Column({ space: 12 }) {
-                            Blank().height(100).width('100%')
-                            if (!this.searchExpanded) {
-                                this.commonHeader()
-                            }
-                            OverviewSection({
-                                refreshVersion: this.overviewRefreshVersion,
-                                onRefreshCompleted: (): void => { this.overviewRefreshing = false; },
-                            })
-                            Blank().height(20).width('100%')
-                        }.width('100%').padding({ left: 14, right: 14 })
-                    }
-                    .width('100%').height('100%').scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
-                    .onDidScroll((): void => this.recordScroll(this.overviewScroller))
-                    .accessibilityText('可滚动并下拉刷新的应用概况页面')
-                }
-                .width('100%').height('100%')
-                .onRefreshing((): void => {
-                    this.overviewRefreshing = true;
-                    this.overviewRefreshVersion++;
-                })
-            } else {
-                Refresh({ refreshing: $$this.listRefreshing }) {
-                    Scroll(this.pageScroller) {
-                        Column({ space: 12 }) {
-                            Blank().height(100).width('100%')
-                            if (!this.searchExpanded) {
-                                this.commonHeader()
-                            }
-                            Text(`共 ${formatCount(this.total)} 条应用数据`).fontSize(13)
-                                .fontColor($r('app.color.v3_text_secondary')).width('100%')
-                                .accessibilityText(`共${formatCount(this.total)}条应用数据`)
-                            this.filterBar()
-                            if (this.typeIndex === 2 && this.appliedFilterText.length > 0) {
-                                Text('元服务类型筛选优先，字段筛选将在切换到全部类型或鸿蒙应用后生效')
-                                    .fontSize(12).fontColor($r('app.color.v3_accent_orange')).width('100%')
-                            }
-                            if (this.fromCache) {
-                                Text('当前列表来自本地缓存；恢复网络后下拉即可获取最新数据')
-                                    .fontSize(13).fontColor($r('app.color.v3_text_primary')).padding(10)
-                                    .width('100%').borderRadius(10).backgroundColor($r('app.color.v3_warning_bg'))
-                                    .accessibilityText('当前应用列表来自本地缓存')
-                            }
-                            this.table()
-                            this.pagination()
+            Refresh({ refreshing: $$this.searchPullRefreshing, builder: this.searchPullHint() }) {
+                Scroll(this.pageScroller) {
+                    Column({ space: 12 }) {
+                        Blank().height(100).width('100%')
+                        if (!this.searchExpanded) {
+                            this.commonHeader()
                         }
-                        .width('100%').padding({ left: 14, right: 14 })
-                        .onAppear(() => {
-                            if (!this.loaded) this.load(false);
-                            if (!this.restoredScroll) {
-                                this.restoredScroll = true;
-                                const continuation = getContinuationState();
-                                if (continuation.mainTab === MAIN_TAB_APPS &&
-                                    continuation.routeName === CONTINUATION_ROUTE_MAIN && continuation.scrollDistance > 0) {
-                                    setTimeout((): void => this.pageScroller.scrollTo({
-                                        xOffset: 0, yOffset: continuation.scrollDistance, animation: { duration: 0 },
-                                    }), 80);
-                                }
+                        if (this.selectedIndexes[0] === 0) {
+                            Column({ space: 12 }) {
+                                OverviewSection()
+                                Blank().height(20).width('100%')
                             }
-                        })
-                        .accessibilityText('应用列表页面')
+                            .width('100%')
+                            .transition(TransitionEffect.OPACITY.animation({ duration: 200 }))
+                        } else {
+                            Column({ space: 12 }) {
+                                Text(`共 ${formatCount(this.total)} 条应用数据`).fontSize(13)
+                                    .fontColor($r('app.color.v3_text_secondary')).width('100%')
+                                    .accessibilityText(`共${formatCount(this.total)}条应用数据`)
+                                this.filterBar()
+                                if (this.typeIndex === 2 && this.appliedFilterText.length > 0) {
+                                    Text('元服务类型筛选优先，字段筛选将在切换到全部类型或鸿蒙应用后生效')
+                                        .fontSize(12).fontColor($r('app.color.v3_accent_orange')).width('100%')
+                                }
+                                if (this.fromCache) {
+                                    Text('当前列表来自本地缓存；恢复网络后重新加载即可获取最新数据')
+                                        .fontSize(13).fontColor($r('app.color.v3_text_primary')).padding(10)
+                                        .width('100%').borderRadius(10).backgroundColor($r('app.color.v3_warning_bg'))
+                                        .accessibilityText('当前应用列表来自本地缓存')
+                                }
+                                this.table()
+                                this.pagination()
+                            }
+                            .width('100%')
+                            .transition(TransitionEffect.OPACITY.animation({ duration: 200 }))
+                            .onAppear(() => {
+                                if (!this.loaded) this.load(false);
+                            })
+                        }
                     }
-                    .width('100%').height('100%').scrollBar(BarState.Auto).edgeEffect(EdgeEffect.Spring)
-                    .onDidScroll((): void => this.recordScroll(this.pageScroller))
-                    .accessibilityText('可上下滚动并下拉刷新的应用列表页面')
+                    .width('100%').padding({ left: 14, right: 14 })
+                    .onAppear(() => {
+                        if (!this.restoredScroll) {
+                            this.restoredScroll = true;
+                            const continuation = getContinuationState();
+                            if (continuation.mainTab === MAIN_TAB_APPS &&
+                                continuation.routeName === CONTINUATION_ROUTE_MAIN && continuation.scrollDistance > 0) {
+                                setTimeout((): void => this.pageScroller.scrollTo({
+                                    xOffset: 0, yOffset: continuation.scrollDistance, animation: { duration: 0 },
+                                }), 80);
+                            }
+                        }
+                    })
                 }
-                .width('100%').height('100%')
-                .onRefreshing((): void => { this.listRefreshing = true; this.load(true); })
+                .width('100%').height('100%').scrollBar(BarState.Auto).edgeEffect(EdgeEffect.Spring)
+                .onDidScroll((): void => this.recordScroll(this.pageScroller))
+                .accessibilityText('可滚动并支持下拉打开应用搜索的应用页面')
             }
+            .width('100%').height('100%')
+            .refreshOffset(36)
+            .onRefreshing((): void => this.pullOpenSearch())
+            .accessibilityText('下拉可打开应用搜索')
 
             if (this.searchExpanded) {
                 SearchPage({
@@ -528,12 +536,6 @@ export struct AppsPage {
                 this.restoredView = true;
                 const continuation = getContinuationState();
                 this.selectedIndexes = [continuation.appsViewIndex === 1 ? 1 : 0];
-                if (continuation.mainTab === MAIN_TAB_APPS && continuation.appsViewIndex === 0 &&
-                    continuation.scrollDistance > 0) {
-                    setTimeout((): void => this.overviewScroller.scrollTo({
-                        xOffset: 0, yOffset: continuation.scrollDistance, animation: { duration: 0 },
-                    }), 80);
-                }
             }
             if (this.requestVersion > 0 && hasPendingSearchTarget()) this.openSearch(false);
         })

@@ -111,7 +111,7 @@ export struct settings {
                 TextInput({ text: this.username, placeholder: 'HarmonyOS用户' })
                     .layoutWeight(1)
                     .height(40)
-                    .defaultFocus(false)
+                    .enableKeyboardOnFocus(false)
                     .backgroundColor($r('app.color.v3_surface_alt'))
                     .onChange((value: string) => {
                         this.username = value;
