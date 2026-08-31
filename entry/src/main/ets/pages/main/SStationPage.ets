@@ -5,7 +5,6 @@ import {
     MAIN_TAB_S_STATION,
     SBaseURL,
     S_STATION_COMMAND_HOME,
-    S_STATION_COMMAND_REFRESH,
     S_STATION_COMMAND_SCROLL_TOP,
 } from '../../common/constants';
 import {
@@ -19,6 +18,7 @@ import { vibration } from '../../common/vibration';
 @Component
 export struct SStationPage {
     private controller: webview.WebviewController = new webview.WebviewController();
+    private scroller: Scroller = new Scroller();
     @Prop command: number = 0;
     @Prop @Watch('onCommandVersionChanged') commandVersion: number = 0;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
@@ -26,6 +26,7 @@ export struct SStationPage {
     @State private loading: boolean = true;
     @State private errorMessage: string = '';
     @State private currentUrl: string = SBaseURL.toString();
+    @State private refreshing: boolean = false;
     private pendingScrollDistance: number = 0;
     private restoredScroll: boolean = false;
 
@@ -50,7 +51,7 @@ export struct SStationPage {
         this.restoredScroll = true;
         setTimeout((): void => {
             try {
-                this.controller.runJavaScript(`window.scrollTo(0, ${this.pendingScrollDistance});`);
+                this.scroller.scrollTo({ xOffset: 0, yOffset: this.pendingScrollDistance, animation: { duration: 0 } });
             } catch (error) {
                 console.warn('[Dashboard][pages/main/SStationPage][WARN]',
                     `恢复S站滚动位置失败: ${JSON.stringify(error)}`);
@@ -63,17 +64,14 @@ export struct SStationPage {
             return;
         }
         try {
-            if (this.command === S_STATION_COMMAND_REFRESH) {
-                this.errorMessage = '';
-                this.loading = true;
-                this.controller.loadUrl(this.currentUrl);
-            } else if (this.command === S_STATION_COMMAND_SCROLL_TOP) {
-                this.controller.runJavaScript('window.scrollTo({ top: 0, behavior: "smooth" });');
+            if (this.command === S_STATION_COMMAND_SCROLL_TOP) {
+                this.scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 300 } });
             } else if (this.command === S_STATION_COMMAND_HOME) {
                 this.errorMessage = '';
                 this.loading = true;
                 this.currentUrl = SBaseURL.toString();
                 setContinuationPageUrl(this.currentUrl);
+                this.scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 0 } });
                 this.controller.loadUrl(this.currentUrl);
                 setContinuationScrollDistance(0);
             }
@@ -84,7 +82,9 @@ export struct SStationPage {
 
     build() {
         Stack({ alignContent: Alignment.Top }) {
-            Column() {
+            Refresh({ refreshing: $$this.refreshing }) {
+              Scroll(this.scroller) {
+                Column() {
                     Blank()
                         .height(100)
                         .width('100%')
@@ -97,7 +97,11 @@ export struct SStationPage {
                     })
                         .id('HmDashboard_SStation')
                         .width('100%')
-                        .layoutWeight(1)
+                        .layoutMode(WebLayoutMode.FIT_CONTENT)
+                        .nestedScroll({
+                            scrollForward: NestedScrollMode.SELF_FIRST,
+                            scrollBackward: NestedScrollMode.SELF_FIRST,
+                        })
                         .backgroundColor($r('app.color.backcolor'))
                         .onControllerAttached(() => {
                             try {
@@ -124,6 +128,7 @@ export struct SStationPage {
                         })
                         .onPageEnd((event) => {
                             this.loading = false;
+                            this.refreshing = false;
                             this.errorMessage = '';
                             if (event?.url && event.url !== 'about:blank') {
                                 this.currentUrl = event.url;
@@ -145,6 +150,7 @@ export struct SStationPage {
                                 return;
                             }
                             this.loading = false;
+                            this.refreshing = false;
                             this.errorMessage = '网页主页面加载失败，请检查网络连接后重试';
                             console.warn('[Dashboard][pages/main/SStationPage][WARN]',
                                 `S站主页面加载失败: ${JSON.stringify(event.error)}`);
@@ -152,20 +158,36 @@ export struct SStationPage {
                         .onProgressChange((event) => {
                             this.progress = event.newProgress;
                         })
-                        .onScroll((event) => {
-                            if (event) {
-                                setMainTab(MAIN_TAB_S_STATION);
-                                setContinuationScrollDistance(event.yOffset);
-                            }
-                        })
+                        .metaViewport(true)
                         .domStorageAccess(true)
                         .darkMode(WebDarkMode.Auto)
                         .forceDarkAccess(true)
                         .accessibilityText('S站网页内容')
+                }
+                .width('100%')
+                .backgroundColor($r('app.color.backcolor'))
+              }
+              .width('100%').height('100%').scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
+              .onDidScroll((): void => {
+                  setMainTab(MAIN_TAB_S_STATION);
+                  setContinuationScrollDistance(this.scroller.currentOffset().yOffset);
+              })
+              .accessibilityText('可滚动的S站网页视图')
             }
-            .width('100%')
-            .height('100%')
-            .accessibilityText('S站网页视图')
+            .width('100%').height('100%')
+            .onRefreshing((): void => {
+                this.refreshing = true;
+                this.errorMessage = '';
+                this.loading = true;
+                try {
+                    this.controller.loadUrl(this.currentUrl);
+                } catch (error) {
+                    this.refreshing = false;
+                    console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                        `下拉刷新S站失败: ${JSON.stringify(error)}`);
+                }
+            })
+            .accessibilityText('下拉可刷新S站')
 
             if (this.loading) {
                 Progress({ value: this.progress, total: 100 })

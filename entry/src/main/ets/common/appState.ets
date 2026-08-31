@@ -11,7 +11,7 @@ import {
     DEFAULT_SCROLL_DISTANCE,
     CONTINUATION_ROUTE_MAIN,
     MAIN_TAB_DEFAULT,
-    MAIN_TAB_SEARCH,
+    MAIN_TAB_APPS,
 } from './constants';
 import type { AppRouteTarget, SearchTarget } from './types';
 
@@ -91,13 +91,18 @@ export function consumeDetailTarget(): AppRouteTarget {
 
 export function setSearchTarget(target: SearchTarget): void {
     AppStorage.setOrCreate<SearchTarget>(APP_STATE_KEY_SEARCH_TARGET, target);
-    AppStorage.setOrCreate<number>(APP_STATE_KEY_MAIN_TAB, MAIN_TAB_SEARCH);
+    AppStorage.setOrCreate<number>(APP_STATE_KEY_MAIN_TAB, MAIN_TAB_APPS);
 }
 
 export function consumeSearchTarget(): SearchTarget {
     const target = AppStorage.get<SearchTarget>(APP_STATE_KEY_SEARCH_TARGET) ?? {};
     AppStorage.setOrCreate<SearchTarget>(APP_STATE_KEY_SEARCH_TARGET, {});
     return target;
+}
+
+export function hasPendingSearchTarget(): boolean {
+    const target = AppStorage.get<SearchTarget>(APP_STATE_KEY_SEARCH_TARGET) ?? {};
+    return (target.rawText || target.packageName || target.appId || '').length > 0;
 }
 
 export function setMainTab(index: number): void {

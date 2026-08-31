@@ -51,8 +51,8 @@ export struct warn {
               .margin({ bottom: 12 })
             Text("详情查看：项目总网页")
               .fontSize(14)
-              .decoration({ type: TextDecorationType.Underline, color: $r('app.color.v3_accent_blue') })
-              .fontColor($r('app.color.v3_accent_blue'))
+              .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
+              .fontColor($r('app.color.diff_content'))
               .margin({ left: 5, top: 10, bottom: 20 })
               .onClick(async () => {
                 if (this.vibrationON) vibration.dotVibration()

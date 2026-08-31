@@ -35,16 +35,12 @@ import type {
     MarketApp,
     ScreenshotInfo,
 } from '../../common/types';
+import { InteractiveLineChart } from '../../component/charts/InteractiveLineChart';
+import type { LineChartPoint } from '../../component/charts/InteractiveLineChart';
 
 interface DetailField {
     label: string;
     value: string;
-}
-
-interface TrendPoint {
-    label: string;
-    value: number;
-    detail: string;
 }
 
 @Component
@@ -75,162 +71,6 @@ struct DetailTag {
     }
 }
 
-@Component
-struct TrendLineChart {
-    title: string = '';
-    unit: string = '';
-    @Prop @Watch('onPointsChanged') points: TrendPoint[] = [];
-    lineColor: Resource = $r('app.color.v3_accent_blue');
-    private settings: RenderingContextSettings = new RenderingContextSettings(true);
-    private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
-    @State private selected: number = 0;
-    @State private zoom: number = 1;
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
-
-    private onPointsChanged(): void {
-        this.selected = Math.max(0, this.points.length - 1);
-        setTimeout((): void => this.draw(), 0);
-    }
-
-    private maximum(): number {
-        let maximum = this.unit === '分' ? 5 : 1;
-        this.points.forEach((point: TrendPoint) => maximum = Math.max(maximum, point.value));
-        return maximum;
-    }
-
-    private chartWidth(): number {
-        return Math.max(420, this.points.length * 54 * this.zoom);
-    }
-
-    private valueLabel(value: number): string {
-        return this.unit === '分' ? value.toFixed(2) : formatCount(value);
-    }
-
-    private draw(): void {
-        if (this.points.length === 0) {
-            return;
-        }
-        const width = this.chartWidth();
-        const height = 238;
-        const left = 58;
-        const top = 18;
-        const right = 18;
-        const bottom = 42;
-        const drawWidth = width - left - right;
-        const drawHeight = height - top - bottom;
-        const host = this.getUIContext().getHostContext() as common.UIAbilityContext;
-        let lineColor = 0xFF2F80ED;
-        let gridColor = 0x332F80ED;
-        let textColor = 0xFF666666;
-        try {
-            lineColor = host.resourceManager.getColorSync(this.lineColor.id);
-            gridColor = host.resourceManager.getColorSync($r('app.color.v3_chart_grid').id);
-            textColor = host.resourceManager.getColorSync($r('app.color.v3_text_secondary').id);
-        } catch (error) {
-            console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `趋势图颜色读取失败: ${JSON.stringify(error)}`);
-        }
-        const maximum = this.maximum();
-        this.context.clearRect(0, 0, width, height);
-        this.context.strokeStyle = gridColor;
-        this.context.fillStyle = textColor;
-        this.context.lineWidth = 1;
-        this.context.font = '10px sans-serif';
-        for (let row = 0; row <= 4; row++) {
-            const y = top + drawHeight * row / 4;
-            this.context.beginPath();
-            this.context.moveTo(left, y);
-            this.context.lineTo(left + drawWidth, y);
-            this.context.stroke();
-            this.context.textAlign = 'right';
-            this.context.fillText(this.valueLabel(maximum * (4 - row) / 4), left - 6, y + 3);
-        }
-        this.context.beginPath();
-        this.context.moveTo(left, top);
-        this.context.lineTo(left, top + drawHeight);
-        this.context.lineTo(left + drawWidth, top + drawHeight);
-        this.context.stroke();
-        this.context.strokeStyle = lineColor;
-        this.context.lineWidth = 3;
-        this.context.beginPath();
-        this.points.forEach((point: TrendPoint, index: number) => {
-            const x = left + drawWidth * index / Math.max(1, this.points.length - 1);
-            const y = top + drawHeight * (1 - point.value / maximum);
-            if (index === 0) this.context.moveTo(x, y); else this.context.lineTo(x, y);
-        });
-        this.context.stroke();
-        this.context.fillStyle = lineColor;
-        const labelStep = Math.max(1, Math.ceil(this.points.length / 8));
-        this.points.forEach((point: TrendPoint, index: number) => {
-            const x = left + drawWidth * index / Math.max(1, this.points.length - 1);
-            const y = top + drawHeight * (1 - point.value / maximum);
-            this.context.beginPath();
-            this.context.arc(x, y, index === this.selected ? 5 : 3, 0, Math.PI * 2);
-            this.context.fill();
-            if (index % labelStep === 0 || index === this.points.length - 1) {
-                this.context.fillStyle = textColor;
-                this.context.textAlign = 'center';
-                this.context.fillText(point.label, x, height - 17);
-                this.context.fillStyle = lineColor;
-            }
-        });
-    }
-
-    build() {
-        Column({ space: 12 }) {
-            Text(this.title)
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .fontColor($r('app.color.v3_text_primary'))
-                .width('100%')
-                .accessibilityText(this.title)
-            if (this.points.length > 0) {
-                Scroll() {
-                    Canvas(this.context)
-                        .width(this.chartWidth())
-                        .height(238)
-                        .onReady(() => this.draw())
-                        .accessibilityText(`${this.title}折线图，带坐标轴，可横向滚动`)
-                }
-                .width('100%')
-                .scrollable(ScrollDirection.Horizontal)
-                .scrollBar(BarState.Auto)
-                .edgeEffect(EdgeEffect.Spring)
-                Slider({ value: this.zoom, min: 1, max: 3, step: 0.25, style: SliderStyle.InSet })
-                    .selectedColor($r('app.color.diff_content'))
-                    .onChange((value: number) => {
-                        this.zoom = value;
-                        setTimeout((): void => this.draw(), 0);
-                    })
-                    .accessibilityText(`${this.title}横向缩放，当前${this.zoom.toFixed(2)}倍`)
-                Slider({ value: this.selected, min: 0, max: Math.max(0, this.points.length - 1), step: 1,
-                    style: SliderStyle.InSet })
-                    .selectedColor(this.lineColor)
-                    .onChange((value: number) => {
-                        if (this.vibrationEnabled) vibration.dotVibration();
-                        this.selected = Math.round(value);
-                        this.draw();
-                    })
-                    .accessibilityText(`拖动查看${this.title}数据点`)
-                Text(this.points[Math.min(this.selected, this.points.length - 1)].detail)
-                    .fontSize(13)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .accessibilityText(this.points[Math.min(this.selected, this.points.length - 1)].detail)
-            } else {
-                Text(`暂无${this.title}`)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .padding(24)
-                    .accessibilityText(`暂无${this.title}`)
-            }
-        }
-        .width('100%')
-        .padding(18)
-        .borderRadius(18)
-        .backgroundColor($r('app.color.v3_surface'))
-        .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .accessibilityGroup(true)
-        .accessibilityText(this.title)
-    }
-}
 
 @Component
 export struct AppDetailPage {
@@ -309,10 +149,11 @@ export struct AppDetailPage {
         return Promise.reject(new Error('缺少应用标识'));
     }
 
-    private load(force: boolean, background: boolean = false): void {
-        if (background) {
+    private load(force: boolean, background: boolean = false, showRefreshing: boolean = false): void {
+        if (showRefreshing) {
             this.refreshing = true;
-        } else {
+        }
+        if (!background) {
             this.loading = true;
             this.errorMessage = '';
         }
@@ -393,16 +234,16 @@ export struct AppDetailPage {
         } as ScreenshotInfo));
     }
 
-    private downloadPoints(): TrendPoint[] {
+    private downloadPoints(): LineChartPoint[] {
         return this.metrics.slice().sort((left: AppMetric, right: AppMetric) =>
             new Date(left.created_at).getTime() - new Date(right.created_at).getTime()).map((metric: AppMetric) => ({
                 label: formatDateTime(metric.created_at).split(' ')[0],
                 value: Number(metric.download_count ?? 0),
                 detail: `${formatDateTime(metric.created_at)} · 下载量 ${formatCount(metric.download_count)} · 版本 ${metric.version || '-'}`,
-            } as TrendPoint));
+            } as LineChartPoint));
     }
 
-    private ratingPoints(): TrendPoint[] {
+    private ratingPoints(): LineChartPoint[] {
         return this.ratingHistory.slice().sort((left: AppRatingHistory, right: AppRatingHistory) =>
             new Date(left.report_date).getTime() - new Date(right.report_date).getTime()).map((rating: AppRatingHistory) => {
                 const value = Number(rating.cumulative_avg_rating_high_prec ?? rating.cumulative_avg_rating_origin ?? 0);
@@ -410,7 +251,7 @@ export struct AppDetailPage {
                     label: rating.report_date,
                     value,
                     detail: `${rating.report_date} · 平均评分 ${value.toFixed(2)} · 累计 ${formatCount(rating.cumulative_total_count)} 条评分`,
-                } as TrendPoint;
+                } as LineChartPoint;
             });
     }
 
@@ -442,6 +283,7 @@ export struct AppDetailPage {
 
     build() {
         HdsNavDestination() {
+          Refresh({ refreshing: $$this.refreshing }) {
             Scroll(this.scroller) {
                 Column({ space: 14 }) {
                     Blank().height(100).width('100%')
@@ -450,7 +292,7 @@ export struct AppDetailPage {
                             LoadingProgress()
                                 .width(42)
                                 .height(42)
-                                .color($r('app.color.v3_accent_blue'))
+                                .color($r('app.color.diff_content'))
                                 .accessibilityText('应用详情加载中')
                             Text('正在查找应用并从 API 获取详情…')
                                 .fontColor($r('app.color.v3_text_secondary'))
@@ -471,7 +313,7 @@ export struct AppDetailPage {
                                 .textAlign(TextAlign.Center)
                                 .accessibilityText(this.errorMessage)
                             Button('重新加载')
-                                .backgroundColor($r('app.color.v3_accent_blue'))
+                                .backgroundColor($r('app.color.diff_content'))
                                 .onClick(() => {
                                     this.vibrate();
                                     this.load(true);
@@ -510,7 +352,7 @@ export struct AppDetailPage {
                                     .accessibilityText(this.app.name || '未知应用')
                                 Text(this.app.developer_name || '未知开发者')
                                     .fontSize(14)
-                                    .fontColor($r('app.color.v3_accent_blue'))
+                                    .fontColor($r('app.color.diff_content'))
                                     .maxLines(1)
                                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                                     .accessibilityText(`开发者${this.app.developer_name || '未知'}`)
@@ -535,7 +377,7 @@ export struct AppDetailPage {
                         Flex({ wrap: FlexWrap.Wrap }) {
                             Button('在华为应用市场打开')
                                 .margin(4)
-                                .backgroundColor($r('app.color.v3_accent_blue'))
+                                .backgroundColor($r('app.color.diff_content'))
                                 .onClick(() => {
                                     this.vibrate();
                                     this.openMarket();
@@ -598,14 +440,14 @@ export struct AppDetailPage {
                             .accessibilityGroup(true)
                         }
 
-                        TrendLineChart({
+                        InteractiveLineChart({
                             title: '下载量趋势',
                             unit: '次',
                             points: this.downloadPoints(),
-                            lineColor: $r('app.color.v3_accent_blue'),
+                            lineColor: $r('app.color.diff_content'),
                         })
 
-                        TrendLineChart({
+                        InteractiveLineChart({
                             title: '评分趋势',
                             unit: '分',
                             points: this.ratingPoints(),
@@ -705,7 +547,13 @@ export struct AppDetailPage {
                 }
             })
             .backgroundColor($r('app.color.background'))
-            .accessibilityText('公用应用详情页')
+            .accessibilityText('可下拉刷新的公用应用详情页')
+          }
+          .width('100%').height('100%')
+          .onRefreshing((): void => {
+              this.vibrate();
+              this.load(true, true, true);
+          })
         }
         .titleBar({
             style: {
@@ -755,17 +603,6 @@ export struct AppDetailPage {
                 },
                 menu: {
                     value: [
-                        {
-                            content: {
-                                label: '更新应用数据',
-                                icon: $r('sys.symbol.arrow_2_circlepath'),
-                                isEnabled: this.app !== undefined && !this.refreshing,
-                                action: () => {
-                                    this.vibrate();
-                                    this.load(true, true);
-                                },
-                            },
-                        },
                         {
                             content: {
                                 label: '分享应用详情',

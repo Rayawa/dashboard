@@ -36,7 +36,7 @@ export struct tutorial {
     return [
       {
         title: 'S站',
-        description: '以 ArkWeb 打开项目网页，标题栏提供刷新和回到顶部。再次点击已选中的“S站”标签会返回 S站首页。',
+        description: '以 ArkWeb 打开项目网页，下拉可刷新，标题栏保留回到顶部。再次点击已选中的“S站”标签会返回 S站首页。',
         items: [
           '网页使用应用专用 User-Agent，并保留站点登录、缓存和网页导航能力。',
           '仅主页面加载失败时显示网络提示，单个图片或脚本失败不会遮挡整个网页。',
@@ -46,24 +46,27 @@ export struct tutorial {
         title: '首页',
         description: '集中展示欢迎信息、更新时间、服务状态、精确市场统计和最近收录应用。',
         items: [
-          '右上角刷新会更新市场状态与最近收录应用。',
+          '在页面顶部继续下拉即可更新市场状态与最近收录应用。',
           '网络不可用时优先显示仍可用的本地缓存，并明确标注缓存状态。',
         ],
       },
       {
-        title: '搜索',
-        description: '统一处理应用名称、包名、App ID、应用市场链接和系统分享内容。',
+        title: '应用搜索',
+        description: '搜索框位于应用详情顶部，通过共享元素展开，统一处理名称、包名、App ID、应用市场链接和系统分享内容。',
         items: [
-          '名称搜索显示全部匹配结果，每列 20 个，横向滚动可查看后续列。',
+          '未搜索时显示搜索历史与推荐；得到结果后只显示结果，历史可一键删除。',
+          '结果从上到下懒加载，并根据设备宽度自动切换列数和撑满容器。',
           '已有应用在结果加载后静默执行一次后台更新；新应用自动投稿并提示。',
-          '进入页面不会自动弹出键盘，只有用户主动点击输入框时才输入。',
+          '页面下滑超过 10vp 后，标题栏会显示搜索按钮。',
         ],
       },
       {
         title: '应用详情',
-        description: '上方二选一切换应用概况与应用列表；列表支持排序、分页并进入统一详情模板。',
+        description: '顶部搜索框下方是概况与列表切换栏；列表支持筛选、排序、分页并进入统一详情模板。',
         items: [
           '应用概况提供评分、SDK 分布和 Harmony API 历史图表。',
+          '折线图默认显示完整横坐标范围，支持触摸选点、双指缩放和单指横移。',
+          '列表可按鸿蒙应用、元服务、分类、标签、开发者等条件筛选。',
           '每页可选择 20、50 或 100 条数据。',
           '表格可横向查看完整字段，页面可纵向滚动。',
           '支持升降序切换、上一页、下一页和输入页码跳转。',
@@ -156,12 +159,12 @@ export struct tutorial {
               .fontColor($r('app.color.v3_text_secondary'))
               .width('100%')
               .accessibilityText(`版本${APP_VERSION}`)
-            Text('应用采用五个固定标签页与统一原生详情页。页面右上角的问号可以重新进入教程。')
+            Text('应用采用四个固定标签页与统一原生详情页。页面右上角的问号可以重新进入教程。')
               .fontSize(14)
               .lineHeight(21)
               .fontColor($r('app.color.v3_text_primary'))
               .width('100%')
-              .accessibilityText('应用采用五个固定标签页与统一原生详情页')
+              .accessibilityText('应用采用四个固定标签页与统一原生详情页')
             Text('打开项目网站')
               .fontSize(14)
               .fontColor($r('app.color.diff_content'))
@@ -187,7 +190,7 @@ export struct tutorial {
               .fontWeight(FontWeight.Bold)
               .fontColor($r('app.color.diff_content'))
               .width('100%')
-            Text('搜索页统一接收应用名称、包名、App ID、应用市场链接以及系统分享内容。已有应用静默更新，新应用自动执行 simple 投稿。')
+            Text('应用详情顶部的搜索组件统一接收应用名称、包名、App ID、应用市场链接以及系统分享内容。已有应用静默更新，新应用自动执行 simple 投稿。')
               .fontSize(14)
               .lineHeight(21)
               .fontColor($r('app.color.v3_text_primary'))
@@ -207,7 +210,7 @@ export struct tutorial {
               }
               .margin(6)
               Column({ space: 8 }) {
-                Text('2. 在搜索页直接查询')
+                Text('2. 在应用详情顶部直接查询')
                   .fontSize(13)
                   .fontColor($r('app.color.v3_text_secondary'))
                 Image($r('app.media.submit_app'))
@@ -237,7 +240,7 @@ export struct tutorial {
               .fontWeight(FontWeight.Bold)
               .fontColor($r('app.color.diff_content'))
               .width('100%')
-            Text('所有查询、列表、分享和深链最终都进入同一个原生应用详情模板。详情页右上角可更新数据或分享 S站链接卡片。')
+            Text('所有查询、列表、分享和深链最终都进入同一个原生应用详情模板。详情页下拉可更新数据，右上角可分享 S站链接卡片。')
               .fontSize(14)
               .lineHeight(21)
               .fontColor($r('app.color.v3_text_primary'))

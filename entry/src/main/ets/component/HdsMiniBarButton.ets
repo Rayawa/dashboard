@@ -108,6 +108,6 @@ export struct HdsMiniBarButton {
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .backgroundColor(Color.Transparent)
-    .accessibilityText('应用概况与应用列表切换栏材质')
+    .accessibilityText('应用概况和应用列表分段控件')
   }
 }

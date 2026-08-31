@@ -20,7 +20,7 @@ interface HomeStat {
 
 @Component
 struct HomeStatCard {
-    stat: HomeStat = { label: '', value: '-', color: $r('app.color.v3_accent_blue') };
+    stat: HomeStat = { label: '', value: '-', color: $r('app.color.diff_content') };
 
     build() {
         Column({ space: 8 }) {
@@ -100,7 +100,6 @@ struct RecentAppCard {
 @Component
 export struct HomePage {
     @Consume('pageStack') private pageStack: NavPathStack;
-    @Prop @Watch('onRefreshVersionChanged') refreshVersion: number = 0;
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
@@ -113,13 +112,10 @@ export struct HomePage {
     @State private lastUpdated: string = '';
     @State private loaded: boolean = false;
     @State private recentApps: MarketApp[] = [];
+    @State private refreshing: boolean = false;
+    @State private contentWidth: number = 0;
     private restoredScroll: boolean = false;
-
-    private onRefreshVersionChanged(): void {
-        if (this.refreshVersion > 0) {
-            this.load(true);
-        }
-    }
+    private reloadAfterCurrent: boolean = false;
 
     private onScrollToTopVersionChanged(): void {
         if (this.scrollToTopVersion <= 0) {
@@ -143,14 +139,16 @@ export struct HomePage {
         return '晚上好';
     }
 
-    private load(force: boolean): void {
+    private async load(force: boolean): Promise<void> {
         if (this.loading) {
+            this.reloadAfterCurrent = this.reloadAfterCurrent || force;
             return;
         }
         this.loading = true;
         this.errorMessage = '';
-        this.loadRecentApps(force);
-        fetchMarketInfo(force).then((result) => {
+        const recentPromise = this.loadRecentApps(force);
+        try {
+            const result = await fetchMarketInfo(force);
             const response: BaseAPIResponse<MarketInfo> = result.data;
             if (!response.success || !response.data) {
                 throw new Error('市场概览数据不可用');
@@ -160,24 +158,34 @@ export struct HomePage {
             this.cachedAt = result.cachedAt;
             this.lastUpdated = response.timestamp;
             this.loaded = true;
-        }).catch((error: Error) => {
-            this.errorMessage = `加载失败：${error.message}`;
-            console.error('[Dashboard][pages/main/HomePage][ERROR]', `首页数据加载失败且无缓存: ${error.message}`);
+        } catch (error) {
+            const message = (error as Error).message;
+            this.errorMessage = `加载失败：${message}`;
+            console.error('[Dashboard][pages/main/HomePage][ERROR]', `首页数据加载失败且无缓存: ${message}`);
             showToastSafely(this.prompt, '网络不佳且没有可用缓存，请稍后重试', 2500, 'V3Home');
-        }).finally(() => {
+        } finally {
+            await recentPromise;
             this.loading = false;
-        });
+            if (this.reloadAfterCurrent) {
+                this.reloadAfterCurrent = false;
+                setTimeout((): void => { this.load(true); }, 0);
+            } else {
+                this.refreshing = false;
+            }
+        }
     }
 
-    private loadRecentApps(force: boolean): void {
-        fetchAppsPage(1, 6, 'listed_at', true, undefined, undefined, false, force).then((result) => {
+    private async loadRecentApps(force: boolean): Promise<void> {
+        try {
+            const result = await fetchAppsPage(1, 6, 'listed_at', true, undefined, undefined, false, force);
             const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
             if (response.success && response.data) {
                 this.recentApps = response.data.data ?? [];
             }
-        }).catch((error: Error) => {
-            console.warn('[Dashboard][pages/main/HomePage][WARN]', `新收录应用加载失败: ${error.message}`);
-        });
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/HomePage][WARN]',
+                `新收录应用加载失败: ${(error as Error).message}`);
+        }
     }
 
     private openDetail(app: MarketApp): void {
@@ -195,16 +203,114 @@ export struct HomePage {
             return [];
         }
         return [
-            { label: '应用总数', value: formatExactCount(this.market.app_count.total), color: $r('app.color.diff_content') },
-            { label: '鸿蒙应用', value: formatExactCount(this.market.app_count.apps), color: $r('app.color.v3_accent_blue') },
-            { label: '元服务', value: formatExactCount(this.market.app_count.atomic_services), color: $r('app.color.v3_accent_cyan') },
             { label: '开发者', value: formatExactCount(this.market.developer_count), color: $r('app.color.v3_accent_purple') },
             { label: '专题', value: formatExactCount(this.market.substance_count), color: $r('app.color.v3_accent_orange') },
         ];
     }
 
+    @Builder
+    private totalRelationCard(): void {
+        if (this.market) {
+            Column({ space: 12 }) {
+                Row() {
+                    Text('应用总数').fontSize(16).fontWeight(FontWeight.Bold)
+                        .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
+                    Text(formatExactCount(this.market.app_count.apps + this.market.app_count.atomic_services))
+                        .fontSize(28).fontWeight(FontWeight.Bold).fontColor($r('app.color.diff_content'))
+                }.width('100%')
+                Row({ space: 8 }) {
+                    Column({ space: 4 }) {
+                        Text('鸿蒙应用').fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        Text(formatExactCount(this.market.app_count.apps)).fontSize(19).fontWeight(FontWeight.Bold)
+                            .fontColor($r('app.color.diff_content'))
+                    }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+                    Text('+').fontSize(20).fontColor($r('app.color.v3_text_secondary'))
+                    Column({ space: 4 }) {
+                        Text('元服务').fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        Text(formatExactCount(this.market.app_count.atomic_services)).fontSize(19)
+                            .fontWeight(FontWeight.Bold).fontColor($r('app.color.v3_accent_cyan'))
+                    }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+                    Text('=').fontSize(20).fontColor($r('app.color.v3_text_secondary'))
+                    Text(formatExactCount(this.market.app_count.apps + this.market.app_count.atomic_services))
+                        .fontSize(19).fontWeight(FontWeight.Bold).fontColor($r('app.color.diff_content'))
+                }.width('100%')
+            }
+            .width('100%').padding(18).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
+            .border({ width: 1, color: $r('app.color.nd_card_border') })
+            .accessibilityGroup(true)
+            .accessibilityText(`应用总数${this.market.app_count.apps + this.market.app_count.atomic_services}，等于鸿蒙应用${this.market.app_count.apps}加元服务${this.market.app_count.atomic_services}`)
+        }
+    }
+
+    @Builder
+    private statsGrid(): void {
+        GridRow({
+            columns: { xs: 4, sm: 8, md: 12 }, gutter: { x: 10, y: 10 },
+            breakpoints: {
+                value: [RESPONSIVE_BREAKPOINT_MEDIUM, RESPONSIVE_BREAKPOINT_LARGE],
+                reference: BreakpointsReference.WindowSize,
+            },
+        }) {
+            ForEach(this.stats(), (stat: HomeStat) => {
+                GridCol({ span: { xs: 2, sm: 4, md: 6 } }) { HomeStatCard({ stat }) }
+            }, (stat: HomeStat) => stat.label)
+        }.width('100%').accessibilityText('开发者和专题数据概览')
+    }
+
+    @Builder
+    private statusCard(): void {
+        if (this.market) {
+            Column({ space: 12 }) {
+                Row() {
+                    Text('当前状态').fontSize(18).fontWeight(FontWeight.Bold)
+                        .fontColor($r('app.color.v3_text_primary'))
+                    Blank()
+                    Text(this.market.sync_status.is_syncing_all ? '全量同步中' : '服务正常').fontSize(13)
+                        .fontColor(this.market.sync_status.is_syncing_all ?
+                            $r('app.color.v3_accent_orange') : $r('app.color.v3_accent_green'))
+                }.width('100%')
+                if (this.market.sync_status.is_syncing_all) {
+                    Text(`已处理 ${formatExactCount(this.market.sync_status.total_processed)} · 新增 ${formatExactCount(this.market.sync_status.total_inserted)} · 失败 ${formatExactCount(this.market.sync_status.total_failed)}`)
+                        .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
+                }
+                Divider().color($r('app.color.v3_chart_grid')).accessibilityText('状态分隔线')
+                Text(`最后更新时间：${formatDateTime(this.lastUpdated)}`).fontSize(13)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                Text(`后端版本：${this.market.crate_version}`).fontSize(13)
+                    .fontColor($r('app.color.v3_text_secondary'))
+            }
+            .width('100%').padding(18).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
+            .border({ width: 1, color: $r('app.color.nd_card_border') })
+            .accessibilityGroup(true)
+            .accessibilityText(this.market.sync_status.is_syncing_all ? '服务当前正在全量同步' : '服务当前状态正常')
+        }
+    }
+
+    @Builder
+    private dataAndStatus(): void {
+        Column({ space: 14 }) {
+            this.totalRelationCard()
+            this.statsGrid()
+            this.statusCard()
+        }.width('100%')
+    }
+
+    @Builder
+    private recentSection(): void {
+        if (this.recentApps.length > 0) {
+            Column({ space: 10 }) {
+                Text('最近收录').width('100%').fontSize(18).fontWeight(FontWeight.Bold)
+                    .fontColor($r('app.color.v3_text_primary')).accessibilityText('最近收录应用')
+                ForEach(this.recentApps, (app: MarketApp) => {
+                    RecentAppCard({ app, onOpen: (target: MarketApp) => this.openDetail(target) })
+                }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
+            }.width('100%').accessibilityGroup(true).accessibilityText('最近收录的应用')
+        }
+    }
+
     build() {
-        Scroll(this.scroller) {
+        Refresh({ refreshing: $$this.refreshing }) {
+          Scroll(this.scroller) {
             Column({ space: 14 }) {
                 Blank().height(100).width('100%')
                 Row() {
@@ -252,7 +358,7 @@ export struct HomePage {
                         LoadingProgress()
                             .width(26)
                             .height(26)
-                            .color($r('app.color.v3_accent_blue'))
+                            .color($r('app.color.diff_content'))
                             .accessibilityText('首页数据加载中')
                         Text('正在获取最新市场状态…')
                             .fontColor($r('app.color.v3_text_secondary'))
@@ -268,8 +374,8 @@ export struct HomePage {
                             .fontColor($r('app.color.v3_accent_red'))
                             .accessibilityText(this.errorMessage)
                         Button('重试')
-                            .backgroundColor($r('app.color.v3_accent_blue'))
-                            .onClick(() => this.load(true))
+                            .backgroundColor($r('app.color.diff_content'))
+                            .onClick(() => { this.load(true); })
                             .accessibilityText('重试加载首页')
                     }
                     .padding(18)
@@ -279,83 +385,15 @@ export struct HomePage {
                     .accessibilityGroup(true)
                 }
 
-                GridRow({
-                    columns: { xs: 4, sm: 8, md: 12 },
-                    gutter: { x: 10, y: 10 },
-                    breakpoints: {
-                        value: [RESPONSIVE_BREAKPOINT_MEDIUM, RESPONSIVE_BREAKPOINT_LARGE],
-                        reference: BreakpointsReference.WindowSize,
-                    },
-                }) {
-                    ForEach(this.stats(), (stat: HomeStat) => {
-                        GridCol({ span: { xs: 2, sm: 4, md: 3 } }) {
-                            HomeStatCard({ stat })
-                        }
-                    }, (stat: HomeStat) => stat.label)
-                }
-                .width('100%')
-                .accessibilityText('市场数据概览卡片')
-
-                if (this.market) {
-                    Column({ space: 12 }) {
-                        Row() {
-                            Text('当前状态')
-                                .fontSize(18)
-                                .fontWeight(FontWeight.Bold)
-                                .fontColor($r('app.color.v3_text_primary'))
-                                .accessibilityText('当前状态')
-                            Blank()
-                            Text(this.market.sync_status.is_syncing_all ? '全量同步中' : '服务正常')
-                                .fontSize(13)
-                                .fontColor(this.market.sync_status.is_syncing_all ?
-                                    $r('app.color.v3_accent_orange') : $r('app.color.v3_accent_green'))
-                                .accessibilityText(this.market.sync_status.is_syncing_all ? '全量同步中' : '服务正常')
-                        }
-                        .width('100%')
-
-                        if (this.market.sync_status.is_syncing_all) {
-                            Text(`已处理 ${formatExactCount(this.market.sync_status.total_processed)} · 新增 ${formatExactCount(this.market.sync_status.total_inserted)} · 失败 ${formatExactCount(this.market.sync_status.total_failed)}`)
-                                .fontSize(13)
-                                .fontColor($r('app.color.v3_text_secondary'))
-                                .accessibilityText('同步处理统计')
-                        }
-
-                        Divider()
-                            .color($r('app.color.v3_chart_grid'))
-                            .accessibilityText('状态分隔线')
-                        Text(`最后更新时间：${formatDateTime(this.lastUpdated)}`)
-                            .fontSize(13)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText(`最后更新时间${formatDateTime(this.lastUpdated)}`)
-                        Text(`后端版本：${this.market.crate_version}`)
-                            .fontSize(13)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText(`后端版本${this.market.crate_version}`)
-                    }
-                    .width('100%')
-                    .padding(18)
-                    .borderRadius(18)
-                    .backgroundColor($r('app.color.v3_surface'))
-                    .border({ width: 1, color: $r('app.color.nd_card_border') })
-                    .accessibilityGroup(true)
-                    .accessibilityText('服务当前状态')
-                }
-
-                if (this.recentApps.length > 0) {
-                    Column({ space: 10 }) {
-                        Text('最近收录')
-                            .width('100%')
-                            .fontSize(18)
-                            .fontWeight(FontWeight.Bold)
-                            .fontColor($r('app.color.v3_text_primary'))
-                            .accessibilityText('最近收录应用')
-                        ForEach(this.recentApps, (app: MarketApp) => {
-                            RecentAppCard({ app, onOpen: (target: MarketApp) => this.openDetail(target) })
-                        }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
-                    }
-                    .width('100%')
-                    .accessibilityGroup(true)
-                    .accessibilityText('最近收录的应用')
+                if (this.contentWidth >= 840) {
+                    Row({ space: 16 }) {
+                        Column() { this.dataAndStatus() }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+                        Column() { this.recentSection() }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+                    }.width('100%').alignItems(VerticalAlign.Top)
+                        .accessibilityText('左侧市场数据和状态，右侧最近收录应用')
+                } else {
+                    this.dataAndStatus()
+                    this.recentSection()
                 }
 
                 Blank().height(96)
@@ -363,6 +401,9 @@ export struct HomePage {
             .width('100%')
             .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
             .padding({ left: 14, right: 14 })
+            .onAreaChange((_oldValue: Area, newValue: Area): void => {
+                this.contentWidth = Number(newValue.width);
+            })
             .onAppear(() => {
                 if (!this.loaded) {
                     this.load(false);
@@ -387,19 +428,25 @@ export struct HomePage {
                     }
                 }
             })
+          }
+          .width('100%')
+          .height('100%')
+          .scrollBar(BarState.Off)
+          .onDidScroll((): void => {
+              try {
+                  setContinuationView(MAIN_TAB_HOME, this.scroller.currentOffset().yOffset);
+              } catch (error) {
+                  console.warn('[Dashboard][pages/main/HomePage][WARN]',
+                      `保存滚动位置失败: ${JSON.stringify(error)}`);
+              }
+          })
+          .backgroundColor($r('app.color.background'))
+          .accessibilityText('可下拉刷新的首页')
         }
-        .width('100%')
-        .height('100%')
-        .scrollBar(BarState.Off)
-        .onDidScroll((): void => {
-            try {
-                setContinuationView(MAIN_TAB_HOME, this.scroller.currentOffset().yOffset);
-            } catch (error) {
-                console.warn('[Dashboard][pages/main/HomePage][WARN]',
-                    `保存滚动位置失败: ${JSON.stringify(error)}`);
-            }
+        .width('100%').height('100%')
+        .onRefreshing((): void => {
+            this.refreshing = true;
+            this.load(true);
         })
-        .backgroundColor($r('app.color.background'))
-        .accessibilityText('首页')
     }
 }
