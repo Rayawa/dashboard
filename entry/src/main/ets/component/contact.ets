@@ -13,7 +13,7 @@ export struct contact {
         Column({ space: 4 }) {
             Text(title).fontSize(17).fontWeight(FontWeight.Bold)
             Text(name).fontSize(14).fontColor($r("app.color.diff_content"))
-            Text(detail).fontSize(13).fontColor(Color.Gray).opacity(0.8)
+            Text(detail).fontSize(13).fontColor($r('app.color.v3_text_secondary')).opacity(0.8)
         }
         .alignItems(HorizontalAlign.Center)
         .width("93%")
@@ -38,7 +38,8 @@ export struct contact {
             Column({ space: 4 }) {
                 Text("❤️ 赞助我们").fontSize(17).fontWeight(FontWeight.Bold)
                 Text("支持项目发展").fontSize(14).fontColor($r("app.color.diff_content"))
-                Text("点击跳转到爱发电赞助页面").fontSize(13).fontColor(Color.Gray).opacity(0.8)
+                Text("点击跳转到爱发电赞助页面").fontSize(13)
+                    .fontColor($r('app.color.v3_text_secondary')).opacity(0.8)
             }
             .alignItems(HorizontalAlign.Center)
             .width("93%")

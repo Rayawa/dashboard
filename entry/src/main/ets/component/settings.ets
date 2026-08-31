@@ -2,8 +2,6 @@ import { vibration } from '../common/vibration';
 import { common } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import {
-  setButtonPosition,
-  setHoldCheckEnabled,
   setImmersiveTexture,
   setUsername,
   setVibrationEnabled
@@ -15,15 +13,12 @@ import { showToastSafely } from '../common/safeUi';
 @Component
 export struct settings {
     @StorageLink("vibrationON") vibrationON: boolean = true;
-    @StorageLink("holdCheckON") holdCheckON: boolean = false;
-    @StorageLink("buttonPositionRIGHT") buttonPositionRIGHT: boolean = false;
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
     @StorageLink('username') username: string = '';
 
     @State handlePopupTrash: boolean = false;
     @State cacheSize: string = '计算中…';
-    @State showUsernameEditor: boolean = false;
-    @State usernameDraft: string = '';
+    @State showUsernameHelp: boolean = false;
 
     async aboutToAppear(): Promise<void> {
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -78,28 +73,6 @@ export struct settings {
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
 
-            if(canIUse('SystemCapability.MultimodalAwareness.Motion')){
-                SettingItem({
-                    icon: $r("app.media.button"),
-                    title: "按钮默认位置",
-                    isOn: this.buttonPositionRIGHT,
-                    both: true,
-                    offText: "左",
-                    onText: "右",
-                    onToggle: async (val) => { await setButtonPosition(val); }
-                })
-                Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
-
-                SettingItem({
-                    icon: $r("app.media.hand"),
-                    title: "按钮智感握持",
-                    isOn: this.holdCheckON,
-                    promptMsg: "󰗫适人握持󰗫",
-                    onToggle: async (val) => { await setHoldCheckEnabled(val); }
-                })
-                Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
-            }
-
             SettingItem({
                 icon: $r("app.media.immersive"),
                 title: "使用沉浸式材质",
@@ -121,93 +94,57 @@ export struct settings {
         .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
         .accessibilityGroup(true)
         .accessibilityText('应用设置')
-        .bindSheet($$this.showUsernameEditor, this.UsernameEditor(), {
-            title: { title: '用户名' },
-            height: SheetSize.FIT_CONTENT,
-            onWillDisappear: () => this.showUsernameEditor = false,
-        })
     }
 
     @Builder
     UsernameItem() {
-        Row({ space: 12 }) {
-            Image($r('app.media.user'))
-                .height(24)
-                .width(24)
-                .objectFit(ImageFit.Contain)
-                .accessibilityText('用户名图标')
-            Text('用户名')
-                .fontSize(16)
-                .fontColor($r('app.color.v3_text_primary'))
-            Blank()
-            Text(this.username || '未设置')
-                .fontSize(14)
-                .fontColor($r('app.color.diff_content'))
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .accessibilityText(`当前用户名${this.username || '未设置'}`)
-            Image($r('app.media.right'))
-                .height(16)
-                .width(16)
-                .objectFit(ImageFit.Contain)
-                .accessibilityText('编辑用户名')
-        }
-        .height(52)
-        .width('100%')
-        .padding({ left: 16, right: 16 })
-        .onClick(() => {
-            if (this.vibrationON) vibration.dotVibration();
-            this.usernameDraft = this.username;
-            this.showUsernameEditor = true;
-        })
-        .accessibilityGroup(true)
-        .accessibilityText(`用户名设置，当前${this.username || '未设置'}，点击编辑`)
-    }
-
-    @Builder
-    UsernameEditor() {
-        Column({ space: 16 }) {
-            Text('此用户名会随投稿与更新请求提交')
-                .fontSize(13)
-                .fontColor($r('app.color.v3_text_secondary'))
-                .width('100%')
-                .accessibilityText('此用户名会随投稿与更新请求提交')
-            TextInput({ text: this.usernameDraft, placeholder: '设置用户名' })
-                .width('100%')
-                .height(46)
-                .backgroundColor($r('app.color.v3_surface_alt'))
-                .onChange((value: string) => this.usernameDraft = value)
-                .accessibilityText('输入用户名')
-            Row({ space: 12 }) {
-                Button('取消')
-                    .layoutWeight(1)
+        Column({ space: 4 }) {
+            Row({ space: 10 }) {
+                Image($r('app.media.user'))
+                    .height(24)
+                    .width(24)
+                    .objectFit(ImageFit.Contain)
+                    .accessibilityText('用户名图标')
+                Text('用户名')
+                    .fontSize(16)
                     .fontColor($r('app.color.v3_text_primary'))
-                    .backgroundColor($r('app.color.v3_surface_alt'))
-                    .onClick(() => this.showUsernameEditor = false)
-                    .accessibilityText('取消修改用户名')
-                Button('保存')
+                TextInput({ text: this.username, placeholder: 'HarmonyOS用户' })
                     .layoutWeight(1)
-                    .backgroundColor($r('app.color.diff_content'))
-                    .onClick(async () => {
-                        if (this.vibrationON) vibration.dotVibration();
-                        const value = this.usernameDraft.trim();
-                        try {
-                            await setUsername(value);
-                            this.username = value;
-                            this.showUsernameEditor = false;
-                        } catch (error) {
-                            console.error('[Dashboard][component/settings][ERROR]', `保存用户名失败: ${JSON.stringify(error)}`);
-                            showToastSafely(this.getUIContext().getPromptAction(), '用户名保存失败，请重试', 1800, 'Settings');
-                        }
+                    .height(40)
+                    .defaultFocus(false)
+                    .backgroundColor($r('app.color.v3_surface_alt'))
+                    .onChange((value: string) => {
+                        this.username = value;
+                        setUsername(value.trim()).catch((error: Error) => {
+                            console.error('[Dashboard][component/settings][ERROR]', `自动保存用户名失败: ${error.message}`);
+                        });
                     })
-                    .accessibilityText('保存用户名')
+                    .accessibilityText(`用户名输入框，当前${this.username || 'HarmonyOS用户'}`)
+                Image($r('app.media.question'))
+                    .height(22)
+                    .width(22)
+                    .objectFit(ImageFit.Contain)
+                    .onClick(() => {
+                        if (this.vibrationON) vibration.dotVibration();
+                        this.showUsernameHelp = !this.showUsernameHelp;
+                    })
+                    .bindPopup(this.showUsernameHelp, {
+                        message: '此用户名会随投稿与更新请求提交；留空时显示为 HarmonyOS用户',
+                        onStateChange: (event) => { if (!event.isVisible) this.showUsernameHelp = false },
+                    })
+                    .accessibilityText('查看用户名说明')
             }
             .width('100%')
+            Text('修改后自动保存')
+                .fontSize(11)
+                .fontColor($r('app.color.v3_text_secondary'))
+                .padding({ left: 134 })
+                .accessibilityText('用户名修改后自动保存')
         }
         .width('100%')
-        .padding({ left: 20, right: 20, top: 12, bottom: 24 })
+        .padding({ left: 16, right: 16, top: 8, bottom: 8 })
         .accessibilityGroup(true)
-        .accessibilityText('用户名编辑窗口')
+        .accessibilityText(`用户名设置，当前${this.username || 'HarmonyOS用户'}`)
     }
 
     @Builder
@@ -253,7 +190,7 @@ struct SettingItem {
     @Prop icon: Resource;
     @Prop title: string;
     @Prop isOn: boolean;
-    @Prop both: boolean;
+    @Prop both: boolean = false;
     @Prop onText: string = "开";
     @Prop offText: string = "关";
     @Prop promptMsg: string = "";
@@ -282,10 +219,7 @@ struct SettingItem {
                             if (this.canVibrate) vibration.dotVibration();
                             await this.onToggle(checked);
                             if (checked && this.promptMsg !== "") {
-                                this.getUIContext().getPromptAction().showToast({
-                                    message: this.promptMsg,
-                                    duration: 1000
-                                });
+                                showToastSafely(this.getUIContext().getPromptAction(), this.promptMsg, 1000, 'SettingItem');
                             }
                         })
                     Text(this.onText).fontSize(14).fontColor($r('app.color.v3_text_secondary')).width(24).textAlign(TextAlign.Center)

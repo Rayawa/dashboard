@@ -20,6 +20,7 @@ export const APP_STATE_KEY_SCROLL_DISTANCE = 'scrollDistance';
 export const APP_STATE_KEY_DETAIL_TARGET = 'detailTarget';
 export const APP_STATE_KEY_SEARCH_TARGET = 'searchTarget';
 export const APP_STATE_KEY_MAIN_TAB = 'mainTabIndex';
+export const APP_STATE_KEY_APPS_VIEW = 'appsDetailViewIndex';
 export const APP_STATE_KEY_CONTINUATION_ROUTE = 'continuationRoute';
 export const APP_STATE_KEY_CONTINUATION_DETAIL_ID = 'continuationDetailAppId';
 export const APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE = 'continuationDetailPackage';
@@ -37,7 +38,6 @@ export const DEFAULT_NETWORK_TIMEOUT_MS = 10000;
 export const RESPONSIVE_BREAKPOINT_MEDIUM = '600vp';
 export const RESPONSIVE_BREAKPOINT_LARGE = '840vp';
 export const CONTENT_MAX_WIDTH = 1440;
-export const APP_LIST_PAGE_SIZE = 20;
 export const CACHE_DIRECTORY_NAME = 'market_api_v3';
 export const CACHE_TTL_HOME_MS = 5 * 60 * 1000;
 export const CACHE_TTL_LIST_MS = 2 * 60 * 1000;
@@ -63,6 +63,7 @@ export const mainPage = new URL("https://dashboard.rayawa.top")
 
 export const TBaseURL = new URL("https://hmos.txit.top/");
 export const SBaseURL = new URL("https://ddns.shenjack.top:10003/");
+export const S_SITE_PUBLIC_BASE_URL = 'https://shenjack.top:10003/';
 
 // 友情链接
 export const HapStoreURL = new URL("https://hdc.osbdf.com/");
@@ -79,7 +80,9 @@ export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
 export const MEOW_CHANNEL_URL = new URL("https://www.chuckfang.com/MeoW/appLinking?channelId=8bbba7f53bf9458284a41d04f295450b");
 export const MIIT_ICP_URL = new URL("https://beian.miit.gov.cn/#/Integrated/index");
 export const HUAWEI_APP_DETAIL_URL_PREFIX = "https://appgallery.huawei.com/app/detail?id=";
-export const S_SITE_APP_DETAIL_QUERY = '?app_id=';
+export const S_SITE_APP_DETAIL_QUERY = 'dashboard?app_id=';
+export const CONTINUATION_MIN_VERSION: string = '3.0.0';
+export const CONTINUATION_MIN_VERSION_CODE: number = 30000000;
 
 // UA
 export const customUserAgent: string = `${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion}) API:${deviceInfo.sdkApiVersion} | ${deviceInfo.productModel}/${deviceInfo.productModelAlias}/${deviceInfo.softwareModel}/${deviceInfo.hardwareModel} | ${deviceInfo.deviceType}/${deviceInfo.marketName}/${deviceInfo.chipType}`;

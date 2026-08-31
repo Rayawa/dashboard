@@ -1,10 +1,10 @@
 import { common, Want } from '@kit.AbilityKit';
 import { PromptAction } from '@kit.ArkUI';
+import { hdsEffect } from '@kit.UIDesignKit';
 import { settings } from '../../component/settings';
 import { contact } from '../../component/contact';
 import { warn } from '../../component/warn';
 import {
-    APP_BUILD_NUMBER,
     APP_VERSION,
     CONTENT_MAX_WIDTH,
     CONTINUATION_ROUTE_MAIN,
@@ -31,6 +31,8 @@ interface MoreItem {
 struct MoreRow {
     item: MoreItem = { title: '', icon: $r('app.media.info'), action: () => {} };
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @State private pressed: boolean = false;
+    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
     build() {
         Row({ space: 12 }) {
@@ -53,6 +55,22 @@ struct MoreRow {
         .width('100%')
         .height(54)
         .padding({ left: 16, right: 16 })
+        .scale({ x: this.pressed ? 0.98 : 1, y: this.pressed ? 0.98 : 1 })
+        .animation({ curve: Curve.EaseOut, duration: 140 })
+        .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+            sourceType: this.pointLight,
+            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+            options: { color: $r('app.color.diff_content'), intensity: 8, height: 120 },
+        }).buildEffect())
+        .onTouch((event: TouchEvent) => {
+            if (event.type === TouchType.Down) {
+                this.pressed = true;
+                this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressed = false;
+                this.pointLight = hdsEffect.PointLightSourceType.NONE;
+            }
+        })
         .onClick(() => {
             if (this.vibrationEnabled) vibration.dotVibration();
             this.item.action();
@@ -71,6 +89,8 @@ export struct MyPage {
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     @State private showWarning: boolean = false;
     @State private showContact: boolean = false;
+    @State private versionTapCount: number = 0;
+    private versionTapTimer: number = -1;
     private restoredScroll: boolean = false;
 
     private onScrollToTopVersionChanged(): void {
@@ -114,29 +134,14 @@ export struct MyPage {
     private moreItems(): MoreItem[] {
         return [
             {
-                title: '重要提示',
-                icon: $r('app.media.attention'),
-                action: () => this.showWarning = true,
-            },
-            {
-                title: '网站首页',
+                title: '项目网站首页',
                 icon: $r('app.media.app_icon'),
                 action: () => this.openExternal(mainPage.toString(), '网站首页'),
             },
             {
-                title: 'MeoW 频道',
+                title: '订阅MeoW频道',
                 icon: $r('app.media.MeoW'),
                 action: () => this.openExternal(MEOW_CHANNEL_URL.toString(), 'MeoW频道'),
-            },
-            {
-                title: '查看教程',
-                icon: $r('app.media.tutorial'),
-                action: () => this.pushPage('TutorialPage'),
-            },
-            {
-                title: '友情链接',
-                icon: $r('app.media.sponsor'),
-                action: () => this.pushPage('FriendPage'),
             },
             {
                 title: 'API 文档说明',
@@ -145,6 +150,26 @@ export struct MyPage {
                     const url = new URL('docs', SBaseURL);
                     this.pushPage('AboutWebPage', new WebViewParam(url.toString(), 'API 文档说明'));
                 },
+            },
+            {
+                title: '友情链接',
+                icon: $r('app.media.sponsor'),
+                action: () => this.pushPage('FriendPage'),
+            },
+        ];
+    }
+
+    private helpItems(): MoreItem[] {
+        return [
+            {
+                title: '重要提示',
+                icon: $r('app.media.attention'),
+                action: () => this.showWarning = true,
+            },
+            {
+                title: '查看教程',
+                icon: $r('app.media.tutorial'),
+                action: () => this.pushPage('TutorialPage'),
             },
             {
                 title: '更新日志',
@@ -167,6 +192,22 @@ export struct MyPage {
         ];
     }
 
+    private tapVersion(): void {
+        this.vibrate();
+        this.versionTapCount++;
+        if (this.versionTapTimer >= 0) {
+            clearTimeout(this.versionTapTimer);
+        }
+        if (this.versionTapCount >= 10) {
+            this.versionTapCount = 0;
+            this.pushPage('DeveloperPage');
+            return;
+        }
+        this.versionTapTimer = setTimeout((): void => {
+            this.versionTapCount = 0;
+        }, 2500);
+    }
+
     private async openIcp(): Promise<void> {
         try {
             showToastSafely(this.prompt, '正在跳转…', 600, 'V3My');
@@ -186,20 +227,21 @@ export struct MyPage {
         Stack() {
             Scroll(this.scroller) {
                 Column({ space: 14 }) {
-                    Blank().height(40).width('100%')
+                    Blank().height(100).width('100%')
                     Column({ space: 8 }) {
                         Image($r('app.media.app_icon'))
-                            .width(92)
-                            .height(92)
+                            .width(100)
+                            .height(100)
                             .borderRadius(22)
                             .accessibilityText('Dashboard应用看板图标')
-                        Text('鸿蒙应用看板')
-                            .fontSize(22)
-                            .fontWeight(FontWeight.Bold)
+                        Text('Dashboard应用看板')
+                            .fontSize(30)
+                            .fontWeight(800)
                             .fontColor($r('app.color.diff_content'))
                             .accessibilityText('鸿蒙应用看板')
                         Text('Harmony Dashboard')
-                            .fontSize(15)
+                            .fontSize(20)
+                            .fontWeight(600)
                             .fontColor($r('app.color.v3_text_secondary'))
                             .accessibilityText('Harmony Dashboard')
                     }
@@ -257,13 +299,46 @@ export struct MyPage {
                     Divider()
                         .margin({ top: 6, bottom: 4 })
                         .color($r('app.color.border'))
+                        .accessibilityText('更多与帮助分隔线')
+
+                    Text('帮助')
+                        .fontSize(14)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor($r('app.color.diff_content'))
+                        .width('100%')
+                        .padding({ left: 4, top: 6 })
+                        .accessibilityText('帮助')
+                    Column() {
+                        ForEach(this.helpItems(), (item: MoreItem, index: number) => {
+                            MoreRow({ item })
+                            if (index < this.helpItems().length - 1) {
+                                Divider()
+                                    .color($r('app.color.v3_chart_grid'))
+                                    .margin({ left: 16, right: 16 })
+                                    .accessibilityText('帮助栏目分隔线')
+                            }
+                        }, (item: MoreItem) => item.title)
+                    }
+                    .width('100%')
+                    .borderRadius(16)
+                    .backgroundColor($r('app.color.v3_surface'))
+                    .border({ width: 1, color: $r('app.color.nd_card_border') })
+                    .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
+                    .clip(true)
+                    .accessibilityGroup(true)
+                    .accessibilityText('帮助栏目')
+
+                    Divider()
+                        .margin({ top: 6, bottom: 4 })
+                        .color($r('app.color.border'))
                         .accessibilityText('更多与版本信息分隔线')
 
                     Column({ space: 5 }) {
-                        Text(`版本 ${APP_VERSION} · 构建 ${APP_BUILD_NUMBER}`)
+                        Text(`版本 ${APP_VERSION}`)
                             .fontSize(12)
                             .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText(`版本${APP_VERSION}构建号${APP_BUILD_NUMBER}`)
+                            .onClick(() => this.tapVersion())
+                            .accessibilityText(`版本${APP_VERSION}，连续点击十次打开开发者信息`)
                         Text('Designed & Developed by Ray Chen (Rayawa)')
                             .fontSize(12)
                             .fontColor($r('app.color.v3_text_secondary'))

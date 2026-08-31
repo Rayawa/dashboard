@@ -13,10 +13,10 @@ This repository contains the HarmonyOS native client for `harmony_get_market`. I
 
 The root uses `HdsNavigation`, child destinations use `HdsNavDestination`, and a fixed-title `HdsTabs` hosts five tabs. The bottom bar no longer auto-hides or receives a manual size:
 
-1. S Site — existing ArkWeb behavior.
-2. Home — welcome/status information and native charts; chart sources load independently.
-3. Search — search, simple submission, query update, and the single system-share entry, with up to 20 relevance-ranked results.
-4. App Table — 20/50/100-row pages, multi-field sorting, horizontal/vertical scrolling, pagination, and direct page jump.
+1. Web S Site — existing ArkWeb behavior.
+2. Home — welcome/status information, exact market totals, total apps, and newly listed apps.
+3. Search — search, simple submission, query update, and the single system-share entry. All matching results are shown in horizontally scrollable 20-item columns; existing-app updates stay silent.
+4. App Details — a fixed two-way segment switches between native market overview charts and the 20/50/100-row sortable, scrollable, paginated app list.
 5. My — icon and names, settings, restored More links, and version/copyright/ICP details.
 
 Every list, search, deep-link, and share flow uses one native detail template:
@@ -25,11 +25,11 @@ Every list, search, deep-link, and share flow uses one native detail template:
 Locate app → fetch API data with a loading state → inject data → render the detail template
 ```
 
-The detail page uses compact tag-and-text metadata, screenshots, download history, description, and release notes. Button sharing, knock-to-share, and air-gesture sharing are enabled on this page. Share data includes a title, description, icon thumbnail, and the S-site's real `?app_id=...` URL format.
+The detail page uses compact tag-and-text metadata, screenshots, download and rating line charts with axes, horizontal browsing, zoom and point selection, plus description and release notes. Button sharing, knock-to-share, and air-gesture sharing are enabled on this page. Share data includes a title, description, AppIcon thumbnail, and `https://shenjack.top:10003/dashboard?app_id=...`.
 
-Continuation saves the selected main tab, detail target, and scroll offset. The target device restores `pages/Dashboard` before returning to the corresponding native location.
+Continuation saves the selected main tab, App Details subview, detail target, and scroll offset. The target device restores `pages/Dashboard` before returning to the corresponding native location. Only version 3.0.0 or later accepts continuation state.
 
-Every title bar except the S Site and Tutorial itself provides a Tutorial button. Re-tapping the current bottom tab scrolls that page to the top; re-tapping S Site returns to its home URL. Version 3.0.0 shows the important notice once after upgrade.
+Only main-page title bars other than Web S Site provide a Tutorial button; child pages do not duplicate it. Re-tapping the current bottom tab scrolls that page to the top; re-tapping Web S Site returns to its home URL. Version 3.0.0 shows the important notice once after upgrade.
 
 ## Network and cache behavior
 

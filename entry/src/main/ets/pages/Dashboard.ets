@@ -41,6 +41,7 @@ import { HTMLBuilder } from './more/htmlPage';
 import { TutorialPageBuilder } from './more/tutorial';
 import { FriendPageBuilder } from './more/friend';
 import { FriendPageWebBuilder } from './more/friendWeb';
+import { DeveloperPage } from './more/DeveloperPage';
 
 interface MainTab {
     label: string;
@@ -71,21 +72,22 @@ struct Dashboard {
     @State private mainActionIndex: number = -1;
     @State private mainActionVersion: number = 0;
     @State private homeRefreshVersion: number = 0;
+    @State private appsRefreshVersion: number = 0;
     @State private sStationCommand: number = S_STATION_COMMAND_NONE;
     @State private sStationCommandVersion: number = 0;
 
     private tabs(): MainTab[] {
         return [
-            { label: 'S站', icon: $r('app.media.api') },
+            { label: '网页S站', icon: $r('app.media.api') },
             { label: '首页', icon: $r('app.media.startIcon') },
             { label: '搜索', icon: $r('app.media.search') },
-            { label: '应用总表', icon: $r('app.media.log') },
+            { label: '应用详情', icon: $r('app.media.log') },
             { label: '我的', icon: $r('app.media.user') },
         ];
     }
 
     private mainTitle(): string {
-        return `鸿蒙应用看板-${this.tabs()[this.selectedIndex]?.label ?? '首页'}`;
+        return this.tabs()[this.selectedIndex]?.label ?? '首页';
     }
 
     private vibrate(): void {
@@ -106,6 +108,11 @@ struct Dashboard {
     private refreshHome(): void {
         this.vibrate();
         this.homeRefreshVersion++;
+    }
+
+    private refreshApps(): void {
+        this.vibrate();
+        this.appsRefreshVersion++;
     }
 
     private handleTabBarClick(index: number): void {
@@ -150,6 +157,26 @@ struct Dashboard {
                         icon: $r('app.media.refresh'),
                         isEnabled: true,
                         action: (): void => this.refreshHome(),
+                    },
+                },
+                {
+                    content: {
+                        label: '打开教程',
+                        icon: $r('sys.symbol.questionmark_circle'),
+                        isEnabled: true,
+                        action: (): void => this.openTutorial(),
+                    },
+                },
+            ];
+        }
+        if (this.selectedIndex === MAIN_TAB_APPS) {
+            return [
+                {
+                    content: {
+                        label: '刷新应用概况和应用列表',
+                        icon: $r('app.media.refresh'),
+                        isEnabled: true,
+                        action: (): void => this.refreshApps(),
                     },
                 },
                 {
@@ -222,6 +249,8 @@ struct Dashboard {
             FriendPageBuilder()
         } else if (name === 'FriendPageWeb') {
             FriendPageWebBuilder()
+        } else if (name === 'DeveloperPage') {
+            DeveloperPage()
         }
     }
 
@@ -236,6 +265,10 @@ struct Dashboard {
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[0].icon, this.tabs()[0].label))
+                    .opacity(this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.92)
+                    .scale({ x: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985,
+                        y: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985 })
+                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
                     .accessibilityText('S站标签页')
 
                     TabContent() {
@@ -245,6 +278,10 @@ struct Dashboard {
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[1].icon, this.tabs()[1].label))
+                    .opacity(this.selectedIndex === MAIN_TAB_HOME ? 1 : 0.92)
+                    .scale({ x: this.selectedIndex === MAIN_TAB_HOME ? 1 : 0.985,
+                        y: this.selectedIndex === MAIN_TAB_HOME ? 1 : 0.985 })
+                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
                     .accessibilityText('首页标签页')
 
                     TabContent() {
@@ -254,15 +291,24 @@ struct Dashboard {
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[2].icon, this.tabs()[2].label))
+                    .opacity(this.selectedIndex === MAIN_TAB_SEARCH ? 1 : 0.92)
+                    .scale({ x: this.selectedIndex === MAIN_TAB_SEARCH ? 1 : 0.985,
+                        y: this.selectedIndex === MAIN_TAB_SEARCH ? 1 : 0.985 })
+                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
                     .accessibilityText('搜索标签页')
 
                     TabContent() {
                         AppsPage({
+                            refreshVersion: this.appsRefreshVersion,
                             scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[3].icon, this.tabs()[3].label))
-                    .accessibilityText('应用总表标签页')
+                    .opacity(this.selectedIndex === MAIN_TAB_APPS ? 1 : 0.92)
+                    .scale({ x: this.selectedIndex === MAIN_TAB_APPS ? 1 : 0.985,
+                        y: this.selectedIndex === MAIN_TAB_APPS ? 1 : 0.985 })
+                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
+                    .accessibilityText('应用详情标签页')
 
                     TabContent() {
                         MyPage({
@@ -270,13 +316,16 @@ struct Dashboard {
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[4].icon, this.tabs()[4].label))
+                    .opacity(this.selectedIndex === MAIN_TAB_MY ? 1 : 0.92)
+                    .scale({ x: this.selectedIndex === MAIN_TAB_MY ? 1 : 0.985,
+                        y: this.selectedIndex === MAIN_TAB_MY ? 1 : 0.985 })
+                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
                     .accessibilityText('我的标签页')
                 }
                 .barPosition(BarPosition.End)
                 .vertical(false)
                 .barOverlap(true)
                 .blurStrategy(BlurStrategy.ENABLE)
-                .animation({ curve: curves.springMotion(0.8, 0.8), duration: 400 })
                 .barFloatingStyle({
                     barBottomMargin: 28,
                     lightColor: $r('app.color.diff_content'),
@@ -324,7 +373,7 @@ struct Dashboard {
         .titleBar({
             style: {
                 scrollEffectOpts: {
-                    enableScrollEffect: true,
+                    enableScrollEffect: false,
                     scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
                     blurEffectiveStartOffset: LengthMetrics.vp(0),
                     blurEffectiveEndOffset: LengthMetrics.vp(20),

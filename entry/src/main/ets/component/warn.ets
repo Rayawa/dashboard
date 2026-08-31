@@ -5,6 +5,7 @@ import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { getFirstLaunch } from '../common/storage';
 import { mainPage } from '../common/constants';
+import { showToastSafely } from '../common/safeUi';
 
 
 @Component
@@ -33,7 +34,7 @@ export struct warn {
       Column() {
         Blank().height(60).onClick(() => {
           if(this.isFirstLaunch){
-            this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
+            showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
           } else {
             if(this.vibrationON) vibration.dotVibration();
             this.isShow = false;
@@ -57,7 +58,7 @@ export struct warn {
                 if (this.vibrationON) vibration.dotVibration()
                 const ui_content = this.getUIContext();
                 try {
-                  this.PromptAction.showToast({ message: "正在跳转...", duration: 500 });
+                  showToastSafely(this.PromptAction, '正在跳转…', 500, 'Warning');
                   let context = ui_content.getHostContext() as common.UIAbilityContext;
                   await context.startAbility({
                     action: "ohos.want.action.viewData",
@@ -66,7 +67,7 @@ export struct warn {
                   } as Want);
                 } catch (error) {
                   console.error('[Dashboard][component/warn][ERROR]', "打开链接失败:", (error as BusinessError).message);
-                  this.PromptAction.showToast({ message: "打开链接失败", duration: 1000 });
+                  showToastSafely(this.PromptAction, '打开链接失败', 1000, 'Warning');
                 }
               })
 
@@ -137,7 +138,7 @@ export struct warn {
         if (this.isFirstLaunch) {
           Blank().height(15).onClick(() => {
             if(this.isFirstLaunch){
-              this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
+              showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
             } else {
               if(this.vibrationON) vibration.dotVibration();
               this.isShow = false;
@@ -160,7 +161,7 @@ export struct warn {
       .gesture(
         SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(() => {
           if(this.isFirstLaunch){
-            this.PromptAction.showToast({ message: "请先阅读并同意重要提示！" })
+            showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
           } else {
             if(this.vibrationON) vibration.dotVibration();
             this.isShow = false;

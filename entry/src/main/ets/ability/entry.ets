@@ -5,6 +5,7 @@ import { loadPersistedState } from '../common/storage';
 import {
     CONTINUATION_ROUTE_DETAIL,
     CONTINUATION_ROUTE_MAIN,
+    CONTINUATION_MIN_VERSION_CODE,
     DEFAULT_WINDOW_HEIGHT,
     DEFAULT_WINDOW_WIDTH,
     LOCAL_STORAGE_KEY_WINDOW_HEIGHT,
@@ -27,6 +28,12 @@ export default class EntryAbility extends UIAbility {
     private startupTask: Promise<void> = Promise.resolve();
 
     onContinue(wantParam: Record<string, Object>): AbilityConstant.OnContinueResult {
+        const targetVersion = Number(wantParam['version'] ?? 0);
+        if (targetVersion < CONTINUATION_MIN_VERSION_CODE) {
+            console.warn('[Dashboard][ability/entry][WARN]',
+                `目标设备应用版本过低，拒绝接续: ${targetVersion} < ${CONTINUATION_MIN_VERSION_CODE}`);
+            return AbilityConstant.OnContinueResult.MISMATCH;
+        }
         const current = getContinuationState();
 
         wantParam['targetUrl'] = current.pageUrl;
@@ -35,6 +42,7 @@ export default class EntryAbility extends UIAbility {
         wantParam['routeName'] = current.routeName;
         wantParam['detailAppId'] = current.detailAppId;
         wantParam['detailPackage'] = current.detailPackageName;
+        wantParam['appsViewIndex'] = current.appsViewIndex;
         return AbilityConstant.OnContinueResult.AGREE;
     }
     private restoreContinuationParams(want: Want, launchParam?: AbilityConstant.LaunchParam): void {
@@ -46,6 +54,7 @@ export default class EntryAbility extends UIAbility {
             const routeName = want.parameters?.['routeName'] as string || CONTINUATION_ROUTE_MAIN;
             const detailAppId = want.parameters?.['detailAppId'] as string || '';
             const detailPackageName = want.parameters?.['detailPackage'] as string || '';
+            const appsViewIndex = want.parameters?.['appsViewIndex'] as number || 0;
             setContinuationState({
                 pageUrl: want.parameters?.['targetUrl'] as string || '',
                 scrollDistance: want.parameters?.['scrollOffset'] as number || 0,
@@ -53,6 +62,7 @@ export default class EntryAbility extends UIAbility {
                 routeName,
                 detailAppId,
                 detailPackageName,
+                appsViewIndex,
             });
             setMainTab(mainTab ?? 1);
             if (routeName === CONTINUATION_ROUTE_DETAIL && (detailAppId || detailPackageName)) {
@@ -66,6 +76,13 @@ export default class EntryAbility extends UIAbility {
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         this.restoreContinuationParams(want, launchParam);
+        if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
+            try {
+                this.context.restoreWindowStage(this.storage);
+            } catch (error) {
+                console.warn('[Dashboard][ability/entry][WARN]', `恢复接续窗口栈失败，将使用业务状态恢复: ${JSON.stringify(error)}`);
+            }
+        }
         this.applyV3LaunchParams(want);
         initializeCache(this.context);
         // UI 绑定前完成持久化设置迁移和运行时状态水合。
@@ -73,6 +90,13 @@ export default class EntryAbility extends UIAbility {
     }
     onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         this.restoreContinuationParams(want, launchParam);
+        if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
+            try {
+                this.context.restoreWindowStage(this.storage);
+            } catch (error) {
+                console.warn('[Dashboard][ability/entry][WARN]', `热启动接续窗口栈恢复失败: ${JSON.stringify(error)}`);
+            }
+        }
         this.applyV3LaunchParams(want);
     }
     private decodeUriValue(value: string): string {

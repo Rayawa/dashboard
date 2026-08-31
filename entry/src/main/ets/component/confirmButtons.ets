@@ -104,7 +104,7 @@ export struct confirmButtons {
                 .margin(2)
                 .width('35%')
                 .height(this.BUTTON_HEIGHT)
-                .backgroundColor(Color.Green)
+                .backgroundColor($r('app.color.v3_accent_green'))
                 .borderRadius(this.BORDER_RADIUS)
                 .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
                 .onClick(() => {
@@ -120,7 +120,7 @@ export struct confirmButtons {
                 .margin(2)
                 .width('45%')
                 .height(this.BUTTON_HEIGHT)
-                .backgroundColor(this.isConfirmEnabled ? Color.Red : "#888")
+                .backgroundColor(this.isConfirmEnabled ? $r('app.color.v3_accent_red') : $r('app.color.v3_text_secondary'))
                 .borderRadius(this.BORDER_RADIUS)
                 .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
                 .onClick(() => {

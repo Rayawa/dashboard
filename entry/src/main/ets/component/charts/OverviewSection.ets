@@ -1,13 +1,9 @@
 import { common } from '@kit.AbilityKit';
-import { PromptAction } from '@kit.ArkUI';
 import { RESPONSIVE_BREAKPOINT_LARGE, RESPONSIVE_BREAKPOINT_MEDIUM } from '../../common/constants';
-import { setDetailTarget } from '../../common/appState';
-import { fetchApiHistory, fetchAppsPage, fetchRatingDistribution, fetchSdkDistribution } from '../../common/MarketApi';
+import { fetchApiHistory, fetchRatingDistribution, fetchSdkDistribution } from '../../common/MarketApi';
 import { formatCount } from '../../common/format';
-import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
-import type { BaseAPIResponse, MarketApp, PageInfo, RatingDistribution } from '../../common/types';
-import { EmptyPathParam, pushPathSafely } from '../../common/safeNavigation';
+import type { BaseAPIResponse, RatingDistribution } from '../../common/types';
 
 interface DistributionChart {
     title: string;
@@ -23,9 +19,13 @@ interface HistoryPoint {
 
 @Component
 struct DistributionPanel {
-    chart: DistributionChart = { title: '', labels: [], values: [], total: 1 };
+    @Prop @Watch('onChartChanged') chart: DistributionChart = { title: '', labels: [], values: [], total: 1 };
     @State private selected: number = 0;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+
+    private onChartChanged(): void {
+        this.selected = 0;
+    }
 
     private colors(): ResourceColor[] {
         return [
@@ -47,6 +47,16 @@ struct DistributionPanel {
         return `${this.chart.labels[this.selected]}：${formatCount(value)}，${percent.toFixed(1)}%`;
     }
 
+    private maximum(): number {
+        let maximum = 1;
+        this.chart.values.forEach((value: number) => maximum = Math.max(maximum, value));
+        return maximum;
+    }
+
+    private barWidth(value: number): string {
+        return `${Math.max(2, value / this.maximum() * 100)}%`;
+    }
+
     build() {
         Column({ space: 12 }) {
             Text(this.chart.title)
@@ -56,33 +66,45 @@ struct DistributionPanel {
                 .width('100%')
                 .accessibilityText(this.chart.title)
             if (this.chart.values.length > 0) {
-                DataPanel({ values: this.chart.values, max: Math.max(this.chart.total, 1), type: DataPanelType.Circle })
-                    .width(190)
-                    .height(190)
-                    .valueColors(this.colors())
-                    .trackBackgroundColor($r('app.color.v3_surface_alt'))
-                    .accessibilityText(`${this.chart.title}饼图，${this.selectedText()}`)
+                Column({ space: 9 }) {
+                    ForEach(this.chart.labels, (label: string, index: number) => {
+                        Column({ space: 4 }) {
+                            Row() {
+                                Text(label)
+                                    .fontSize(11)
+                                    .fontColor($r('app.color.v3_text_secondary'))
+                                    .layoutWeight(1)
+                                Text(formatCount(this.chart.values[index]))
+                                    .fontSize(11)
+                                    .fontColor($r('app.color.v3_text_primary'))
+                            }
+                            .width('100%')
+                            Row() {
+                                Row()
+                                    .width(this.barWidth(this.chart.values[index]))
+                                    .height(9)
+                                    .borderRadius(5)
+                                    .backgroundColor(this.colors()[index % this.colors().length])
+                            }
+                            .width('100%')
+                            .height(10)
+                            .border({ width: { left: 1, bottom: 1 }, color: $r('app.color.v3_chart_grid') })
+                        }
+                        .width('100%')
+                        .padding({ top: 2, bottom: 2 })
+                        .onClick(() => {
+                            if (this.vibrationEnabled) vibration.dotVibration();
+                            this.selected = index;
+                        })
+                        .accessibilityText(`${label}，数量${formatCount(this.chart.values[index])}`)
+                    }, (label: string) => `${this.chart.title}-${label}`)
+                }
+                .width('100%')
+                .accessibilityText(`${this.chart.title}柱状图，带横轴和纵轴`)
                 Text(this.selectedText())
                     .fontSize(13)
                     .fontColor($r('app.color.v3_text_secondary'))
                     .accessibilityText(this.selectedText())
-                Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center }) {
-                    ForEach(this.chart.labels, (label: string, index: number) => {
-                        Button(`${label} ${formatCount(this.chart.values[index])}`)
-                            .fontSize(11)
-                            .fontColor(index === this.selected ? $r('app.color.v3_surface') : $r('app.color.v3_text_primary'))
-                            .backgroundColor(index === this.selected ? this.colors()[index % this.colors().length] : $r('app.color.v3_surface_alt'))
-                            .height(34)
-                            .margin(3)
-                            .onClick(() => {
-                                if (this.vibrationEnabled) vibration.dotVibration();
-                                this.selected = index;
-                            })
-                            .accessibilityText(`查看${label}，数量${formatCount(this.chart.values[index])}`)
-                    }, (label: string) => `${this.chart.title}-${label}`)
-                }
-                .width('100%')
-                .accessibilityText(`${this.chart.title}图例`)
             } else {
                 Text('暂无数据')
                     .fontColor($r('app.color.v3_text_secondary'))
@@ -101,88 +123,9 @@ struct DistributionPanel {
 }
 
 @Component
-struct DownloadRankingPanel {
-    title: string = '';
-    apps: MarketApp[] = [];
-    onOpen: (app: MarketApp) => void = () => {};
-
-    private maxDownloads(): number {
-        let max = 1;
-        this.apps.forEach((app: MarketApp) => max = Math.max(max, app.download_count));
-        return max;
-    }
-
-    private barWidth(app: MarketApp): string {
-        return `${Math.max(4, app.download_count / this.maxDownloads() * 100)}%`;
-    }
-
-    build() {
-        Column({ space: 10 }) {
-            Text(this.title)
-                .fontSize(17)
-                .fontWeight(FontWeight.Bold)
-                .fontColor($r('app.color.v3_text_primary'))
-                .width('100%')
-                .accessibilityText(this.title)
-            ForEach(this.apps, (app: MarketApp, index: number) => {
-                Column({ space: 5 }) {
-                    Row({ space: 8 }) {
-                        Text(`${index + 1}`)
-                            .width(22)
-                            .fontSize(12)
-                            .fontWeight(FontWeight.Bold)
-                            .fontColor($r('app.color.v3_accent_blue'))
-                        Image(app.icon_url || $r('app.media.startIcon'))
-                            .width(24)
-                            .height(24)
-                            .borderRadius(6)
-                            .objectFit(ImageFit.Cover)
-                            .alt($r('app.media.startIcon'))
-                            .accessibilityText(`${app.name}应用图标`)
-                        Text(app.name || '未知应用')
-                            .fontSize(12)
-                            .fontColor($r('app.color.v3_text_primary'))
-                            .maxLines(1)
-                            .textOverflow({ overflow: TextOverflow.Ellipsis })
-                            .layoutWeight(1)
-                        Text(formatCount(app.download_count))
-                            .fontSize(12)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                    }
-                    .width('100%')
-                    Row() {
-                        Row()
-                            .height(5)
-                            .width(this.barWidth(app))
-                            .borderRadius(3)
-                            .backgroundColor($r('app.color.v3_accent_cyan'))
-                    }
-                    .width('100%')
-                    .height(5)
-                    .borderRadius(3)
-                    .backgroundColor($r('app.color.v3_chart_grid'))
-                }
-                .width('100%')
-                .padding({ top: 4, bottom: 4 })
-                .onClick(() => this.onOpen(app))
-                .accessibilityGroup(true)
-                .accessibilityText(`第${index + 1}名${app.name}，下载量${formatCount(app.download_count)}，点击查看详情`)
-            }, (app: MarketApp) => `${this.title}-${app.app_id}`)
-        }
-        .width('100%')
-        .padding(16)
-        .borderRadius(18)
-        .backgroundColor($r('app.color.v3_surface'))
-        .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .accessibilityGroup(true)
-        .accessibilityText(this.title)
-    }
-}
-
-@Component
 struct ApiHistoryChart {
-    @Prop history: HistoryPoint[] = [];
-    @Prop apiKeys: string[] = [];
+    @Prop @Watch('onDataChanged') history: HistoryPoint[] = [];
+    @Prop @Watch('onDataChanged') apiKeys: string[] = [];
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
     private canvasContext: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
     @State private canvasWidth: number = 320;
@@ -190,6 +133,12 @@ struct ApiHistoryChart {
     @State private selectedApiIndex: number = 0;
     @State private selectedDateIndex: number = 0;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+
+    private onDataChanged(): void {
+        this.selectedApiIndex = Math.min(this.selectedApiIndex, Math.max(0, this.apiKeys.length - 1));
+        this.selectedDateIndex = Math.min(this.selectedDateIndex, Math.max(0, this.history.length - 1));
+        setTimeout((): void => this.draw(), 0);
+    }
 
     private options(): SelectOption[] {
         return this.apiKeys.map((key: string) => ({ value: `API ${key}` } as SelectOption));
@@ -209,6 +158,7 @@ struct ApiHistoryChart {
     }
 
     private draw(): void {
+        this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
         if (this.history.length < 2 || this.currentKey() === '') {
             return;
         }
@@ -221,7 +171,12 @@ struct ApiHistoryChart {
         } catch (error) {
             console.warn('[Dashboard][component/charts/OverviewSection][WARN]', `图表颜色资源读取失败，使用内置配色: ${JSON.stringify(error)}`);
         }
-        const left = 28;
+        let textColor: number = 0xFF666666;
+        try {
+            textColor = host.resourceManager.getColorSync($r('app.color.v3_text_secondary').id);
+        } catch (_error) {
+        }
+        const left = 48;
         const top = 16;
         const right = 12;
         const bottom = 24;
@@ -230,7 +185,6 @@ struct ApiHistoryChart {
         const values = this.history.map((point: HistoryPoint) => point.values[this.currentKey()] ?? 0);
         let maxValue = 1;
         values.forEach((value: number) => maxValue = Math.max(maxValue, value));
-        this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
         this.canvasContext.strokeStyle = gridColor;
         this.canvasContext.lineWidth = 1;
         for (let row = 0; row <= 4; row++) {
@@ -239,7 +193,16 @@ struct ApiHistoryChart {
             this.canvasContext.moveTo(left, y);
             this.canvasContext.lineTo(left + drawWidth, y);
             this.canvasContext.stroke();
+            this.canvasContext.fillStyle = textColor;
+            this.canvasContext.font = '10px sans-serif';
+            this.canvasContext.textAlign = 'right';
+            this.canvasContext.fillText(`${(maxValue * (4 - row) / 4).toFixed(1)}%`, left - 6, y + 3);
         }
+        this.canvasContext.beginPath();
+        this.canvasContext.moveTo(left, top);
+        this.canvasContext.lineTo(left, top + drawHeight);
+        this.canvasContext.lineTo(left + drawWidth, top + drawHeight);
+        this.canvasContext.stroke();
         this.canvasContext.strokeStyle = lineColor;
         this.canvasContext.lineWidth = 3;
         this.canvasContext.beginPath();
@@ -253,6 +216,11 @@ struct ApiHistoryChart {
             }
         });
         this.canvasContext.stroke();
+        this.canvasContext.fillStyle = textColor;
+        this.canvasContext.textAlign = 'left';
+        this.canvasContext.fillText(this.history[0].date, left, this.canvasHeight - 5);
+        this.canvasContext.textAlign = 'right';
+        this.canvasContext.fillText(this.history[this.history.length - 1].date, this.canvasWidth - right, this.canvasHeight - 5);
     }
 
     build() {
@@ -322,9 +290,7 @@ struct ApiHistoryChart {
 
 @Component
 export struct OverviewSection {
-    @Consume('pageStack') private pageStack: NavPathStack;
     @Prop @Watch('onRefreshVersionChanged') refreshVersion: number = 0;
-    private prompt: PromptAction = this.getUIContext().getPromptAction();
     @State private loading: boolean = false;
     @State private loaded: boolean = false;
     @State private fromCache: boolean = false;
@@ -333,9 +299,6 @@ export struct OverviewSection {
     @State private targetSdkChart: DistributionChart = { title: '目标 SDK 分布', labels: [], values: [], total: 1 };
     @State private history: HistoryPoint[] = [];
     @State private apiKeys: string[] = [];
-    @State private topApps: MarketApp[] = [];
-    @State private nonHuaweiApps: MarketApp[] = [];
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
     private onRefreshVersionChanged(): void {
         if (this.refreshVersion > 0) {
@@ -344,12 +307,6 @@ export struct OverviewSection {
     }
     private pendingLoads: number = 0;
     private failedLoads: number = 0;
-
-    private vibrate(): void {
-        if (this.vibrationEnabled) {
-            vibration.dotVibration();
-        }
-    }
 
     private distribution(title: string, source: number[][]): DistributionChart {
         const sorted = source.slice().sort((a: number[], b: number[]) => b[1] - a[1]);
@@ -373,21 +330,13 @@ export struct OverviewSection {
         }
         this.loading = true;
         this.fromCache = false;
-        this.pendingLoads = 6;
+        this.pendingLoads = 4;
         this.failedLoads = 0;
         const finish = (): void => {
             this.pendingLoads--;
             if (this.pendingLoads <= 0) {
                 this.loading = false;
                 this.loaded = true;
-                if (this.failedLoads > 0) {
-                    showToastSafely(
-                        this.prompt,
-                        `${this.failedLoads} 项图表数据暂不可用，其余内容已正常显示`,
-                        2500,
-                        'V3Overview',
-                    );
-                }
             }
         };
         const failed = (name: string, error: Error): void => {
@@ -446,34 +395,12 @@ export struct OverviewSection {
             this.fromCache = this.fromCache || result.stale;
         }).catch((error: Error) => failed('Harmony API 历史', error)).finally(() => finish());
 
-        fetchAppsPage(1, 10, 'download_count', true, undefined, undefined, false, force, false).then((result) => {
-            const topResponse = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
-            if (!topResponse.success || !topResponse.data) {
-                throw new Error('下载榜接口未返回有效数据');
-            }
-            this.topApps = topResponse.data.data ?? [];
-            this.fromCache = this.fromCache || result.stale;
-        }).catch((error: Error) => failed('总下载榜', error)).finally(() => finish());
-
-        fetchAppsPage(1, 10, 'download_count', true, undefined, undefined, false, force, true).then((result) => {
-            const nonHuaweiResponse = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
-            if (!nonHuaweiResponse.success || !nonHuaweiResponse.data) {
-                throw new Error('非华为下载榜接口未返回有效数据');
-            }
-            this.nonHuaweiApps = nonHuaweiResponse.data.data ?? [];
-            this.fromCache = this.fromCache || result.stale;
-        }).catch((error: Error) => failed('非华为下载榜', error)).finally(() => finish());
     }
 
     build() {
         Column({ space: 14 }) {
                 Column({ space: 4 }) {
-                    Text('应用概况')
-                        .fontSize(22)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.v3_text_primary'))
-                        .accessibilityText('应用概况')
-                    Text('点击图例、选择 API 或拖动时间轴查看详细数据')
+                    Text('点击柱形、选择 API 或拖动时间轴查看详细数据')
                         .fontSize(13)
                         .fontColor($r('app.color.v3_text_secondary'))
                         .accessibilityText('图表支持点击图例选择API和拖动时间轴交互')
@@ -525,32 +452,6 @@ export struct OverviewSection {
 
                 ApiHistoryChart({ history: this.history, apiKeys: this.apiKeys })
 
-                GridRow({
-                    columns: { xs: 4, sm: 8, md: 12 },
-                    gutter: { x: 12, y: 12 },
-                    breakpoints: {
-                        value: [RESPONSIVE_BREAKPOINT_MEDIUM, RESPONSIVE_BREAKPOINT_LARGE],
-                        reference: BreakpointsReference.WindowSize,
-                    },
-                }) {
-                    GridCol({ span: { xs: 4, sm: 4, md: 6 } }) {
-                        DownloadRankingPanel({
-                            title: '总下载榜',
-                            apps: this.topApps,
-                            onOpen: (app: MarketApp) => this.openDetail(app),
-                        })
-                    }
-                    GridCol({ span: { xs: 4, sm: 4, md: 6 } }) {
-                        DownloadRankingPanel({
-                            title: '非华为应用下载榜',
-                            apps: this.nonHuaweiApps,
-                            onOpen: (app: MarketApp) => this.openDetail(app),
-                        })
-                    }
-                }
-                .width('100%')
-                .accessibilityText('应用下载排行榜')
-
         }
         .width('100%')
         .onAppear(() => {
@@ -559,16 +460,5 @@ export struct OverviewSection {
             }
         })
         .accessibilityText('应用概况页面')
-    }
-
-    private openDetail(app: MarketApp): void {
-        this.vibrate();
-        setDetailTarget({ appId: app.app_id, packageName: app.pkg_name });
-        pushPathSafely(
-            this.pageStack,
-            'AppDetailPage',
-            new EmptyPathParam(),
-            'component/charts/OverviewSection',
-        );
     }
 }

@@ -1,6 +1,5 @@
 import { PromptAction } from '@kit.ArkUI';
 import {
-    APP_LIST_PAGE_SIZE,
     BACKGROUND_REFRESH_DELAY_MS,
     CONTENT_MAX_WIDTH,
     CONTINUATION_ROUTE_MAIN,
@@ -43,7 +42,6 @@ export struct SearchPage {
     @StorageLink('username') private username: string = '';
     @State private input: string = '';
     @State private loading: boolean = false;
-    @State private backgroundUpdating: boolean = false;
     @State private status: string = '输入应用名称、包名、App ID 或华为应用市场链接';
     @State private errorMessage: string = '';
     @State private results: MarketApp[] = [];
@@ -145,7 +143,7 @@ export struct SearchPage {
     }
 
     private async findByName(name: string): Promise<NameSearchResult> {
-        const listResult = await fetchAppsPage(
+        const firstResult = await fetchAppsPage(
             1,
             100,
             'download_count',
@@ -155,21 +153,31 @@ export struct SearchPage {
             false,
             true,
         );
-        const response = listResult.data as BaseAPIResponse<PageInfo<MarketApp>>;
-        const matches = response.data?.data ?? [];
+        const response = firstResult.data as BaseAPIResponse<PageInfo<MarketApp>>;
+        let matches: MarketApp[] = response.data?.data ?? [];
         if (!response.success || matches.length === 0) {
             throw new Error('未找到同名应用；如需投稿，请输入包名、App ID 或应用市场链接');
         }
+        const totalPages = response.data?.total_pages ?? 1;
+        let stale = firstResult.stale;
+        for (let page = 2; page <= totalPages; page++) {
+            const nextResult = await fetchAppsPage(
+                page, 100, 'download_count', true, 'name', name, false, true,
+            );
+            const nextResponse = nextResult.data as BaseAPIResponse<PageInfo<MarketApp>>;
+            if (nextResponse.success && nextResponse.data) {
+                matches = matches.concat(nextResponse.data.data ?? []);
+            }
+            stale = stale || nextResult.stale;
+        }
         return {
-            apps: matches
-                .sort((left: MarketApp, right: MarketApp) => this.relevance(left, name) - this.relevance(right, name))
-                .slice(0, APP_LIST_PAGE_SIZE),
-            stale: listResult.stale,
+            apps: matches.sort((left: MarketApp, right: MarketApp) =>
+                this.relevance(left, name) - this.relevance(right, name)),
+            stale,
         };
     }
 
     private async submitNew(target: AppRouteTarget): Promise<void> {
-        this.status = '正在静默同步新应用数据…';
         const body: SubmitAppBody = { comment: { user: this.username } };
         if (target.appId) {
             body.app_id = target.appId;
@@ -189,7 +197,8 @@ export struct SearchPage {
             packageName: response.data.full_info.pkg_name,
         };
         this.fromCache = false;
-        this.status = '应用数据已完成加载';
+        this.status = '新应用已收录并完成加载';
+        showToastSafely(this.prompt, `已发现并收录新应用：${response.data.full_info.name}`, 2200, 'V3Search');
     }
 
     private replaceResult(app: MarketApp): void {
@@ -202,8 +211,6 @@ export struct SearchPage {
             appId: this.activeTarget.appId,
             packageName: this.activeTarget.packageName,
         };
-        this.backgroundUpdating = true;
-        this.status = '结果已显示，正在后台 query 并更新数据…';
         setTimeout((): void => {
             if (token !== this.backgroundUpdateToken) {
                 return;
@@ -216,19 +223,9 @@ export struct SearchPage {
                     this.resultApp = fresh.data.data.full_info;
                     this.replaceResult(fresh.data.data.full_info);
                     this.fromCache = fresh.stale;
-                    this.status = fresh.fromCache ?
-                        '后台更新失败，继续使用离线缓存' : '后台 query 更新完成';
-                } else {
-                    this.status = '结果已显示；后台更新未返回新数据';
                 }
             }).catch((error: Error) => {
-                if (token === this.backgroundUpdateToken) {
-                    this.status = `结果已显示；后台更新失败：${error.message}`;
-                }
-            }).finally(() => {
-                if (token === this.backgroundUpdateToken) {
-                    this.backgroundUpdating = false;
-                }
+                console.warn('[Dashboard][pages/main/SearchPage][WARN]', `静默后台更新失败: ${error.message}`);
             });
         }, BACKGROUND_REFRESH_DELAY_MS);
     }
@@ -247,7 +244,6 @@ export struct SearchPage {
         }
         this.loading = true;
         this.backgroundUpdateToken++;
-        this.backgroundUpdating = false;
         this.errorMessage = '';
         this.results = [];
         this.resultApp = undefined;
@@ -267,7 +263,7 @@ export struct SearchPage {
                 this.fromCache = searchResult.stale;
                 this.status = searchResult.stale ?
                     `网络不佳，已从缓存加载 ${matches.length} 个匹配结果` :
-                    `已加载 ${matches.length} 个匹配结果，正在静默更新最相关应用…`;
+                    `已加载全部 ${matches.length} 个匹配结果`;
                 this.updateExisting();
                 this.openDetailIfRequested();
                 return;
@@ -314,6 +310,14 @@ export struct SearchPage {
         } finally {
             this.loading = false;
         }
+    }
+
+    private resultColumns(): MarketApp[][] {
+        const columns: MarketApp[][] = [];
+        for (let index = 0; index < this.results.length; index += 20) {
+            columns.push(this.results.slice(index, index + 20));
+        }
+        return columns;
     }
 
     private openDetail(app?: MarketApp): void {
@@ -401,14 +405,14 @@ export struct SearchPage {
     build() {
         Scroll(this.scroller) {
             Column({ space: 14 }) {
-                Blank().height(40).width('100%')
-                Text('搜索结果完整加载后会静默完成后台更新；名称搜索最多展示相关度最高的 20 个结果。')
+                Blank().height(100).width('100%')
+                Text('名称搜索会完整展示所有匹配结果；结果加载后将静默校验最新数据。')
                     .fontSize(13)
                     .lineHeight(20)
                     .fontColor($r('app.color.v3_text_secondary'))
                     .width('100%')
                     .padding({ left: 4, right: 4 })
-                    .accessibilityText('搜索结果完整加载后静默后台更新，最多展示二十个结果')
+                    .accessibilityText('名称搜索完整展示所有匹配结果，加载后静默校验数据')
 
                 Column({ space: 12 }) {
                     Search({
@@ -446,7 +450,7 @@ export struct SearchPage {
                 .accessibilityText('应用搜索和投稿表单')
 
                 Row({ space: 10 }) {
-                    if (this.loading || this.backgroundUpdating) {
+                    if (this.loading) {
                         LoadingProgress()
                             .width(24)
                             .height(24)
@@ -487,9 +491,26 @@ export struct SearchPage {
                             .fontColor($r('app.color.v3_text_primary'))
                             .width('100%')
                             .accessibilityText(`匹配结果${this.results.length}个`)
-                        ForEach(this.results, (app: MarketApp) => {
-                            this.resultCard(app)
-                        }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
+                        Scroll() {
+                            Row({ space: 12 }) {
+                                ForEach(this.resultColumns(), (column: MarketApp[], columnIndex: number) => {
+                                    Column({ space: 10 }) {
+                                        ForEach(column, (app: MarketApp) => {
+                                            this.resultCard(app)
+                                        }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
+                                    }
+                                    .width(340)
+                                    .alignItems(HorizontalAlign.Start)
+                                    .accessibilityText(`第${columnIndex + 1}列搜索结果`)
+                                }, (_column: MarketApp[], columnIndex: number) => `result-column-${columnIndex}`)
+                            }
+                            .alignItems(VerticalAlign.Top)
+                        }
+                        .width('100%')
+                        .scrollable(ScrollDirection.Horizontal)
+                        .scrollBar(BarState.Auto)
+                        .edgeEffect(EdgeEffect.Spring)
+                        .accessibilityText('可横向滚动的搜索结果，每列二十个应用')
                     }
                     .width('100%')
                     .padding({ top: 4 })

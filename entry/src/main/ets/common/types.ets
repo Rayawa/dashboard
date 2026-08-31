@@ -164,6 +164,19 @@ export interface AppMetric {
     min_hmos_api_level: number;
     api_release_type: string;
     created_at: string;
+    info_score?: number | string;
+    info_rate_count?: number;
+}
+
+export interface AppRatingHistory {
+    report_date: string;
+    app_id: string;
+    pkg_name: string;
+    daily_new_count: number;
+    daily_new_average: number | string;
+    cumulative_total_count: number;
+    cumulative_avg_rating_origin?: number | string;
+    cumulative_avg_rating_high_prec: number | string;
 }
 
 export interface ApiDataResult<T> {
