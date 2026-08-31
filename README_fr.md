@@ -13,10 +13,10 @@ Ce dépôt contient le client natif HarmonyOS de `harmony_get_market`. Il utilis
 
 La racine utilise `HdsNavigation`, les pages enfants utilisent `HdsNavDestination`, et cinq onglets sont réunis dans un `HdsTabs` à titre fixe. La barre inférieure ne se masque plus automatiquement et ne reçoit plus de taille manuelle :
 
-1. Site S — comportement ArkWeb existant.
-2. Accueil — bienvenue, état du service et graphiques natifs chargés indépendamment.
-3. Recherche — recherche, soumission simple, mise à jour query et unique entrée de partage système, avec au plus 20 résultats classés par pertinence.
-4. Tableau des applications — pages de 20/50/100 lignes, tri multi-colonnes, défilement horizontal/vertical, pagination et accès direct à une page.
+1. Site Web S — comportement ArkWeb existant.
+2. Accueil — bienvenue, état, totaux exacts du marché, nombre d’applications et dernières applications ajoutées.
+3. Recherche — recherche, soumission simple, mise à jour query et unique entrée de partage système. Tous les résultats sont affichés en colonnes de 20 éléments avec défilement horizontal ; la mise à jour d’une application existante reste silencieuse.
+4. Détails des applications — un segment fixe permet de basculer entre l’aperçu natif et la liste paginée, triable et défilable de 20/50/100 lignes.
 5. Mon espace — icône et noms, réglages, liens « Plus » restaurés et informations de version/copyright/ICP.
 
 Les listes, recherches, liens profonds et partages utilisent un modèle natif de détail commun :
@@ -25,11 +25,11 @@ Les listes, recherches, liens profonds et partages utilisent un modèle natif de
 Trouver l’application → charger l’API avec un état d’attente → injecter les données → afficher le modèle de détail
 ```
 
-La page de détail présente des métadonnées compactes sous forme d’étiquettes et de texte, les captures, l’historique des téléchargements, la description et les nouveautés. Le bouton de partage, le partage par contact et le geste aérien y sont activés. Le contenu partagé comprend titre, description, miniature et URL du site S dans son format réel `?app_id=...`.
+La page de détail présente des métadonnées compactes, les captures, des courbes de téléchargements et de notes avec axes, défilement horizontal, zoom et sélection de point, ainsi que la description et les nouveautés. Les trois modes de partage y sont activés avec une miniature AppIcon et l’URL `https://shenjack.top:10003/dashboard?app_id=...`.
 
-La continuité inter-appareils mémorise l’onglet, la cible de détail et la position de défilement, puis restaure `pages/Dashboard` à l’emplacement natif correspondant.
+La continuité inter-appareils mémorise l’onglet, la sous-vue Détails, la cible et la position de défilement, puis restaure `pages/Dashboard` à l’emplacement natif correspondant. Seules les versions 3.0.0 ou ultérieures acceptent cet état.
 
-Toutes les barres de titre sauf celles du site S et du tutoriel offrent un bouton Tutoriel. Un nouvel appui sur l’onglet courant remonte la page ; pour le site S, il revient à l’accueil. La version 3.0.0 réaffiche une fois l’avertissement important après mise à niveau.
+Seules les barres de titre des pages principales, à l’exception du Site Web S, offrent un bouton Tutoriel ; les pages enfants ne le dupliquent pas. Un nouvel appui sur l’onglet courant remonte la page ; pour le Site Web S, il revient à l’accueil. La version 3.0.0 réaffiche une fois l’avertissement important après mise à niveau.
 
 ## Réseau et cache
 

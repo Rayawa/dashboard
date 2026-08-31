@@ -7,8 +7,9 @@ import {
   ScrollEffectType,
   TitleSize,
 } from '@kit.UIDesignKit';
-import { APP_BUILD_NUMBER, APP_VERSION, mainPage } from '../../common/constants';
+import { APP_VERSION, mainPage } from '../../common/constants';
 import { popPathSafely } from '../../common/safeNavigation';
+import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
 import KnockShareGuideCard, { CardRes } from '../../component/KnockShareGuideCard';
 
@@ -43,10 +44,9 @@ export struct tutorial {
       },
       {
         title: '首页',
-        description: '集中展示欢迎信息、更新时间、服务状态、市场统计和交互式图表。',
+        description: '集中展示欢迎信息、更新时间、服务状态、精确市场统计和最近收录应用。',
         items: [
-          '右上角刷新会同时更新市场状态与全部图表。',
-          '图表数据独立加载；一个接口异常不会阻断其他图表。',
+          '右上角刷新会更新市场状态与最近收录应用。',
           '网络不可用时优先显示仍可用的本地缓存，并明确标注缓存状态。',
         ],
       },
@@ -54,15 +54,16 @@ export struct tutorial {
         title: '搜索',
         description: '统一处理应用名称、包名、App ID、应用市场链接和系统分享内容。',
         items: [
-          '名称搜索最多显示相关度最高的 20 个结果，点击任意结果进入统一详情页。',
-          '已有应用在结果加载后静默执行一次后台更新；新应用会静默投稿。',
+          '名称搜索显示全部匹配结果，每列 20 个，横向滚动可查看后续列。',
+          '已有应用在结果加载后静默执行一次后台更新；新应用自动投稿并提示。',
           '进入页面不会自动弹出键盘，只有用户主动点击输入框时才输入。',
         ],
       },
       {
-        title: '应用总表',
-        description: '浏览完整应用数据，支持排序、分页和直接打开统一详情页。',
+        title: '应用详情',
+        description: '上方二选一切换应用概况与应用列表；列表支持排序、分页并进入统一详情模板。',
         items: [
+          '应用概况提供评分、SDK 分布和 Harmony API 历史图表。',
           '每页可选择 20、50 或 100 条数据。',
           '表格可横向查看完整字段，页面可纵向滚动。',
           '支持升降序切换、上一页、下一页和输入页码跳转。',
@@ -82,7 +83,7 @@ export struct tutorial {
   private async openProjectSite(): Promise<void> {
     if (this.vibrationON) vibration.dotVibration();
     try {
-      this.prompt.showToast({ message: '正在跳转…', duration: 500 });
+      showToastSafely(this.prompt, '正在跳转…', 500, 'Tutorial');
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
       await context.startAbility({
         action: 'ohos.want.action.viewData',
@@ -92,7 +93,7 @@ export struct tutorial {
     } catch (error) {
       const businessError = error as BusinessError;
       console.error('[Dashboard][pages/more/tutorial][ERROR]', `打开项目网站失败: ${businessError.message}`);
-      this.prompt.showToast({ message: '打开项目网站失败', duration: 1000 });
+      showToastSafely(this.prompt, '打开项目网站失败', 1000, 'Tutorial');
     }
   }
 
@@ -141,7 +142,7 @@ export struct tutorial {
     HdsNavDestination() {
       Scroll() {
         Column({ space: 16 }) {
-          Blank().height(40).width('100%')
+          Blank().height(100).width('100%')
 
           Column({ space: 10 }) {
             Text('Dashboard 应用看板使用教程')
@@ -150,11 +151,11 @@ export struct tutorial {
               .fontColor($r('app.color.diff_content'))
               .width('100%')
               .accessibilityText('Dashboard应用看板使用教程')
-            Text(`版本 ${APP_VERSION} · 构建 ${APP_BUILD_NUMBER}`)
+            Text(`版本 ${APP_VERSION}`)
               .fontSize(13)
               .fontColor($r('app.color.v3_text_secondary'))
               .width('100%')
-              .accessibilityText(`版本${APP_VERSION}构建${APP_BUILD_NUMBER}`)
+              .accessibilityText(`版本${APP_VERSION}`)
             Text('应用采用五个固定标签页与统一原生详情页。页面右上角的问号可以重新进入教程。')
               .fontSize(14)
               .lineHeight(21)
@@ -180,6 +181,56 @@ export struct tutorial {
             this.sectionCard(section)
           }, (section: TutorialSection) => section.title)
 
+          Column({ space: 12 }) {
+            Text('搜索、投稿与查询')
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .fontColor($r('app.color.diff_content'))
+              .width('100%')
+            Text('搜索页统一接收应用名称、包名、App ID、应用市场链接以及系统分享内容。已有应用静默更新，新应用自动执行 simple 投稿。')
+              .fontSize(14)
+              .lineHeight(21)
+              .fontColor($r('app.color.v3_text_primary'))
+              .width('100%')
+            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
+              Column({ space: 8 }) {
+                Text('1. 从应用市场分享查询')
+                  .fontSize(13)
+                  .fontColor($r('app.color.v3_text_secondary'))
+                Image($r('app.media.submit_store'))
+                  .width(300)
+                  .height(500)
+                  .objectFit(ImageFit.Contain)
+                  .borderRadius(8)
+                  .border({ width: 1, color: $r('app.color.border') })
+                  .accessibilityText('从应用市场分享查询示意图')
+              }
+              .margin(6)
+              Column({ space: 8 }) {
+                Text('2. 在搜索页直接查询')
+                  .fontSize(13)
+                  .fontColor($r('app.color.v3_text_secondary'))
+                Image($r('app.media.submit_app'))
+                  .width(300)
+                  .height(500)
+                  .objectFit(ImageFit.Contain)
+                  .borderRadius(8)
+                  .border({ width: 1, color: $r('app.color.border') })
+                  .accessibilityText('应用内搜索查询示意图')
+              }
+              .margin(6)
+            }
+            .width('100%')
+          }
+          .alignItems(HorizontalAlign.Start)
+          .width('100%')
+          .padding(16)
+          .borderRadius(16)
+          .backgroundColor($r('app.color.v3_surface'))
+          .border({ width: 1, color: $r('app.color.nd_card_border') })
+          .accessibilityGroup(true)
+          .accessibilityText('搜索投稿与查询教程')
+
           Column({ space: 10 }) {
             Text('应用详情与分享')
               .fontSize(20)
@@ -196,6 +247,17 @@ export struct tutorial {
               .fontSize(13)
               .fontColor($r('app.color.v3_text_secondary'))
             KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone })
+            Text('隔空传送：在应用详情页调出分享后，可使用系统隔空传送能力发送带图标的 S站详情卡片。')
+              .fontSize(13)
+              .lineHeight(20)
+              .fontColor($r('app.color.v3_text_secondary'))
+            Image($r('app.media.grasp'))
+              .width('100%')
+              .height(210)
+              .objectFit(ImageFit.Contain)
+              .borderRadius(12)
+              .border({ width: 1, color: $r('app.color.border') })
+              .accessibilityText('隔空传送操作示意图')
           }
           .alignItems(HorizontalAlign.Start)
           .width('100%')

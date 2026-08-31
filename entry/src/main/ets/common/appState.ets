@@ -2,6 +2,7 @@ import {
     APP_STATE_KEY_PAGE_URL,
     APP_STATE_KEY_DETAIL_TARGET,
     APP_STATE_KEY_MAIN_TAB,
+    APP_STATE_KEY_APPS_VIEW,
     APP_STATE_KEY_CONTINUATION_DETAIL_ID,
     APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE,
     APP_STATE_KEY_CONTINUATION_ROUTE,
@@ -21,6 +22,7 @@ export interface ContinuationState {
     routeName: string;
     detailAppId: string;
     detailPackageName: string;
+    appsViewIndex: number;
 }
 
 /**
@@ -35,6 +37,7 @@ export function getContinuationState(): ContinuationState {
         routeName: AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_ROUTE) ?? CONTINUATION_ROUTE_MAIN,
         detailAppId: AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_DETAIL_ID) ?? '',
         detailPackageName: AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE) ?? '',
+        appsViewIndex: AppStorage.get<number>(APP_STATE_KEY_APPS_VIEW) ?? 0,
     };
 }
 
@@ -45,6 +48,7 @@ export function setContinuationState(state: ContinuationState): void {
     AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_ROUTE, state.routeName);
     AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_DETAIL_ID, state.detailAppId);
     AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE, state.detailPackageName);
+    AppStorage.setOrCreate(APP_STATE_KEY_APPS_VIEW, state.appsViewIndex);
 }
 
 export function setContinuationView(
@@ -63,6 +67,7 @@ export function setContinuationView(
         routeName,
         detailAppId: detail.appId ?? '',
         detailPackageName: detail.packageName ?? '',
+        appsViewIndex: AppStorage.get<number>(APP_STATE_KEY_APPS_VIEW) ?? 0,
     });
 }
 
@@ -97,6 +102,10 @@ export function consumeSearchTarget(): SearchTarget {
 
 export function setMainTab(index: number): void {
     AppStorage.setOrCreate<number>(APP_STATE_KEY_MAIN_TAB, index);
+}
+
+export function setAppsViewIndex(index: number): void {
+    AppStorage.setOrCreate<number>(APP_STATE_KEY_APPS_VIEW, index === 1 ? 1 : 0);
 }
 
 export function consumeMainTab(defaultIndex: number = MAIN_TAB_DEFAULT): number {

@@ -2,7 +2,8 @@ import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
-import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
+import { popPathSafely } from '../../common/safeNavigation';
+import { showToastSafely } from '../../common/safeUi';
 
 interface UpdateLog {
     version: string;
@@ -22,28 +23,32 @@ struct appLog {
     private updateLogs: UpdateLog[] = [
         {
             version: "V3.0.0",
-            date: "2026-8-30",
+            date: "2026-8-31",
             type: "release",
             isRelease: true,
             items: [
-                "主界面重构为固定标题栏与五个 HdsTabs：S站、首页、搜索、应用总表、我的，取消标签切换位移动画",
-                "新增原生首页与同步状态卡片，展示最后更新时间、服务状态和市场核心指标",
-                "首页与应用概况合并；图表改为独立并行加载，单项失败不再阻断其余图表",
+                "主界面重构为固定标题栏与五个 HdsTabs：网页S站、首页、搜索、应用详情、我的，取消标签切换位移动画",
+                "首页展示精确市场指标、应用总数、最后更新时间、服务状态与最新上架应用",
+                "应用概览与应用列表合并至应用详情页，通过顶部悬浮切换栏切换；移除无有效数据的下载榜卡片",
                 "搜索、投稿、更新与系统分享入口合并为唯一 shareAbility；新应用自动 simple 投稿，已有应用自动 query 更新",
                 "新增公用原生应用详情模板，统一查询、列表、深链和分享入口的详情展示流程",
                 "详情信息改为高密度标签与文字组合，并补齐按钮分享、碰一碰、隔空传送及图标卡片预览",
-                "应用总表移除重复搜索，新增20/50/100条分页、多字段升降序排序和指定页数跳转，修复高度受限与无法上下滑动",
+                "应用列表移除重复搜索，新增20/50/100条分页、多字段升降序排序和指定页数跳转，修复高度受限与无法上下滑动",
+                "搜索结果按实际匹配数量展示，每20项形成一列并支持横向浏览；已有应用静默更新，仅新应用提示投稿结果",
+                "详情页补齐下载量和评分折线趋势、坐标轴、横向浏览、缩放与数据点选择",
                 "我的页面恢复旧版栏目、分割线与统一卡片样式；用户名并入设置首项且仅在主动编辑时弹出键盘",
                 "清除缓存项恢复说明问号并显示缓存文件总大小",
-                "原生主页面和详情页补齐振动反馈，并按页面与滚动位置恢复跨设备接续",
+                "原生主页面和详情页补齐振动反馈，并按页面、应用详情子视图与滚动位置恢复跨设备接续；仅允许3.0.0及以上版本接续",
                 "全部子页面统一使用 Scroll、MINI 标题模式、TITLE_S 主标题和系统上下安全区忽略配置",
-                "恢复首次进入重要提示与各页面教程入口；再次点击当前标签返回顶部，S站返回首页",
+                "恢复首次进入重要提示；教程按钮仅保留在网页S站以外的四个主页面标题栏，再次点击当前标签返回顶部，网页S站返回首页",
                 "统一所有API请求的User-Agent，修复S站子资源失败误报与网页显示比例问题",
-                "分享卡片改用详细预览并附带32KB以内的应用AppIcon缩略图",
+                "分享卡片使用S站 dashboard?app_id= 地址并附带32KB以内的应用AppIcon缩略图",
+                "恢复旧版教程正文与教程图片并按3.0.0架构更新，新增连续点击版本号10次进入的开发者信息页",
+                "设备旋转改用遵循系统旋转锁定的AUTO_ROTATION_RESTRICTED模式",
                 "移除底部栏自动隐藏设置，恢复根导航渐变模糊与diff_content全局光效",
                 "整理 ETS 目录为 main、detail、more 与 charts 分层，并移除已退出编译流程的旧页面和旧分享入口",
                 "新增带有效期的 API 磁盘缓存与网络失败回退提示；清除缓存覆盖 API 缓存、ArkWeb 存储和 Cookie",
-                "修复缓存写入、点击事件与图表尺寸命名导致的 ArkTS 编译错误，并为文件、窗口、网络、弹窗和设备能力调用补齐异常回退与统一日志",
+                "修复缓存写入、点击事件、图表尺寸与分段按钮类型导致的 ArkTS 编译错误，并为文件、窗口、网络、弹窗和设备能力调用补齐异常回退与统一日志",
                 "修复导航参数对象、滚动恢复回调和 HdsNavDestination 标题模式的 ArkTS 类型错误，移除 2in1 不可用的视口配置与不兼容设备能力监听",
                 "按 600vp 与 840vp 断点完善手机、平板和 2in1 响应式布局，并补充中文无障碍播报标签",
                 "版本更新为 3.0.0，构建号更新为 30000005",
@@ -324,7 +329,7 @@ struct appLog {
         HdsNavDestination() {
             Scroll() {
                 Column() {
-                    Blank().height(40).width('100%')
+                    Blank().height(100).width('100%')
                     Column() {
                         ForEach(this.filteredLogs, (log: UpdateLog) => {
                             Column() {
@@ -343,15 +348,15 @@ struct appLog {
                                                         top: 2,
                                                         bottom: 2,
                                                     })
-                                                    .backgroundColor("#FF6A39")
-                                                    .fontColor("#fff")
+                                                    .backgroundColor($r('app.color.v3_accent_orange'))
+                                                    .fontColor($r('app.color.v3_surface'))
                                                     .borderRadius(6)
                                                     .margin({ left: 8 });
                                             }
                                         }
                                         Text(log.date)
                                             .fontSize(13)
-                                            .fontColor("#999")
+                                            .fontColor($r('app.color.v3_text_secondary'))
                                             .margin({ top: 4 })
                                     }
                                 }
@@ -361,7 +366,7 @@ struct appLog {
                                             Text("•")
                                                 .fontSize(16)
                                                 .fontWeight(600)
-                                                .fontColor("#666")
+                                                .fontColor($r('app.color.v3_text_secondary'))
                                             Text(item)
                                                 .margin({ left: 5 })
                                                 .fontSize(15)
@@ -380,7 +385,7 @@ struct appLog {
                             .backgroundColor($r("app.color.background"))
                             .shadow({
                                 radius: 8,
-                                color: "#1a000000",
+                                color: $r('app.color.v3_shadow'),
                                 offsetX: 0,
                                 offsetY: 2,
                             })
@@ -482,28 +487,12 @@ struct appLog {
                     value: [
                         {
                             content: {
-                                label: '教程',
-                                icon: $r('sys.symbol.questionmark_circle'),
-                                isEnabled: true,
-                                action: () => {
-                                    if (this.vibrationON) vibration.dotVibration();
-                                    pushPathSafely(this.pageStack, 'TutorialPage');
-                                },
-                            },
-                        },
-                        {
-                            content: {
                                 label: "筛选Beta日志",
                                 icon: this.showBeta ? $r("app.media.betaON") : $r("app.media.beta"),
                                 isEnabled: true,
                                 action: () => {
                                     this.toggleFilter("beta");
-                                    this.PromptAction.showToast({
-                                        message: this.showBeta
-                                            ? "打开Beta版本日志"
-                                            : "关闭Beta版本日志",
-                                        duration: 500,
-                                    });
+                                    showToastSafely(this.PromptAction, this.showBeta ? '打开Beta版本日志' : '关闭Beta版本日志', 500, 'AppLog');
                                 },
                             },
                         },
@@ -514,12 +503,7 @@ struct appLog {
                                 isEnabled: true,
                                 action: () => {
                                     this.toggleFilter("rc");
-                                    this.PromptAction.showToast({
-                                        message: this.showRc
-                                            ? "打开ReleaseCandidate版本日志"
-                                            : "关闭ReleaseCandidate版本日志",
-                                        duration: 500,
-                                    });
+                                    showToastSafely(this.PromptAction, this.showRc ? '打开ReleaseCandidate版本日志' : '关闭ReleaseCandidate版本日志', 500, 'AppLog');
                                 },
                             },
                         },
@@ -532,12 +516,7 @@ struct appLog {
                                 isEnabled: true,
                                 action: () => {
                                     this.toggleFilter("release");
-                                    this.PromptAction.showToast({
-                                        message: this.showRelease
-                                            ? "打开正式版日志"
-                                            : "关闭正式版日志",
-                                        duration: 500,
-                                    });
+                                    showToastSafely(this.PromptAction, this.showRelease ? '打开正式版日志' : '关闭正式版日志', 500, 'AppLog');
                                 },
                             },
                         },

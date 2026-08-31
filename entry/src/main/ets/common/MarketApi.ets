@@ -14,6 +14,7 @@ import type {
     ApiDataResult,
     AppDetailPayload,
     AppMetric,
+    AppRatingHistory,
     BaseAPIResponse,
     MarketApp,
     MarketInfo,
@@ -184,6 +185,14 @@ export function fetchApiHistory(force: boolean = false): Promise<ApiDataResult<B
 export function fetchAppMetrics(packageName: string, force: boolean = false): Promise<ApiDataResult<BaseAPIResponse<AppMetric[]>>> {
     return requestJson<BaseAPIResponse<AppMetric[]>>(
         `apps/metrics/${encodeURIComponent(packageName)}`,
+        CACHE_TTL_DETAIL_MS,
+        force,
+    );
+}
+
+export function fetchAppRatingHistory(packageName: string, force: boolean = false): Promise<ApiDataResult<BaseAPIResponse<AppRatingHistory[]>>> {
+    return requestJson<BaseAPIResponse<AppRatingHistory[]>>(
+        `rankings/rate_history?pkg_name=${encodeURIComponent(packageName)}`,
         CACHE_TTL_DETAIL_MS,
         force,
     );

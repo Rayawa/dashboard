@@ -6,7 +6,7 @@ import { APP_BUNDLE_NAME } from '../common/constants';
  * 唯一的系统分享入口。分享内容统一交给搜索页处理：
  * 新应用执行 simple 投稿，已有应用执行 query 更新，随后进入公用详情页。
  */
-export class ShareAbility extends ShareExtensionAbility {
+export default class ShareAbility extends ShareExtensionAbility {
     async onSessionCreate(want: Want, session: UIExtensionContentSession): Promise<void> {
         try {
             session.loadContent('abilityPages/loading');

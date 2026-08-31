@@ -19,7 +19,6 @@ import { vibration } from '../../common/vibration';
 @Component
 export struct SStationPage {
     private controller: webview.WebviewController = new webview.WebviewController();
-    private scroller: Scroller = new Scroller();
     @Prop command: number = 0;
     @Prop @Watch('onCommandVersionChanged') commandVersion: number = 0;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
@@ -51,11 +50,7 @@ export struct SStationPage {
         this.restoredScroll = true;
         setTimeout((): void => {
             try {
-                this.scroller.scrollTo({
-                    xOffset: 0,
-                    yOffset: this.pendingScrollDistance,
-                    animation: { duration: 0 },
-                });
+                this.controller.runJavaScript(`window.scrollTo(0, ${this.pendingScrollDistance});`);
             } catch (error) {
                 console.warn('[Dashboard][pages/main/SStationPage][WARN]',
                     `恢复S站滚动位置失败: ${JSON.stringify(error)}`);
@@ -73,18 +68,14 @@ export struct SStationPage {
                 this.loading = true;
                 this.controller.loadUrl(this.currentUrl);
             } else if (this.command === S_STATION_COMMAND_SCROLL_TOP) {
-                this.scroller.scrollTo({
-                    xOffset: 0,
-                    yOffset: 0,
-                    animation: { duration: 300, curve: Curve.Ease },
-                });
+                this.controller.runJavaScript('window.scrollTo({ top: 0, behavior: "smooth" });');
             } else if (this.command === S_STATION_COMMAND_HOME) {
                 this.errorMessage = '';
                 this.loading = true;
                 this.currentUrl = SBaseURL.toString();
                 setContinuationPageUrl(this.currentUrl);
                 this.controller.loadUrl(this.currentUrl);
-                this.scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 250 } });
+                setContinuationScrollDistance(0);
             }
         } catch (error) {
             console.warn('[Dashboard][pages/main/SStationPage][WARN]', `执行S站标题栏操作失败: ${JSON.stringify(error)}`);
@@ -93,10 +84,9 @@ export struct SStationPage {
 
     build() {
         Stack({ alignContent: Alignment.Top }) {
-            Scroll(this.scroller) {
-                Column() {
+            Column() {
                     Blank()
-                        .height(80)
+                        .height(100)
                         .width('100%')
                         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                         .accessibilityText('S站标题栏安全区域')
@@ -107,6 +97,7 @@ export struct SStationPage {
                     })
                         .id('HmDashboard_SStation')
                         .width('100%')
+                        .layoutWeight(1)
                         .backgroundColor($r('app.color.backcolor'))
                         .onControllerAttached(() => {
                             try {
@@ -161,38 +152,26 @@ export struct SStationPage {
                         .onProgressChange((event) => {
                             this.progress = event.newProgress;
                         })
-                        .layoutMode(WebLayoutMode.FIT_CONTENT)
-                        .nestedScroll({
-                            scrollForward: NestedScrollMode.SELF_FIRST,
-                            scrollBackward: NestedScrollMode.SELF_FIRST,
+                        .onScroll((event) => {
+                            if (event) {
+                                setMainTab(MAIN_TAB_S_STATION);
+                                setContinuationScrollDistance(event.yOffset);
+                            }
                         })
-                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                         .domStorageAccess(true)
                         .darkMode(WebDarkMode.Auto)
                         .forceDarkAccess(true)
                         .accessibilityText('S站网页内容')
-                }
-                .width('100%')
             }
             .width('100%')
             .height('100%')
-            .scrollBar(BarState.Off)
-            .onDidScroll((): void => {
-                try {
-                    setMainTab(MAIN_TAB_S_STATION);
-                    setContinuationScrollDistance(this.scroller.currentOffset().yOffset);
-                } catch (error) {
-                    console.warn('[Dashboard][pages/main/SStationPage][WARN]',
-                        `保存S站滚动位置失败: ${JSON.stringify(error)}`);
-                }
-            })
-            .accessibilityText('可滚动的S站页面')
+            .accessibilityText('S站网页视图')
 
             if (this.loading) {
                 Progress({ value: this.progress, total: 100 })
                     .width('100%')
                     .height(4)
-                    .position({ y: 76 })
+                    .position({ y: 96 })
                     .color($r('app.color.diff_content'))
                     .accessibilityText(`S站加载进度百分之${this.progress}`)
             }

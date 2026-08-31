@@ -5,6 +5,7 @@ import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } fr
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
 import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
+import { showToastSafely } from '../../common/safeUi';
 
 interface FriendWebParams {
   url: string;
@@ -43,12 +44,12 @@ struct friend {
         console.info('[Dashboard][pages/more/friend][INFO]', `queryResult [Market] 跳转成功: ${appId}`);
       }).catch((err: Error) => {
         console.error('[Dashboard][pages/more/friend][ERROR]', `queryResult [Market] 跳转失败: ${err.message}`);
-        this.PromptAction.showToast({ message: "无法打开应用市场" });
+        showToastSafely(this.PromptAction, '无法打开应用市场', 1800, 'Friend');
       });
     } catch (error) {
       console.error('[Dashboard][pages/more/friend][ERROR]',
         `启动应用市场调用失败: ${JSON.stringify(error)}`);
-      this.PromptAction.showToast({ message: "无法打开应用市场" });
+      showToastSafely(this.PromptAction, '无法打开应用市场', 1800, 'Friend');
     }
   }
 
@@ -92,7 +93,7 @@ struct friend {
         }
         pushPathSafely(this.pageStack, "FriendPageWeb", params, 'pages/more/friend');
       })
-      .height(50)
+      .height(54)
       .width("100%")
       .justifyContent(FlexAlign.SpaceBetween)
       .padding({ left: 16, right: 16 })
@@ -127,7 +128,7 @@ struct friend {
           this.jumpToMarket(site.appID);
         }
       })
-      .height(50)
+      .height(54)
       .width("100%")
       .justifyContent(FlexAlign.SpaceBetween)
       .padding({ left: 16, right: 16 })
@@ -145,12 +146,12 @@ struct friend {
     HdsNavDestination() {
       Scroll(){
         Column() {
-          Blank().height(40)
+          Blank().height(100)
           Column(){
             Text("重要提示：\n您正在访问友情链接")
               .fontWeight(700)
               .fontSize(20)
-              .fontColor(Color.Red)
+              .fontColor($r('app.color.v3_accent_red'))
             Text("友情链接内网站展示的任何内容均与应用看板无关；\n" +
               "Harmony Dashboard项目组不负责维护友情链接内容。")
               .fontWeight(600)
@@ -159,60 +160,66 @@ struct friend {
               .textAlign(TextAlign.Start)
           }.borderWidth(0.5)
           .borderColor($r("app.color.border"))
-          .backgroundColor($r("app.color.background"))
+          .backgroundColor($r("app.color.v3_surface"))
           .borderRadius(16)
-          .shadow({ radius: 8, color: "#1a000000", offsetX: 0, offsetY: 2 })
-          .width("90%")
+          .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetX: 0, offsetY: 2 })
+          .width("100%")
           .alignItems(HorizontalAlign.Start).padding(15)
 
           Divider()
             .margin({ top: 20, bottom: 20 })
             .color($r("app.color.border"))
 
-          Text("使用Harmony Dashboard数据的站点").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          List() {
+          Text("使用Harmony Dashboard数据的站点").margin({ left: 4, bottom: 5 }).fontWeight(600).fontSize(14).width("100%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+          Column() {
             ForEach(this.friendSites, (site: SiteConfig) => {
-              ListItem() { this.webLists(site) }
+              this.webLists(site)
             }, (item: SiteConfig) => item.title + item.url)
           }
           .borderWidth(0.5)
           .borderColor($r("app.color.border"))
-          .backgroundColor($r("app.color.background"))
+          .backgroundColor($r("app.color.v3_surface"))
           .borderRadius(16)
-          .width("90%")
+          .width("100%")
+          .clip(true)
 
           Divider()
             .margin({ top: 20, bottom: 20 })
             .color($r("app.color.border"))
 
-          Text("使用Harmony Dashboard数据的应用").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          List() {
+          Text("使用Harmony Dashboard数据的应用").margin({ left: 4, bottom: 5 }).fontWeight(600).fontSize(14).width("100%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+          Column() {
             ForEach(this.friendApps, (app: AppConfig) => {
-              ListItem() { this.appLists(app) }
+              this.appLists(app)
             }, (item: AppConfig) => item.title + item.appID)
           }
           .borderWidth(0.5)
           .borderColor($r("app.color.border"))
-          .backgroundColor($r("app.color.background"))
+          .backgroundColor($r("app.color.v3_surface"))
           .borderRadius(16)
-          .width("90%")
+          .width("100%")
+          .clip(true)
 
           Divider()
             .margin({ top: 20, bottom: 20 })
             .color($r("app.color.border"))
 
-          Text("其他站点").margin({ left: 10, bottom: 5 }).fontWeight(600).fontSize(14).width("90%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          List() {
+          Text("其他站点").margin({ left: 4, bottom: 5 }).fontWeight(600).fontSize(14).width("100%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
+          Column() {
             ForEach(this.OtherSites, (site: SiteConfig) => {
-              ListItem() { this.webLists(site) }
+              this.webLists(site)
             }, (item: SiteConfig) => item.title + item.url)
           }
           .borderWidth(0.5)
           .borderColor($r("app.color.border"))
-          .backgroundColor($r("app.color.background"))
+          .backgroundColor($r("app.color.v3_surface"))
           .borderRadius(16)
-          .width("90%")
-        }.margin({ bottom: 30 })
+          .width("100%")
+          .clip(true)
+        }
+        .width('100%')
+        .constraintSize({ maxWidth: 900 })
+        .padding({ left: 14, right: 14, bottom: 30 })
       }
       .height("100%")
       .width("100%")
@@ -261,19 +268,6 @@ struct friend {
       },
       content: {
         title: { mainTitle: "友情链接", mainTitleSize: TitleSize.TITLE_S },
-        menu: {
-          value: [{
-            content: {
-              label: '教程',
-              icon: $r('sys.symbol.questionmark_circle'),
-              isEnabled: true,
-              action: () => {
-                if (this.vibrationON) vibration.dotVibration();
-                pushPathSafely(this.pageStack, 'TutorialPage');
-              },
-            },
-          }],
-        },
         backIcon: {
           action: () => {
             if (this.isExiting) return;

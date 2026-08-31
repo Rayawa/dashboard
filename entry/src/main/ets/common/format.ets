@@ -11,6 +11,13 @@ export function formatCount(value: number | undefined): string {
     return String(value);
 }
 
+export function formatExactCount(value: number | undefined): string {
+    if (value === undefined || value === null) {
+        return '-';
+    }
+    return String(value);
+}
+
 export function formatBytes(bytes: number | undefined): string {
     if (!bytes || bytes <= 0) {
         return '0 B';

@@ -10,7 +10,7 @@ import { setFirstLaunch } from '../../common/storage';
 import { privacyManager } from '@kit.StoreKit';
 import { showToastSafely } from '../../common/safeUi';
 import { customUserAgent } from '../../common/constants';
-import { getPathParamsSafely, popPathSafely, pushPathSafely } from '../../common/safeNavigation';
+import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
 
 @Component
 export struct HTML {
@@ -34,8 +34,8 @@ export struct HTML {
         title: `撤销${this.params.title}`,
         message: '撤销后应用将清除本地缓存退出，确定要撤销吗？',
         buttons: [
-          { text: '取消', color: '#1E6FCD' },
-          { text: '撤销', color: '#E60012' }
+          { text: '取消', color: $r('app.color.v3_accent_blue') },
+          { text: '撤销', color: $r('app.color.v3_accent_red') }
         ]
       });
       if (result.index === 1) {
@@ -71,7 +71,7 @@ export struct HTML {
       Scroll() {
         Column() {
           Blank()
-            .height(40)
+            .height(100)
             .width("100%")
             .expandSafeArea(
               [SafeAreaType.SYSTEM],
@@ -166,17 +166,6 @@ export struct HTML {
         },
         menu: {
           value: [
-            {
-              content: {
-                label: '教程',
-                icon: $r('sys.symbol.questionmark_circle'),
-                isEnabled: true,
-                action: () => {
-                  if (this.vibrationON) vibration.dotVibration();
-                  pushPathSafely(this.pageStack, 'TutorialPage');
-                },
-              },
-            },
             {
               content: {
                 label: "撤销隐私同意",

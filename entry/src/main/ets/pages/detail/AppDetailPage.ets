@@ -11,7 +11,7 @@ import {
     CONTENT_MAX_WIDTH,
     CONTINUATION_ROUTE_DETAIL,
     HUAWEI_APP_DETAIL_URL_PREFIX,
-    SBaseURL,
+    S_SITE_PUBLIC_BASE_URL,
     S_SITE_APP_DETAIL_QUERY,
 } from '../../common/constants';
 import {
@@ -19,16 +19,16 @@ import {
     getContinuationState,
     setContinuationView,
 } from '../../common/appState';
-import { fetchAppById, fetchAppByPackage, fetchAppMetrics } from '../../common/MarketApi';
+import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
-import { pushPathSafely } from '../../common/safeNavigation';
 import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
 import type {
     ApiDataResult,
     AppDetailPayload,
     AppMetric,
+    AppRatingHistory,
     AppRouteTarget,
     BaseAPIResponse,
     MarketApp,
@@ -40,102 +40,185 @@ interface DetailField {
     value: string;
 }
 
+interface TrendPoint {
+    label: string;
+    value: number;
+    detail: string;
+}
+
 @Component
-struct CompactDetailRow {
+struct DetailTag {
     field: DetailField = { label: '', value: '-' };
 
     build() {
-        Row({ space: 10 }) {
+        Row({ space: 7 }) {
             Text(this.field.label)
                 .fontSize(11)
                 .fontWeight(FontWeight.Medium)
                 .fontColor($r('app.color.diff_content'))
-                .padding({ left: 9, right: 9, top: 4, bottom: 4 })
-                .borderRadius(10)
-                .backgroundColor($r('app.color.v3_surface_alt'))
                 .accessibilityText(this.field.label)
             Text(this.field.value)
-                .fontSize(14)
+                .fontSize(12)
                 .fontColor($r('app.color.v3_text_primary'))
-                .maxLines(3)
+                .maxLines(2)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .layoutWeight(1)
                 .accessibilityText(`${this.field.label}${this.field.value}`)
         }
-        .width('100%')
-        .padding({ top: 8, bottom: 8 })
+        .padding({ left: 10, right: 10, top: 7, bottom: 7 })
+        .margin(4)
+        .borderRadius(14)
+        .backgroundColor($r('app.color.v3_surface_alt'))
+        .border({ width: 1, color: $r('app.color.v3_chart_grid') })
         .accessibilityGroup(true)
         .accessibilityText(`${this.field.label}，${this.field.value}`)
     }
 }
 
 @Component
-struct MetricBars {
-    @Prop metrics: AppMetric[] = [];
+struct TrendLineChart {
+    title: string = '';
+    unit: string = '';
+    @Prop @Watch('onPointsChanged') points: TrendPoint[] = [];
+    lineColor: Resource = $r('app.color.v3_accent_blue');
+    private settings: RenderingContextSettings = new RenderingContextSettings(true);
+    private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
     @State private selected: number = 0;
+    @State private zoom: number = 1;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
-    private visible(): AppMetric[] {
-        return this.metrics.slice(Math.max(0, this.metrics.length - 12));
+    private onPointsChanged(): void {
+        this.selected = Math.max(0, this.points.length - 1);
+        setTimeout((): void => this.draw(), 0);
     }
 
     private maximum(): number {
-        let max = 1;
-        this.visible().forEach((metric: AppMetric) => max = Math.max(max, metric.download_count));
-        return max;
+        let maximum = this.unit === '分' ? 5 : 1;
+        this.points.forEach((point: TrendPoint) => maximum = Math.max(maximum, point.value));
+        return maximum;
     }
 
-    private selectedText(): string {
-        const list = this.visible();
-        if (list.length === 0) {
-            return '暂无下载量历史';
+    private chartWidth(): number {
+        return Math.max(420, this.points.length * 54 * this.zoom);
+    }
+
+    private valueLabel(value: number): string {
+        return this.unit === '分' ? value.toFixed(2) : formatCount(value);
+    }
+
+    private draw(): void {
+        if (this.points.length === 0) {
+            return;
         }
-        const metric = list[Math.min(this.selected, list.length - 1)];
-        return `${formatDateTime(metric.created_at)}，下载量${formatCount(metric.download_count)}，版本${metric.version}`;
+        const width = this.chartWidth();
+        const height = 238;
+        const left = 58;
+        const top = 18;
+        const right = 18;
+        const bottom = 42;
+        const drawWidth = width - left - right;
+        const drawHeight = height - top - bottom;
+        const host = this.getUIContext().getHostContext() as common.UIAbilityContext;
+        let lineColor = 0xFF2F80ED;
+        let gridColor = 0x332F80ED;
+        let textColor = 0xFF666666;
+        try {
+            lineColor = host.resourceManager.getColorSync(this.lineColor.id);
+            gridColor = host.resourceManager.getColorSync($r('app.color.v3_chart_grid').id);
+            textColor = host.resourceManager.getColorSync($r('app.color.v3_text_secondary').id);
+        } catch (error) {
+            console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `趋势图颜色读取失败: ${JSON.stringify(error)}`);
+        }
+        const maximum = this.maximum();
+        this.context.clearRect(0, 0, width, height);
+        this.context.strokeStyle = gridColor;
+        this.context.fillStyle = textColor;
+        this.context.lineWidth = 1;
+        this.context.font = '10px sans-serif';
+        for (let row = 0; row <= 4; row++) {
+            const y = top + drawHeight * row / 4;
+            this.context.beginPath();
+            this.context.moveTo(left, y);
+            this.context.lineTo(left + drawWidth, y);
+            this.context.stroke();
+            this.context.textAlign = 'right';
+            this.context.fillText(this.valueLabel(maximum * (4 - row) / 4), left - 6, y + 3);
+        }
+        this.context.beginPath();
+        this.context.moveTo(left, top);
+        this.context.lineTo(left, top + drawHeight);
+        this.context.lineTo(left + drawWidth, top + drawHeight);
+        this.context.stroke();
+        this.context.strokeStyle = lineColor;
+        this.context.lineWidth = 3;
+        this.context.beginPath();
+        this.points.forEach((point: TrendPoint, index: number) => {
+            const x = left + drawWidth * index / Math.max(1, this.points.length - 1);
+            const y = top + drawHeight * (1 - point.value / maximum);
+            if (index === 0) this.context.moveTo(x, y); else this.context.lineTo(x, y);
+        });
+        this.context.stroke();
+        this.context.fillStyle = lineColor;
+        const labelStep = Math.max(1, Math.ceil(this.points.length / 8));
+        this.points.forEach((point: TrendPoint, index: number) => {
+            const x = left + drawWidth * index / Math.max(1, this.points.length - 1);
+            const y = top + drawHeight * (1 - point.value / maximum);
+            this.context.beginPath();
+            this.context.arc(x, y, index === this.selected ? 5 : 3, 0, Math.PI * 2);
+            this.context.fill();
+            if (index % labelStep === 0 || index === this.points.length - 1) {
+                this.context.fillStyle = textColor;
+                this.context.textAlign = 'center';
+                this.context.fillText(point.label, x, height - 17);
+                this.context.fillStyle = lineColor;
+            }
+        });
     }
 
     build() {
         Column({ space: 12 }) {
-            Text('下载量趋势')
+            Text(this.title)
                 .fontSize(18)
                 .fontWeight(FontWeight.Bold)
                 .fontColor($r('app.color.v3_text_primary'))
                 .width('100%')
-                .accessibilityText('下载量趋势')
-            if (this.visible().length > 0) {
-                Row({ space: 5 }) {
-                    ForEach(this.visible(), (metric: AppMetric, index: number) => {
-                        Column() {
-                            Blank()
-                                .width('100%')
-                                .height(Math.max(4, 130 * metric.download_count / this.maximum()))
-                                .borderRadius({ topLeft: 5, topRight: 5 })
-                                .backgroundColor(index === this.selected ? $r('app.color.v3_accent_blue') : $r('app.color.v3_accent_cyan'))
-                                .accessibilityText(`第${index + 1}个下载量柱形`)
-                        }
-                        .height(140)
-                        .layoutWeight(1)
-                        .justifyContent(FlexAlign.End)
-                        .onClick(() => {
-                            if (this.vibrationEnabled) vibration.dotVibration();
-                            this.selected = index;
-                        })
-                        .accessibilityText(`查看${formatDateTime(metric.created_at)}下载量`)
-                    }, (metric: AppMetric) => `${metric.created_at}-${metric.download_count}`)
+                .accessibilityText(this.title)
+            if (this.points.length > 0) {
+                Scroll() {
+                    Canvas(this.context)
+                        .width(this.chartWidth())
+                        .height(238)
+                        .onReady(() => this.draw())
+                        .accessibilityText(`${this.title}折线图，带坐标轴，可横向滚动`)
                 }
-                .height(140)
                 .width('100%')
-                .alignItems(VerticalAlign.Bottom)
-                .accessibilityText('最近十二次下载量柱状图')
-                Text(this.selectedText())
+                .scrollable(ScrollDirection.Horizontal)
+                .scrollBar(BarState.Auto)
+                .edgeEffect(EdgeEffect.Spring)
+                Slider({ value: this.zoom, min: 1, max: 3, step: 0.25, style: SliderStyle.InSet })
+                    .selectedColor($r('app.color.diff_content'))
+                    .onChange((value: number) => {
+                        this.zoom = value;
+                        setTimeout((): void => this.draw(), 0);
+                    })
+                    .accessibilityText(`${this.title}横向缩放，当前${this.zoom.toFixed(2)}倍`)
+                Slider({ value: this.selected, min: 0, max: Math.max(0, this.points.length - 1), step: 1,
+                    style: SliderStyle.InSet })
+                    .selectedColor(this.lineColor)
+                    .onChange((value: number) => {
+                        if (this.vibrationEnabled) vibration.dotVibration();
+                        this.selected = Math.round(value);
+                        this.draw();
+                    })
+                    .accessibilityText(`拖动查看${this.title}数据点`)
+                Text(this.points[Math.min(this.selected, this.points.length - 1)].detail)
                     .fontSize(13)
                     .fontColor($r('app.color.v3_text_secondary'))
-                    .accessibilityText(this.selectedText())
+                    .accessibilityText(this.points[Math.min(this.selected, this.points.length - 1)].detail)
             } else {
-                Text('暂无下载量历史')
+                Text(`暂无${this.title}`)
                     .fontColor($r('app.color.v3_text_secondary'))
                     .padding(24)
-                    .accessibilityText('暂无下载量历史')
+                    .accessibilityText(`暂无${this.title}`)
             }
         }
         .width('100%')
@@ -144,7 +227,7 @@ struct MetricBars {
         .backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
         .accessibilityGroup(true)
-        .accessibilityText('应用下载量趋势图')
+        .accessibilityText(this.title)
     }
 }
 
@@ -157,6 +240,7 @@ export struct AppDetailPage {
     private target: AppRouteTarget = {};
     @State private app: MarketApp | undefined = undefined;
     @State private metrics: AppMetric[] = [];
+    @State private ratingHistory: AppRatingHistory[] = [];
     @State private loading: boolean = true;
     @State private refreshing: boolean = false;
     @State private fromCache: boolean = false;
@@ -172,9 +256,9 @@ export struct AppDetailPage {
 
     private shareUrl(): string {
         if (!this.app) {
-            return SBaseURL.toString();
+            return S_SITE_PUBLIC_BASE_URL;
         }
-        return `${SBaseURL.toString()}${S_SITE_APP_DETAIL_QUERY}${encodeURIComponent(this.app.app_id)}`;
+        return `${S_SITE_PUBLIC_BASE_URL}${S_SITE_APP_DETAIL_QUERY}${encodeURIComponent(this.app.app_id)}`;
     }
 
     private syncShareData(): void {
@@ -213,11 +297,6 @@ export struct AppDetailPage {
         }
     }
 
-    private openTutorial(): void {
-        this.vibrate();
-        pushPathSafely(this.pageStack, 'TutorialPage');
-    }
-
     private request(force: boolean): Promise<ApiDataResult<BaseAPIResponse<AppDetailPayload>>> {
         if (this.target.appId) {
             return fetchAppById(this.target.appId, force);
@@ -248,6 +327,11 @@ export struct AppDetailPage {
                         this.metrics = metricResult.data.data ?? [];
                     }
                 }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `指标加载失败: ${error.message}`));
+                fetchAppRatingHistory(this.app.pkg_name, force).then((ratingResult) => {
+                    if (ratingResult.data.success) {
+                        this.ratingHistory = ratingResult.data.data ?? [];
+                    }
+                }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `评分趋势加载失败: ${error.message}`));
             }
             if (!force && !this.target.backgroundRefreshHandled) {
                 setTimeout((): void => {
@@ -307,6 +391,27 @@ export struct AppDetailPage {
         } as ScreenshotInfo));
     }
 
+    private downloadPoints(): TrendPoint[] {
+        return this.metrics.slice().sort((left: AppMetric, right: AppMetric) =>
+            new Date(left.created_at).getTime() - new Date(right.created_at).getTime()).map((metric: AppMetric) => ({
+                label: formatDateTime(metric.created_at).split(' ')[0],
+                value: Number(metric.download_count ?? 0),
+                detail: `${formatDateTime(metric.created_at)} · 下载量 ${formatCount(metric.download_count)} · 版本 ${metric.version || '-'}`,
+            } as TrendPoint));
+    }
+
+    private ratingPoints(): TrendPoint[] {
+        return this.ratingHistory.slice().sort((left: AppRatingHistory, right: AppRatingHistory) =>
+            new Date(left.report_date).getTime() - new Date(right.report_date).getTime()).map((rating: AppRatingHistory) => {
+                const value = Number(rating.cumulative_avg_rating_high_prec ?? rating.cumulative_avg_rating_origin ?? 0);
+                return {
+                    label: rating.report_date,
+                    value,
+                    detail: `${rating.report_date} · 平均评分 ${value.toFixed(2)} · 累计 ${formatCount(rating.cumulative_total_count)} 条评分`,
+                } as TrendPoint;
+            });
+    }
+
     private async openExternal(uri: string, failureMessage: string): Promise<void> {
         try {
             const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -337,7 +442,7 @@ export struct AppDetailPage {
         HdsNavDestination() {
             Scroll(this.scroller) {
                 Column({ space: 14 }) {
-                    Blank().height(40).width('100%')
+                    Blank().height(100).width('100%')
                     if (this.loading && !this.app) {
                         Column({ space: 12 }) {
                             LoadingProgress()
@@ -449,23 +554,17 @@ export struct AppDetailPage {
                         .width('100%')
                         .accessibilityText('应用详情操作')
 
-                        Column() {
-                            ForEach(this.fields(), (field: DetailField, index: number) => {
-                                CompactDetailRow({ field })
-                                if (index < this.fields().length - 1) {
-                                    Divider()
-                                        .strokeWidth(0.5)
-                                        .color($r('app.color.border'))
-                                        .accessibilityText('应用信息分隔线')
-                                }
+                        Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start, alignItems: ItemAlign.Start }) {
+                            ForEach(this.fields(), (field: DetailField) => {
+                                DetailTag({ field })
                             }, (field: DetailField) => field.label)
                         }
                         .width('100%')
-                        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+                        .padding(12)
                         .borderRadius(16)
                         .backgroundColor($r('app.color.v3_surface'))
                         .border({ width: 1, color: $r('app.color.nd_card_border') })
-                        .accessibilityText('应用详细字段')
+                        .accessibilityText('以标签形式展示的应用详细字段')
 
                         if (this.screenshots().length > 0) {
                             Column({ space: 10 }) {
@@ -497,7 +596,19 @@ export struct AppDetailPage {
                             .accessibilityGroup(true)
                         }
 
-                        MetricBars({ metrics: this.metrics })
+                        TrendLineChart({
+                            title: '下载量趋势',
+                            unit: '次',
+                            points: this.downloadPoints(),
+                            lineColor: $r('app.color.v3_accent_blue'),
+                        })
+
+                        TrendLineChart({
+                            title: '评分趋势',
+                            unit: '分',
+                            points: this.ratingPoints(),
+                            lineColor: $r('app.color.v3_accent_orange'),
+                        })
 
                         Column({ space: 10 }) {
                             Text('应用介绍')
@@ -619,14 +730,6 @@ export struct AppDetailPage {
                                     this.vibrate();
                                     this.load(true, true);
                                 },
-                            },
-                        },
-                        {
-                            content: {
-                                label: '打开教程',
-                                icon: $r('sys.symbol.questionmark_circle'),
-                                isEnabled: true,
-                                action: () => this.openTutorial(),
                             },
                         },
                         {
