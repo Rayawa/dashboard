@@ -1,9 +1,9 @@
-import { PromptAction, SegmentButtonV2Items } from '@kit.ArkUI';
+import { curves, PromptAction, SegmentButtonV2Items } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
+import { CONTINUATION_ROUTE_MAIN, MAIN_TAB_APPS } from '../../common/constants';
 import {
-    CONTENT_MAX_WIDTH, CONTINUATION_ROUTE_MAIN, MAIN_TAB_APPS,
-} from '../../common/constants';
-import { getContinuationState, setAppsViewIndex, setContinuationView, setDetailTarget } from '../../common/appState';
+    getContinuationState, hasPendingSearchTarget, setAppsViewIndex, setContinuationView, setDetailTarget,
+} from '../../common/appState';
 import { fetchAppsPage } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import type { BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
@@ -11,16 +11,17 @@ import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
 import { HdsTitleBarSegment } from '../../component/HdsTitleBarSegment';
 import { OverviewSection } from '../../component/charts/OverviewSection';
+import { SEARCH_SHARED_GEOMETRY_ID, SearchPage } from './SearchPage';
 
-interface SortChoice {
-    label: string;
-    field: string;
-}
+interface SortChoice { label: string; field: string; }
+interface FilterChoice { label: string; field: string; }
 
 @Component
 struct AppTableRow {
     app: MarketApp = {} as MarketApp;
     index: number = 0;
+    @Prop tableWidth: number = 924;
+    @Prop developerWidth: number = 150;
     onOpen: (app: MarketApp) => void = () => {};
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     @State private pressed: boolean = false;
@@ -33,75 +34,42 @@ struct AppTableRow {
 
     build() {
         Row() {
-            Text(String(this.index))
-                .width(44)
-                .fontSize(12)
-                .fontColor($r('app.color.v3_text_secondary'))
-                .accessibilityText(`序号${this.index}`)
+            Text(String(this.index)).width(44).fontSize(12).textAlign(TextAlign.Center)
+                .fontColor($r('app.color.v3_text_secondary')).accessibilityText(`序号${this.index}`)
             Row({ space: 8 }) {
-                Image(this.app.icon_url || $r('app.media.startIcon'))
-                    .width(34)
-                    .height(34)
-                    .borderRadius(8)
-                    .objectFit(ImageFit.Cover)
-                    .alt($r('app.media.startIcon'))
+                Image(this.app.icon_url || $r('app.media.startIcon')).width(34).height(34).borderRadius(8)
+                    .objectFit(ImageFit.Cover).alt($r('app.media.startIcon'))
                     .accessibilityText(`${this.app.name || '未知应用'}图标`)
                 Column({ space: 2 }) {
-                    Text(this.app.name || '未知应用')
-                        .fontSize(13)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor($r('app.color.v3_text_primary'))
-                        .maxLines(1)
+                    Text(this.app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
+                        .fontColor($r('app.color.v3_text_primary')).maxLines(1)
                         .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .accessibilityText(this.app.name || '未知应用')
-                    Text(this.app.pkg_name || this.app.app_id)
-                        .fontSize(10)
-                        .fontColor($r('app.color.v3_text_secondary'))
-                        .maxLines(1)
+                    Text(this.app.pkg_name || this.app.app_id).fontSize(10)
+                        .fontColor($r('app.color.v3_text_secondary')).maxLines(1)
                         .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .accessibilityText(this.app.pkg_name || this.app.app_id)
-                }
-                .alignItems(HorizontalAlign.Start)
-            }
-            .width(220)
-            Text(this.app.developer_name || '-')
-                .width(150)
-                .fontSize(12)
-                .fontColor($r('app.color.v3_accent_blue'))
-                .maxLines(1)
+                }.alignItems(HorizontalAlign.Start)
+            }.width(220)
+            Text(this.app.developer_name || '-').width(this.developerWidth).fontSize(12)
+                .fontColor($r('app.color.diff_content')).maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .accessibilityText(`开发者${this.app.developer_name || '未知'}`)
-            Text(`${this.app.kind_type_name || '-'} · ${this.app.kind_name || '-'}`)
-                .width(140)
-                .fontSize(12)
-                .fontColor($r('app.color.v3_text_primary'))
-                .maxLines(1)
+            Text(`${this.app.kind_type_name || '-'} · ${this.app.kind_name || '-'}`).width(140).fontSize(12)
+                .fontColor($r('app.color.v3_text_primary')).maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .accessibilityText(`分类${this.app.kind_type_name || ''}${this.app.kind_name || ''}`)
-            Text(this.rating())
-                .width(70)
-                .fontSize(12)
-                .fontColor($r('app.color.v3_text_primary'))
+            Text(this.rating()).width(70).fontSize(12).fontColor($r('app.color.v3_text_primary'))
                 .accessibilityText(`评分${this.rating()}`)
-            Text(formatCount(this.app.download_count))
-                .width(100)
-                .fontSize(12)
+            Text(formatCount(this.app.download_count)).width(100).fontSize(12)
                 .fontColor($r('app.color.v3_text_primary'))
                 .accessibilityText(`下载量${formatCount(this.app.download_count)}`)
-            Text(formatBytes(this.app.size_bytes))
-                .width(90)
-                .fontSize(12)
+            Text(formatBytes(this.app.size_bytes)).width(90).fontSize(12)
                 .fontColor($r('app.color.v3_text_secondary'))
                 .accessibilityText(`应用大小${formatBytes(this.app.size_bytes)}`)
-            Text(formatDateTime(this.app.updated_at).split(' ')[0])
-                .width(110)
-                .fontSize(12)
+            Text(formatDateTime(this.app.updated_at).split(' ')[0]).width(110).fontSize(12)
                 .fontColor($r('app.color.v3_text_secondary'))
                 .accessibilityText(`更新时间${formatDateTime(this.app.updated_at)}`)
         }
-        .width(924)
-        .height(58)
-        .padding({ left: 8, right: 8 })
+        .width(this.tableWidth).height(58).padding({ left: 8, right: 8 })
         .border({ width: { bottom: 1 }, color: $r('app.color.v3_chart_grid') })
         .backgroundColor(this.index % 2 === 0 ? $r('app.color.v3_surface_alt') : $r('app.color.v3_surface'))
         .scale({ x: this.pressed ? 0.99 : 1, y: this.pressed ? 0.99 : 1 })
@@ -125,15 +93,17 @@ struct AppTableRow {
             this.onOpen(this.app);
         })
         .accessibilityGroup(true)
-        .accessibilityText(`打开${this.app.name || '未知应用'}详情`)
+        .accessibilityText(`序号${this.index}，${this.app.name || '未知应用'}，开发者${this.app.developer_name || '未知'}，分类${this.app.kind_type_name || ''}${this.app.kind_name || ''}，评分${this.rating()}，下载量${formatCount(this.app.download_count)}，点击打开详情`)
     }
 }
 
 @Component
 export struct AppsPage {
     @Consume('pageStack') private pageStack: NavPathStack;
-    @Prop @Watch('onRefreshVersionChanged') refreshVersion: number = 0;
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
+    @Prop @Watch('onSearchCommandVersionChanged') searchCommandVersion: number = 0;
+    @Prop @Watch('onRequestVersionChanged') requestVersion: number = 0;
+    onSearchVisibilityChanged?: (visible: boolean) => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private pageScroller: Scroller = new Scroller();
     private overviewScroller: Scroller = new Scroller();
@@ -143,6 +113,10 @@ export struct AppsPage {
     ]);
     @State private selectedIndexes: number[] = [0];
     @State private overviewRefreshVersion: number = 0;
+    @State private overviewRefreshing: boolean = false;
+    @State private listRefreshing: boolean = false;
+    @State private searchExpanded: boolean = false;
+    @State private titleSearchVisible: boolean = false;
     @State private apps: MarketApp[] = [];
     @State private page: number = 1;
     @State private total: number = 0;
@@ -153,94 +127,147 @@ export struct AppsPage {
     @State private pageSizeIndex: number = 0;
     @State private descending: boolean = true;
     @State private jumpText: string = '';
+    @State private typeIndex: number = 0;
+    @State private filterIndex: number = 0;
+    @State private filterText: string = '';
+    @State private appliedFilterText: string = '';
+    @State private tableViewportWidth: number = 0;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     private restoredScroll: boolean = false;
     private restoredView: boolean = false;
-
-    private onRefreshVersionChanged(): void {
-        if (this.refreshVersion <= 0) {
-            return;
-        }
-        this.overviewRefreshVersion = this.refreshVersion;
-        this.load(true);
-    }
+    private reloadAfterCurrent: boolean = false;
+    private reloadForce: boolean = false;
 
     private onScrollToTopVersionChanged(): void {
-        if (this.scrollToTopVersion <= 0) {
-            return;
-        }
+        if (this.scrollToTopVersion <= 0) return;
         try {
-            const activeScroller = this.selectedIndexes[0] === 0 ? this.overviewScroller : this.pageScroller;
-            activeScroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 300 } });
+            const scroller = this.selectedIndexes[0] === 0 ? this.overviewScroller : this.pageScroller;
+            scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 300 } });
         } catch (error) {
             console.warn('[Dashboard][pages/main/AppsPage][WARN]', `返回顶部失败: ${JSON.stringify(error)}`);
         }
     }
-
-    private vibrate(): void {
-        if (this.vibrationEnabled) vibration.dotVibration();
+    private onSearchCommandVersionChanged(): void { if (this.searchCommandVersion > 0) this.openSearch(false); }
+    private onRequestVersionChanged(): void {
+        if (this.requestVersion > 0 && hasPendingSearchTarget()) this.openSearch(false);
     }
-
+    private openSearch(withFeedback: boolean = true): void {
+        if (this.searchExpanded) return;
+        if (withFeedback) this.vibrate();
+        this.titleSearchVisible = false;
+        if (this.onSearchVisibilityChanged) this.onSearchVisibilityChanged(false);
+        this.getUIContext().animateTo({
+            curve: curves.interpolatingSpring(0, 1, 342, 38),
+        }, (): void => { this.searchExpanded = true; });
+    }
+    private closeSearch(): void {
+        this.getUIContext().animateTo({
+            curve: curves.interpolatingSpring(0, 1, 342, 38),
+        }, (): void => {
+            this.searchExpanded = false;
+            const scroller = this.selectedIndexes[0] === 0 ? this.overviewScroller : this.pageScroller;
+            this.updateTitleSearch(scroller.currentOffset().yOffset);
+        });
+    }
+    private updateTitleSearch(offset: number): void {
+        const visible = offset > 10;
+        if (visible === this.titleSearchVisible) return;
+        this.titleSearchVisible = visible;
+        if (this.onSearchVisibilityChanged) this.onSearchVisibilityChanged(visible);
+    }
+    private vibrate(): void { if (this.vibrationEnabled) vibration.dotVibration(); }
     private sortChoices(): SortChoice[] {
         return [
-            { label: '更新时间', field: 'updated_at' },
-            { label: '下载量', field: 'download_count' },
-            { label: '评分数量', field: 'total_star_rating_count' },
-            { label: '应用大小', field: 'size_bytes' },
+            { label: '更新时间', field: 'updated_at' }, { label: '下载量', field: 'download_count' },
+            { label: '评分数量', field: 'total_star_rating_count' }, { label: '应用大小', field: 'size_bytes' },
             { label: '上架时间', field: 'listed_at' },
         ];
     }
-
+    private filterChoices(): FilterChoice[] {
+        return [
+            { label: '应用名称', field: 'name' }, { label: '分类', field: 'kind_name' },
+            { label: '类型', field: 'kind_type_name' }, { label: '标签', field: 'tag_name' },
+            { label: '开发者', field: 'developer_name' },
+        ];
+    }
+    private typeOptions(): SelectOption[] {
+        return ['全部类型', '鸿蒙应用', '元服务'].map((label: string) => ({ value: label } as SelectOption));
+    }
     private sortOptions(): SelectOption[] {
         return this.sortChoices().map((choice: SortChoice) => ({ value: choice.label } as SelectOption));
     }
-
-    private pageSizeChoices(): number[] {
-        return [20, 50, 100];
+    private filterOptions(): SelectOption[] {
+        return this.filterChoices().map((choice: FilterChoice) => ({ value: choice.label } as SelectOption));
     }
-
+    private pageSizeChoices(): number[] { return [20, 50, 100]; }
     private pageSizeOptions(): SelectOption[] {
         return this.pageSizeChoices().map((size: number) => ({ value: `每页 ${size} 条` } as SelectOption));
     }
+    private pageSize(): number { return this.pageSizeChoices()[this.pageSizeIndex]; }
+    private totalPages(): number { return Math.max(1, Math.ceil(this.total / this.pageSize())); }
+    private tableWidth(): number { return Math.max(924, this.tableViewportWidth); }
+    private developerWidth(): number { return 150 + Math.max(0, this.tableViewportWidth - 924); }
 
-    private pageSize(): number {
-        return this.pageSizeChoices()[this.pageSizeIndex];
-    }
-
-    private totalPages(): number {
-        return Math.max(1, Math.ceil(this.total / this.pageSize()));
-    }
-
-    private load(force: boolean = false): void {
+    private async load(force: boolean = false): Promise<void> {
         if (this.loading) {
+            this.reloadAfterCurrent = true;
+            this.reloadForce = this.reloadForce || force;
             return;
         }
         this.loading = true;
         const sort = this.sortChoices()[this.sortIndex].field;
-        fetchAppsPage(
-            this.page,
-            this.pageSize(),
-            sort,
-            this.descending,
-            undefined,
-            undefined,
-            false,
-            force,
-        ).then((result) => {
-            const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
-            if (!response.success || !response.data) {
-                throw new Error('应用列表数据不可用');
+        let searchKey: string | undefined = undefined;
+        let searchValue: string | undefined = undefined;
+        let excludeAtomic = false;
+        if (this.typeIndex === 2) {
+            searchKey = 'pkg_name';
+            searchValue = 'com.atomicservice';
+        } else {
+            excludeAtomic = this.typeIndex === 1;
+            if (this.appliedFilterText.length > 0) {
+                searchKey = this.filterChoices()[this.filterIndex].field;
+                searchValue = this.appliedFilterText;
             }
+        }
+        try {
+            const result = await fetchAppsPage(this.page, this.pageSize(), sort, this.descending,
+                searchKey, searchValue, false, force, false, excludeAtomic);
+            const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
+            if (!response.success || !response.data) throw new Error('应用列表数据不可用');
             this.apps = response.data.data ?? [];
             this.total = response.data.total_count ?? 0;
             this.fromCache = result.stale;
             this.loaded = true;
-        }).catch((error: Error) => {
-            console.error('[Dashboard][pages/main/AppsPage][ERROR]', `应用列表加载失败: ${error.message}`);
-            showToastSafely(this.prompt, `应用列表加载失败：${error.message}`, 2500, 'V3Apps');
-        }).finally(() => this.loading = false);
+        } catch (error) {
+            const message = (error as Error).message;
+            console.error('[Dashboard][pages/main/AppsPage][ERROR]', `应用列表加载失败: ${message}`);
+            showToastSafely(this.prompt, `应用列表加载失败：${message}`, 2500, 'V3Apps');
+        } finally {
+            this.loading = false;
+            if (this.reloadAfterCurrent) {
+                const forceNext = this.reloadForce;
+                this.reloadAfterCurrent = false;
+                this.reloadForce = false;
+                setTimeout((): void => { this.load(forceNext); }, 0);
+            } else {
+                this.listRefreshing = false;
+            }
+        }
     }
-
+    private applyFilter(): void {
+        this.vibrate();
+        this.appliedFilterText = this.filterText.trim();
+        this.page = 1;
+        this.load(false);
+    }
+    private clearFilter(): void {
+        this.vibrate();
+        this.typeIndex = 0;
+        this.filterText = '';
+        this.appliedFilterText = '';
+        this.page = 1;
+        this.load(false);
+    }
     private jump(): void {
         this.vibrate();
         const target = Number(this.jumpText);
@@ -251,286 +278,251 @@ export struct AppsPage {
         this.page = target;
         this.load(false);
     }
-
     private openDetail(app: MarketApp): void {
         setDetailTarget({ appId: app.app_id, packageName: app.pkg_name });
-        try {
-            this.pageStack.pushPathByName('AppDetailPage', null);
-        } catch (error) {
-            console.error('[Dashboard][pages/main/AppsPage][ERROR]', `打开应用详情失败: ${JSON.stringify(error)}`);
+        try { this.pageStack.pushPathByName('AppDetailPage', null); }
+        catch (error) {
+            console.error('[Dashboard][pages/main/AppsPage][ERROR]',
+                `打开应用详情失败: ${JSON.stringify(error)}`);
             showToastSafely(this.prompt, '暂时无法打开应用详情，请重试', 1800, 'AppsPage');
         }
+    }
+    private recordScroll(scroller: Scroller): void {
+        try {
+            const offset = scroller.currentOffset().yOffset;
+            this.updateTitleSearch(offset);
+            setContinuationView(MAIN_TAB_APPS, offset);
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/AppsPage][WARN]', `保存滚动位置失败: ${JSON.stringify(error)}`);
+        }
+    }
+
+    @Builder
+    private commonHeader(): void {
+        Column({ space: 8 }) {
+            Search({ placeholder: '搜索应用名称、包名、App ID 或链接' })
+                .width('100%').height(48).defaultFocus(false)
+                .backgroundColor($r('app.color.v3_surface_alt'))
+                .geometryTransition(SEARCH_SHARED_GEOMETRY_ID, { follow: true })
+                .onClick(() => this.openSearch())
+                .accessibilityText('打开应用搜索')
+            Row() {
+                HdsTitleBarSegment({
+                    items: this.segmentItems,
+                    selectedIndexes: $selectedIndexes,
+                    maxFontScale: 2,
+                    segmentHeight: 48,
+                    normalWidth: '100%',
+                    experimentalWidth: '100%',
+                    experimentalHeight: 52,
+                    onItemClicked: (index: number): void => {
+                        this.vibrate();
+                        this.selectedIndexes = [index];
+                        setAppsViewIndex(index);
+                        const scroller = index === 0 ? this.overviewScroller : this.pageScroller;
+                        this.updateTitleSearch(scroller.currentOffset().yOffset);
+                    },
+                })
+            }
+            .width('100%').constraintSize({ maxWidth: 500 }).justifyContent(FlexAlign.Center)
+        }
+        .width('100%')
+        .accessibilityText('应用搜索以及应用概况和应用列表切换栏')
+    }
+
+    @Builder
+    private filterBar(): void {
+        Column({ space: 8 }) {
+            Flex({ wrap: FlexWrap.Wrap }) {
+                Select(this.typeOptions()).selected(this.typeIndex)
+                    .value(['全部类型', '鸿蒙应用', '元服务'][this.typeIndex]).height(42).margin(4)
+                    .backgroundColor($r('app.color.v3_surface'))
+                    .onSelect((index: number) => { this.typeIndex = index; this.page = 1; this.load(false); })
+                    .accessibilityText('筛选全部类型鸿蒙应用或元服务')
+                Select(this.filterOptions()).selected(this.filterIndex)
+                    .value(this.filterChoices()[this.filterIndex].label).height(42).margin(4)
+                    .backgroundColor($r('app.color.v3_surface'))
+                    .onSelect((index: number) => this.filterIndex = index)
+                    .accessibilityText('选择筛选字段')
+                TextInput({ text: this.filterText, placeholder: '输入筛选内容' }).height(42).margin(4)
+                    .constraintSize({ minWidth: 170, maxWidth: 280 }).backgroundColor($r('app.color.v3_surface'))
+                    .onChange((value: string) => this.filterText = value).onSubmit(() => this.applyFilter())
+                    .accessibilityText(`按${this.filterChoices()[this.filterIndex].label}输入筛选内容`)
+                Button('筛选').height(42).margin(4).backgroundColor($r('app.color.diff_content'))
+                    .onClick(() => this.applyFilter()).accessibilityText('应用筛选条件')
+                Button('清除').height(42).margin(4).fontColor($r('app.color.diff_content'))
+                    .backgroundColor($r('app.color.v3_surface')).onClick(() => this.clearFilter())
+                    .accessibilityText('清除全部筛选条件')
+            }.width('100%')
+            Flex({ wrap: FlexWrap.Wrap }) {
+                Select(this.sortOptions()).selected(this.sortIndex).value(this.sortChoices()[this.sortIndex].label)
+                    .height(42).margin(4).backgroundColor($r('app.color.v3_surface'))
+                    .onSelect((index: number) => { this.sortIndex = index; this.page = 1; this.load(false); })
+                    .accessibilityText('选择应用列表排序字段')
+                Select(this.pageSizeOptions()).selected(this.pageSizeIndex).value(`每页 ${this.pageSize()} 条`)
+                    .height(42).margin(4).backgroundColor($r('app.color.v3_surface'))
+                    .onSelect((index: number) => { this.pageSizeIndex = index; this.page = 1; this.load(false); })
+                    .accessibilityText(`选择每页显示数量，当前每页${this.pageSize()}条`)
+                Button(this.descending ? '降序 ↓' : '升序 ↑').height(42).margin(4)
+                    .fontColor($r('app.color.diff_content')).backgroundColor($r('app.color.v3_surface'))
+                    .onClick(() => { this.descending = !this.descending; this.page = 1; this.load(false); })
+                    .accessibilityText(this.descending ? '当前降序，点击改为升序' : '当前升序，点击改为降序')
+            }.width('100%')
+        }.width('100%').accessibilityText('应用列表筛选与排序控件')
+    }
+
+    @Builder
+    private table(): void {
+        Stack() {
+            Scroll() {
+                Column() {
+                    Row() {
+                        Text('序号').width(44).fontSize(12).textAlign(TextAlign.Center)
+                            .fontColor($r('app.color.v3_text_secondary'))
+                        Text('应用').width(220).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        Text('开发者').width(this.developerWidth()).fontSize(12)
+                            .fontColor($r('app.color.v3_text_secondary'))
+                        Text('分类').width(140).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        Text('评分').width(70).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        Text('下载量').width(100).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        Text('大小').width(90).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        Text('更新时间').width(110).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                    }
+                    .height(42).width(this.tableWidth()).padding({ left: 8, right: 8 })
+                    .backgroundColor($r('app.color.v3_surface_alt')).accessibilityText('应用列表表头')
+                    ForEach(this.apps, (app: MarketApp, index: number) => {
+                        AppTableRow({
+                            app, index: (this.page - 1) * this.pageSize() + index + 1,
+                            tableWidth: this.tableWidth(), developerWidth: this.developerWidth(),
+                            onOpen: (target: MarketApp) => this.openDetail(target),
+                        })
+                    }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
+                }.width(this.tableWidth())
+            }
+            .scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Auto).edgeEffect(EdgeEffect.None)
+            .width('100%').accessibilityText('应用列表，窄屏可横向滚动')
+            if (this.loading) {
+                Column({ space: 8 }) {
+                    LoadingProgress().width(32).height(32).color($r('app.color.diff_content'))
+                        .accessibilityText('应用列表加载中')
+                    Text('正在加载…').fontColor($r('app.color.v3_text_secondary'))
+                }.padding(22).borderRadius(14).backgroundColor($r('app.color.v3_surface')).accessibilityGroup(true)
+            }
+        }
+        .width('100%').borderRadius(16).clip(true).backgroundColor($r('app.color.v3_surface'))
+        .border({ width: 1, color: $r('app.color.nd_card_border') })
+        .onAreaChange((_oldValue: Area, newValue: Area): void => {
+            const width = Number(newValue.width);
+            if (width > 0) this.tableViewportWidth = width;
+        })
+    }
+
+    @Builder
+    private pagination(): void {
+        Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
+            Button('上一页').margin(4).enabled(this.page > 1 && !this.loading)
+                .backgroundColor($r('app.color.v3_surface_alt')).fontColor($r('app.color.v3_text_primary'))
+                .onClick(() => { this.page--; this.load(false); }).accessibilityText('上一页')
+            Text(`第 ${this.page} / ${this.totalPages()} 页`).fontSize(13)
+                .fontColor($r('app.color.v3_text_secondary')).margin(8)
+                .accessibilityText(`第${this.page}页，共${this.totalPages()}页`)
+            Button('下一页').margin(4).enabled(this.page < this.totalPages() && !this.loading)
+                .backgroundColor($r('app.color.diff_content'))
+                .onClick(() => { this.page++; this.load(false); }).accessibilityText('下一页')
+            TextInput({ text: this.jumpText, placeholder: '页码' }).type(InputType.Number)
+                .width(84).height(40).margin(4).backgroundColor($r('app.color.v3_surface'))
+                .onChange((value: string) => this.jumpText = value).onSubmit(() => this.jump())
+                .accessibilityText('输入要跳转的页码')
+            Button('跳转').margin(4).height(40).backgroundColor($r('app.color.v3_accent_cyan'))
+                .onClick(() => this.jump()).accessibilityText('跳转到指定页')
+        }.width('100%').padding({ bottom: 110 }).accessibilityText('应用列表分页控件')
     }
 
     build() {
         Stack({ alignContent: Alignment.Top }) {
             if (this.selectedIndexes[0] === 0) {
-                Scroll(this.overviewScroller) {
-                    Column({ space: 12 }) {
-                        Blank().height(170).width('100%')
-                        OverviewSection({ refreshVersion: this.overviewRefreshVersion })
-                        Blank().height(20).width('100%')
+                Refresh({ refreshing: $$this.overviewRefreshing }) {
+                    Scroll(this.overviewScroller) {
+                        Column({ space: 12 }) {
+                            Blank().height(100).width('100%')
+                            if (!this.searchExpanded) {
+                                this.commonHeader()
+                            }
+                            OverviewSection({
+                                refreshVersion: this.overviewRefreshVersion,
+                                onRefreshCompleted: (): void => { this.overviewRefreshing = false; },
+                            })
+                            Blank().height(20).width('100%')
+                        }.width('100%').padding({ left: 14, right: 14 })
                     }
-                    .width('100%')
-                    .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
-                    .padding({ left: 14, right: 14 })
+                    .width('100%').height('100%').scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
+                    .onDidScroll((): void => this.recordScroll(this.overviewScroller))
+                    .accessibilityText('可滚动并下拉刷新的应用概况页面')
                 }
-                .width('100%')
-                .height('100%')
-                .scrollBar(BarState.Off)
-                .edgeEffect(EdgeEffect.Spring)
-                .onDidScroll((): void => {
-                    try {
-                        setContinuationView(MAIN_TAB_APPS, this.overviewScroller.currentOffset().yOffset);
-                    } catch (error) {
-                        console.warn('[Dashboard][pages/main/AppsPage][WARN]', `保存应用概况滚动位置失败: ${JSON.stringify(error)}`);
-                    }
+                .width('100%').height('100%')
+                .onRefreshing((): void => {
+                    this.overviewRefreshing = true;
+                    this.overviewRefreshVersion++;
                 })
-                .backgroundColor($r('app.color.background'))
-                .accessibilityText('可滚动的应用概况页面')
-            }
-            else {
-                Scroll(this.pageScroller) {
-                    Column({ space: 12 }) {
-                        Blank().height(170).width('100%')
-                        Row() {
-                            Column({ space: 4 }) {
-                                Text(`共 ${formatCount(this.total)} 条应用数据`)
-                                    .fontSize(13)
-                                    .fontColor($r('app.color.v3_text_secondary'))
-                                    .accessibilityText(`共${formatCount(this.total)}条应用数据`)
+            } else {
+                Refresh({ refreshing: $$this.listRefreshing }) {
+                    Scroll(this.pageScroller) {
+                        Column({ space: 12 }) {
+                            Blank().height(100).width('100%')
+                            if (!this.searchExpanded) {
+                                this.commonHeader()
                             }
-                            .alignItems(HorizontalAlign.Start)
-                            .layoutWeight(1)
+                            Text(`共 ${formatCount(this.total)} 条应用数据`).fontSize(13)
+                                .fontColor($r('app.color.v3_text_secondary')).width('100%')
+                                .accessibilityText(`共${formatCount(this.total)}条应用数据`)
+                            this.filterBar()
+                            if (this.typeIndex === 2 && this.appliedFilterText.length > 0) {
+                                Text('元服务类型筛选优先，字段筛选将在切换到全部类型或鸿蒙应用后生效')
+                                    .fontSize(12).fontColor($r('app.color.v3_accent_orange')).width('100%')
+                            }
+                            if (this.fromCache) {
+                                Text('当前列表来自本地缓存；恢复网络后下拉即可获取最新数据')
+                                    .fontSize(13).fontColor($r('app.color.v3_text_primary')).padding(10)
+                                    .width('100%').borderRadius(10).backgroundColor($r('app.color.v3_warning_bg'))
+                                    .accessibilityText('当前应用列表来自本地缓存')
+                            }
+                            this.table()
+                            this.pagination()
                         }
-                        .width('100%')
-                        .padding({ left: 4, right: 4 })
-
-                        Flex({ wrap: FlexWrap.Wrap }) {
-                            Select(this.sortOptions())
-                                .selected(this.sortIndex)
-                                .value(this.sortChoices()[this.sortIndex].label)
-                                .height(42)
-                                .margin(4)
-                                .backgroundColor($r('app.color.v3_surface'))
-                                .onSelect((index: number) => {
-                                    this.vibrate();
-                                    this.sortIndex = index;
-                                    this.page = 1;
-                                    this.load(false);
-                                })
-                                .accessibilityText('选择应用列表排序字段')
-                            Select(this.pageSizeOptions())
-                                .selected(this.pageSizeIndex)
-                                .value(`每页 ${this.pageSize()} 条`)
-                                .height(42)
-                                .margin(4)
-                                .backgroundColor($r('app.color.v3_surface'))
-                                .onSelect((index: number) => {
-                                    this.vibrate();
-                                    this.pageSizeIndex = index;
-                                    this.page = 1;
-                                    this.load(false);
-                                })
-                                .accessibilityText(`选择每页显示数量，当前每页${this.pageSize()}条`)
-                            Button(this.descending ? '降序 ↓' : '升序 ↑')
-                                .height(42)
-                                .margin(4)
-                                .fontColor($r('app.color.v3_accent_blue'))
-                                .backgroundColor($r('app.color.v3_surface'))
-                                .onClick(() => {
-                                    this.vibrate();
-                                    this.descending = !this.descending;
-                                    this.page = 1;
-                                    this.load(false);
-                                })
-                                .accessibilityText(this.descending ? '当前降序，点击改为升序' : '当前升序，点击改为降序')
-                        }
-                        .width('100%')
-                        .accessibilityText('应用列表筛选与排序控件')
-
-                        if (this.fromCache) {
-                            Text('当前列表来自本地缓存；恢复网络后点击刷新可获取最新数据')
-                                .fontSize(13)
-                                .fontColor($r('app.color.v3_text_primary'))
-                                .padding(10)
-                                .width('100%')
-                                .borderRadius(10)
-                                .backgroundColor($r('app.color.v3_warning_bg'))
-                                .accessibilityText('当前应用列表来自本地缓存')
-                        }
-
-                        Stack() {
-                            Scroll() {
-                                Column() {
-                                    Row() {
-                                        Text('序号').width(44).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                                        Text('应用').width(220).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                                        Text('开发者').width(150).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                                        Text('分类').width(140).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                                        Text('评分').width(70).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                                        Text('下载量').width(100).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                                        Text('大小').width(90).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                                        Text('更新时间').width(110).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                                    }
-                                    .height(42)
-                                    .width(924)
-                                    .padding({ left: 8, right: 8 })
-                                    .backgroundColor($r('app.color.v3_surface_alt'))
-                                    .accessibilityText('应用列表表头')
-                                    ForEach(this.apps, (app: MarketApp, index: number) => {
-                                        AppTableRow({
-                                            app,
-                                            index: (this.page - 1) * this.pageSize() + index + 1,
-                                            onOpen: (target: MarketApp) => this.openDetail(target),
-                                        })
-                                    }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
+                        .width('100%').padding({ left: 14, right: 14 })
+                        .onAppear(() => {
+                            if (!this.loaded) this.load(false);
+                            if (!this.restoredScroll) {
+                                this.restoredScroll = true;
+                                const continuation = getContinuationState();
+                                if (continuation.mainTab === MAIN_TAB_APPS &&
+                                    continuation.routeName === CONTINUATION_ROUTE_MAIN && continuation.scrollDistance > 0) {
+                                    setTimeout((): void => this.pageScroller.scrollTo({
+                                        xOffset: 0, yOffset: continuation.scrollDistance, animation: { duration: 0 },
+                                    }), 80);
                                 }
-                                .width(924)
                             }
-                            .scrollable(ScrollDirection.Horizontal)
-                            .scrollBar(BarState.Auto)
-                            .edgeEffect(EdgeEffect.None)
-                            .width('100%')
-                            .accessibilityText('可横向滚动的应用列表')
-
-                            if (this.loading) {
-                                Column({ space: 8 }) {
-                                    LoadingProgress()
-                                        .width(32)
-                                        .height(32)
-                                        .color($r('app.color.v3_accent_blue'))
-                                        .accessibilityText('应用列表加载中')
-                                    Text('正在加载…')
-                                        .fontColor($r('app.color.v3_text_secondary'))
-                                        .accessibilityText('正在加载应用列表')
-                                }
-                                .padding(22)
-                                .borderRadius(14)
-                                .backgroundColor($r('app.color.v3_surface'))
-                                .accessibilityGroup(true)
-                            }
-                        }
-                        .width('100%')
-                        .borderRadius(16)
-                        .clip(true)
-                        .backgroundColor($r('app.color.v3_surface'))
-                        .border({ width: 1, color: $r('app.color.nd_card_border') })
-
-                        Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
-                            Button('上一页')
-                                .margin(4)
-                                .enabled(this.page > 1 && !this.loading)
-                                .backgroundColor($r('app.color.v3_surface_alt'))
-                                .fontColor($r('app.color.v3_text_primary'))
-                                .onClick(() => {
-                                    this.vibrate();
-                                    this.page--;
-                                    this.load(false);
-                                })
-                                .accessibilityText('上一页')
-                            Text(`第 ${this.page} / ${this.totalPages()} 页`)
-                                .fontSize(13)
-                                .fontColor($r('app.color.v3_text_secondary'))
-                                .margin(8)
-                                .accessibilityText(`第${this.page}页，共${this.totalPages()}页`)
-                            Button('下一页')
-                                .margin(4)
-                                .enabled(this.page < this.totalPages() && !this.loading)
-                                .backgroundColor($r('app.color.v3_accent_blue'))
-                                .onClick(() => {
-                                    this.vibrate();
-                                    this.page++;
-                                    this.load(false);
-                                })
-                                .accessibilityText('下一页')
-                            TextInput({ text: this.jumpText, placeholder: '页码' })
-                                .type(InputType.Number)
-                                .width(84)
-                                .height(40)
-                                .margin(4)
-                                .backgroundColor($r('app.color.v3_surface'))
-                                .onChange((value: string) => this.jumpText = value)
-                                .onSubmit(() => this.jump())
-                                .accessibilityText('输入要跳转的页码')
-                            Button('跳转')
-                                .margin(4)
-                                .height(40)
-                                .backgroundColor($r('app.color.v3_accent_cyan'))
-                                .onClick(() => this.jump())
-                                .accessibilityText('跳转到指定页')
-                        }
-                        .width('100%')
-                        .padding({ bottom: 110 })
-                        .accessibilityText('应用列表分页控件')
+                        })
+                        .accessibilityText('应用列表页面')
                     }
-                    .width('100%')
-                    .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
-                    .padding({ left: 14, right: 14 })
-                    .backgroundColor($r('app.color.background'))
-                    .onAppear(() => {
-                        if (!this.loaded) {
-                            this.load(false);
-                        }
-                        if (!this.restoredScroll) {
-                            this.restoredScroll = true;
-                            const continuation = getContinuationState();
-                            if (continuation.mainTab === MAIN_TAB_APPS && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
-                                continuation.scrollDistance > 0) {
-                                setTimeout((): void => {
-                                    try {
-                                        this.pageScroller.scrollTo({
-                                            xOffset: 0,
-                                            yOffset: continuation.scrollDistance,
-                                            animation: { duration: 0 },
-                                        });
-                                    } catch (error) {
-                                        console.warn('[Dashboard][pages/main/AppsPage][WARN]',
-                                            `恢复滚动位置失败: ${JSON.stringify(error)}`);
-                                    }
-                                }, 80);
-                            }
-                        }
-                    })
-                    .accessibilityText('应用列表页面')
+                    .width('100%').height('100%').scrollBar(BarState.Auto).edgeEffect(EdgeEffect.Spring)
+                    .onDidScroll((): void => this.recordScroll(this.pageScroller))
+                    .accessibilityText('可上下滚动并下拉刷新的应用列表页面')
                 }
-                .width('100%')
-                .height('100%')
-                .scrollBar(BarState.Auto)
-                .edgeEffect(EdgeEffect.Spring)
-                .onDidScroll((): void => {
-                    try {
-                        setContinuationView(MAIN_TAB_APPS, this.pageScroller.currentOffset().yOffset);
-                    } catch (error) {
-                        console.warn('[Dashboard][pages/main/AppsPage][WARN]',
-                            `保存滚动位置失败: ${JSON.stringify(error)}`);
-                    }
-                })
-                .backgroundColor($r('app.color.background'))
-                .accessibilityText('可上下滚动的应用列表页面')
+                .width('100%').height('100%')
+                .onRefreshing((): void => { this.listRefreshing = true; this.load(true); })
             }
 
-            Row() {
-                HdsTitleBarSegment({
-                    items: this.segmentItems,
-                    selectedIndexes: $selectedIndexes,
-                    onItemClicked: (index: number): void => {
-                        this.vibrate();
-                        this.selectedIndexes = [index];
-                        setAppsViewIndex(index);
-                    },
+            if (this.searchExpanded) {
+                SearchPage({
+                    requestVersion: this.requestVersion,
+                    geometryId: SEARCH_SHARED_GEOMETRY_ID,
+                    onClose: (): void => this.closeSearch(),
                 })
+                .width('100%').height('100%').zIndex(100)
             }
-            .width('100%')
-            .height(58)
-            .justifyContent(FlexAlign.Center)
-            .position({ x: 0, y: 100 })
-            .zIndex(20)
-            .accessibilityText('应用概况与应用列表切换栏')
         }
-        .width('100%')
-        .height('100%')
-        .backgroundColor($r('app.color.background'))
+        .width('100%').height('100%').backgroundColor($r('app.color.background'))
         .onAppear(() => {
             if (!this.restoredView) {
                 this.restoredView = true;
@@ -538,16 +530,12 @@ export struct AppsPage {
                 this.selectedIndexes = [continuation.appsViewIndex === 1 ? 1 : 0];
                 if (continuation.mainTab === MAIN_TAB_APPS && continuation.appsViewIndex === 0 &&
                     continuation.scrollDistance > 0) {
-                    setTimeout((): void => {
-                        try {
-                            this.overviewScroller.scrollTo({ xOffset: 0, yOffset: continuation.scrollDistance,
-                                animation: { duration: 0 } });
-                        } catch (error) {
-                            console.warn('[Dashboard][pages/main/AppsPage][WARN]', `恢复应用概况滚动位置失败: ${JSON.stringify(error)}`);
-                        }
-                    }, 80);
+                    setTimeout((): void => this.overviewScroller.scrollTo({
+                        xOffset: 0, yOffset: continuation.scrollDistance, animation: { duration: 0 },
+                    }), 80);
                 }
             }
+            if (this.requestVersion > 0 && hasPendingSearchTarget()) this.openSearch(false);
         })
     }
 }

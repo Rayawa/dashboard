@@ -13,7 +13,10 @@ export struct HdsTitleBarSegment {
   @Link selectedIndexes: number[];
   @Prop maxFontScale: number = 2;
   @Prop segmentHeight: number = 48;
-  @Prop barWidth: number = 280;
+  @Prop normalWidth: Length = '100%';
+  @Prop experimentalWidth: Length = '100%';
+  @Prop experimentalHeight: number = 52;
+  @State measuredWidth: number = 0;
   onItemClicked?: (index: number) => void;
 
   private selectedIndex(): number {
@@ -55,14 +58,24 @@ export struct HdsTitleBarSegment {
   }
 
   build() {
-    Column() {
-      HdsMiniBarButton({
-        barWidth: this.barWidth,
-        barHeight: this.segmentHeight + 4,
-      }) {
-        this.segmentContent()
+    Stack({ alignContent: Alignment.Center }) {
+      if (this.measuredWidth > 0) {
+        HdsMiniBarButton({
+          barWidth: this.measuredWidth,
+          barHeight: this.experimentalHeight,
+        }) {
+          this.segmentContent()
+        }
       }
     }
+    .width(this.experimentalWidth)
+    .height(this.experimentalHeight)
+    .onAreaChange((_oldValue: Area, newValue: Area): void => {
+      if (typeof newValue.width === 'number' && newValue.width > 0 && this.measuredWidth !== newValue.width) {
+        this.measuredWidth = newValue.width;
+      }
+    })
+    .margin({ top: -8 })
     .accessibilityText(this.selectedIndex() === 0 ? '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
   }
 }

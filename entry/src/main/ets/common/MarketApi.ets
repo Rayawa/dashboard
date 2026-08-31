@@ -130,6 +130,7 @@ export function fetchAppsPage(
     exact: boolean = false,
     force: boolean = false,
     excludeHuawei: boolean = false,
+    excludeAtomic: boolean = false,
 ): Promise<ApiDataResult<BaseAPIResponse<PageInfo<MarketApp>>>> {
     let query = `page_size=${pageSize}&detail=true&sort=${encodeURIComponent(sort)}&desc=${desc}`;
     if (searchKey && searchValue) {
@@ -138,6 +139,9 @@ export function fetchAppsPage(
     }
     if (excludeHuawei) {
         query += '&exclude_huawei=true';
+    }
+    if (excludeAtomic) {
+        query += '&exclude_atomic=true';
     }
     return requestJson<BaseAPIResponse<PageInfo<MarketApp>>>(
         `apps/list/${Math.max(1, page)}?${query}`,

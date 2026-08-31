@@ -19,10 +19,8 @@ import {
   MAIN_TAB_HOME,
   MAIN_TAB_MY,
   MAIN_TAB_S_STATION,
-  MAIN_TAB_SEARCH,
   S_STATION_COMMAND_HOME,
   S_STATION_COMMAND_NONE,
-  S_STATION_COMMAND_REFRESH,
   S_STATION_COMMAND_SCROLL_TOP,
 } from '../common/constants';
 import type { AppRouteTarget } from '../common/types';
@@ -31,7 +29,6 @@ import { vibration } from '../common/vibration';
 import { pushPathSafely } from '../common/safeNavigation';
 import { SStationPage } from './main/SStationPage';
 import { HomePage } from './main/HomePage';
-import { SearchPage } from './main/SearchPage';
 import { AppsPage } from './main/AppsPage';
 import { MyPage } from './main/MyPage';
 import { AppDetailPage } from './detail/AppDetailPage';
@@ -71,16 +68,15 @@ struct Dashboard {
     @State private showWarning: boolean = false;
     @State private mainActionIndex: number = -1;
     @State private mainActionVersion: number = 0;
-    @State private homeRefreshVersion: number = 0;
-    @State private appsRefreshVersion: number = 0;
+    @State private appsSearchCommandVersion: number = 0;
+    @State private appsTitleSearchVisible: boolean = false;
     @State private sStationCommand: number = S_STATION_COMMAND_NONE;
     @State private sStationCommandVersion: number = 0;
 
     private tabs(): MainTab[] {
         return [
-            { label: '网页S站', icon: $r('sys.media.wifi_router_fill') },
+            { label: 'S站', icon: $r('sys.media.wifi_router_fill') },
             { label: '首页', icon: $r('sys.media.return_home_fill') },
-            { label: '搜索', icon: $r('sys.media.ohos_ic_public_search_filled') },
             { label: '应用详情', icon: $r('sys.media.rectangle_filled_and_line_horizontal_and_rectangle') },
             { label: '我的', icon: $r('sys.media.person_badge_waveform') },
         ];
@@ -105,16 +101,6 @@ struct Dashboard {
         this.sStationCommandVersion++;
     }
 
-    private refreshHome(): void {
-        this.vibrate();
-        this.homeRefreshVersion++;
-    }
-
-    private refreshApps(): void {
-        this.vibrate();
-        this.appsRefreshVersion++;
-    }
-
     private handleTabBarClick(index: number): void {
         if (index !== this.selectedIndex) {
             return;
@@ -133,14 +119,6 @@ struct Dashboard {
             return [
                 {
                     content: {
-                        label: '刷新S站',
-                        icon: $r('sys.symbol.arrow_2_circlepath'),
-                        isEnabled: true,
-                        action: (): void => this.dispatchSStationCommand(S_STATION_COMMAND_REFRESH),
-                    },
-                },
-                {
-                    content: {
                         label: 'S站回到顶部',
                         icon: $r('sys.symbol.arrowshape_up_to_line'),
                         isEnabled: true,
@@ -153,14 +131,6 @@ struct Dashboard {
             return [
                 {
                     content: {
-                        label: '刷新首页',
-                        icon: $r('sys.symbol.arrow_2_circlepath'),
-                        isEnabled: true,
-                        action: (): void => this.refreshHome(),
-                    },
-                },
-                {
-                    content: {
                         label: '打开教程',
                         icon: $r('sys.symbol.questionmark_circle'),
                         isEnabled: true,
@@ -170,24 +140,18 @@ struct Dashboard {
             ];
         }
         if (this.selectedIndex === MAIN_TAB_APPS) {
-            return [
-                {
-                    content: {
-                        label: '刷新应用概况和应用列表',
-                        icon: $r('sys.symbol.arrow_2_circlepath'),
-                        isEnabled: true,
-                        action: (): void => this.refreshApps(),
+            if (!this.appsTitleSearchVisible) return [];
+            return [{
+                content: {
+                    label: '打开应用搜索',
+                    icon: $r('sys.media.ohos_ic_public_search_filled'),
+                    isEnabled: true,
+                    action: (): void => {
+                        this.vibrate();
+                        this.appsSearchCommandVersion++;
                     },
                 },
-                {
-                    content: {
-                        label: '打开教程',
-                        icon: $r('sys.symbol.questionmark_circle'),
-                        isEnabled: true,
-                        action: (): void => this.openTutorial(),
-                    },
-                },
-            ];
+            }];
         }
         return [{
             content: {
@@ -200,7 +164,8 @@ struct Dashboard {
     }
 
     private async handlePageShow(): Promise<void> {
-        this.selectedIndex = consumeMainTab(this.selectedIndex);
+        this.selectedIndex = Math.max(MAIN_TAB_S_STATION, Math.min(MAIN_TAB_MY,
+            consumeMainTab(this.selectedIndex)));
         // consumeMainTab 用于读取 Ability/接续指定页；立即写回，供各标签页恢复滚动位置。
         setMainTab(this.selectedIndex);
         this.searchRequestVersion++;
@@ -273,7 +238,6 @@ struct Dashboard {
 
                     TabContent() {
                         HomePage({
-                            refreshVersion: this.homeRefreshVersion,
                             scrollToTopVersion: this.mainActionIndex === MAIN_TAB_HOME ? this.mainActionVersion : 0,
                         })
                     }
@@ -285,25 +249,16 @@ struct Dashboard {
                     .accessibilityText('首页标签页')
 
                     TabContent() {
-                        SearchPage({
+                        AppsPage({
+                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
                             requestVersion: this.searchRequestVersion,
-                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_SEARCH ? this.mainActionVersion : 0,
+                            searchCommandVersion: this.appsSearchCommandVersion,
+                            onSearchVisibilityChanged: (visible: boolean): void => {
+                                this.appsTitleSearchVisible = visible;
+                            },
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[2].icon, this.tabs()[2].label))
-                    .opacity(this.selectedIndex === MAIN_TAB_SEARCH ? 1 : 0.92)
-                    .scale({ x: this.selectedIndex === MAIN_TAB_SEARCH ? 1 : 0.985,
-                        y: this.selectedIndex === MAIN_TAB_SEARCH ? 1 : 0.985 })
-                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
-                    .accessibilityText('搜索标签页')
-
-                    TabContent() {
-                        AppsPage({
-                            refreshVersion: this.appsRefreshVersion,
-                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
-                        })
-                    }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[3].icon, this.tabs()[3].label))
                     .opacity(this.selectedIndex === MAIN_TAB_APPS ? 1 : 0.92)
                     .scale({ x: this.selectedIndex === MAIN_TAB_APPS ? 1 : 0.985,
                         y: this.selectedIndex === MAIN_TAB_APPS ? 1 : 0.985 })
@@ -315,7 +270,7 @@ struct Dashboard {
                             scrollToTopVersion: this.mainActionIndex === MAIN_TAB_MY ? this.mainActionVersion : 0,
                         })
                     }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[4].icon, this.tabs()[4].label))
+                    .tabBar(new BottomTabBarStyle(this.tabs()[3].icon, this.tabs()[3].label))
                     .opacity(this.selectedIndex === MAIN_TAB_MY ? 1 : 0.92)
                     .scale({ x: this.selectedIndex === MAIN_TAB_MY ? 1 : 0.985,
                         y: this.selectedIndex === MAIN_TAB_MY ? 1 : 0.985 })
@@ -348,7 +303,7 @@ struct Dashboard {
                         vibration.dotVibration();
                     }
                 })
-                .accessibilityText('主界面五个标签页')
+                .accessibilityText('主界面四个标签页，依次为S站、首页、应用详情和我的')
 
                 if (this.showWarning) {
                     Column()

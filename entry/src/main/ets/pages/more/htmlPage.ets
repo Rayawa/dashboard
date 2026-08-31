@@ -19,6 +19,7 @@ export struct HTML {
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
   controller: webview.WebviewController = new webview.WebviewController();
   @State params: WebViewParam = new WebViewParam('', '');
+  @State private topPlaceholderHeight: number = 100;
 
   aboutToAppear() {
     const pathInfo = getPathParamsSafely<WebViewParam>(this.pageStack, 'HTMLPage', 'pages/more/htmlPage');
@@ -34,7 +35,7 @@ export struct HTML {
         title: `撤销${this.params.title}`,
         message: '撤销后应用将清除本地缓存退出，确定要撤销吗？',
         buttons: [
-          { text: '取消', color: $r('app.color.v3_accent_blue') },
+          { text: '取消', color: $r('app.color.diff_content') },
           { text: '撤销', color: $r('app.color.v3_accent_red') }
         ]
       });
@@ -68,10 +69,9 @@ export struct HTML {
 
   build() {
     HdsNavDestination() {
-      Scroll() {
-        Column() {
+      Column() {
           Blank()
-            .height(100)
+            .height(this.topPlaceholderHeight)
             .width("100%")
             .expandSafeArea(
               [SafeAreaType.SYSTEM],
@@ -89,17 +89,20 @@ export struct HTML {
             .domStorageAccess(true)
             .fileAccess(true)
             .mixedMode(MixedMode.All)
+            .onScroll((event) => {
+              if (event) {
+                const nextHeight = Math.max(0, 100 - Math.max(0, event.yOffset));
+                if (Math.abs(nextHeight - this.topPlaceholderHeight) > 0.5) {
+                  this.topPlaceholderHeight = nextHeight;
+                }
+              }
+            })
             .width('100%')
             .layoutWeight(1)
-        }
-        .width('100%')
-        .height('100%')
       }
-      .scrollBar(BarState.Off)
-      .edgeEffect(EdgeEffect.None)
       .width('100%')
       .height('100%')
-      .accessibilityText('可滚动的协议正文')
+      .accessibilityText('顶部占位会随正文滚动收起的协议页面')
     }
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .titleMode(HdsNavDestinationTitleMode.MINI)

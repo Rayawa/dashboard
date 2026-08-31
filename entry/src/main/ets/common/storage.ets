@@ -22,6 +22,7 @@ import {
     STORAGE_KEY_IMMERSIVE,
     STORAGE_KEY_LEGACY_MIGRATED,
     STORAGE_KEY_NOTICE_VERSION,
+    STORAGE_KEY_SEARCH_HISTORY,
     STORAGE_KEY_USERNAME,
     STORAGE_KEY_VIBRATION,
 } from './constants';
@@ -36,6 +37,7 @@ const KEY_VIBRATION = STORAGE_KEY_VIBRATION;
 const KEY_HOLD_CHECK = STORAGE_KEY_HOLD_CHECK;
 const KEY_BUTTON_RIGHT = STORAGE_KEY_BUTTON_RIGHT;
 const KEY_IMMERSIVE = STORAGE_KEY_IMMERSIVE;
+const KEY_SEARCH_HISTORY = STORAGE_KEY_SEARCH_HISTORY;
 
 export interface AppSettings {
     vibrationON: boolean;
@@ -256,6 +258,37 @@ export async function updateSettings(settings: Partial<AppSettings>): Promise<vo
     if (settings.immersiveTextureON !== undefined) {
         await setImmersiveTexture(settings.immersiveTextureON);
     }
+}
+
+// ===== 搜索历史 =====
+// Preferences 只接受基础值类型，因此以 JSON 字符串保存；读取时同时做结构和数量约束。
+export async function getSearchHistory(): Promise<string[]> {
+    const s = await ensureReady();
+    const raw = (await s.get(KEY_SEARCH_HISTORY, '[]')) as string;
+    try {
+        const parsed = JSON.parse(raw) as string[];
+        return parsed.filter((item: string) => typeof item === 'string' && item.trim().length > 0).slice(0, 10);
+    } catch (error) {
+        console.warn('[Dashboard][common/storage][WARN]', `搜索历史损坏，已忽略: ${JSON.stringify(error)}`);
+        return [];
+    }
+}
+
+export async function setSearchHistory(history: string[]): Promise<void> {
+    const normalized: string[] = [];
+    for (const item of history) {
+        const value = item.trim();
+        if (value.length > 0 && normalized.indexOf(value) < 0) {
+            normalized.push(value);
+        }
+    }
+    const s = await ensureReady();
+    await s.set(KEY_SEARCH_HISTORY, JSON.stringify(normalized.slice(0, 10)));
+}
+
+export async function clearSearchHistory(): Promise<void> {
+    const s = await ensureReady();
+    await s.remove(KEY_SEARCH_HISTORY);
 }
 
 // 恢复出厂设置（只重置开关，不动用户名和首启标志）
