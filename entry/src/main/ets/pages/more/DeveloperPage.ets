@@ -1,5 +1,11 @@
 import { deviceInfo } from '@kit.BasicServicesKit';
-import { HdsNavDestination, HdsNavDestinationTitleMode, TitleSize } from '@kit.UIDesignKit';
+import {
+  hdsMaterial,
+  HdsNavDestination,
+  HdsNavDestinationTitleMode,
+  ScrollEffectType,
+  TitleSize
+} from '@kit.UIDesignKit';
 import {
   APP_BUILD_NUMBER,
   APP_BUNDLE_NAME,
@@ -8,6 +14,7 @@ import {
   CONTINUATION_MIN_VERSION,
   customUserAgent,
 } from '../../common/constants';
+import { LengthMetrics } from '@kit.ArkUI';
 
 interface DeveloperField {
   label: string;
@@ -16,6 +23,7 @@ interface DeveloperField {
 
 @Component
 export struct DeveloperPage {
+  @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
   private fields(): DeveloperField[] {
     return [
       { label: '应用版本', value: APP_VERSION },
@@ -90,6 +98,46 @@ export struct DeveloperPage {
       .accessibilityText('可滚动的开发者页面')
     }
     .titleBar({
+      style: {
+        scrollEffectOpts: {
+          enableScrollEffect: false,
+          scrollEffectType: ScrollEffectType.GRADIENT_BLUR,
+          blurEffectiveStartOffset: LengthMetrics.vp(0),
+          blurEffectiveEndOffset: LengthMetrics.vp(20),
+        },
+        originalStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('sys.color.ohos_id_color_background'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary'),
+            },
+          },
+        },
+        scrollEffectStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary'),
+            },
+          },
+        },
+        systemMaterialEffect: this.immersiveTexture ? {
+          materialType: hdsMaterial.MaterialType.IMMERSIVE,
+          materialLevel: hdsMaterial.MaterialLevel.EXQUISITE,
+        } : undefined,
+      },
       content: {
         title: {
           mainTitle: '开发者信息',

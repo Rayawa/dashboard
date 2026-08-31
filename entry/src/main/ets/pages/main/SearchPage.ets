@@ -406,13 +406,6 @@ export struct SearchPage {
         Scroll(this.scroller) {
             Column({ space: 14 }) {
                 Blank().height(100).width('100%')
-                Text('名称搜索会完整展示所有匹配结果；结果加载后将静默校验最新数据。')
-                    .fontSize(13)
-                    .lineHeight(20)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .width('100%')
-                    .padding({ left: 4, right: 4 })
-                    .accessibilityText('名称搜索完整展示所有匹配结果，加载后静默校验数据')
 
                 Column({ space: 12 }) {
                     Search({
@@ -517,27 +510,6 @@ export struct SearchPage {
                     .accessibilityGroup(true)
                     .accessibilityText('应用搜索结果列表')
                 }
-
-                Column({ space: 8 }) {
-                    Text('支持的分享入口')
-                        .fontSize(17)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.v3_text_primary'))
-                        .width('100%')
-                        .accessibilityText('支持的分享入口')
-                    Text('• 唯一系统分享入口：自动识别分享内容并进入本页处理')
-                        .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
-                    Text('• 新应用：自动执行 simple 投稿并打开统一详情页')
-                        .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
-                    Text('• 已有应用：自动执行 query 更新并打开统一详情页')
-                        .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
-                }
-                .width('100%')
-                .padding(16)
-                .borderRadius(16)
-                .backgroundColor($r('app.color.v3_surface_alt'))
-                .accessibilityGroup(true)
-                .accessibilityText('唯一系统分享入口的自动投稿和更新说明')
 
                 Blank().height(96)
             }

@@ -1,29 +1,29 @@
 import {
-    BlurStrategy,
-    HdsNavigation,
-    HdsNavigationTitleMode,
-    HdsTabs,
-    HdsTabsController,
-    ScrollEffectType,
-    TitleSize,
+  BlurStrategy,
+  HdsNavigation,
+  HdsNavigationTitleMode,
+  HdsTabs,
+  HdsTabsController,
+  ScrollEffectType,
+  TitleSize,
 } from '@kit.UIDesignKit';
 import { curves, LengthMetrics } from '@kit.ArkUI';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { getFirstLaunch } from '../common/storage';
 import { consumeMainTab, getContinuationState, setContinuationView, setMainTab } from '../common/appState';
 import {
-    APP_STATE_KEY_DETAIL_TARGET,
-    CONTINUATION_ROUTE_DETAIL,
-    MAIN_TAB_APPS,
-    MAIN_TAB_DEFAULT,
-    MAIN_TAB_HOME,
-    MAIN_TAB_MY,
-    MAIN_TAB_SEARCH,
-    MAIN_TAB_S_STATION,
-    S_STATION_COMMAND_HOME,
-    S_STATION_COMMAND_NONE,
-    S_STATION_COMMAND_REFRESH,
-    S_STATION_COMMAND_SCROLL_TOP,
+  APP_STATE_KEY_DETAIL_TARGET,
+  CONTINUATION_ROUTE_DETAIL,
+  MAIN_TAB_APPS,
+  MAIN_TAB_DEFAULT,
+  MAIN_TAB_HOME,
+  MAIN_TAB_MY,
+  MAIN_TAB_S_STATION,
+  MAIN_TAB_SEARCH,
+  S_STATION_COMMAND_HOME,
+  S_STATION_COMMAND_NONE,
+  S_STATION_COMMAND_REFRESH,
+  S_STATION_COMMAND_SCROLL_TOP,
 } from '../common/constants';
 import type { AppRouteTarget } from '../common/types';
 import { warn } from '../component/warn';
@@ -78,11 +78,11 @@ struct Dashboard {
 
     private tabs(): MainTab[] {
         return [
-            { label: '网页S站', icon: $r('app.media.api') },
-            { label: '首页', icon: $r('app.media.startIcon') },
-            { label: '搜索', icon: $r('app.media.search') },
-            { label: '应用详情', icon: $r('app.media.log') },
-            { label: '我的', icon: $r('app.media.user') },
+            { label: '网页S站', icon: $r('sys.media.wifi_router_fill') },
+            { label: '首页', icon: $r('sys.media.return_home_fill') },
+            { label: '搜索', icon: $r('sys.media.ohos_ic_public_search_filled') },
+            { label: '应用详情', icon: $r('sys.media.rectangle_filled_and_line_horizontal_and_rectangle') },
+            { label: '我的', icon: $r('sys.media.person_badge_waveform') },
         ];
     }
 
@@ -134,7 +134,7 @@ struct Dashboard {
                 {
                     content: {
                         label: '刷新S站',
-                        icon: $r('app.media.refresh'),
+                        icon: $r('sys.symbol.arrow_2_circlepath'),
                         isEnabled: true,
                         action: (): void => this.dispatchSStationCommand(S_STATION_COMMAND_REFRESH),
                     },
@@ -142,7 +142,7 @@ struct Dashboard {
                 {
                     content: {
                         label: 'S站回到顶部',
-                        icon: $r('app.media.arrow_up'),
+                        icon: $r('sys.symbol.arrowshape_up_to_line'),
                         isEnabled: true,
                         action: (): void => this.dispatchSStationCommand(S_STATION_COMMAND_SCROLL_TOP),
                     },
@@ -154,7 +154,7 @@ struct Dashboard {
                 {
                     content: {
                         label: '刷新首页',
-                        icon: $r('app.media.refresh'),
+                        icon: $r('sys.symbol.arrow_2_circlepath'),
                         isEnabled: true,
                         action: (): void => this.refreshHome(),
                     },
@@ -174,7 +174,7 @@ struct Dashboard {
                 {
                     content: {
                         label: '刷新应用概况和应用列表',
-                        icon: $r('app.media.refresh'),
+                        icon: $r('sys.symbol.arrow_2_circlepath'),
                         isEnabled: true,
                         action: (): void => this.refreshApps(),
                     },
@@ -323,6 +323,7 @@ struct Dashboard {
                     .accessibilityText('我的标签页')
                 }
                 .barPosition(BarPosition.End)
+                .scrollable(false)
                 .vertical(false)
                 .barOverlap(true)
                 .blurStrategy(BlurStrategy.ENABLE)

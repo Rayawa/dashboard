@@ -72,25 +72,25 @@ export struct friendWeb {
           Column() {
             Blank().height(100).width('100%')
             Web({ src: 'about:blank', controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
-            .id('HmDashboard_FriendWeb')
-            .width('100%')
-            .layoutMode(WebLayoutMode.FIT_CONTENT)
-            .backgroundColor($r('app.color.backcolor'))
-            .onControllerAttached(() => {
-              try {
-                this.controller.setCustomUserAgent(customUserAgent);
-                if (this.url !== '') this.controller.loadUrl(this.url);
-              } catch (error) {
-                console.error('[Dashboard][pages/more/friendWeb][ERROR]', `初始化失败: ${JSON.stringify(error)}`);
-              }
-            })
-            .onProgressChange((event) => this.progress = event.newProgress)
-            .onPageBegin(() => this.loading = true)
-            .onPageEnd(() => this.loading = false)
-            .domStorageAccess(true)
-            .darkMode(WebDarkMode.Auto)
-            .forceDarkAccess(true)
-            .accessibilityText(`${this.title || '友情链接'}网页内容`)
+              .id('HmDashboard_FriendWeb')
+              .width('100%')
+              .layoutMode(WebLayoutMode.FIT_CONTENT)
+              .backgroundColor($r('app.color.backcolor'))
+              .onControllerAttached(() => {
+                try {
+                  this.controller.setCustomUserAgent(customUserAgent);
+                  if (this.url !== '') this.controller.loadUrl(this.url);
+                } catch (error) {
+                  console.error('[Dashboard][pages/more/friendWeb][ERROR]', `初始化失败: ${JSON.stringify(error)}`);
+                }
+              })
+              .onProgressChange((event) => this.progress = event.newProgress)
+              .onPageBegin(() => this.loading = true)
+              .onPageEnd(() => this.loading = false)
+              .domStorageAccess(true)
+              .darkMode(WebDarkMode.Auto)
+              .forceDarkAccess(true)
+              .accessibilityText(`${this.title || '友情链接'}网页内容`)
           }
           .width('100%')
         }
@@ -120,7 +120,7 @@ export struct friendWeb {
       content: {
         title: { mainTitle: this.title || '友情链接', mainTitleSize: TitleSize.TITLE_S },
         menu: { value: [
-          { content: { label: '刷新', icon: $r('app.media.refresh'), isEnabled: !this.loading,
+          { content: { label: '刷新', icon: $r('sys.symbol.arrow_2_circlepath'), isEnabled: !this.loading,
             action: () => this.refresh() } },
           { content: { label: '在浏览器打开', icon: $r('sys.symbol.worldclock'), isEnabled: true,
             action: () => this.openBrowser() } },
