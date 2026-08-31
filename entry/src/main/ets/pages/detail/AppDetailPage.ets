@@ -1,6 +1,7 @@
 import { common, Want } from '@kit.AbilityKit';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import {
+    hdsMaterial,
     HdsNavDestination,
     HdsNavDestinationTitleMode,
     ScrollEffectType,
@@ -247,6 +248,7 @@ export struct AppDetailPage {
     @State private errorMessage: string = '';
     @State private started: boolean = false;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
 
     private vibrate(): void {
         if (this.vibrationEnabled) {
@@ -713,6 +715,38 @@ export struct AppDetailPage {
                     blurEffectiveStartOffset: LengthMetrics.vp(0),
                     blurEffectiveEndOffset: LengthMetrics.vp(20),
                 },
+                originalStyle: {
+                    backgroundStyle: {
+                        backgroundColor: $r('sys.color.ohos_id_color_background'),
+                    },
+                    contentStyle: {
+                        titleStyle: {
+                            mainTitleColor: $r('sys.color.font_primary'),
+                        },
+                        menuStyle: {
+                            backgroundColor: $r('sys.color.comp_background_tertiary'),
+                            iconColor: $r('sys.color.icon_primary'),
+                        },
+                    },
+                },
+                scrollEffectStyle: {
+                    backgroundStyle: {
+                        backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
+                    },
+                    contentStyle: {
+                        titleStyle: {
+                            mainTitleColor: $r('sys.color.font_primary'),
+                        },
+                        menuStyle: {
+                            backgroundColor: $r('sys.color.comp_background_tertiary'),
+                            iconColor: $r('sys.color.icon_primary'),
+                        },
+                    },
+                },
+                systemMaterialEffect: this.immersiveTexture ? {
+                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE,
+                } : undefined,
             },
             content: {
                 title: {
@@ -724,7 +758,7 @@ export struct AppDetailPage {
                         {
                             content: {
                                 label: '更新应用数据',
-                                icon: $r('app.media.refresh'),
+                                icon: $r('sys.symbol.arrow_2_circlepath'),
                                 isEnabled: this.app !== undefined && !this.refreshing,
                                 action: () => {
                                     this.vibrate();

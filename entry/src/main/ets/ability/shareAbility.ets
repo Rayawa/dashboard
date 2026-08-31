@@ -9,7 +9,7 @@ import { APP_BUNDLE_NAME } from '../common/constants';
 export default class ShareAbility extends ShareExtensionAbility {
     async onSessionCreate(want: Want, session: UIExtensionContentSession): Promise<void> {
         try {
-            session.loadContent('abilityPages/loading');
+            session.loadContent('ability/loading');
         } catch (error) {
             console.warn('[Dashboard][ability/shareAbility][WARN]', `分享提示页加载失败: ${JSON.stringify(error)}`);
         }

@@ -193,7 +193,6 @@ export struct MyPage {
     }
 
     private tapVersion(): void {
-        this.vibrate();
         this.versionTapCount++;
         if (this.versionTapTimer >= 0) {
             clearTimeout(this.versionTapTimer);
@@ -234,11 +233,12 @@ export struct MyPage {
                             .height(100)
                             .borderRadius(22)
                             .accessibilityText('Dashboard应用看板图标')
+                            .margin({ bottom: 10 })
                         Text('Dashboard应用看板')
                             .fontSize(30)
                             .fontWeight(800)
                             .fontColor($r('app.color.diff_content'))
-                            .accessibilityText('鸿蒙应用看板')
+                            .accessibilityText('Dashboard应用看板')
                         Text('Harmony Dashboard')
                             .fontSize(20)
                             .fontWeight(600)
