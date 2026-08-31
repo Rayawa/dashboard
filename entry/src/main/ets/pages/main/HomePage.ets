@@ -112,7 +112,6 @@ export struct HomePage {
     @State private lastUpdated: string = '';
     @State private loaded: boolean = false;
     @State private recentApps: MarketApp[] = [];
-    @State private refreshing: boolean = false;
     @State private contentWidth: number = 0;
     private restoredScroll: boolean = false;
     private reloadAfterCurrent: boolean = false;
@@ -169,8 +168,6 @@ export struct HomePage {
             if (this.reloadAfterCurrent) {
                 this.reloadAfterCurrent = false;
                 setTimeout((): void => { this.load(true); }, 0);
-            } else {
-                this.refreshing = false;
             }
         }
     }
@@ -211,34 +208,30 @@ export struct HomePage {
     @Builder
     private totalRelationCard(): void {
         if (this.market) {
-            Column({ space: 12 }) {
-                Row() {
+            Column({ space: 14 }) {
+                Column({ space: 4 }) {
                     Text('应用总数').fontSize(16).fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
+                        .fontColor($r('app.color.v3_text_primary'))
                     Text(formatExactCount(this.market.app_count.apps + this.market.app_count.atomic_services))
-                        .fontSize(28).fontWeight(FontWeight.Bold).fontColor($r('app.color.diff_content'))
-                }.width('100%')
-                Row({ space: 8 }) {
+                        .fontSize(34).fontWeight(FontWeight.Bold).fontColor($r('app.color.diff_content'))
+                }.width('100%').alignItems(HorizontalAlign.Start)
+                Row({ space: 12 }) {
                     Column({ space: 4 }) {
                         Text('鸿蒙应用').fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text(formatExactCount(this.market.app_count.apps)).fontSize(19).fontWeight(FontWeight.Bold)
+                        Text(formatExactCount(this.market.app_count.apps)).fontSize(20).fontWeight(FontWeight.Bold)
                             .fontColor($r('app.color.diff_content'))
                     }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-                    Text('+').fontSize(20).fontColor($r('app.color.v3_text_secondary'))
                     Column({ space: 4 }) {
                         Text('元服务').fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text(formatExactCount(this.market.app_count.atomic_services)).fontSize(19)
+                        Text(formatExactCount(this.market.app_count.atomic_services)).fontSize(20)
                             .fontWeight(FontWeight.Bold).fontColor($r('app.color.v3_accent_cyan'))
                     }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-                    Text('=').fontSize(20).fontColor($r('app.color.v3_text_secondary'))
-                    Text(formatExactCount(this.market.app_count.apps + this.market.app_count.atomic_services))
-                        .fontSize(19).fontWeight(FontWeight.Bold).fontColor($r('app.color.diff_content'))
                 }.width('100%')
             }
             .width('100%').padding(18).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
             .border({ width: 1, color: $r('app.color.nd_card_border') })
             .accessibilityGroup(true)
-            .accessibilityText(`应用总数${this.market.app_count.apps + this.market.app_count.atomic_services}，等于鸿蒙应用${this.market.app_count.apps}加元服务${this.market.app_count.atomic_services}`)
+            .accessibilityText(`应用总数${this.market.app_count.apps + this.market.app_count.atomic_services}，其中鸿蒙应用${this.market.app_count.apps}，元服务${this.market.app_count.atomic_services}`)
         }
     }
 
@@ -309,8 +302,7 @@ export struct HomePage {
     }
 
     build() {
-        Refresh({ refreshing: $$this.refreshing }) {
-          Scroll(this.scroller) {
+        Scroll(this.scroller) {
             Column({ space: 14 }) {
                 Blank().height(100).width('100%')
                 Row() {
@@ -441,12 +433,6 @@ export struct HomePage {
               }
           })
           .backgroundColor($r('app.color.background'))
-          .accessibilityText('可下拉刷新的首页')
-        }
-        .width('100%').height('100%')
-        .onRefreshing((): void => {
-            this.refreshing = true;
-            this.load(true);
-        })
+          .accessibilityText('首页')
     }
 }

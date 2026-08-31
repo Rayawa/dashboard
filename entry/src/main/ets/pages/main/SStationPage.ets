@@ -26,7 +26,7 @@ export struct SStationPage {
     @State private loading: boolean = true;
     @State private errorMessage: string = '';
     @State private currentUrl: string = SBaseURL.toString();
-    @State private refreshing: boolean = false;
+    @State private initialUrl: string = SBaseURL.toString();
     private pendingScrollDistance: number = 0;
     private restoredScroll: boolean = false;
 
@@ -36,6 +36,7 @@ export struct SStationPage {
             if (continuation.mainTab === MAIN_TAB_S_STATION &&
                 continuation.routeName === CONTINUATION_ROUTE_MAIN) {
                 this.currentUrl = continuation.pageUrl || SBaseURL.toString();
+                this.initialUrl = this.currentUrl;
                 this.pendingScrollDistance = Math.max(0, continuation.scrollDistance);
             }
         } catch (error) {
@@ -82,8 +83,7 @@ export struct SStationPage {
 
     build() {
         Stack({ alignContent: Alignment.Top }) {
-            Refresh({ refreshing: $$this.refreshing }) {
-              Scroll(this.scroller) {
+            Scroll(this.scroller) {
                 Column() {
                     Blank()
                         .height(100)
@@ -91,22 +91,18 @@ export struct SStationPage {
                         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
                         .accessibilityText('S站标题栏安全区域')
                     Web({
-                        src: 'about:blank',
+                        src: this.initialUrl,
                         controller: this.controller,
                         renderMode: RenderMode.SYNC_RENDER,
                     })
                         .id('HmDashboard_SStation')
                         .width('100%')
                         .layoutMode(WebLayoutMode.FIT_CONTENT)
-                        .nestedScroll({
-                            scrollForward: NestedScrollMode.SELF_FIRST,
-                            scrollBackward: NestedScrollMode.SELF_FIRST,
-                        })
+                        .overScrollMode(OverScrollMode.NEVER)
                         .backgroundColor($r('app.color.backcolor'))
                         .onControllerAttached(() => {
                             try {
                                 this.controller.setCustomUserAgent(customUserAgent);
-                                this.controller.loadUrl(this.currentUrl);
                             } catch (error) {
                                 console.warn('[Dashboard][pages/main/SStationPage][WARN]',
                                     `初始化ArkWeb失败: ${JSON.stringify(error)}`);
@@ -128,7 +124,6 @@ export struct SStationPage {
                         })
                         .onPageEnd((event) => {
                             this.loading = false;
-                            this.refreshing = false;
                             this.errorMessage = '';
                             if (event?.url && event.url !== 'about:blank') {
                                 this.currentUrl = event.url;
@@ -150,7 +145,6 @@ export struct SStationPage {
                                 return;
                             }
                             this.loading = false;
-                            this.refreshing = false;
                             this.errorMessage = '网页主页面加载失败，请检查网络连接后重试';
                             console.warn('[Dashboard][pages/main/SStationPage][WARN]',
                                 `S站主页面加载失败: ${JSON.stringify(event.error)}`);
@@ -173,21 +167,6 @@ export struct SStationPage {
                   setContinuationScrollDistance(this.scroller.currentOffset().yOffset);
               })
               .accessibilityText('可滚动的S站网页视图')
-            }
-            .width('100%').height('100%')
-            .onRefreshing((): void => {
-                this.refreshing = true;
-                this.errorMessage = '';
-                this.loading = true;
-                try {
-                    this.controller.loadUrl(this.currentUrl);
-                } catch (error) {
-                    this.refreshing = false;
-                    console.warn('[Dashboard][pages/main/SStationPage][WARN]',
-                        `下拉刷新S站失败: ${JSON.stringify(error)}`);
-                }
-            })
-            .accessibilityText('下拉可刷新S站')
 
             if (this.loading) {
                 Progress({ value: this.progress, total: 100 })

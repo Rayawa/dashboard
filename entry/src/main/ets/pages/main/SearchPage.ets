@@ -58,10 +58,23 @@ export struct SearchPage {
     @State private resultApp: MarketApp | undefined = undefined;
     @State private fromCache: boolean = false;
     @State private history: string[] = [];
+    @State private recommendedApps: MarketApp[] = [];
     private activeTarget: AppRouteTarget = {};
     private openDetailAfterSearch: boolean = false;
     private backgroundUpdateToken: number = 0;
-    private recommendations: string[] = ['微信', '支付宝', '抖音', '小红书', '高德地图', '华为视频'];
+
+    private async loadRecommendations(): Promise<void> {
+        try {
+            const result = await fetchAppsPage(1, 8, 'download_count', true);
+            const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
+            if (response.success && response.data) {
+                this.recommendedApps = response.data.data ?? [];
+            }
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/SearchPage][WARN]',
+                `搜索推荐应用加载失败: ${(error as Error).message}`);
+        }
+    }
 
     private vibrate(): void { if (this.vibrationEnabled) vibration.dotVibration(); }
     private setResults(results: MarketApp[]): void {
@@ -276,6 +289,29 @@ export struct SearchPage {
     }
 
     @Builder
+    private recommendCard(app: MarketApp): void {
+        Column({ space: 5 }) {
+            Image(app.icon_url || $r('app.media.startIcon'))
+                .width(42).height(42).borderRadius(10).objectFit(ImageFit.Cover)
+                .alt($r('app.media.startIcon'))
+                .accessibilityText(`${app.name || '未知应用'}图标`)
+            Text(app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
+                .fontColor($r('app.color.v3_text_primary')).maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+            Text(app.developer_name || '未知开发者').fontSize(11)
+                .fontColor($r('app.color.v3_text_secondary')).maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .width('48%').height(104).padding({ top: 12, bottom: 10 }).borderRadius(14)
+        .backgroundColor($r('app.color.v3_surface'))
+        .border({ width: 1, color: $r('app.color.nd_card_border') })
+        .margin({ bottom: 10 })
+        .onClick(() => this.openDetail(app))
+        .accessibilityGroup(true)
+        .accessibilityText(`推荐应用${app.name || '未知应用'}，开发者${app.developer_name || '未知'}`)
+    }
+
+    @Builder
     private resultCard(app: MarketApp): void {
         Row({ space: 12 }) {
             Image(app.icon_url || $r('app.media.startIcon'))
@@ -304,24 +340,28 @@ export struct SearchPage {
 
     build() {
         Column({ space: 12 }) {
-            Blank().height(92).width('100%')
-            Row({ space: 10 }) {
-                Button({ type: ButtonType.Circle, stateEffect: true }) {
-                    SymbolGlyph($r('sys.symbol.chevron_left'))
-                        .fontSize('24vp')
-                        .fontColor([$r('app.color.v3_text_primary')])
-                }
-                    .width(44).height(44).backgroundColor(Color.Transparent)
-                    .onClick(() => { this.vibrate(); if (this.onClose) this.onClose(); })
-                    .accessibilityText('返回应用详情')
-                Search({ value: this.input, placeholder: '应用名称 / 包名 / App ID / 应用市场链接' })
-                    .layoutWeight(1).height(48).defaultFocus(true).searchButton('搜索')
-                    .backgroundColor($r('app.color.v3_surface_alt'))
-                    .geometryTransition(this.geometryId, { follow: true })
-                    .onChange((value: string) => this.input = value)
-                    .onSubmit(() => { this.vibrate(); this.search(); })
-                    .accessibilityText('搜索应用名称包名App ID或应用市场链接')
-            }.width('100%').padding({ left: 16, right: 20 })
+            Column({ space: 12 }) {
+                Blank().height(92).width('100%')
+                Row({ space: 10 }) {
+                    Button({ type: ButtonType.Circle, stateEffect: true }) {
+                        SymbolGlyph($r('sys.symbol.chevron_left'))
+                            .fontSize('24vp')
+                            .fontColor([$r('app.color.v3_text_primary')])
+                    }
+                        .width(44).height(44).backgroundColor(Color.Transparent)
+                        .onClick(() => { this.vibrate(); if (this.onClose) this.onClose(); })
+                        .accessibilityText('返回应用详情')
+                    Search({ value: this.input, placeholder: '应用名称 / 包名 / App ID / 应用市场链接' })
+                        .layoutWeight(1).height(48).enableKeyboardOnFocus(false).searchButton('搜索')
+                        .backgroundColor($r('app.color.v3_surface_alt'))
+                        .geometryTransition(this.geometryId, { follow: true })
+                        .onChange((value: string) => this.input = value)
+                        .onSubmit(() => { this.vibrate(); this.search(); })
+                        .accessibilityText('搜索应用名称包名App ID或应用市场链接')
+                }.width('100%').padding({ left: 16, right: 20 })
+            }
+            .width('100%')
+            .accessibilityText('搜索栏区域')
 
             if (this.loading || this.errorMessage.length > 0 || this.resultCount > 0) {
                 Row({ space: 8 }) {
@@ -339,31 +379,33 @@ export struct SearchPage {
             }
 
             if (!this.loading && this.resultCount === 0) {
-                Scroll() {
-                    Column({ space: 18 }) {
-                        if (this.history.length > 0) {
-                            Column({ space: 10 }) {
-                                Row() {
-                                    Text('搜索历史').fontSize(18).fontWeight(FontWeight.Bold)
-                                        .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
-                                    Button('删除全部').height(34).fontSize(12).fontColor($r('app.color.diff_content'))
-                                        .backgroundColor(Color.Transparent).onClick(() => { this.clearHistory(); })
-                                        .accessibilityText('删除全部搜索历史')
-                                }.width('100%')
-                                Flex({ wrap: FlexWrap.Wrap }) {
-                                    ForEach(this.history, (value: string) => this.tagButton(value, '搜索历史'))
-                                }.width('100%')
+                Column({ space: 12 }) {
+                    if (this.history.length > 0) {
+                        Column({ space: 10 }) {
+                            Row() {
+                                Text('搜索历史').fontSize(18).fontWeight(FontWeight.Bold)
+                                    .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
+                                Button('删除全部').height(34).fontSize(12).fontColor($r('app.color.diff_content'))
+                                    .backgroundColor(Color.Transparent).onClick(() => { this.clearHistory(); })
+                                    .accessibilityText('删除全部搜索历史')
                             }.width('100%')
-                        }
+                            Flex({ wrap: FlexWrap.Wrap }) {
+                                ForEach(this.history, (value: string) => this.tagButton(value, '搜索历史'))
+                            }.width('100%')
+                        }.width('100%')
+                    }
+                    if (this.recommendedApps.length > 0) {
                         Column({ space: 10 }) {
                             Text('搜索推荐').fontSize(18).fontWeight(FontWeight.Bold)
                                 .fontColor($r('app.color.v3_text_primary')).width('100%')
-                            Flex({ wrap: FlexWrap.Wrap }) {
-                                ForEach(this.recommendations, (value: string) => this.tagButton(value, '搜索推荐'))
+                            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
+                                ForEach(this.recommendedApps, (app: MarketApp) => {
+                                    this.recommendCard(app)
+                                }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
                             }.width('100%')
                         }.width('100%')
-                    }.width('100%').padding({ left: 24, right: 24, bottom: 40 })
-                }.layoutWeight(1).width('100%').scrollBar(BarState.Off)
+                    }
+                }.width('100%').padding({ left: 24, right: 24, bottom: 40 })
             } else if (this.resultCount > 0) {
                 Grid() {
                     LazyForEach(this.resultSource, (app: MarketApp) => {
@@ -380,8 +422,18 @@ export struct SearchPage {
             }
         }
         .width('100%').height('100%').backgroundColor($r('app.color.background'))
+        .gesture(
+            PanGesture({ fingers: 1, direction: PanDirection.Vertical })
+                .onActionEnd((event: GestureEvent): void => {
+                    if (Math.abs(event.offsetY) >= 50) {
+                        this.vibrate();
+                        if (this.onClose) { this.onClose(); }
+                    }
+                })
+        )
         .onAppear(() => {
             getSearchHistory().then((history: string[]) => { this.history = history; }).catch(() => {});
+            this.loadRecommendations();
             this.consumePendingTarget();
         })
         .accessibilityText('应用搜索界面')

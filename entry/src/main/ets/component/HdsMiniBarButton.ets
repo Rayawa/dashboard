@@ -81,7 +81,7 @@ export struct HdsMiniBarButton {
           gradientMask: { maskColor: Color.Transparent },
           barBottomMargin: 0,
           barSideMargin: 0,
-          lightColor: $r('app.color.diff_content'),
+          lightColor: $r('app.color.light_color'),
           systemMaterialEffect: {
             materialType: this.materialType,
             materialLevel: this.materialLevel,

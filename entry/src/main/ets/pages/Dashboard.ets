@@ -70,6 +70,8 @@ struct Dashboard {
     @State private mainActionVersion: number = 0;
     @State private appsSearchCommandVersion: number = 0;
     @State private appsTitleSearchVisible: boolean = false;
+    @State private appsSearchOpen: boolean = false;
+    @State private appsSearchCloseVersion: number = 0;
     @State private sStationCommand: number = S_STATION_COMMAND_NONE;
     @State private sStationCommandVersion: number = 0;
 
@@ -198,6 +200,14 @@ struct Dashboard {
         this.handlePageShow();
     }
 
+    onBackPress(): boolean {
+        if (this.appsSearchOpen) {
+            this.appsSearchCloseVersion++;
+            return true;
+        }
+        return false;
+    }
+
     @Builder
     destinationBuilder(name: string) {
         if (name === 'AppDetailPage') {
@@ -253,8 +263,12 @@ struct Dashboard {
                             scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
                             requestVersion: this.searchRequestVersion,
                             searchCommandVersion: this.appsSearchCommandVersion,
+                            searchCloseVersion: this.appsSearchCloseVersion,
                             onSearchVisibilityChanged: (visible: boolean): void => {
                                 this.appsTitleSearchVisible = visible;
+                            },
+                            onSearchOpenChanged: (open: boolean): void => {
+                                this.appsSearchOpen = open;
                             },
                         })
                     }
