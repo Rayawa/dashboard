@@ -34,6 +34,10 @@
       "value": "#1D2328"
     },
     {
+      "name": "s_station_placeholder",
+      "value": "#030712"
+    },
+    {
       "name": "navcolor",
       "value": "#FF0B131F"
     },

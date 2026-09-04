@@ -1,6 +1,5 @@
 import {
   HdsListItemCard,
-  hdsEffect,
   HdsNavDestination,
   HdsNavDestinationTitleMode,
   IconSize,
@@ -10,7 +9,7 @@ import {
   TitleSize
 } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
-import { curves, LengthMetrics, PromptAction, TextModifier } from '@kit.ArkUI';
+import { LengthMetrics, PromptAction, TextModifier } from '@kit.ArkUI';
 import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } from '../../common/constants';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
@@ -43,7 +42,6 @@ struct friend {
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
     hdsMaterial.MaterialLevel.SMOOTH;
   private isExiting: boolean = false;
-  @State private pressedItem: string = '';
 
   private jumpToMarket(appId: string): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -113,19 +111,6 @@ struct friend {
           accessibilityText: `打开友情链接${site.title}`,
         },
       })
-      .scale({ x: this.pressedItem === site.title ? 0.98 : 1,
-        y: this.pressedItem === site.title ? 0.98 : 1 })
-      .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-      .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-        sourceType: this.pressedItem === site.title ?
-          hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-        options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-      }).buildEffect())
-      .onTouch((event: TouchEvent): void => {
-        if (event.type === TouchType.Down) this.pressedItem = site.title;
-        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedItem = '';
-      })
       Divider()
         .strokeWidth(0.5)
         .color($r("app.color.border"))
@@ -162,19 +147,6 @@ struct friend {
         accessibilityOptions: {
           accessibilityText: `在应用市场打开${site.title}`,
         },
-      })
-      .scale({ x: this.pressedItem === site.title ? 0.98 : 1,
-        y: this.pressedItem === site.title ? 0.98 : 1 })
-      .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-      .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-        sourceType: this.pressedItem === site.title ?
-          hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-        options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-      }).buildEffect())
-      .onTouch((event: TouchEvent): void => {
-        if (event.type === TouchType.Down) this.pressedItem = site.title;
-        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedItem = '';
       })
       Divider()
         .strokeWidth(0.5)
