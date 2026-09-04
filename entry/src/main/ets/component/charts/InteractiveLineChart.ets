@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit';
+import { hdsEffect } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
 
 export interface LineChartPoint {
@@ -29,7 +30,9 @@ export struct InteractiveLineChart {
     @State private selected: number = 0;
     @State private zoom: number = 1;
     @State private panOffset: number = 0;
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @State private pressed: boolean = false;
+    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     private zoomAtGestureStart: number = 1;
     private panAtGestureStart: number = 0;
     private canvasReady: boolean = false;
@@ -125,17 +128,51 @@ export struct InteractiveLineChart {
     }
 
     private dimensions(): number[] {
-        const left = this.responsiveAxisFont && this.canvasWidth < 600 ? 68 :
-            (this.responsiveAxisFont && this.canvasWidth < 840 ? 64 : 60);
+        const left = this.responsiveAxisFont && this.canvasWidth < 600 ? 50 :
+            (this.responsiveAxisFont && this.canvasWidth < 840 ? 58 : 60);
         const right = 10;
         return [left, right, Math.max(1, this.canvasWidth - left - right)];
     }
 
     private axisFontSize(): number {
         if (!this.responsiveAxisFont) return 15;
-        if (this.canvasWidth < 600) return 17;
-        if (this.canvasWidth < 840) return 16;
-        return 15;
+        if (this.canvasWidth < 600) return 11;
+        if (this.canvasWidth < 840) return 13;
+        return 14;
+    }
+
+    private dateFontSize(): number {
+        if (!this.responsiveAxisFont) return 15;
+        if (this.canvasWidth < 600) return 10;
+        if (this.canvasWidth < 840) return 12;
+        return 13;
+    }
+
+    private bottomAxisSpace(): number {
+        if (!this.responsiveAxisFont) return 58;
+        if (this.canvasWidth < 600) return 46;
+        if (this.canvasWidth < 840) return 52;
+        return 56;
+    }
+
+    private dateBaselineInset(): number {
+        if (!this.responsiveAxisFont) return 14;
+        if (this.canvasWidth < 600) return 22;
+        if (this.canvasWidth < 840) return 25;
+        return 28;
+    }
+
+    private dateLabelSpacing(): number {
+        if (!this.responsiveAxisFont) return 82;
+        if (this.canvasWidth < 600) return 96;
+        if (this.canvasWidth < 840) return 88;
+        return 82;
+    }
+
+    private summaryColumns(): number {
+        if (this.canvasWidth < 600) return 2;
+        if (this.canvasWidth < 840) return 3;
+        return 4;
     }
 
     private maxPan(zoom: number = this.zoom): number {
@@ -219,7 +256,7 @@ export struct InteractiveLineChart {
         const left = dimensions[0];
         const drawWidth = dimensions[2];
         const top = 18;
-        const bottom = 58;
+        const bottom = this.bottomAxisSpace();
         const drawHeight = Math.max(1, height - top - bottom);
         const baseline = top + drawHeight;
         const maximum = this.maximum();
@@ -283,7 +320,9 @@ export struct InteractiveLineChart {
             }
         }
 
-        const labelStep = Math.max(1, Math.ceil(labels.length / Math.max(2, Math.floor(drawWidth / 82))));
+        this.context.font = `${this.dateFontSize()}vp sans-serif`;
+        const labelStep = Math.max(1,
+            Math.ceil(labels.length / Math.max(2, Math.floor(drawWidth / this.dateLabelSpacing()))));
         for (let index = 0; index < labels.length; index++) {
             const x = this.pointX(index);
             if (x < left - 6 || x > left + drawWidth + 6) continue;
@@ -291,7 +330,7 @@ export struct InteractiveLineChart {
                 this.context.fillStyle = textColor;
                 this.context.textAlign = 'center';
                 this.context.save();
-                this.context.translate(x, height - 14);
+                this.context.translate(x, height - this.dateBaselineInset());
                 this.context.rotate(-Math.PI / 5);
                 this.context.fillText(labels[index].label, 0, 0);
                 this.context.restore();
@@ -316,29 +355,27 @@ export struct InteractiveLineChart {
     @Builder
     private seriesSummary(): void {
         Column({ space: 8 }) {
-          Text(this.selectedDate()).fontSize(15).fontWeight(FontWeight.Medium)
+          Text(this.selectedDate()).fontSize(this.responsiveAxisFont && this.canvasWidth < 600 ? 13 : 15)
+            .fontWeight(FontWeight.Medium)
             .fontColor($r('app.color.v3_text_primary')).width('100%')
-          Scroll() {
-            Row({ space: 8 }) {
-              ForEach(this.sourceSeries(), (chartSeries: LineChartSeries) => {
+          GridRow({ columns: this.summaryColumns(), gutter: { x: 6, y: 6 } }) {
+            ForEach(this.sourceSeries(), (chartSeries: LineChartSeries) => {
+              GridCol({ span: 1 }) {
                 Row({ space: 7 }) {
                   Row().width(10).height(10).borderRadius(5).backgroundColor(chartSeries.color)
-                  Text(chartSeries.label).fontSize(14).fontColor($r('app.color.v3_text_secondary'))
+                  Text(chartSeries.label).fontSize(13).fontColor($r('app.color.v3_text_secondary'))
                   Blank()
-                  Text(this.selectedSeriesValue(chartSeries)).fontSize(14).fontWeight(FontWeight.Medium)
+                  Text(this.selectedSeriesValue(chartSeries)).fontSize(13).fontWeight(FontWeight.Medium)
                     .fontColor($r('app.color.v3_text_primary'))
                 }
-                .width(148).padding({ left: 9, right: 9, top: 8, bottom: 8 })
+                .width('100%').padding({ left: 8, right: 8, top: 7, bottom: 7 })
                 .borderRadius(10).backgroundColor($r('app.color.v3_surface_alt'))
                 .accessibilityText(`${chartSeries.label}，${this.selectedSeriesValue(chartSeries)}`)
-              }, (chartSeries: LineChartSeries) => chartSeries.label)
-            }
+              }
+            }, (chartSeries: LineChartSeries) => chartSeries.label)
           }
           .width('100%')
-          .scrollable(ScrollDirection.Horizontal)
-          .scrollBar(BarState.Off)
-          .edgeEffect(EdgeEffect.None)
-          .accessibilityText('可左右滑动查看各API版本当前占比')
+          .accessibilityText('平铺显示各API版本当前占比')
         }.width('100%')
     }
 
@@ -351,6 +388,13 @@ export struct InteractiveLineChart {
             if (this.pointCount() > 0) {
                 Canvas(this.context)
                     .width('100%').height(this.chartHeight)
+                    .scale({ x: this.pressed ? 0.995 : 1, y: this.pressed ? 0.995 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+                        sourceType: this.pointLight,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                        options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
+                    }).buildEffect())
                     .onReady(() => {
                         this.canvasReady = true;
                         this.startEntranceAnimation();
@@ -364,19 +408,32 @@ export struct InteractiveLineChart {
                         }
                     })
                     .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) {
+                            this.pressed = true;
+                            this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
+                        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressed = false;
+                            this.pointLight = hdsEffect.PointLightSourceType.NONE;
+                        }
                         if (event.touches.length > 0 && (event.type === TouchType.Down || event.type === TouchType.Move)) {
                             this.selectAt(event.touches[0].x);
                         }
                     })
                     .gesture(GestureGroup(GestureMode.Parallel,
                         PanGesture({ fingers: 1, direction: PanDirection.Horizontal })
-                            .onActionStart((): void => { this.panAtGestureStart = this.panOffset; })
+                            .onActionStart((): void => {
+                                this.panAtGestureStart = this.panOffset;
+                                if (this.vibrationLevel > 0) vibration.dotVibration();
+                            })
                             .onActionUpdate((event: GestureEvent): void => {
                                 this.panOffset = this.clampPan(this.panAtGestureStart - event.offsetX);
                                 this.draw();
                             }),
                         PinchGesture({ fingers: 2, distance: 4 })
-                            .onActionStart((): void => { this.zoomAtGestureStart = this.zoom; })
+                            .onActionStart((): void => {
+                                this.zoomAtGestureStart = this.zoom;
+                                if (this.vibrationLevel > 0) vibration.dotVibration();
+                            })
                             .onActionUpdate((event: GestureEvent): void => {
                                 const nextZoom = Math.max(1, Math.min(4, this.zoomAtGestureStart * event.scale));
                                 const oldMax = this.maxPan(this.zoom);

@@ -1,4 +1,5 @@
 import { curves, PromptAction } from '@kit.ArkUI';
+import { hdsEffect } from '@kit.UIDesignKit';
 import {
     CONTENT_MAX_WIDTH,
     CONTINUATION_ROUTE_MAIN,
@@ -11,6 +12,8 @@ import { fetchAppsPage, fetchMarketInfo } from '../../common/MarketApi';
 import { formatDateTime, formatExactCount } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
 import { appIconGeometryId } from '../../common/sharedTransition';
+import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
+import { vibration } from '../../common/vibration';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
 
 interface HomeStat {
@@ -96,6 +99,9 @@ struct HomeStatCard {
 struct RecentAppCard {
     app: MarketApp = {} as MarketApp;
     onOpen: (app: MarketApp) => void = () => {};
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @State private pressed: boolean = false;
+    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
     build() {
         Row({ space: 12 }) {
@@ -104,15 +110,17 @@ struct RecentAppCard {
                     .width('100%')
                     .height('100%')
                     .objectFit(ImageFit.Cover)
+                    .borderRadius(12)
+                    .clip(true)
                     .alt($r('app.media.startIcon'))
                     .accessibilityText(`${this.app.name || '未知应用'}图标`)
+                    .geometryTransition(appIconGeometryId(this.app, 'home'), { follow: true })
+                    .transition(TransitionEffect.OPACITY)
             }
                 .width(48)
                 .height(48)
                 .borderRadius(12)
                 .clip(true)
-                .geometryTransition(appIconGeometryId(this.app, 'home'), { follow: true })
-                .transition(TransitionEffect.OPACITY)
             Column({ space: 4 }) {
                 Text(this.app.name || '未知应用')
                     .fontSize(16)
@@ -142,7 +150,26 @@ struct RecentAppCard {
         .borderRadius(16)
         .backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .onClick(() => this.onOpen(this.app))
+        .scale({ x: this.pressed ? 0.975 : 1, y: this.pressed ? 0.975 : 1 })
+        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+        .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+            sourceType: this.pointLight,
+            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+            options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+        }).buildEffect())
+        .onTouch((event: TouchEvent): void => {
+            if (event.type === TouchType.Down) {
+                this.pressed = true;
+                this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressed = false;
+                this.pointLight = hdsEffect.PointLightSourceType.NONE;
+            }
+        })
+        .onClick(() => {
+            if (this.vibrationLevel > 0) vibration.dotVibration();
+            this.onOpen(this.app);
+        })
         .accessibilityGroup(true)
         .accessibilityText(`新收录应用${this.app.name || '未知应用'}，点击查看详情`)
     }
@@ -155,6 +182,7 @@ export struct HomePage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     @StorageLink('username') private username: string = '';
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     @State private market: MarketInfo | undefined = undefined;
     @State private loading: boolean = false;
     @State private errorMessage: string = '';
@@ -165,6 +193,7 @@ export struct HomePage {
     @State private recentApps: MarketApp[] = [];
     @State private contentWidth: number = 0;
     @State private transitionEffect: TransitionEffect = TransitionEffect.IDENTITY;
+    @State private pageVisible: boolean = false;
     private restoredScroll: boolean = false;
     private reloadAfterCurrent: boolean = false;
 
@@ -309,6 +338,7 @@ export struct HomePage {
             .border({ width: 1, color: $r('app.color.nd_card_border') })
             .accessibilityGroup(true)
             .accessibilityText(`应用总数${this.market.app_count.apps + this.market.app_count.atomic_services}，其中鸿蒙应用${this.market.app_count.apps}，元服务${this.market.app_count.atomic_services}`)
+            .transition(contentEnterTransition(10))
         }
     }
 
@@ -323,6 +353,7 @@ export struct HomePage {
         }) {
             ForEach(this.stats(), (stat: HomeStat) => {
                 GridCol({ span: { xs: 2, sm: 4, md: 6 } }) { HomeStatCard({ stat }) }
+                    .transition(contentEnterTransition(10))
             }, (stat: HomeStat) => stat.label)
         }.width('100%').accessibilityText('开发者和专题数据概览')
     }
@@ -353,6 +384,7 @@ export struct HomePage {
             .border({ width: 1, color: $r('app.color.nd_card_border') })
             .accessibilityGroup(true)
             .accessibilityText(this.market.sync_status.is_syncing_all ? '服务当前正在全量同步' : '服务当前状态正常')
+            .transition(contentEnterTransition(10))
         }
     }
 
@@ -378,6 +410,7 @@ export struct HomePage {
                         app,
                         onOpen: (target: MarketApp) => this.openDetail(target),
                     })
+                    .transition(contentEnterTransition(10))
                 }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
             }.width('100%').accessibilityGroup(true).accessibilityText('最近收录的应用')
         }
@@ -394,7 +427,7 @@ export struct HomePage {
             Text('欢迎来到鸿蒙应用市场数据看板')
                 .fontSize(14)
                 .fontColor($r('app.color.v3_text_secondary'))
-                .accessibilityText('欢迎来到鸿蒙应用市场数据看板')
+                .accessibilityText('欢迎来到Dashboard应用看板')
         }
         .width('100%')
         .alignItems(HorizontalAlign.Start)
@@ -423,6 +456,7 @@ export struct HomePage {
             .backgroundColor($r('app.color.v3_warning_bg'))
             .accessibilityGroup(true)
             .accessibilityText('离线缓存提示')
+            .transition(contentEnterTransition(8))
         }
 
         if (this.loading && !this.market) {
@@ -447,7 +481,10 @@ export struct HomePage {
                     .accessibilityText(this.errorMessage)
                 Button('重试')
                     .backgroundColor($r('app.color.diff_content'))
-                    .onClick(() => { this.load(true); })
+                    .onClick(() => {
+                        if (this.vibrationLevel > 0) vibration.dotVibration();
+                        this.load(true);
+                    })
                     .accessibilityText('重试加载首页')
             }
             .padding(18)
@@ -455,6 +492,8 @@ export struct HomePage {
             .borderRadius(14)
             .backgroundColor($r('app.color.v3_surface'))
             .accessibilityGroup(true)
+            .accessibilityText(this.errorMessage)
+            .transition(contentEnterTransition(8))
         }
     }
 
@@ -479,6 +518,8 @@ export struct HomePage {
     }
 
     private handleAppear(): void {
+        this.pageVisible = false;
+        runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
         if (!this.loaded) this.load(false);
         this.restoreScrollPosition();
     }
@@ -572,11 +613,14 @@ export struct HomePage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.background'))
+        .opacity(this.pageVisible ? 1 : 0.01)
+        .translate({ y: this.pageVisible ? 0 : 12 })
         .transition(this.transitionEffect)
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })
         .onAppear(() => this.handleAppear())
+        .onDisAppear(() => { this.pageVisible = false; })
         .accessibilityText('首页')
     }
 }

@@ -4,6 +4,7 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { popPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
+import { pageTransition } from '../../common/motion';
 
 interface UpdateLog {
     version: string;
@@ -18,7 +19,7 @@ interface UpdateLog {
 struct appLog {
     @Consume('pageStack') pageStack: NavPathStack;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 0;
     @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
         hdsMaterial.MaterialLevel.SMOOTH;
     private updateLogs: UpdateLog[] = [
@@ -37,11 +38,11 @@ struct appLog {
                 "应用列表新增鸿蒙应用、元服务、分类、标签、开发者筛选，宽屏表格自动扩展开发者列",
                 "搜索结果使用LazyForEach纵向加载并按设备宽度自适应列数，新增搜索历史、删除与推荐",
                 "中宽屏将目标与最低SDK合并为“应用SDK分布”卡片并共用图例；窄屏图表独立展开，下划线灰色“其他”可切换隐藏",
-                "Harmony API历史将全部版本叠加在同一折线图中，扩展配色并使用可横向浏览的当前值列表",
+                "Harmony API历史将全部版本叠加在同一折线图中，坐标轴按屏幕宽度缩放，当前值列表直接响应式平铺",
                 "折线图放大坐标文字并适配窄屏，支持触摸选点、双指缩放和单指横移",
                 "首页与我的页面在宽屏按四比六分栏，左侧信息固定居中、右侧内容独立滚动；最近收录增加到12条，手机端保留原有纵向布局",
                 "清除缓存项恢复说明问号并显示缓存文件总大小",
-                "原生主页面和详情页补齐振动反馈，并支持关闭、轻触与硬朗三档振动强度；仅允许3.0.0及以上版本接续",
+                "原生主页面和详情页补齐振动反馈，并支持关闭、灵动与硬朗三档振动强度；仅允许3.0.0及以上版本接续",
                 "全部子页面统一使用 Scroll、MINI 标题模式、TITLE_S 主标题和系统上下安全区忽略配置",
                 "S站、首页和应用详情改用顶部继续下拉刷新；应用详情标题栏不再显示教程或刷新按钮",
                 "统一所有API请求的User-Agent，修复S站子资源失败误报与网页显示比例问题",
@@ -428,10 +429,11 @@ struct appLog {
             .accessibilityText('可滚动的应用更新日志')
         }
         .onBackPressed(() => {
-                    if(this.vibrationLevel > 0) vibration.dotVibration()
+            if(this.vibrationLevel > 0) vibration.backVibration()
             return false;
         })
         .titleMode(HdsNavDestinationTitleMode.MINI)
+        .transition(pageTransition())
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .titleBar({
             style: {
@@ -530,7 +532,7 @@ struct appLog {
                 },
                 backIcon: {
                     action: () => {
-                                if(this.vibrationLevel > 0) vibration.dotVibration()
+                        if(this.vibrationLevel > 0) vibration.backVibration()
                         popPathSafely(this.pageStack, 'pages/more/appLog')
                     },
                 },

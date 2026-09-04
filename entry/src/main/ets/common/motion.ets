@@ -1,0 +1,40 @@
+import { curves, UIContext } from '@kit.ArkUI';
+
+/**
+ * Dashboard 的统一动效节奏。
+ *
+ * 交互反馈保持短促，页面/组件进出使用无明显回弹的弹簧；共享元素仍由
+ * geometryTransition 接管尺寸与位置，避免两套位移动画相互竞争。
+ */
+export const CONTENT_ENTER_DURATION_MS: number = 280;
+export const PAGE_TRANSITION_DURATION_MS: number = 300;
+
+export function contentEnterTransition(offsetY: number = 12): TransitionEffect {
+  return TransitionEffect.OPACITY
+    .combine(TransitionEffect.translate({ y: offsetY }))
+    .combine(TransitionEffect.scale({ x: 0.985, y: 0.985 }))
+    .animation({
+      duration: CONTENT_ENTER_DURATION_MS,
+      curve: curves.springMotion(0.42, 0.92),
+    });
+}
+
+export function pageTransition(): TransitionEffect {
+  return TransitionEffect.asymmetric(
+    TransitionEffect.OPACITY
+      .combine(TransitionEffect.translate({ x: 16 }))
+      .combine(TransitionEffect.scale({ x: 0.992, y: 0.992 }))
+      .animation({ duration: PAGE_TRANSITION_DURATION_MS, curve: curves.springMotion(0.45, 0.94) }),
+    TransitionEffect.OPACITY
+      .combine(TransitionEffect.translate({ x: 10 }))
+      .combine(TransitionEffect.scale({ x: 0.992, y: 0.992 }))
+      .animation({ duration: 220, curve: Curve.EaseInOut }),
+  );
+}
+
+export function runPageEnterAnimation(context: UIContext, update: () => void): void {
+  context.animateTo({
+    duration: CONTENT_ENTER_DURATION_MS,
+    curve: curves.springMotion(0.42, 0.92),
+  }, update);
+}

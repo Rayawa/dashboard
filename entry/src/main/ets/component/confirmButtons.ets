@@ -10,7 +10,7 @@ import { showToastSafely } from '../common/safeUi';
 export struct confirmButtons {
     @Link isShow: boolean;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 0;
     @State countDown: number = 3;
     @State isConfirmEnabled: boolean = false;
     @State isExiting: boolean = false;
@@ -95,7 +95,7 @@ export struct confirmButtons {
     }
 
     private readonly BUTTON_HEIGHT: number = 44;
-    private readonly BUTTON_CLICK_SCALE: number = 0.8;
+    private readonly BUTTON_CLICK_SCALE: number = 0.96;
     private readonly BORDER_RADIUS: number = 22;
 
     build() {
@@ -106,7 +106,7 @@ export struct confirmButtons {
                 .height(this.BUTTON_HEIGHT)
                 .backgroundColor($r('app.color.v3_accent_green'))
                 .borderRadius(this.BORDER_RADIUS)
-                .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
+                .clickEffect({ level: ClickEffectLevel.LIGHT, scale: this.BUTTON_CLICK_SCALE })
                 .onClick(() => {
                     if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleCancel();
@@ -122,7 +122,7 @@ export struct confirmButtons {
                 .height(this.BUTTON_HEIGHT)
                 .backgroundColor(this.isConfirmEnabled ? $r('app.color.v3_accent_red') : $r('app.color.v3_text_secondary'))
                 .borderRadius(this.BORDER_RADIUS)
-                .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
+                .clickEffect({ level: ClickEffectLevel.LIGHT, scale: this.BUTTON_CLICK_SCALE })
                 .onClick(() => {
                     if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleConfirm();

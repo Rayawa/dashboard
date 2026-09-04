@@ -1,5 +1,6 @@
 import {
   HdsListItemCard,
+  hdsEffect,
   HdsNavDestination,
   HdsNavDestinationTitleMode,
   IconSize,
@@ -9,12 +10,13 @@ import {
   TitleSize
 } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
-import { LengthMetrics, PromptAction, TextModifier } from '@kit.ArkUI';
+import { curves, LengthMetrics, PromptAction, TextModifier } from '@kit.ArkUI';
 import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } from '../../common/constants';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
 import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
+import { pageTransition } from '../../common/motion';
 
 interface FriendWebParams {
   url: string;
@@ -37,10 +39,11 @@ interface AppConfig {
 struct friend {
   @Consume('pageStack') pageStack: NavPathStack;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
     hdsMaterial.MaterialLevel.SMOOTH;
   private isExiting: boolean = false;
+  @State private pressedItem: string = '';
 
   private jumpToMarket(appId: string): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -91,7 +94,7 @@ struct friend {
             modifier: new TextModifier().fontSize(16),
           },
         },
-        suffixItem: new SuffixArrow(),
+        suffixItem: new SuffixArrow({ color: $r('sys.color.icon_secondary') }),
         onClick: () => {
           if(this.vibrationLevel > 0) vibration.dotVibration()
           let params :FriendWebParams = {
@@ -104,11 +107,24 @@ struct friend {
         cardBackgroundColor: $r('app.color.v3_surface'),
         cardBorderRadius: 0,
         hoverBorderRadius: 12,
-        cardPrefixMargin: 16,
-        cardSuffixMargin: 16,
+        cardPrefixMargin: 8,
+        cardSuffixMargin: 12,
         accessibilityOptions: {
           accessibilityText: `打开友情链接${site.title}`,
         },
+      })
+      .scale({ x: this.pressedItem === site.title ? 0.98 : 1,
+        y: this.pressedItem === site.title ? 0.98 : 1 })
+      .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+      .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+        sourceType: this.pressedItem === site.title ?
+          hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+        options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+      }).buildEffect())
+      .onTouch((event: TouchEvent): void => {
+        if (event.type === TouchType.Down) this.pressedItem = site.title;
+        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedItem = '';
       })
       Divider()
         .strokeWidth(0.5)
@@ -130,7 +146,7 @@ struct friend {
             modifier: new TextModifier().fontSize(16),
           },
         },
-        suffixItem: new SuffixArrow(),
+        suffixItem: new SuffixArrow({ color: $r('sys.color.icon_secondary') }),
         onClick: () => {
           if(this.vibrationLevel > 0) vibration.dotVibration()
           if (site.appID) {
@@ -141,11 +157,24 @@ struct friend {
         cardBackgroundColor: $r('app.color.v3_surface'),
         cardBorderRadius: 0,
         hoverBorderRadius: 12,
-        cardPrefixMargin: 16,
-        cardSuffixMargin: 16,
+        cardPrefixMargin: 8,
+        cardSuffixMargin: 12,
         accessibilityOptions: {
           accessibilityText: `在应用市场打开${site.title}`,
         },
+      })
+      .scale({ x: this.pressedItem === site.title ? 0.98 : 1,
+        y: this.pressedItem === site.title ? 0.98 : 1 })
+      .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+      .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+        sourceType: this.pressedItem === site.title ?
+          hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+        options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+      }).buildEffect())
+      .onTouch((event: TouchEvent): void => {
+        if (event.type === TouchType.Down) this.pressedItem = site.title;
+        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedItem = '';
       })
       Divider()
         .strokeWidth(0.5)
@@ -241,12 +270,13 @@ struct friend {
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
+    .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {
       if (this.isExiting) {
         return true;
       }
-      if(this.vibrationLevel > 0) vibration.dotVibration()
+      if(this.vibrationLevel > 0) vibration.backVibration()
       this.isExiting = true;
       popPathSafely(this.pageStack, 'pages/more/friend');
       return true;
@@ -285,7 +315,7 @@ struct friend {
         backIcon: {
           action: () => {
             if (this.isExiting) return;
-            if(this.vibrationLevel > 0) vibration.dotVibration()
+            if(this.vibrationLevel > 0) vibration.backVibration()
             this.isExiting = true;
             popPathSafely(this.pageStack, 'pages/more/friend');
           },

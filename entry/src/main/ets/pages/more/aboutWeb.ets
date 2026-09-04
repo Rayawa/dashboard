@@ -11,6 +11,7 @@ import { customUserAgent } from '../../common/constants';
 import { popPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
+import { contentEnterTransition, pageTransition } from '../../common/motion';
 
 @Component
 struct aboutWeb {
@@ -22,7 +23,7 @@ struct aboutWeb {
   @State progress: number = 0;
   @State loading: boolean = true;
   @State errorMessage: string = '';
-  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
 
   private refresh(): void {
     if (this.vibrationLevel > 0) vibration.dotVibration();
@@ -52,7 +53,7 @@ struct aboutWeb {
   }
 
   private goBack(): boolean {
-    if (this.vibrationLevel > 0) vibration.dotVibration();
+    if (this.vibrationLevel > 0) vibration.backVibration();
     try {
       if (this.controller.accessBackward()) {
         this.controller.backward();
@@ -133,6 +134,7 @@ struct aboutWeb {
             .height(4)
             .position({ y: 96 })
             .color($r('app.color.diff_content'))
+            .transition(TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.EaseOut }))
             .accessibilityText(`网页加载进度百分之${this.progress}`)
         }
         if (this.errorMessage !== '') {
@@ -150,6 +152,7 @@ struct aboutWeb {
           .width('80%')
           .accessibilityGroup(true)
           .accessibilityText(this.errorMessage)
+          .transition(contentEnterTransition())
         }
       }
       .width('100%')
@@ -157,6 +160,7 @@ struct aboutWeb {
       .backgroundColor($r('app.color.backcolor'))
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
+    .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => this.goBack())
     .titleBar({

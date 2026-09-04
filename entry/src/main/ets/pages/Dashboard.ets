@@ -65,7 +65,7 @@ interface MainTitleMenuItem {
 struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
     private tabsController: HdsTabsController = new HdsTabsController();
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
         hdsMaterial.MaterialLevel.SMOOTH;
     @State private selectedIndex: number = MAIN_TAB_DEFAULT;
@@ -74,7 +74,6 @@ struct Dashboard {
     @State private mainActionIndex: number = -1;
     @State private mainActionVersion: number = 0;
     @State private appsSearchCommandVersion: number = 0;
-    @State private appsTitleSearchVisible: boolean = false;
     @State private appsSearchOpen: boolean = false;
     @State private appsViewIndexes: number[] = [0];
     @State private appsSearchCloseVersion: number = 0;
@@ -176,7 +175,6 @@ struct Dashboard {
             ];
         }
         if (this.selectedIndex === MAIN_TAB_APPS) {
-            if (!this.appsTitleSearchVisible) return [];
             return [{
                 content: {
                     label: '打开应用搜索',
@@ -236,6 +234,7 @@ struct Dashboard {
 
     onBackPress(): boolean {
         if (this.appsSearchOpen) {
+            vibration.backVibration();
             this.appsSearchCloseVersion++;
             return true;
         }
@@ -299,9 +298,6 @@ struct Dashboard {
                             requestVersion: this.searchRequestVersion,
                             searchCommandVersion: this.appsSearchCommandVersion,
                             searchCloseVersion: this.appsSearchCloseVersion,
-                            onSearchVisibilityChanged: (visible: boolean): void => {
-                                this.appsTitleSearchVisible = visible;
-                            },
                             onSearchOpenChanged: (open: boolean): void => {
                                 this.appsSearchOpen = open;
                             },
@@ -372,6 +368,12 @@ struct Dashboard {
             .accessibilityText('Dashboard应用看板主界面')
         }
         .mode(NavigationMode.Stack)
+        .customNavContentTransition((_from: NavContentInfo, _to: NavContentInfo,
+            operation: NavigationOperation) => {
+            // 覆盖标题栏返回、系统返回键和侧滑返回；去重由 vibration.backVibration 负责。
+            if (operation === NavigationOperation.POP) vibration.backVibration();
+            return undefined;
+        })
         .navDestination(this.destinationBuilder)
         .titleMode(HdsNavigationTitleMode.MINI)
         .hideBackButton(true)

@@ -6,6 +6,7 @@ import { customUserAgent } from '../../common/constants';
 import { popPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
+import { pageTransition } from '../../common/motion';
 
 @Component
 export struct friendWeb {
@@ -16,7 +17,7 @@ export struct friendWeb {
   @Prop title: string = '';
   @State progress: number = 0;
   @State loading: boolean = true;
-  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
 
   private refresh(): void {
     if (this.vibrationLevel > 0) vibration.dotVibration();
@@ -41,7 +42,7 @@ export struct friendWeb {
   }
 
   private goBack(): boolean {
-    if (this.vibrationLevel > 0) vibration.dotVibration();
+    if (this.vibrationLevel > 0) vibration.backVibration();
     try {
       if (this.controller.accessBackward()) {
         this.controller.backward();
@@ -104,6 +105,7 @@ export struct friendWeb {
             .height(4)
             .position({ y: 96 })
             .color($r('app.color.diff_content'))
+            .transition(TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.EaseOut }))
             .accessibilityText(`网页加载进度百分之${this.progress}`)
         }
       }
@@ -112,6 +114,7 @@ export struct friendWeb {
       .backgroundColor($r('app.color.backcolor'))
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
+    .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => this.goBack())
     .titleBar({

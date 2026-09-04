@@ -6,6 +6,7 @@ import { image } from '@kit.ImageKit';
 import { LengthMetrics } from '@kit.ArkUI';
 import { resourceManager } from '@kit.LocalizationKit';
 import { Logger } from '../utils/Logger';
+import { vibration } from '../common/vibration';
 
 const GUIDE_CARD_MULTIPLE_MIN_HEIGHT = 90;
 const GUIDE_CARD_SINGLE_MIN_HEIGHT = 80;
@@ -192,6 +193,7 @@ export default struct KnockShareGuideCard {
     @Require cardSwiperResources: CardRes[];
     @Provide swiperIndex: number = 0;
     private indicatorController: IndicatorComponentController = new IndicatorComponentController();
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
 
     @Builder
     indicatorBuilder() {
@@ -222,6 +224,7 @@ export default struct KnockShareGuideCard {
                 .width("100%")
                 .zIndex(2)
                 .onChange((index) => {
+                    if (this.vibrationLevel > 0) vibration.dotVibration();
                     this.swiperIndex = index;
                 })
                 .autoPlay(false)
@@ -229,10 +232,12 @@ export default struct KnockShareGuideCard {
                 .indicator(true)
                 .itemSpace(12)
                 .indicator(this.indicatorController)
+                .accessibilityText(`碰一碰分享操作说明，第${this.swiperIndex + 1}项，共${this.cardSwiperResources.length}项`)
                 Row() {
                     IndicatorComponent(this.indicatorController)
                         .style(new DotIndicator())
                         .responseRegion({ y: 4, height: 24 })
+                        .accessibilityText('碰一碰分享说明分页指示器')
                 }
                 .height(24)
                 .width("100%")

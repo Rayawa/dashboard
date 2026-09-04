@@ -15,6 +15,7 @@ import {
   customUserAgent,
 } from '../../common/constants';
 import { LengthMetrics } from '@kit.ArkUI';
+import { pageTransition } from '../../common/motion';
 
 interface DeveloperField {
   label: string;
@@ -147,6 +148,7 @@ export struct DeveloperPage {
       },
     })
     .titleMode(HdsNavDestinationTitleMode.MINI)
+    .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .accessibilityText('开发者信息导航页')
   }

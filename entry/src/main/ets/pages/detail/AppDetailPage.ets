@@ -24,6 +24,7 @@ import {
 import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
+import { contentEnterTransition, pageTransition } from '../../common/motion';
 import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
 import type {
@@ -89,7 +90,7 @@ export struct AppDetailPage {
     @State private fromCache: boolean = false;
     @State private errorMessage: string = '';
     @State private started: boolean = false;
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
         hdsMaterial.MaterialLevel.SMOOTH;
 
@@ -137,7 +138,7 @@ export struct AppDetailPage {
     }
 
     private closePage(): void {
-        this.vibrate();
+        vibration.backVibration();
         const continuation = getContinuationState();
         setContinuationView(continuation.mainTab, 0);
         try {
@@ -315,6 +316,8 @@ export struct AppDetailPage {
                         .height(360)
                         .justifyContent(FlexAlign.Center)
                         .accessibilityGroup(true)
+                        .accessibilityText('应用详情正在加载')
+                        .transition(contentEnterTransition())
                     } else if (this.errorMessage !== '') {
                         Column({ space: 12 }) {
                             Image($r('app.media.attention'))
@@ -337,6 +340,8 @@ export struct AppDetailPage {
                         .height(360)
                         .justifyContent(FlexAlign.Center)
                         .accessibilityGroup(true)
+                        .accessibilityText(this.errorMessage)
+                        .transition(contentEnterTransition())
                     } else if (this.app) {
                         if (this.fromCache) {
                             Text('网络不佳，当前显示已缓存的应用详情')
@@ -347,6 +352,7 @@ export struct AppDetailPage {
                                 .borderRadius(12)
                                 .backgroundColor($r('app.color.v3_warning_bg'))
                                 .accessibilityText('网络不佳，当前显示已缓存的应用详情')
+                                .transition(contentEnterTransition(8))
                         }
 
                         Row({ space: 16 }) {
@@ -357,6 +363,8 @@ export struct AppDetailPage {
                                 .objectFit(ImageFit.Cover)
                                 .alt($r('app.media.startIcon'))
                                 .accessibilityText(`${this.app.name}应用图标`)
+                                .geometryTransition(this.target.geometryId ?? 'app_detail_shared_element')
+                                .transition(TransitionEffect.OPACITY)
                             Column({ space: 5 }) {
                                 Text(this.app.name || '未知应用')
                                     .fontSize(24)
@@ -387,6 +395,7 @@ export struct AppDetailPage {
                         .border({ width: 1, color: $r('app.color.nd_card_border') })
                         .accessibilityGroup(true)
                         .accessibilityText(`${this.app.name}应用概要`)
+                        .transition(contentEnterTransition(10))
 
                         Flex({ wrap: FlexWrap.Wrap }) {
                             Button('在华为应用市场打开')
@@ -411,6 +420,7 @@ export struct AppDetailPage {
                         }
                         .width('100%')
                         .accessibilityText('应用详情操作')
+                        .transition(contentEnterTransition(10))
 
                         Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start, alignItems: ItemAlign.Start }) {
                             ForEach(this.fields(), (field: DetailField) => {
@@ -423,6 +433,7 @@ export struct AppDetailPage {
                         .backgroundColor($r('app.color.v3_surface'))
                         .border({ width: 1, color: $r('app.color.nd_card_border') })
                         .accessibilityText('以标签形式展示的应用详细字段')
+                        .transition(contentEnterTransition(10))
 
                         if (this.screenshots().length > 0) {
                             Column({ space: 10 }) {
@@ -445,6 +456,7 @@ export struct AppDetailPage {
                                 .height(380)
                                 .indicator(true)
                                 .loop(false)
+                                .onChange(() => this.vibrate())
                                 .accessibilityText('可左右滑动的应用截图')
                             }
                             .width('100%')
@@ -452,6 +464,8 @@ export struct AppDetailPage {
                             .borderRadius(18)
                             .backgroundColor($r('app.color.v3_surface'))
                             .accessibilityGroup(true)
+                            .accessibilityText('应用截图区域')
+                            .transition(contentEnterTransition(10))
                         }
 
                         InteractiveLineChart({
@@ -460,6 +474,7 @@ export struct AppDetailPage {
                             points: this.downloadPoints(),
                             lineColor: $r('app.color.diff_content'),
                         })
+                        .transition(contentEnterTransition(10))
 
                         InteractiveLineChart({
                             title: '评分趋势',
@@ -467,6 +482,7 @@ export struct AppDetailPage {
                             points: this.ratingPoints(),
                             lineColor: $r('app.color.v3_accent_orange'),
                         })
+                        .transition(contentEnterTransition(10))
 
                         Column({ space: 10 }) {
                             Text('应用介绍')
@@ -504,6 +520,7 @@ export struct AppDetailPage {
                         .border({ width: 1, color: $r('app.color.nd_card_border') })
                         .accessibilityGroup(true)
                         .accessibilityText('应用介绍和新版特性')
+                        .transition(contentEnterTransition(10))
                     }
                     Blank().height(36)
                 }
@@ -577,7 +594,6 @@ export struct AppDetailPage {
           .height('100%')
           .clip(true)
           .backgroundColor($r('app.color.background'))
-          .geometryTransition(this.target.geometryId ?? 'app_detail_shared_element')
           .transition(TransitionEffect.OPACITY)
         }
         .titleBar({
@@ -644,7 +660,7 @@ export struct AppDetailPage {
             },
         })
         .titleMode(HdsNavDestinationTitleMode.MINI)
-        .transition(TransitionEffect.OPACITY)
+        .transition(pageTransition())
         .systemTransition(NavigationSystemTransitionType.NONE)
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .onBackPressed(() => {

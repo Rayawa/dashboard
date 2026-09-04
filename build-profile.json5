@@ -7,11 +7,11 @@
         "material": {
           "certpath": "/Users/raychen/Develop/Dashboard/certificate/dashboard.cer",
           "keyAlias": "Rayawa",
-          "keyPassword": "0000001E2171C6A4EB0939C394D7FA2EFD86B304877FAC91E7685CE95ECA3820E93487FAF8D7C85F629B4590758A",
+          "keyPassword": "0000001E81702BCEE8EFFBC8F377AA07405115729881361CDFC7C7216CC0C920E1AFF4FCCCDEF7FCE0439D82F4F4",
           "profile": "/Users/raychen/Develop/Dashboard/certificate/dashboardRelease.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/raychen/Develop/Dashboard/certificate/Rayawa.p12",
-          "storePassword": "0000001EC48D80570636D2E4DCFDB4F58B4C8E479597DEF5300806273A689C83263CDC03B1AF7AFBAE942EBB5D63"
+          "storePassword": "0000001E3F527AADE8EC51AF16857A0F19413D5BB0DD3661EA832F8539BC75B6C766693307E7991DB4EAA8673DED"
         }
       },
       {
@@ -20,11 +20,11 @@
         "material": {
           "certpath": "/Users/raychen/.ohos/config/debug_dashboard-HarmonyOS_k55T3qco-dVZUC72GrhrBJhDtrlAwf4N_kK34BNrRgg=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "000000199092B562F8843F7CC83260AB23B448BB83E2073FA93560B65733284D823F892F2BF23427CD",
+          "keyPassword": "0000001BEB4AA12A0A5C2BC65BBB9E13F32B02C1C64D9D20AEB23A4879D6BEF639F0132469513C4EE58F1A",
           "profile": "/Users/raychen/.ohos/config/debug_dashboard-HarmonyOS_k55T3qco-dVZUC72GrhrBJhDtrlAwf4N_kK34BNrRgg=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/raychen/.ohos/config/debug_dashboard-HarmonyOS_k55T3qco-dVZUC72GrhrBJhDtrlAwf4N_kK34BNrRgg=.p12",
-          "storePassword": "00000019E496BCA52567EBF8E693787977B4ED2BEDD5D6DD647902F9D3A6B5B1A8529010FE8BE7B17C"
+          "storePassword": "0000001B9A46A2223E2DDCF9157E21AE1C3B505D42AE34A2E70D8B48E10111DFE07C778BBBC7C7E14456AF"
         }
       }
     ],

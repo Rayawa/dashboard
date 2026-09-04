@@ -9,12 +9,14 @@ import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
 import { appIconGeometryId } from '../../common/sharedTransition';
+import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
 import { vibration } from '../../common/vibration';
 import { OverviewSection } from '../../component/charts/OverviewSection';
 import { SEARCH_SHARED_GEOMETRY_ID, SearchPage } from './SearchPage';
 
 interface SortChoice { label: string; field: string; }
 interface FilterChoice { label: string; field: string; }
+const SEARCH_PULL_TRIGGER_DISTANCE_VP: number = 64;
 
 @Component
 struct AppTableRow {
@@ -23,7 +25,7 @@ struct AppTableRow {
     @Prop tableWidth: number = 924;
     @Prop developerWidth: number = 150;
     onOpen: (app: MarketApp) => void = () => {};
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     @State private pressed: boolean = false;
     @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
@@ -40,12 +42,13 @@ struct AppTableRow {
                 Stack() {
                     Image(this.app.icon_url || $r('app.media.startIcon'))
                         .width('100%').height('100%').objectFit(ImageFit.Cover)
+                        .borderRadius(8).clip(true)
                         .alt($r('app.media.startIcon'))
                         .accessibilityText(`${this.app.name || '未知应用'}图标`)
+                        .geometryTransition(appIconGeometryId(this.app, 'apps'), { follow: true })
+                        .transition(TransitionEffect.OPACITY)
                 }
                     .width(34).height(34).borderRadius(8).clip(true)
-                    .geometryTransition(appIconGeometryId(this.app, 'apps'), { follow: true })
-                    .transition(TransitionEffect.OPACITY)
                 Column({ space: 2 }) {
                     Text(this.app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
                         .fontColor($r('app.color.v3_text_primary')).maxLines(1)
@@ -134,7 +137,10 @@ export struct AppsPage {
     @State private appliedFilterText: string = '';
     @State private tableViewportWidth: number = 0;
     @State private transitionEffect: TransitionEffect = TransitionEffect.IDENTITY;
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @State private pageVisible: boolean = false;
+    @State private searchPressed: boolean = false;
+    @State private searchPointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     private restoredScroll: boolean = false;
     private restoredView: boolean = false;
     private reloadAfterCurrent: boolean = false;
@@ -158,6 +164,12 @@ export struct AppsPage {
     private openSearch(withFeedback: boolean = true): void {
         if (this.searchExpanded) return;
         if (withFeedback) this.vibrate();
+        try {
+            this.getUIContext().getFocusController().clearFocus();
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/AppsPage][WARN]',
+                `打开搜索页前清除焦点失败: ${JSON.stringify(error)}`);
+        }
         this.titleSearchVisible = false;
         if (this.onSearchVisibilityChanged) this.onSearchVisibilityChanged(false);
         this.getUIContext().animateTo({
@@ -330,7 +342,7 @@ export struct AppsPage {
     private searchPullHint(): void {
         Column()
             .width('100%')
-            .height(36)
+            .height(SEARCH_PULL_TRIGGER_DISTANCE_VP)
             .accessibilityText('下拉打开应用搜索')
     }
 
@@ -341,6 +353,23 @@ export struct AppsPage {
                 .width('100%').height(48).defaultFocus(false)
                 .backgroundColor($r('app.color.v3_surface_alt'))
                 .geometryTransition(SEARCH_SHARED_GEOMETRY_ID, { follow: true })
+                .transition(TransitionEffect.OPACITY)
+                .scale({ x: this.searchPressed ? 0.985 : 1, y: this.searchPressed ? 0.985 : 1 })
+                .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+                .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+                    sourceType: this.searchPointLight,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                    options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+                }).buildEffect())
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) {
+                        this.searchPressed = true;
+                        this.searchPointLight = hdsEffect.PointLightSourceType.BRIGHT;
+                    } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        this.searchPressed = false;
+                        this.searchPointLight = hdsEffect.PointLightSourceType.NONE;
+                    }
+                })
                 .onClick(() => this.openSearch())
                 .accessibilityText('打开应用搜索')
         }
@@ -355,35 +384,64 @@ export struct AppsPage {
                 Select(this.typeOptions()).selected(this.typeIndex)
                     .value(['全部类型', '鸿蒙应用', '元服务'][this.typeIndex]).height(42).margin(4)
                     .backgroundColor($r('app.color.v3_surface'))
-                    .onSelect((index: number) => { this.typeIndex = index; this.page = 1; this.load(false); })
+                    .onSelect((index: number) => {
+                        this.vibrate();
+                        this.typeIndex = index;
+                        this.page = 1;
+                        this.load(false);
+                    })
                     .accessibilityText('筛选全部类型鸿蒙应用或元服务')
                 Select(this.filterOptions()).selected(this.filterIndex)
                     .value(this.filterChoices()[this.filterIndex].label).height(42).margin(4)
                     .backgroundColor($r('app.color.v3_surface'))
-                    .onSelect((index: number) => this.filterIndex = index)
+                    .onSelect((index: number) => {
+                        this.vibrate();
+                        this.filterIndex = index;
+                    })
                     .accessibilityText('选择筛选字段')
                 TextInput({ text: this.filterText, placeholder: '输入筛选内容' }).height(42).margin(4)
                     .constraintSize({ minWidth: 170, maxWidth: 280 }).backgroundColor($r('app.color.v3_surface'))
-                    .onChange((value: string) => this.filterText = value).onSubmit(() => this.applyFilter())
+                    .onChange((value: string) => this.filterText = value).onSubmit(() => {
+                        this.vibrate();
+                        this.applyFilter();
+                    })
                     .accessibilityText(`按${this.filterChoices()[this.filterIndex].label}输入筛选内容`)
                 Button('筛选').height(42).margin(4).backgroundColor($r('app.color.diff_content'))
-                    .onClick(() => this.applyFilter()).accessibilityText('应用筛选条件')
+                    .onClick(() => { this.vibrate(); this.applyFilter(); }).accessibilityText('应用筛选条件')
                 Button('清除').height(42).margin(4).fontColor($r('app.color.diff_content'))
-                    .backgroundColor($r('app.color.v3_surface')).onClick(() => this.clearFilter())
+                    .backgroundColor($r('app.color.v3_surface')).onClick(() => {
+                        this.vibrate();
+                        this.clearFilter();
+                    })
                     .accessibilityText('清除全部筛选条件')
             }.width('100%')
             Flex({ wrap: FlexWrap.Wrap }) {
                 Select(this.sortOptions()).selected(this.sortIndex).value(this.sortChoices()[this.sortIndex].label)
                     .height(42).margin(4).backgroundColor($r('app.color.v3_surface'))
-                    .onSelect((index: number) => { this.sortIndex = index; this.page = 1; this.load(false); })
+                    .onSelect((index: number) => {
+                        this.vibrate();
+                        this.sortIndex = index;
+                        this.page = 1;
+                        this.load(false);
+                    })
                     .accessibilityText('选择应用列表排序字段')
                 Select(this.pageSizeOptions()).selected(this.pageSizeIndex).value(`每页 ${this.pageSize()} 条`)
                     .height(42).margin(4).backgroundColor($r('app.color.v3_surface'))
-                    .onSelect((index: number) => { this.pageSizeIndex = index; this.page = 1; this.load(false); })
+                    .onSelect((index: number) => {
+                        this.vibrate();
+                        this.pageSizeIndex = index;
+                        this.page = 1;
+                        this.load(false);
+                    })
                     .accessibilityText(`选择每页显示数量，当前每页${this.pageSize()}条`)
                 Button(this.descending ? '降序 ↓' : '升序 ↑').height(42).margin(4)
                     .fontColor($r('app.color.diff_content')).backgroundColor($r('app.color.v3_surface'))
-                    .onClick(() => { this.descending = !this.descending; this.page = 1; this.load(false); })
+                    .onClick(() => {
+                        this.vibrate();
+                        this.descending = !this.descending;
+                        this.page = 1;
+                        this.load(false);
+                    })
                     .accessibilityText(this.descending ? '当前降序，点击改为升序' : '当前升序，点击改为降序')
             }.width('100%')
         }.width('100%').accessibilityText('应用列表筛选与排序控件')
@@ -414,6 +472,7 @@ export struct AppsPage {
                             tableWidth: this.tableWidth(), developerWidth: this.developerWidth(),
                             onOpen: (target: MarketApp) => this.openDetail(target),
                         })
+                        .transition(contentEnterTransition(6))
                     }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
                 }.width(this.tableWidth())
             }
@@ -425,6 +484,8 @@ export struct AppsPage {
                         .accessibilityText('应用列表加载中')
                     Text('正在加载…').fontColor($r('app.color.v3_text_secondary'))
                 }.padding(22).borderRadius(14).backgroundColor($r('app.color.v3_surface')).accessibilityGroup(true)
+                    .accessibilityText('应用列表加载中')
+                    .transition(contentEnterTransition(8))
             }
         }
         .width('100%').borderRadius(16).clip(true).backgroundColor($r('app.color.v3_surface'))
@@ -440,19 +501,22 @@ export struct AppsPage {
         Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
             Button('上一页').margin(4).enabled(this.page > 1 && !this.loading)
                 .backgroundColor($r('app.color.v3_surface_alt')).fontColor($r('app.color.v3_text_primary'))
-                .onClick(() => { this.page--; this.load(false); }).accessibilityText('上一页')
+                .onClick(() => { this.vibrate(); this.page--; this.load(false); }).accessibilityText('上一页')
             Text(`第 ${this.page} / ${this.totalPages()} 页`).fontSize(13)
                 .fontColor($r('app.color.v3_text_secondary')).margin(8)
                 .accessibilityText(`第${this.page}页，共${this.totalPages()}页`)
             Button('下一页').margin(4).enabled(this.page < this.totalPages() && !this.loading)
                 .backgroundColor($r('app.color.diff_content'))
-                .onClick(() => { this.page++; this.load(false); }).accessibilityText('下一页')
+                .onClick(() => { this.vibrate(); this.page++; this.load(false); }).accessibilityText('下一页')
             TextInput({ text: this.jumpText, placeholder: '页码' }).type(InputType.Number)
                 .width(84).height(40).margin(4).backgroundColor($r('app.color.v3_surface'))
-                .onChange((value: string) => this.jumpText = value).onSubmit(() => this.jump())
+                .onChange((value: string) => this.jumpText = value).onSubmit(() => {
+                    this.vibrate();
+                    this.jump();
+                })
                 .accessibilityText('输入要跳转的页码')
             Button('跳转').margin(4).height(40).backgroundColor($r('app.color.v3_accent_cyan'))
-                .onClick(() => this.jump()).accessibilityText('跳转到指定页')
+                .onClick(() => { this.vibrate(); this.jump(); }).accessibilityText('跳转到指定页')
         }.width('100%').padding({ bottom: 110 }).accessibilityText('应用列表分页控件')
     }
 
@@ -471,7 +535,7 @@ export struct AppsPage {
                                 Blank().height(110).width('100%')
                             }
                             .width('100%')
-                            .transition(TransitionEffect.OPACITY.animation({ duration: 200 }))
+                            .transition(contentEnterTransition(10))
                         } else {
                             Column({ space: 12 }) {
                                 Text(`共 ${formatCount(this.total)} 条应用数据`).fontSize(13)
@@ -492,7 +556,7 @@ export struct AppsPage {
                                 this.pagination()
                             }
                             .width('100%')
-                            .transition(TransitionEffect.OPACITY.animation({ duration: 200 }))
+                            .transition(contentEnterTransition(10))
                             .onAppear(() => {
                                 if (!this.loaded) this.load(false);
                             })
@@ -517,7 +581,7 @@ export struct AppsPage {
                 .accessibilityText('可滚动并支持下拉打开应用搜索的应用页面')
             }
             .width('100%').height('100%')
-            .refreshOffset(36)
+            .refreshOffset(SEARCH_PULL_TRIGGER_DISTANCE_VP)
             .onRefreshing((): void => this.pullOpenSearch())
             .accessibilityText('下拉可打开应用搜索')
 
@@ -528,11 +592,16 @@ export struct AppsPage {
                     onClose: (): void => this.closeSearch(),
                 })
                 .width('100%').height('100%').zIndex(100)
+                .transition(TransitionEffect.OPACITY)
             }
         }
         .width('100%').height('100%').backgroundColor($r('app.color.background'))
+        .opacity(this.pageVisible ? 1 : 0.01)
+        .translate({ y: this.pageVisible ? 0 : 10 })
         .transition(this.transitionEffect)
         .onAppear(() => {
+            this.pageVisible = false;
+            runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
             if (!this.restoredView) {
                 this.restoredView = true;
                 const continuation = getContinuationState();
@@ -540,5 +609,7 @@ export struct AppsPage {
             }
             if (this.requestVersion > 0 && hasPendingSearchTarget()) this.openSearch(false);
         })
+        .onDisAppear(() => { this.pageVisible = false; })
+        .accessibilityText('应用概况与应用列表页面')
     }
 }
