@@ -103,7 +103,7 @@ export struct SStationPage {
                         .width('100%')
                         .layoutMode(WebLayoutMode.FIT_CONTENT)
                         .overScrollMode(OverScrollMode.NEVER)
-                        .backgroundColor($r('app.color.backcolor'))
+                        .backgroundColor($r('app.color.s_station_placeholder'))
                         .onControllerAttached(() => {
                             try {
                                 this.controller.setCustomUserAgent(customUserAgent);
@@ -163,7 +163,7 @@ export struct SStationPage {
                         .accessibilityText('S站网页内容')
                 }
                 .width('100%')
-                .backgroundColor($r('app.color.backcolor'))
+                .backgroundColor($r('app.color.s_station_placeholder'))
               }
               .width('100%').height('100%').scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
               .onDidScroll((): void => {
@@ -221,7 +221,7 @@ export struct SStationPage {
         }
         .width('100%')
         .height('100%')
-        .backgroundColor($r('app.color.backcolor'))
+        .backgroundColor($r('app.color.s_station_placeholder'))
         .opacity(this.pageVisible ? 1 : 0.01)
         .translate({ y: this.pageVisible ? 0 : 10 })
         .accessibilityGroup(true)

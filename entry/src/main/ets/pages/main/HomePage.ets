@@ -565,7 +565,7 @@ export struct HomePage {
 
                         Scroll(this.scroller) {
                             Column({ space: 14 }) {
-                                Blank().height(100).width('100%')
+                                Blank().height(110).width('100%')
                                 this.recentSection()
                                 Blank().height(96).width('100%')
                             }

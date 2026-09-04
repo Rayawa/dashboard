@@ -1,6 +1,6 @@
 import { common, Want } from '@kit.AbilityKit';
 import { curves, PromptAction, TextModifier } from '@kit.ArkUI';
-import { hdsEffect, HdsListItemCard, IconSize, PrefixIcon, SuffixArrow } from '@kit.UIDesignKit';
+import { HdsListItemCard, IconSize, PrefixIcon, SuffixArrow } from '@kit.UIDesignKit';
 import { settings } from '../../component/settings';
 import { contact } from '../../component/contact';
 import { warn } from '../../component/warn';
@@ -32,8 +32,6 @@ interface MoreItem {
 struct MoreRow {
     item: MoreItem = { title: '', icon: $r('app.media.info'), action: () => {} };
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
-    @State private pressed: boolean = false;
-    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
     build() {
         HdsListItemCard({
@@ -63,22 +61,6 @@ struct MoreRow {
             accessibilityOptions: {
                 accessibilityText: `进入${this.item.title}`,
             },
-        })
-        .scale({ x: this.pressed ? 0.98 : 1, y: this.pressed ? 0.98 : 1 })
-        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-            sourceType: this.pointLight,
-            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-            options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-        }).buildEffect())
-        .onTouch((event: TouchEvent): void => {
-            if (event.type === TouchType.Down) {
-                this.pressed = true;
-                this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
-            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                this.pressed = false;
-                this.pointLight = hdsEffect.PointLightSourceType.NONE;
-            }
         })
     }
 }
@@ -435,7 +417,7 @@ export struct MyPage {
 
                         Scroll(this.scroller) {
                             Column() {
-                                Blank().height(10).width('100%')
+                                Blank().height(110).width('100%')
                                 this.settingsAndLinks()
                                 Blank().height(110).width('100%')
                             }
