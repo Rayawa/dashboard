@@ -23,6 +23,7 @@ import {
 import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
+import { appIconGeometryId } from '../../common/sharedTransition';
 import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
 import type {
@@ -341,6 +342,7 @@ export struct AppDetailPage {
                                 .height(82)
                                 .borderRadius(18)
                                 .objectFit(ImageFit.Cover)
+                                .geometryTransition(appIconGeometryId(this.app), { follow: true })
                                 .alt($r('app.media.startIcon'))
                                 .accessibilityText(`${this.app.name}应用图标`)
                             Column({ space: 5 }) {
@@ -500,6 +502,9 @@ export struct AppDetailPage {
                     if (!this.started) {
                         this.started = true;
                         this.target = consumeDetailTarget();
+                        if (this.target.previewApp) {
+                            this.app = this.target.previewApp;
+                        }
                         const continuation = getContinuationState();
                         setContinuationView(
                             continuation.mainTab,

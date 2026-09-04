@@ -4,9 +4,8 @@ import {
   SegmentButtonV2Items,
   TabSegmentButtonV2,
 } from '@kit.ArkUI';
-import { HdsMiniBarButton } from './HdsMiniBarButton';
 
-/** 应用详情主标签中的悬浮二选一切换栏。 */
+/** 放在 HdsNavigation titleBar.bottomBuilder 内的固定二选一切换栏。 */
 @Component
 export struct HdsTitleBarSegment {
   @Require items: SegmentButtonV2Items;
@@ -16,7 +15,6 @@ export struct HdsTitleBarSegment {
   @Prop normalWidth: Length = '100%';
   @Prop experimentalWidth: Length = '100%';
   @Prop experimentalHeight: number = 52;
-  @State measuredWidth: number = 0;
   onItemClicked?: (index: number) => void;
 
   private selectedIndex(): number {
@@ -25,59 +23,45 @@ export struct HdsTitleBarSegment {
 
   private selectedBackgroundColor(): ColorMetrics {
     try {
-      return ColorMetrics.resourceColor($r('app.color.diff_content'));
+      return ColorMetrics.resourceColor($r('sys.color.segment_button_v2_tab_selected_item_background'));
     } catch (error) {
       console.warn('[Dashboard][component/HdsTitleBarSegment][WARN]',
-        `无法读取切换栏高亮色，使用内置回退颜色: ${JSON.stringify(error)}`);
-      return ColorMetrics.rgba(30, 111, 205);
+        `读取切换项背景色失败: ${JSON.stringify(error)}`);
+      return ColorMetrics.rgba(255, 255, 255, 0.92);
     }
   }
 
-  @Builder
-  private segmentContent(): void {
+  private segmentBackgroundColor(): ColorMetrics {
+    try {
+      return ColorMetrics.resourceColor($r('app.color.v3_surface_alt'));
+    } catch (error) {
+      console.warn('[Dashboard][component/HdsTitleBarSegment][WARN]',
+        `读取切换栏背景色失败: ${JSON.stringify(error)}`);
+      return ColorMetrics.rgba(128, 128, 128, 0.14);
+    }
+  }
+
+  build() {
     Column() {
       TabSegmentButtonV2({
         items: this.items,
         selectedIndex: this.selectedIndex(),
         $selectedIndex: (index: number): void => {
-          this.getUIContext().animateTo({ duration: 240, curve: Curve.EaseInOut }, (): void => {
-            this.selectedIndexes = [index];
-          });
+          this.selectedIndexes = [index];
         },
         onItemClicked: this.onItemClicked,
         itemMaxFontScale: this.maxFontScale,
         itemSelectedBackgroundColor: this.selectedBackgroundColor(),
         itemMinHeight: LengthMetrics.vp(32),
-        buttonBackgroundColor: ColorMetrics.rgba(0, 0, 0, 0),
+        buttonBackgroundColor: this.segmentBackgroundColor(),
         buttonMinHeight: LengthMetrics.vp(40),
         buttonPadding: LengthMetrics.vp(4),
         enableStateAnimation: true,
       })
     }
-    .width('100%')
+    .width(this.normalWidth)
     .height(this.segmentHeight)
     .justifyContent(FlexAlign.Center)
-  }
-
-  build() {
-    Stack({ alignContent: Alignment.Center }) {
-      if (this.measuredWidth > 0) {
-        HdsMiniBarButton({
-          barWidth: this.measuredWidth,
-          barHeight: this.experimentalHeight,
-        }) {
-          this.segmentContent()
-        }
-      }
-    }
-    .width(this.experimentalWidth)
-    .height(this.experimentalHeight)
-    .onAreaChange((_oldValue: Area, newValue: Area): void => {
-      if (typeof newValue.width === 'number' && newValue.width > 0 && this.measuredWidth !== newValue.width) {
-        this.measuredWidth = newValue.width;
-      }
-    })
-    .margin({ top: -8 })
     .accessibilityText(this.selectedIndex() === 0 ? '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
   }
 }

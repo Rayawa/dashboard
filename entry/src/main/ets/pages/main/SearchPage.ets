@@ -6,6 +6,7 @@ import { formatCount, formatDateTime } from '../../common/format';
 import { clearSearchHistory, getSearchHistory, setSearchHistory } from '../../common/storage';
 import { parseInputSplitLinksPkgsAndAppIds } from '../../common/utils';
 import { showToastSafely } from '../../common/safeUi';
+import { appIconGeometryId } from '../../common/sharedTransition';
 import type {
     ApiDataResult, AppDetailPayload, AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo, SearchTarget,
     SubmitAppBody,
@@ -49,6 +50,7 @@ export struct SearchPage {
     private resultSource: SearchResultDataSource = new SearchResultDataSource();
     @StorageLink('username') private username: string = '';
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @StorageLink('statusBarHeight') private statusBarHeight: number = 38;
     @State private input: string = '';
     @State private loading: boolean = false;
     @State private status: string = '输入应用名称、包名、App ID 或应用市场链接';
@@ -258,6 +260,7 @@ export struct SearchPage {
             appId: targetApp.app_id,
             packageName: targetApp.pkg_name,
             backgroundRefreshHandled: this.resultApp?.app_id === targetApp.app_id,
+            previewApp: targetApp,
         });
         try { this.pageStack.pushPathByName('AppDetailPage', null); }
         catch (error) {
@@ -293,6 +296,7 @@ export struct SearchPage {
         Column({ space: 5 }) {
             Image(app.icon_url || $r('app.media.startIcon'))
                 .width(42).height(42).borderRadius(10).objectFit(ImageFit.Cover)
+                .geometryTransition(appIconGeometryId(app), { follow: true })
                 .alt($r('app.media.startIcon'))
                 .accessibilityText(`${app.name || '未知应用'}图标`)
             Text(app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
@@ -316,6 +320,7 @@ export struct SearchPage {
         Row({ space: 12 }) {
             Image(app.icon_url || $r('app.media.startIcon'))
                 .width(58).height(58).borderRadius(14).objectFit(ImageFit.Cover)
+                .geometryTransition(appIconGeometryId(app), { follow: true })
                 .alt($r('app.media.startIcon')).accessibilityText(`${app.name || '未知应用'}应用图标`)
             Column({ space: 4 }) {
                 Text(app.name || '未知应用').fontSize(17).fontWeight(FontWeight.Bold)
@@ -341,7 +346,6 @@ export struct SearchPage {
     build() {
         Column({ space: 12 }) {
             Column({ space: 12 }) {
-                Blank().height(92).width('100%')
                 Row({ space: 10 }) {
                     Button({ type: ButtonType.Circle, stateEffect: true }) {
                         SymbolGlyph($r('sys.symbol.chevron_left'))
@@ -358,9 +362,11 @@ export struct SearchPage {
                         .onChange((value: string) => this.input = value)
                         .onSubmit(() => { this.vibrate(); this.search(); })
                         .accessibilityText('搜索应用名称包名App ID或应用市场链接')
-                }.width('100%').padding({ left: 16, right: 20 })
+                }.width('100%').padding({ left: 16, right: 20, top: this.statusBarHeight + 8 })
             }
             .width('100%')
+            .backgroundColor($r('app.color.background'))
+            .zIndex(2)
             .accessibilityText('搜索栏区域')
 
             if (this.loading || this.errorMessage.length > 0 || this.resultCount > 0) {
@@ -422,6 +428,7 @@ export struct SearchPage {
             }
         }
         .width('100%').height('100%').backgroundColor($r('app.color.background'))
+        .transition(TransitionEffect.OPACITY.animation({ duration: 180, curve: Curve.EaseOut }))
         .gesture(
             PanGesture({ fingers: 1, direction: PanDirection.Vertical })
                 .onActionEnd((event: GestureEvent): void => {
