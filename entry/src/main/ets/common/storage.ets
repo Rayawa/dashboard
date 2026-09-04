@@ -11,8 +11,7 @@ import {
     DEFAULT_BUTTON_RIGHT,
     DEFAULT_HOLD_CHECK_ENABLED,
     DEFAULT_IMMERSIVE_MATERIAL_LEVEL,
-    DEFAULT_IMMERSIVE_TEXTURE,
-    DEFAULT_VIBRATION_ENABLED,
+    DEFAULT_VIBRATION_LEVEL,
     LEGACY_APP_SETTINGS_FILE_NAME,
     LEGACY_PROFILE_FILE_NAME,
     LEGACY_SETTINGS_FILE_NAME,
@@ -20,13 +19,12 @@ import {
     STORAGE_KEY_BUTTON_RIGHT,
     STORAGE_KEY_FIRST_LAUNCH,
     STORAGE_KEY_HOLD_CHECK,
-    STORAGE_KEY_IMMERSIVE,
     STORAGE_KEY_IMMERSIVE_MATERIAL_LEVEL,
     STORAGE_KEY_LEGACY_MIGRATED,
     STORAGE_KEY_NOTICE_VERSION,
     STORAGE_KEY_SEARCH_HISTORY,
     STORAGE_KEY_USERNAME,
-    STORAGE_KEY_VIBRATION,
+    STORAGE_KEY_VIBRATION_LEVEL,
 } from './constants';
 
 // ===== 偏好 key（唯一事实来源，同时是对应的 AppStorage key 名）=====
@@ -35,27 +33,25 @@ const KEY_MIGRATED = STORAGE_KEY_LEGACY_MIGRATED;
 const KEY_USERNAME = STORAGE_KEY_USERNAME;
 const KEY_FIRST_LAUNCH = STORAGE_KEY_FIRST_LAUNCH;
 const KEY_NOTICE_VERSION = STORAGE_KEY_NOTICE_VERSION;
-const KEY_VIBRATION = STORAGE_KEY_VIBRATION;
+const KEY_VIBRATION_LEVEL = STORAGE_KEY_VIBRATION_LEVEL;
+const LEGACY_KEY_VIBRATION_ENABLED = 'vibrationON';
 const KEY_HOLD_CHECK = STORAGE_KEY_HOLD_CHECK;
 const KEY_BUTTON_RIGHT = STORAGE_KEY_BUTTON_RIGHT;
-const KEY_IMMERSIVE = STORAGE_KEY_IMMERSIVE;
 const KEY_IMMERSIVE_MATERIAL_LEVEL = STORAGE_KEY_IMMERSIVE_MATERIAL_LEVEL;
 const KEY_SEARCH_HISTORY = STORAGE_KEY_SEARCH_HISTORY;
 
 export interface AppSettings {
-    vibrationON: boolean;
+    vibrationLevel: number;
     holdCheckON: boolean;
     buttonPositionRIGHT: boolean;
-    immersiveTextureON: boolean;
     immersiveMaterialLevel: number;
 }
 
 // 所有持久化 key 的默认值；@StorageLink 装饰器的初始值必须与此保持一致
 const DEFAULT_SETTINGS: AppSettings = {
-    vibrationON: DEFAULT_VIBRATION_ENABLED,
+    vibrationLevel: DEFAULT_VIBRATION_LEVEL,
     holdCheckON: DEFAULT_HOLD_CHECK_ENABLED,
     buttonPositionRIGHT: DEFAULT_BUTTON_RIGHT,
-    immersiveTextureON: DEFAULT_IMMERSIVE_TEXTURE,
     immersiveMaterialLevel: DEFAULT_IMMERSIVE_MATERIAL_LEVEL
 };
 
@@ -105,7 +101,7 @@ async function migrateLegacyData(ctx?: common.Context): Promise<void> {
         copied.push(KEY_USERNAME);
     }
     // 旧 settings 文件：设置开关（新旧 key 同名）
-    const settingKeys: string[] = [KEY_VIBRATION, KEY_HOLD_CHECK, KEY_BUTTON_RIGHT, KEY_IMMERSIVE];
+    const settingKeys: string[] = [LEGACY_KEY_VIBRATION_ENABLED, KEY_HOLD_CHECK, KEY_BUTTON_RIGHT];
     for (const key of settingKeys) {
         if (await copyLegacyKey(target, LEGACY_SETTINGS_FILE_NAME, key, ctx)) {
             copied.push(key);
@@ -195,16 +191,26 @@ export async function hasUsername(): Promise<boolean> {
     return username !== getDeviceName() && username.trim().length > 0;
 }
 
-// ===== 设置开关（原 settings 文件）=====
-export async function getVibrationEnabled(): Promise<boolean> {
+// ===== 设置项（原 settings 文件）=====
+export async function getVibrationLevel(): Promise<number> {
     const s = await ensureReady();
-    return (await s.get(KEY_VIBRATION, DEFAULT_SETTINGS.vibrationON)) as boolean;
+    if (await s.has(KEY_VIBRATION_LEVEL)) {
+        const level = (await s.get(KEY_VIBRATION_LEVEL, DEFAULT_SETTINGS.vibrationLevel)) as number;
+        return level === 0 || level === 1 || level === 2 ? level : DEFAULT_SETTINGS.vibrationLevel;
+    }
+    // 兼容旧版布尔开关：开启沿用原来的 hard，关闭保持静默。
+    const legacyEnabled = (await s.get(LEGACY_KEY_VIBRATION_ENABLED, true)) as boolean;
+    const migratedLevel = legacyEnabled ? 2 : 0;
+    await s.set(KEY_VIBRATION_LEVEL, migratedLevel);
+    return migratedLevel;
 }
 
-export async function setVibrationEnabled(enabled: boolean): Promise<void> {
+export async function setVibrationLevel(level: number): Promise<void> {
+    const normalized = level === 0 || level === 1 || level === 2 ?
+        level : DEFAULT_SETTINGS.vibrationLevel;
     const s = await ensureReady();
-    await s.set(KEY_VIBRATION, enabled);
-    AppStorage.setOrCreate(KEY_VIBRATION, enabled);
+    await s.set(KEY_VIBRATION_LEVEL, normalized);
+    AppStorage.setOrCreate(KEY_VIBRATION_LEVEL, normalized);
 }
 
 export async function getHoldCheckEnabled(): Promise<boolean> {
@@ -230,26 +236,16 @@ export async function setButtonPosition(isRight: boolean): Promise<void> {
     AppStorage.setOrCreate(KEY_BUTTON_RIGHT, isRight);
 }
 
-export async function getImmersiveTexture(): Promise<boolean> {
-    const s = await ensureReady();
-    return (await s.get(KEY_IMMERSIVE, DEFAULT_SETTINGS.immersiveTextureON)) as boolean;
-}
-
-export async function setImmersiveTexture(enabled: boolean): Promise<void> {
-    const s = await ensureReady();
-    await s.set(KEY_IMMERSIVE, enabled);
-    AppStorage.setOrCreate(KEY_IMMERSIVE, enabled);
-}
-
 export async function getImmersiveMaterialLevel(): Promise<number> {
     const s = await ensureReady();
     const level = (await s.get(KEY_IMMERSIVE_MATERIAL_LEVEL,
         DEFAULT_SETTINGS.immersiveMaterialLevel)) as number;
-    return level === 1 || level === 2 ? level : DEFAULT_SETTINGS.immersiveMaterialLevel;
+    return level === 0 || level === 1 || level === 2 ? level : DEFAULT_SETTINGS.immersiveMaterialLevel;
 }
 
 export async function setImmersiveMaterialLevel(level: number): Promise<void> {
-    const normalized = level === 1 || level === 2 ? level : DEFAULT_SETTINGS.immersiveMaterialLevel;
+    const normalized = level === 0 || level === 1 || level === 2 ?
+        level : DEFAULT_SETTINGS.immersiveMaterialLevel;
     const s = await ensureReady();
     await s.set(KEY_IMMERSIVE_MATERIAL_LEVEL, normalized);
     AppStorage.setOrCreate(KEY_IMMERSIVE_MATERIAL_LEVEL, normalized);
@@ -257,26 +253,22 @@ export async function setImmersiveMaterialLevel(level: number): Promise<void> {
 
 export async function getAllSettings(): Promise<AppSettings> {
     return {
-        vibrationON: await getVibrationEnabled(),
+        vibrationLevel: await getVibrationLevel(),
         holdCheckON: await getHoldCheckEnabled(),
         buttonPositionRIGHT: await getButtonPosition(),
-        immersiveTextureON: await getImmersiveTexture(),
         immersiveMaterialLevel: await getImmersiveMaterialLevel(),
     };
 }
 
 export async function updateSettings(settings: Partial<AppSettings>): Promise<void> {
-    if (settings.vibrationON !== undefined) {
-        await setVibrationEnabled(settings.vibrationON);
+    if (settings.vibrationLevel !== undefined) {
+        await setVibrationLevel(settings.vibrationLevel);
     }
     if (settings.holdCheckON !== undefined) {
         await setHoldCheckEnabled(settings.holdCheckON);
     }
     if (settings.buttonPositionRIGHT !== undefined) {
         await setButtonPosition(settings.buttonPositionRIGHT);
-    }
-    if (settings.immersiveTextureON !== undefined) {
-        await setImmersiveTexture(settings.immersiveTextureON);
     }
     if (settings.immersiveMaterialLevel !== undefined) {
         await setImmersiveMaterialLevel(settings.immersiveMaterialLevel);
@@ -314,7 +306,7 @@ export async function clearSearchHistory(): Promise<void> {
     await s.remove(KEY_SEARCH_HISTORY);
 }
 
-// 恢复出厂设置（只重置开关，不动用户名和首启标志）
+// 恢复出厂设置（只重置设置项，不动用户名和首启标志）
 export async function resetAllSettings(): Promise<void> {
     await updateSettings(DEFAULT_SETTINGS);
 }
@@ -323,10 +315,9 @@ export async function resetAllSettings(): Promise<void> {
 export async function loadPersistedState(ctx?: common.Context): Promise<void> {
     try {
         await ensureReady(ctx);
-        AppStorage.setOrCreate(KEY_VIBRATION, await getVibrationEnabled());
+        AppStorage.setOrCreate(KEY_VIBRATION_LEVEL, await getVibrationLevel());
         AppStorage.setOrCreate(KEY_HOLD_CHECK, await getHoldCheckEnabled());
         AppStorage.setOrCreate(KEY_BUTTON_RIGHT, await getButtonPosition());
-        AppStorage.setOrCreate(KEY_IMMERSIVE, await getImmersiveTexture());
         AppStorage.setOrCreate(KEY_IMMERSIVE_MATERIAL_LEVEL, await getImmersiveMaterialLevel());
         AppStorage.setOrCreate(KEY_USERNAME, await getUsername());
     } catch (error) {

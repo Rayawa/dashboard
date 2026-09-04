@@ -18,10 +18,9 @@ interface UpdateLog {
 struct appLog {
     @Consume('pageStack') pageStack: NavPathStack;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink("vibrationON") vibrationON: boolean = true;
-    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 2;
     @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-        hdsMaterial.MaterialLevel.EXQUISITE;
+        hdsMaterial.MaterialLevel.SMOOTH;
     private updateLogs: UpdateLog[] = [
         {
             version: "V3.0.0",
@@ -31,18 +30,18 @@ struct appLog {
             items: [
                 "主界面调整为四个 HdsTabs：S站、首页、应用详情、我的；搜索通过共享元素整合进应用详情顶部",
                 "首页数字进入时滚动到最新值；宽屏下最近收录卡片与左侧应用总数卡片顶部对齐",
-                "应用概览与应用列表通过固定在顶部的切换栏切换，沉浸式材质开关会同步控制切换栏效果",
+                "应用概览与应用列表通过固定在顶部的切换栏切换，材质等级会同步控制切换栏效果",
                 "搜索、投稿、更新与系统分享入口合并为唯一 shareAbility；新应用自动 simple 投稿，已有应用自动 query 更新",
                 "新增公用原生应用详情模板，统一查询、列表、深链和分享入口的详情展示流程",
                 "详情信息改为高密度标签与文字组合，并补齐按钮分享、碰一碰、隔空传送及图标卡片预览",
                 "应用列表新增鸿蒙应用、元服务、分类、标签、开发者筛选，宽屏表格自动扩展开发者列",
                 "搜索结果使用LazyForEach纵向加载并按设备宽度自适应列数，新增搜索历史、删除与推荐",
-                "目标SDK与最低SDK在中宽屏合并为共用图例，窄屏保留各自图例；点击灰色“其他”可动画展开全部SDK",
+                "中宽屏将目标与最低SDK合并为“应用SDK分布”卡片并共用图例；窄屏图表独立展开，下划线灰色“其他”可切换隐藏",
                 "Harmony API历史将全部版本叠加在同一折线图中，扩展配色并使用可横向浏览的当前值列表",
                 "折线图放大坐标文字并适配窄屏，支持触摸选点、双指缩放和单指横移",
                 "首页与我的页面在宽屏按四比六分栏，左侧信息固定居中、右侧内容独立滚动；最近收录增加到12条，手机端保留原有纵向布局",
                 "清除缓存项恢复说明问号并显示缓存文件总大小",
-                "原生主页面和详情页补齐振动反馈，并按页面、应用详情子视图与滚动位置恢复跨设备接续；仅允许3.0.0及以上版本接续",
+                "原生主页面和详情页补齐振动反馈，并支持关闭、轻触与硬朗三档振动强度；仅允许3.0.0及以上版本接续",
                 "全部子页面统一使用 Scroll、MINI 标题模式、TITLE_S 主标题和系统上下安全区忽略配置",
                 "S站、首页和应用详情改用顶部继续下拉刷新；应用详情标题栏不再显示教程或刷新按钮",
                 "统一所有API请求的User-Agent，修复S站子资源失败误报与网页显示比例问题",
@@ -314,7 +313,7 @@ struct appLog {
     }
 
     toggleFilter(type: "beta" | "rc" | "release"): void {
-                if(this.vibrationON) vibration.dotVibration()
+                if(this.vibrationLevel > 0) vibration.dotVibration()
         switch (type) {
             case "beta":
                 this.showBeta = !this.showBeta;
@@ -429,7 +428,7 @@ struct appLog {
             .accessibilityText('可滚动的应用更新日志')
         }
         .onBackPressed(() => {
-                    if(this.vibrationON) vibration.dotVibration()
+                    if(this.vibrationLevel > 0) vibration.dotVibration()
             return false;
         })
         .titleMode(HdsNavDestinationTitleMode.MINI)
@@ -480,10 +479,10 @@ struct appLog {
                         },
                     },
                 },
-                systemMaterialEffect: this.immersiveTextureON ? {
+                systemMaterialEffect: {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: this.immersiveMaterialLevel
-                } : undefined
+                }
             },
             content: {
                 title: {
@@ -531,7 +530,7 @@ struct appLog {
                 },
                 backIcon: {
                     action: () => {
-                                if(this.vibrationON) vibration.dotVibration()
+                                if(this.vibrationLevel > 0) vibration.dotVibration()
                         popPathSafely(this.pageStack, 'pages/more/appLog')
                     },
                 },

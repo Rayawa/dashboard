@@ -65,10 +65,9 @@ interface MainTitleMenuItem {
 struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
     private tabsController: HdsTabsController = new HdsTabsController();
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
-    @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-        hdsMaterial.MaterialLevel.EXQUISITE;
+        hdsMaterial.MaterialLevel.SMOOTH;
     @State private selectedIndex: number = MAIN_TAB_DEFAULT;
     @State private searchRequestVersion: number = 0;
     @State private showWarning: boolean = false;
@@ -85,24 +84,6 @@ struct Dashboard {
         { text: '应用概况', accessibilityText: '应用概况' },
         { text: '应用列表', accessibilityText: '应用列表' },
     ]);
-
-    private detailNavigationTransition(
-        from: NavContentInfo,
-        to: NavContentInfo,
-        _operation: NavigationOperation,
-    ): NavigationAnimatedTransition | undefined {
-        if (from.name !== 'AppDetailPage' && to.name !== 'AppDetailPage') {
-            return undefined;
-        }
-        return {
-            timeout: 600,
-            transition: (proxy: NavigationTransitionProxy): void => {
-                // HdsNavigation 需要接管动画路由才能关闭默认横向推入；
-                // 页面几何变化由调用方 animateTo 中的 geometryTransition 独立驱动。
-                setTimeout((): void => proxy.finishTransition(), 500);
-            },
-        };
-    }
 
     @Builder
     private appsTitleSegment(): void {
@@ -142,7 +123,7 @@ struct Dashboard {
     }
 
     private vibrate(): void {
-        if (this.vibrationEnabled) vibration.dotVibration();
+        if (this.vibrationLevel > 0) vibration.dotVibration();
     }
 
     private openTutorial(): void {
@@ -238,7 +219,7 @@ struct Dashboard {
                 }
                 setTimeout(() => {
                     try {
-                        this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, false);
+                        this.pageStack.pushPath({ name: 'AppDetailPage', param: detail }, false);
                     } catch (error) {
                         console.error('[Dashboard][pages/Dashboard][ERROR]', `恢复应用详情失败: ${JSON.stringify(error)}`);
                     }
@@ -262,9 +243,9 @@ struct Dashboard {
     }
 
     @Builder
-    destinationBuilder(name: string) {
+    destinationBuilder(name: string, param: Object) {
         if (name === 'AppDetailPage') {
-            AppDetailPage()
+            AppDetailPage({ routeTarget: param as AppRouteTarget })
         } else if (name === 'AboutWebPage') {
             AboutWebBuilder()
         } else if (name === 'AppLogPage') {
@@ -355,10 +336,10 @@ struct Dashboard {
                     barBottomMargin: 28,
                     lightColor: $r('app.color.diff_content'),
                     gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
-                    systemMaterialEffect: this.immersiveTexture ? {
+                    systemMaterialEffect: {
                         materialType: hdsMaterial.MaterialType.IMMERSIVE,
                         materialLevel: this.immersiveMaterialLevel,
-                    } : undefined,
+                    },
                 })
                 .onTabBarClick((index: number) => this.handleTabBarClick(index))
                 .onChange((index: number) => {
@@ -368,7 +349,7 @@ struct Dashboard {
                     if (continuation.routeName !== CONTINUATION_ROUTE_DETAIL) {
                         setContinuationView(index, 0);
                     }
-                    if (this.vibrationEnabled) {
+                    if (this.vibrationLevel > 0) {
                         vibration.dotVibration();
                     }
                 })
@@ -392,9 +373,6 @@ struct Dashboard {
         }
         .mode(NavigationMode.Stack)
         .navDestination(this.destinationBuilder)
-        .customNavContentTransition((from: NavContentInfo, to: NavContentInfo,
-            operation: NavigationOperation): NavigationAnimatedTransition | undefined =>
-            this.detailNavigationTransition(from, to, operation))
         .titleMode(HdsNavigationTitleMode.MINI)
         .hideBackButton(true)
         .hideTitleBar(this.appsSearchOpen)
@@ -435,7 +413,7 @@ struct Dashboard {
                         },
                     },
                 },
-                systemMaterialEffect: this.immersiveTexture && this.selectedIndex !== MAIN_TAB_APPS ? {
+                systemMaterialEffect: this.selectedIndex !== MAIN_TAB_APPS ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: this.immersiveMaterialLevel,
                 } : undefined,

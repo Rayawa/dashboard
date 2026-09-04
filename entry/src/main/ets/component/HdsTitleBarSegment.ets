@@ -17,7 +17,6 @@ export struct HdsTitleBarSegment {
   @Prop experimentalWidth: Length = '100%';
   @Prop experimentalHeight: number = 52;
   onItemClicked?: (index: number) => void;
-  @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
   @State private measuredWidth: number = 0;
 
   private selectedIndex(): number {
@@ -36,27 +35,16 @@ export struct HdsTitleBarSegment {
 
   private materialSelectedBackgroundColor(): ColorMetrics {
     try {
-      return ColorMetrics.resourceColor($r('app.color.diff_content'));
+      return ColorMetrics.resourceColor($r('app.color.segmented_color_selected'));
     } catch (error) {
       console.warn('[Dashboard][component/HdsTitleBarSegment][WARN]',
         `读取材质切换项背景色失败: ${JSON.stringify(error)}`);
-      return ColorMetrics.rgba(30, 111, 205);
-    }
-  }
-
-  private buttonBackgroundColor(): ColorMetrics {
-    if (this.immersiveTexture) return ColorMetrics.rgba(0, 0, 0, 0);
-    try {
-      return ColorMetrics.resourceColor($r('app.color.v3_surface_alt'));
-    } catch (error) {
-      console.warn('[Dashboard][component/HdsTitleBarSegment][WARN]',
-        `读取切换栏背景色失败: ${JSON.stringify(error)}`);
-      return ColorMetrics.rgba(128, 128, 128, 0.14);
+      return ColorMetrics.rgba(102, 102, 102, 0.13);
     }
   }
 
   @Builder
-  private segmentContent(useImmersiveMaterial: boolean): void {
+  private segmentContent(): void {
     Column() {
       TabSegmentButtonV2({
         items: this.items,
@@ -66,11 +54,9 @@ export struct HdsTitleBarSegment {
         },
         onItemClicked: this.onItemClicked,
         itemMaxFontScale: this.maxFontScale,
-        itemSelectedBackgroundColor: useImmersiveMaterial ?
-          this.materialSelectedBackgroundColor() : this.selectedBackgroundColor(),
+        itemSelectedBackgroundColor: this.materialSelectedBackgroundColor(),
         itemMinHeight: LengthMetrics.vp(32),
-        buttonBackgroundColor: useImmersiveMaterial ?
-          ColorMetrics.rgba(0, 0, 0, 0) : this.buttonBackgroundColor(),
+        buttonBackgroundColor: ColorMetrics.rgba(0, 0, 0, 0),
         buttonMinHeight: LengthMetrics.vp(40),
         buttonPadding: LengthMetrics.vp(4),
         enableStateAnimation: true,
@@ -82,35 +68,25 @@ export struct HdsTitleBarSegment {
   }
 
   build() {
-    if (this.immersiveTexture) {
-      Stack({ alignContent: Alignment.Center }) {
-        if (this.measuredWidth > 0) {
-          HdsMiniBarButton({
-            barWidth: this.measuredWidth,
-            barHeight: this.experimentalHeight,
-          }) {
-            this.segmentContent(true)
-          }
+    Stack({ alignContent: Alignment.Center }) {
+      if (this.measuredWidth > 0) {
+        HdsMiniBarButton({
+          barWidth: this.measuredWidth,
+          barHeight: this.experimentalHeight,
+        }) {
+          this.segmentContent()
         }
       }
-      .width(this.experimentalWidth)
-      .height(this.experimentalHeight)
-      .onAreaChange((_, area) => {
-        if (typeof area.width === 'number' && area.width > 0 && this.measuredWidth !== area.width) {
-          this.measuredWidth = area.width;
-        }
-      })
-      .margin({ top: -8 })
-      .accessibilityText(this.selectedIndex() === 0 ?
-        '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
-    } else {
-      Stack({ alignContent: Alignment.Center }) {
-        this.segmentContent(false)
-      }
-      .width(this.normalWidth)
-      .height(this.segmentHeight)
-      .accessibilityText(this.selectedIndex() === 0 ?
-        '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
     }
+    .width(this.experimentalWidth)
+    .height(this.experimentalHeight)
+    .onAreaChange((_, area) => {
+      if (typeof area.width === 'number' && area.width > 0 && this.measuredWidth !== area.width) {
+        this.measuredWidth = area.width;
+      }
+    })
+    .margin({ top: -8 })
+    .accessibilityText(this.selectedIndex() === 0 ?
+      '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
   }
 }

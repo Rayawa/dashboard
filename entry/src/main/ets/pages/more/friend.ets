@@ -1,6 +1,15 @@
-import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
+import {
+  HdsListItemCard,
+  HdsNavDestination,
+  HdsNavDestinationTitleMode,
+  IconSize,
+  PrefixIcon,
+  ScrollEffectType,
+  SuffixArrow,
+  TitleSize
+} from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
-import { LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { LengthMetrics, PromptAction, TextModifier } from '@kit.ArkUI';
 import { AGstatisticsURL, dztapURL, HapStoreURL, NEXTStoreURL, OpenStoreURL } from '../../common/constants';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
@@ -28,10 +37,9 @@ interface AppConfig {
 struct friend {
   @Consume('pageStack') pageStack: NavPathStack;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.EXQUISITE;
+    hdsMaterial.MaterialLevel.SMOOTH;
   private isExiting: boolean = false;
 
   private jumpToMarket(appId: string): void {
@@ -72,37 +80,36 @@ struct friend {
 
   @Builder webLists(site: SiteConfig){
     Column(){
-      Row() {
-        Row() {
-          Image(site.icon)
-            .height(24)
-            .width(24)
-            .objectFit(ImageFit.Contain)
-            .accessibilityText(`${site.title}图标`)
-          Text(site.title)
-            .fontSize(16)
-            .margin({ left: 12 })
-        }
-        Image($r("app.media.right"))
-          .height(16)
-          .width(16)
-          .objectFit(ImageFit.Contain)
-          .accessibilityText('打开链接')
-      }
-      .onClick(() => {
-        if(this.vibrationON) vibration.dotVibration()
-        let params :FriendWebParams = {
-          "url": site.url,
-          "title": site.title
-        }
-        pushPathSafely(this.pageStack, "FriendPageWeb", params, 'pages/more/friend');
+      HdsListItemCard({
+        prefixItem: new PrefixIcon({
+          iconSize: IconSize.SYSTEM_ICON,
+          iconValue: { image: site.icon },
+        }),
+        textItem: {
+          primaryText: {
+            text: site.title,
+            modifier: new TextModifier().fontSize(16),
+          },
+        },
+        suffixItem: new SuffixArrow(),
+        onClick: () => {
+          if(this.vibrationLevel > 0) vibration.dotVibration()
+          let params :FriendWebParams = {
+            "url": site.url,
+            "title": site.title
+          }
+          pushPathSafely(this.pageStack, "FriendPageWeb", params, 'pages/more/friend');
+        },
+        cardHeight: 54,
+        cardBackgroundColor: $r('app.color.v3_surface'),
+        cardBorderRadius: 0,
+        hoverBorderRadius: 12,
+        cardPrefixMargin: 16,
+        cardSuffixMargin: 16,
+        accessibilityOptions: {
+          accessibilityText: `打开友情链接${site.title}`,
+        },
       })
-      .height(54)
-      .width("100%")
-      .justifyContent(FlexAlign.SpaceBetween)
-      .padding({ left: 16, right: 16 })
-      .accessibilityGroup(true)
-      .accessibilityText(`打开友情链接${site.title}`)
       Divider()
         .strokeWidth(0.5)
         .color($r("app.color.border"))
@@ -112,35 +119,34 @@ struct friend {
   }
   @Builder appLists(site: AppConfig) {
     Column(){
-      Row() {
-        Row() {
-          Image(site.icon)
-            .height(24)
-            .width(24)
-            .objectFit(ImageFit.Contain)
-            .accessibilityText(`${site.title}图标`)
-          Text(site.title)
-            .fontSize(16)
-            .margin({ left: 12 })
-        }
-        Image($r("app.media.right"))
-          .height(16)
-          .width(16)
-          .objectFit(ImageFit.Contain)
-          .accessibilityText('在应用市场打开')
-      }
-      .onClick(() => {
-        if(this.vibrationON) vibration.dotVibration()
-        if (site.appID) {
-          this.jumpToMarket(site.appID);
-        }
+      HdsListItemCard({
+        prefixItem: new PrefixIcon({
+          iconSize: IconSize.SYSTEM_ICON,
+          iconValue: { image: site.icon },
+        }),
+        textItem: {
+          primaryText: {
+            text: site.title,
+            modifier: new TextModifier().fontSize(16),
+          },
+        },
+        suffixItem: new SuffixArrow(),
+        onClick: () => {
+          if(this.vibrationLevel > 0) vibration.dotVibration()
+          if (site.appID) {
+            this.jumpToMarket(site.appID);
+          }
+        },
+        cardHeight: 54,
+        cardBackgroundColor: $r('app.color.v3_surface'),
+        cardBorderRadius: 0,
+        hoverBorderRadius: 12,
+        cardPrefixMargin: 16,
+        cardSuffixMargin: 16,
+        accessibilityOptions: {
+          accessibilityText: `在应用市场打开${site.title}`,
+        },
       })
-      .height(54)
-      .width("100%")
-      .justifyContent(FlexAlign.SpaceBetween)
-      .padding({ left: 16, right: 16 })
-      .accessibilityGroup(true)
-      .accessibilityText(`在应用市场打开${site.title}`)
       Divider()
         .strokeWidth(0.5)
         .color($r("app.color.border"))
@@ -240,7 +246,7 @@ struct friend {
       if (this.isExiting) {
         return true;
       }
-      if(this.vibrationON) vibration.dotVibration()
+      if(this.vibrationLevel > 0) vibration.dotVibration()
       this.isExiting = true;
       popPathSafely(this.pageStack, 'pages/more/friend');
       return true;
@@ -269,17 +275,17 @@ struct friend {
             backIconStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
           },
         },
-        systemMaterialEffect: this.immersiveTextureON ? {
+        systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: this.immersiveMaterialLevel
-        } : undefined
+        }
       },
       content: {
         title: { mainTitle: "友情链接", mainTitleSize: TitleSize.TITLE_S },
         backIcon: {
           action: () => {
             if (this.isExiting) return;
-            if(this.vibrationON) vibration.dotVibration()
+            if(this.vibrationLevel > 0) vibration.dotVibration()
             this.isExiting = true;
             popPathSafely(this.pageStack, 'pages/more/friend');
           },

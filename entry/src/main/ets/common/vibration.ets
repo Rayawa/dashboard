@@ -1,110 +1,68 @@
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { DEFAULT_VIBRATION_LEVEL, STORAGE_KEY_VIBRATION_LEVEL } from './constants';
 
-export class vibration{
-  static dotVibration(): void {
-    vibrator.isSupportEffect("haptic.effect.hard", (err: BusinessError, state: boolean) => {
+const VIBRATION_LEVEL_OFF = 0;
+const VIBRATION_LEVEL_SOFT = 1;
+const EFFECT_SOFT = 'haptic.effect.soft';
+const EFFECT_HARD = 'haptic.effect.hard';
+
+export class vibration {
+  private static currentEffectId(): string | undefined {
+    const level = AppStorage.get<number>(STORAGE_KEY_VIBRATION_LEVEL) ?? DEFAULT_VIBRATION_LEVEL;
+    if (level === VIBRATION_LEVEL_OFF) return undefined;
+    return level === VIBRATION_LEVEL_SOFT ? EFFECT_SOFT : EFFECT_HARD;
+  }
+
+  private static startPresetVibration(count: number, intensity: number): void {
+    const effectId = vibration.currentEffectId();
+    if (effectId === undefined) return;
+    vibrator.isSupportEffect(effectId, (err: BusinessError, state: boolean) => {
       if (err) {
         console.error('[Dashboard][common/vibration][ERROR]',
-          `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
+          `Failed to query effect ${effectId}. Code: ${err.code}, message: ${err.message}`,
         );
         return;
       }
-      console.info('[Dashboard][common/vibration][INFO]', "Succeed in querying effect");
-      if (state) {
-        try {
-          vibrator.startVibration(
-            {
-              type: "preset",
-              effectId: "haptic.effect.hard",
-              count: 1,
-              intensity: 50,
-            },
-            { usage: "touch" },
-            (error: BusinessError) => {
-              if (error) {
-                console.error('[Dashboard][common/vibration][ERROR]',
-                  `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                );
-              } else {
-                console.info('[Dashboard][common/vibration][INFO]', "Succeed in starting vibration");
-              }
-            },
-          );
-        } catch (tryError) {
-          console.error('[Dashboard][common/vibration][ERROR]', `An unexpected error occurred in try block: ${tryError}`);
-        }
+      if (!state) {
+        console.warn('[Dashboard][common/vibration][WARN]', `Vibration effect is unsupported: ${effectId}`);
+        return;
+      }
+      try {
+        vibrator.startVibration(
+          {
+            type: 'preset',
+            effectId,
+            count,
+            intensity,
+          },
+          { usage: 'touch' },
+          (error: BusinessError) => {
+            if (error) {
+              console.error('[Dashboard][common/vibration][ERROR]',
+                `Failed to start ${effectId}. Code: ${error.code}, message: ${error.message}`,
+              );
+            }
+          },
+        );
+      } catch (error) {
+        const businessError = error as BusinessError;
+        console.error('[Dashboard][common/vibration][ERROR]',
+          `Failed to start ${effectId}. Code: ${businessError.code}, message: ${businessError.message}`,
+        );
       }
     });
-
   }
+
+  static dotVibration(): void {
+    vibration.startPresetVibration(1, 50);
+  }
+
   static waveVibration(): void {
-    vibrator.isSupportEffect(
-      "haptic.effect.hard",
-      (err: BusinessError, state: boolean) => {
-        if (err) {
-          console.error('[Dashboard][common/vibration][ERROR]',
-            `Failed to query effect. Code: ${err.code}, message: ${err.message}`,
-          );
-          return;
-        }
-        console.info('[Dashboard][common/vibration][INFO]', "Succeed in querying effect");
-        if (state) {
-          try {
-            vibrator.startVibration(
-              {
-                type: "preset",
-                effectId: "haptic.effect.hard",
-                count: 5,
-                intensity: 100,
-              },
-              { usage: "touch" },
-              (error: BusinessError) => {
-                if (error) {
-                  console.error('[Dashboard][common/vibration][ERROR]',
-                    `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-                  );
-                } else {
-                  console.info('[Dashboard][common/vibration][INFO]', "Succeed in starting vibration");
-                }
-              },
-            );
-          } catch (tryError) {
-            console.error('[Dashboard][common/vibration][ERROR]',
-              `An unexpected error occurred in try block: ${tryError}`,
-            );
-          }
-        }
-      },
-    );
-
+    vibration.startPresetVibration(5, 100);
   }
+
   static errorVibration(): void {
-    try {
-      vibrator.startVibration(
-        {
-          type: "time",
-          duration: 500,
-        },
-        {
-          id: 0,
-          usage: "touch",
-        },
-        (error: BusinessError) => {
-          if (error) {
-            console.error('[Dashboard][common/vibration][ERROR]',
-              `Failed to start vibration. Code: ${error.code}, message: ${error.message}`,
-            );
-            return;
-          }
-          console.info('[Dashboard][common/vibration][INFO]', "Succeed in starting vibration");
-        },
-      );
-    } catch (err) {
-      let e: BusinessError = err as BusinessError;
-      console.error('[Dashboard][common/vibration][ERROR]',
-        `An unexpected error occurred. Code: ${e.code}, message: ${e.message}`,
-      );
-    }
+    vibration.startPresetVibration(2, 100);
   }
 }

@@ -16,10 +16,10 @@ export struct friendWeb {
   @Prop title: string = '';
   @State progress: number = 0;
   @State loading: boolean = true;
-  @StorageLink('vibrationON') vibrationON: boolean = true;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
 
   private refresh(): void {
-    if (this.vibrationON) vibration.dotVibration();
+    if (this.vibrationLevel > 0) vibration.dotVibration();
     try {
       this.controller.loadUrl(this.url);
     } catch (error) {
@@ -29,7 +29,7 @@ export struct friendWeb {
   }
 
   private async openBrowser(): Promise<void> {
-    if (this.vibrationON) vibration.dotVibration();
+    if (this.vibrationLevel > 0) vibration.dotVibration();
     try {
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
       await context.startAbility({ action: 'ohos.want.action.viewData', entities: ['entity.system.browsable'],
@@ -41,7 +41,7 @@ export struct friendWeb {
   }
 
   private goBack(): boolean {
-    if (this.vibrationON) vibration.dotVibration();
+    if (this.vibrationLevel > 0) vibration.dotVibration();
     try {
       if (this.controller.accessBackward()) {
         this.controller.backward();

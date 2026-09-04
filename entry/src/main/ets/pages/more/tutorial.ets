@@ -23,10 +23,9 @@ interface TutorialSection {
 @Component
 export struct tutorial {
   @Consume('pageStack') pageStack: NavPathStack;
-  @StorageLink('vibrationON') vibrationON: boolean = true;
-  @StorageLink('immersiveTextureON') immersiveTextureON: boolean = false;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.EXQUISITE;
+    hdsMaterial.MaterialLevel.SMOOTH;
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   private readonly cardSwiperResourcesPhone: CardRes[] = [{
     text: '对方手机需支持相应的 HarmonyOS 分享能力。',
@@ -69,7 +68,7 @@ export struct tutorial {
           '三个饼图分别展示目标 SDK、最低 SDK 和应用评分分布，版本与星级按从高到低排列。',
           '在窄屏上，两个 SDK 图各自带有图例；屏幕较宽时，它们会放进同一个卡片并共用图例。',
           '点一下饼图扇区或图例，可以高亮对应项目并查看数量和占比。',
-          'SDK 版本较多时会先合并成灰色“其他”，点扇区或“点击展开全部”就能查看完整版本。',
+          'SDK 版本较多时会先合并成灰色“其他”；标题行的“展开全部”用于查看完整版本，点“其他”或隐藏图标可以隐藏、恢复这部分扇区。',
           'Harmony API 占比历史把所有 API 版本画在同一张折线图上，便于比较版本迁移。',
           '折线图可以点选数据、双指缩放；放大后用单指左右拖动查看不同日期。',
         ],
@@ -124,11 +123,11 @@ export struct tutorial {
       },
       {
         title: '我的',
-        description: '这里可以修改用户名、振动反馈和沉浸式材质，也可以清理缓存或查看项目相关信息。',
+        description: '这里可以修改用户名、振动强度和材质等级，也可以清理缓存或查看项目相关信息。',
         items: [
           '用户名会用于首页问候；修改后无需重新启动应用。',
-          '振动反馈开关会同时控制主要按钮、返回和图表选择时的轻触反馈。',
-          '沉浸式材质会同步作用于支持的导航栏和切换栏，关闭后使用普通背景样式。',
+          '振动强度会同时作用于主要按钮、返回和图表选择，可选择关闭、轻触或硬朗。',
+          '材质等级会同步作用于支持的导航栏和切换栏，可按设备性能选择流畅、轻柔或精美。',
           '清理缓存会删除接口缓存、网页缓存和 Cookie，但用户名与设置会保留。',
           '缓存项旁会显示当前占用空间；清理后，S站可能需要重新登录，数据页面也需要重新联网加载。',
           '项目网站、接口文档、更新日志、隐私政策和问题反馈都可以从这里进入。',
@@ -150,7 +149,7 @@ export struct tutorial {
   }
 
   private async openProjectSite(): Promise<void> {
-    if (this.vibrationON) vibration.dotVibration();
+    if (this.vibrationLevel > 0) vibration.dotVibration();
     try {
       showToastSafely(this.prompt, '正在跳转…', 500, 'Tutorial');
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -359,7 +358,7 @@ export struct tutorial {
     .titleMode(HdsNavDestinationTitleMode.MINI)
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {
-      if (this.vibrationON) vibration.dotVibration();
+      if (this.vibrationLevel > 0) vibration.dotVibration();
       popPathSafely(this.pageStack, 'pages/more/tutorial');
       return true;
     })
@@ -409,10 +408,10 @@ export struct tutorial {
             },
           },
         },
-        systemMaterialEffect: this.immersiveTextureON ? {
+        systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: this.immersiveMaterialLevel,
-        } : undefined,
+        },
       },
       content: {
         title: {
@@ -421,7 +420,7 @@ export struct tutorial {
         },
         backIcon: {
           action: () => {
-            if (this.vibrationON) vibration.dotVibration();
+            if (this.vibrationLevel > 0) vibration.dotVibration();
             popPathSafely(this.pageStack, 'pages/more/tutorial');
           },
         },

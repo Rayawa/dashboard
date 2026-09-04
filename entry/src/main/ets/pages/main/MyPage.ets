@@ -1,6 +1,6 @@
 import { common, Want } from '@kit.AbilityKit';
-import { PromptAction } from '@kit.ArkUI';
-import { hdsEffect } from '@kit.UIDesignKit';
+import { PromptAction, TextModifier } from '@kit.ArkUI';
+import { HdsListItemCard, IconSize, PrefixIcon, SuffixArrow } from '@kit.UIDesignKit';
 import { settings } from '../../component/settings';
 import { contact } from '../../component/contact';
 import { warn } from '../../component/warn';
@@ -30,53 +30,37 @@ interface MoreItem {
 @Component
 struct MoreRow {
     item: MoreItem = { title: '', icon: $r('app.media.info'), action: () => {} };
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
-    @State private pressed: boolean = false;
-    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
 
     build() {
-        Row({ space: 12 }) {
-            Image(this.item.icon)
-                .width(24)
-                .height(24)
-                .objectFit(ImageFit.Contain)
-                .accessibilityText(`${this.item.title}图标`)
-            Text(this.item.title)
-                .fontSize(16)
-                .fontColor($r('app.color.v3_text_primary'))
-                .layoutWeight(1)
-                .accessibilityText(this.item.title)
-            Image($r('app.media.right'))
-                .width(16)
-                .height(16)
-                .objectFit(ImageFit.Contain)
-                .accessibilityText('进入')
-        }
-        .width('100%')
-        .height(54)
-        .padding({ left: 16, right: 16 })
-        .scale({ x: this.pressed ? 0.98 : 1, y: this.pressed ? 0.98 : 1 })
-        .animation({ curve: Curve.EaseOut, duration: 140 })
-        .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-            sourceType: this.pointLight,
-            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-            options: { color: $r('app.color.diff_content'), intensity: 8, height: 120 },
-        }).buildEffect())
-        .onTouch((event: TouchEvent) => {
-            if (event.type === TouchType.Down) {
-                this.pressed = true;
-                this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
-            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                this.pressed = false;
-                this.pointLight = hdsEffect.PointLightSourceType.NONE;
-            }
+        HdsListItemCard({
+            prefixItem: new PrefixIcon({
+                iconSize: IconSize.SYSTEM_ICON,
+                iconValue: { image: this.item.icon },
+            }),
+            textItem: {
+                primaryText: {
+                    text: this.item.title,
+                    modifier: new TextModifier()
+                        .fontSize(16)
+                        .fontColor($r('app.color.v3_text_primary')),
+                },
+            },
+            suffixItem: new SuffixArrow(),
+            onClick: () => {
+                if (this.vibrationLevel > 0) vibration.dotVibration();
+                this.item.action();
+            },
+            cardHeight: 54,
+            cardBackgroundColor: $r('app.color.v3_surface'),
+            cardBorderRadius: 0,
+            hoverBorderRadius: 12,
+            cardPrefixMargin: 16,
+            cardSuffixMargin: 16,
+            accessibilityOptions: {
+                accessibilityText: `进入${this.item.title}`,
+            },
         })
-        .onClick(() => {
-            if (this.vibrationEnabled) vibration.dotVibration();
-            this.item.action();
-        })
-        .accessibilityGroup(true)
-        .accessibilityText(`进入${this.item.title}`)
     }
 }
 
@@ -86,7 +70,7 @@ export struct MyPage {
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     @State private showWarning: boolean = false;
     @State private showContact: boolean = false;
     @State private versionTapCount: number = 0;
@@ -106,7 +90,7 @@ export struct MyPage {
     }
 
     private vibrate(): void {
-        if (this.vibrationEnabled) vibration.dotVibration();
+        if (this.vibrationLevel > 0) vibration.dotVibration();
     }
 
     private async openExternal(uri: string, label: string): Promise<void> {

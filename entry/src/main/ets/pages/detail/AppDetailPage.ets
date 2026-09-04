@@ -24,7 +24,6 @@ import {
 import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
-import { appIconGeometryId } from '../../common/sharedTransition';
 import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
 import type {
@@ -77,11 +76,12 @@ struct DetailTag {
 @Component
 export struct AppDetailPage {
     @Consume('pageStack') private pageStack: NavPathStack;
+    routeTarget: AppRouteTarget = {};
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     private shareManager?: WebShareManager;
-    private target: AppRouteTarget = peekDetailTarget();
-    @State private app: MarketApp | undefined = peekDetailTarget().previewApp;
+    private target: AppRouteTarget = {};
+    @State private app: MarketApp | undefined = undefined;
     @State private metrics: AppMetric[] = [];
     @State private ratingHistory: AppRatingHistory[] = [];
     @State private loading: boolean = true;
@@ -89,15 +89,20 @@ export struct AppDetailPage {
     @State private fromCache: boolean = false;
     @State private errorMessage: string = '';
     @State private started: boolean = false;
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
-    @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-        hdsMaterial.MaterialLevel.EXQUISITE;
+        hdsMaterial.MaterialLevel.SMOOTH;
 
     private vibrate(): void {
-        if (this.vibrationEnabled) {
+        if (this.vibrationLevel > 0) {
             vibration.dotVibration();
         }
+    }
+
+    aboutToAppear(): void {
+        const fallbackTarget = peekDetailTarget();
+        this.target = (this.routeTarget.appId || this.routeTarget.packageName) ? this.routeTarget : fallbackTarget;
+        this.app = this.target.previewApp;
     }
 
     private shareUrl(): string {
@@ -139,7 +144,7 @@ export struct AppDetailPage {
             this.getUIContext().animateTo({
                 curve: curves.interpolatingSpring(0, 1, 342, 38),
             }, (): void => {
-                this.pageStack.pop(true);
+                this.pageStack.pop(false);
             });
         } catch (error) {
             console.error('[Dashboard][pages/detail/AppDetailPage][ERROR]', `关闭详情页失败: ${JSON.stringify(error)}`);
@@ -291,8 +296,9 @@ export struct AppDetailPage {
 
     build() {
         HdsNavDestination() {
-          Refresh({ refreshing: $$this.refreshing }) {
-            Scroll(this.scroller) {
+          Stack() {
+            Refresh({ refreshing: $$this.refreshing }) {
+              Scroll(this.scroller) {
                 Column({ space: 14 }) {
                     Blank().height(100).width('100%')
                     if (this.loading && !this.app) {
@@ -349,8 +355,6 @@ export struct AppDetailPage {
                                 .height(82)
                                 .borderRadius(18)
                                 .objectFit(ImageFit.Cover)
-                                .geometryTransition(this.target.geometryId ?? appIconGeometryId(this.app, 'detail'))
-                                .transition(TransitionEffect.opacity(0.99))
                                 .alt($r('app.media.startIcon'))
                                 .accessibilityText(`${this.app.name}应用图标`)
                             Column({ space: 5 }) {
@@ -509,8 +513,9 @@ export struct AppDetailPage {
                 .onAppear(() => {
                     if (!this.started) {
                         this.started = true;
-                        this.target = consumeDetailTarget();
-                        if (this.target.previewApp) {
+                        const pendingTarget = consumeDetailTarget();
+                        if (!this.target.appId && !this.target.packageName) {
+                            this.target = pendingTarget;
                             this.app = this.target.previewApp;
                         }
                         const continuation = getContinuationState();
@@ -540,11 +545,11 @@ export struct AppDetailPage {
                         }
                     }
                 })
-            }
-            .width('100%')
-            .height('100%')
-            .scrollBar(BarState.Off)
-            .onDidScroll((): void => {
+              }
+              .width('100%')
+              .height('100%')
+              .scrollBar(BarState.Off)
+              .onDidScroll((): void => {
                 try {
                     const continuation = getContinuationState();
                     setContinuationView(
@@ -558,15 +563,22 @@ export struct AppDetailPage {
                     console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]',
                         `保存详情页滚动位置失败: ${JSON.stringify(error)}`);
                 }
-            })
-            .backgroundColor($r('app.color.background'))
-            .accessibilityText('可下拉刷新的公用应用详情页')
-          }
-          .width('100%').height('100%')
-          .onRefreshing((): void => {
+              })
+              .backgroundColor($r('app.color.background'))
+              .accessibilityText('可下拉刷新的公用应用详情页')
+            }
+            .width('100%').height('100%')
+            .onRefreshing((): void => {
               this.vibrate();
               this.load(true, true, true);
-          })
+            })
+          }
+          .width('100%')
+          .height('100%')
+          .clip(true)
+          .backgroundColor($r('app.color.background'))
+          .geometryTransition(this.target.geometryId ?? 'app_detail_shared_element')
+          .transition(TransitionEffect.OPACITY)
         }
         .titleBar({
             style: {
@@ -604,10 +616,10 @@ export struct AppDetailPage {
                         },
                     },
                 },
-                systemMaterialEffect: this.immersiveTexture ? {
+                systemMaterialEffect: {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: this.immersiveMaterialLevel,
-                } : undefined,
+                },
             },
             content: {
                 title: {
@@ -633,6 +645,7 @@ export struct AppDetailPage {
         })
         .titleMode(HdsNavDestinationTitleMode.MINI)
         .transition(TransitionEffect.OPACITY)
+        .systemTransition(NavigationSystemTransitionType.NONE)
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .onBackPressed(() => {
             this.closePage();

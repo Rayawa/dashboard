@@ -6,7 +6,7 @@ import {
 } from '../../common/appState';
 import { fetchAppsPage } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
-import type { BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
+import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
 import { appIconGeometryId } from '../../common/sharedTransition';
 import { vibration } from '../../common/vibration';
@@ -23,7 +23,7 @@ struct AppTableRow {
     @Prop tableWidth: number = 924;
     @Prop developerWidth: number = 150;
     onOpen: (app: MarketApp) => void = () => {};
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     @State private pressed: boolean = false;
     @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
@@ -37,10 +37,15 @@ struct AppTableRow {
             Text(String(this.index)).width(44).fontSize(12).textAlign(TextAlign.Center)
                 .fontColor($r('app.color.v3_text_secondary')).accessibilityText(`序号${this.index}`)
             Row({ space: 8 }) {
-                Image(this.app.icon_url || $r('app.media.startIcon')).width(34).height(34).borderRadius(8)
-                    .objectFit(ImageFit.Cover).alt($r('app.media.startIcon'))
+                Stack() {
+                    Image(this.app.icon_url || $r('app.media.startIcon'))
+                        .width('100%').height('100%').objectFit(ImageFit.Cover)
+                        .alt($r('app.media.startIcon'))
+                        .accessibilityText(`${this.app.name || '未知应用'}图标`)
+                }
+                    .width(34).height(34).borderRadius(8).clip(true)
                     .geometryTransition(appIconGeometryId(this.app, 'apps'), { follow: true })
-                    .accessibilityText(`${this.app.name || '未知应用'}图标`)
+                    .transition(TransitionEffect.OPACITY)
                 Column({ space: 2 }) {
                     Text(this.app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
                         .fontColor($r('app.color.v3_text_primary')).maxLines(1)
@@ -90,7 +95,7 @@ struct AppTableRow {
             }
         })
         .onClick(() => {
-            if (this.vibrationEnabled) vibration.dotVibration();
+            if (this.vibrationLevel > 0) vibration.dotVibration();
             this.onOpen(this.app);
         })
         .accessibilityGroup(true)
@@ -128,7 +133,8 @@ export struct AppsPage {
     @State private filterText: string = '';
     @State private appliedFilterText: string = '';
     @State private tableViewportWidth: number = 0;
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @State private transitionEffect: TransitionEffect = TransitionEffect.IDENTITY;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     private restoredScroll: boolean = false;
     private restoredView: boolean = false;
     private reloadAfterCurrent: boolean = false;
@@ -185,7 +191,7 @@ export struct AppsPage {
         this.titleSearchVisible = visible;
         if (this.onSearchVisibilityChanged) this.onSearchVisibilityChanged(visible);
     }
-    private vibrate(): void { if (this.vibrationEnabled) vibration.dotVibration(); }
+    private vibrate(): void { if (this.vibrationLevel > 0) vibration.dotVibration(); }
     private sortChoices(): SortChoice[] {
         return [
             { label: '更新时间', field: 'updated_at' }, { label: '下载量', field: 'download_count' },
@@ -287,17 +293,21 @@ export struct AppsPage {
         this.load(false);
     }
     private openDetail(app: MarketApp): void {
+        const target: AppRouteTarget = {
+            appId: app.app_id,
+            packageName: app.pkg_name,
+            previewApp: app,
+            geometryId: appIconGeometryId(app, 'apps'),
+        };
+        this.transitionEffect = TransitionEffect.OPACITY
+            .combine(TransitionEffect.scale({ x: 0.9, y: 0.9 }))
+            .animation({ curve: curves.interpolatingSpring(0, 1, 195, 23) });
         try {
             this.getUIContext().animateTo({
-                curve: curves.interpolatingSpring(0, 1, 342, 38),
+                curve: curves.interpolatingSpring(0, 1, 328, 36),
             }, (): void => {
-                setDetailTarget({
-                    appId: app.app_id,
-                    packageName: app.pkg_name,
-                    previewApp: app,
-                    geometryId: appIconGeometryId(app, 'apps'),
-                });
-                this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, true);
+                setDetailTarget(target);
+                this.pageStack.pushPath({ name: 'AppDetailPage', param: target }, false);
             });
         }
         catch (error) {
@@ -521,6 +531,7 @@ export struct AppsPage {
             }
         }
         .width('100%').height('100%').backgroundColor($r('app.color.background'))
+        .transition(this.transitionEffect)
         .onAppear(() => {
             if (!this.restoredView) {
                 this.restoredView = true;

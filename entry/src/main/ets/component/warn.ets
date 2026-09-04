@@ -12,7 +12,7 @@ import { showToastSafely } from '../common/safeUi';
 export struct warn {
   @Link isShow: boolean;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  @StorageLink("vibrationON") vibrationON: boolean = true;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
   @State private isFirstLaunch: boolean = true;
   async aboutToAppear(): Promise<void> {
     try {
@@ -36,7 +36,7 @@ export struct warn {
           if(this.isFirstLaunch){
             showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
           } else {
-            if(this.vibrationON) vibration.dotVibration();
+            if(this.vibrationLevel > 0) vibration.dotVibration();
             this.isShow = false;
           }
         })
@@ -56,7 +56,7 @@ export struct warn {
               .fontColor($r('app.color.diff_content'))
               .margin({ left: 5, top: 10, bottom: 20 })
               .onClick(async () => {
-                if (this.vibrationON) vibration.dotVibration()
+                if (this.vibrationLevel > 0) vibration.dotVibration()
                 const ui_content = this.getUIContext();
                 try {
                   showToastSafely(this.PromptAction, '正在跳转…', 500, 'Warning');
@@ -143,7 +143,7 @@ export struct warn {
             if(this.isFirstLaunch){
               showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
             } else {
-              if(this.vibrationON) vibration.dotVibration();
+              if(this.vibrationLevel > 0) vibration.dotVibration();
               this.isShow = false;
             }
           })
@@ -153,7 +153,7 @@ export struct warn {
             .fontColor($r('app.color.v3_text_secondary'))
             .hitTestBehavior(HitTestMode.None)
             .onClick(() => {
-              if (this.vibrationON) vibration.dotVibration();
+              if (this.vibrationLevel > 0) vibration.dotVibration();
               this.isShow = false
             })
             .accessibilityText('点击外部区域或向下滑动关闭重要提示')
@@ -168,7 +168,7 @@ export struct warn {
           if(this.isFirstLaunch){
             showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
           } else {
-            if(this.vibrationON) vibration.dotVibration();
+            if(this.vibrationLevel > 0) vibration.dotVibration();
             this.isShow = false;
           }
         })
