@@ -1,5 +1,5 @@
 import { common, Want } from '@kit.AbilityKit';
-import { LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import {
     hdsMaterial,
     HdsNavDestination,
@@ -18,6 +18,7 @@ import {
 import {
     consumeDetailTarget,
     getContinuationState,
+    peekDetailTarget,
     setContinuationView,
 } from '../../common/appState';
 import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory } from '../../common/MarketApi';
@@ -79,8 +80,8 @@ export struct AppDetailPage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     private shareManager?: WebShareManager;
-    private target: AppRouteTarget = {};
-    @State private app: MarketApp | undefined = undefined;
+    private target: AppRouteTarget = peekDetailTarget();
+    @State private app: MarketApp | undefined = peekDetailTarget().previewApp;
     @State private metrics: AppMetric[] = [];
     @State private ratingHistory: AppRatingHistory[] = [];
     @State private loading: boolean = true;
@@ -133,7 +134,11 @@ export struct AppDetailPage {
         const continuation = getContinuationState();
         setContinuationView(continuation.mainTab, 0);
         try {
-            this.pageStack.pop();
+            this.getUIContext().animateTo({
+                curve: curves.interpolatingSpring(0, 1, 342, 38),
+            }, (): void => {
+                this.pageStack.pop(true);
+            });
         } catch (error) {
             console.error('[Dashboard][pages/detail/AppDetailPage][ERROR]', `关闭详情页失败: ${JSON.stringify(error)}`);
             showToastSafely(this.prompt, '暂时无法返回，请重试', 1600, 'AppDetailPage');
@@ -342,7 +347,9 @@ export struct AppDetailPage {
                                 .height(82)
                                 .borderRadius(18)
                                 .objectFit(ImageFit.Cover)
-                                .geometryTransition(appIconGeometryId(this.app), { follow: true })
+                                .geometryTransition(appIconGeometryId(this.app))
+                                .transition(TransitionEffect.opacity(0.99)
+                                    .animation({ duration: 360, curve: Curve.Friction }))
                                 .alt($r('app.media.startIcon'))
                                 .accessibilityText(`${this.app.name}应用图标`)
                             Column({ space: 5 }) {

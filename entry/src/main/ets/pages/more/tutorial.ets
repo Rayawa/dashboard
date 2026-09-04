@@ -36,48 +36,51 @@ export struct tutorial {
     return [
       {
         title: 'S站',
-        description: '以 ArkWeb 打开项目网页，下拉可刷新，标题栏保留回到顶部。再次点击已选中的“S站”标签会返回 S站首页。',
+        description: '你可以在这里直接浏览 S站。想看最新内容时下拉刷新，想快速回到开头时使用标题栏按钮。',
         items: [
-          '网页使用应用专用 User-Agent，并保留站点登录、缓存和网页导航能力。',
-          '仅主页面加载失败时显示网络提示，单个图片或脚本失败不会遮挡整个网页。',
+          '登录状态和浏览记录会保留下来，下次打开不用从头开始。',
+          '再次点一下已经选中的“S站”标签，就能回到 S站首页。',
+          '网络暂时不可用时，页面会给出明确提示，不会让零散的图片加载失败打断浏览。',
         ],
       },
       {
         title: '首页',
-        description: '集中展示欢迎信息、更新时间、服务状态、精确市场统计和最近收录应用。',
+        description: '首页汇总了应用市场规模、开发者数量、专题数量、服务状态和最近收录的应用。',
         items: [
-          '在页面顶部继续下拉即可更新市场状态与最近收录应用。',
-          '网络不可用时优先显示仍可用的本地缓存，并明确标注缓存状态。',
+          '进入页面时，主要数字会用滚动效果更新到最新数值。',
+          '在页面顶部下拉，可以重新获取市场状态和最近收录内容。',
+          '没有网络时仍会尽量显示上次成功加载的数据，并标明这些内容来自缓存。',
         ],
       },
       {
         title: '应用搜索',
-        description: '搜索框位于应用详情顶部，通过共享元素展开，统一处理名称、包名、App ID、应用市场链接和系统分享内容。',
+        description: '想找一款应用时，可以输入应用名称、包名、App ID，也可以直接粘贴应用市场链接。',
         items: [
-          '未搜索时显示搜索历史与推荐；得到结果后只显示结果，历史可一键删除。',
-          '结果从上到下懒加载，并根据设备宽度自动切换列数和撑满容器。',
-          '已有应用在结果加载后静默执行一次后台更新；新应用自动投稿并提示。',
-          '页面下滑超过 10vp 后，标题栏会显示搜索按钮。',
+          '搜索前会显示最近使用过的关键词和推荐应用，历史记录可以随时清空。',
+          '搜索结果会根据手机或平板的宽度自动排版。',
+          '找到已有应用后会顺便更新资料；如果还未收录，可以提交收录请求。',
+          '应用列表向下滚动后，标题栏会出现搜索入口，方便随时开始新的查询。',
         ],
       },
       {
-        title: '应用详情',
-        description: '顶部搜索框下方是概况与列表切换栏；列表支持筛选、排序、分页并进入统一详情模板。',
+        title: '应用概况与列表',
+        description: '在顶部切换“应用概况”和“应用列表”，可以从整体趋势一路查看到某一款应用的详细资料。',
         items: [
-          '应用概况提供评分、SDK 分布和 Harmony API 历史图表。',
-          '折线图默认显示完整横坐标范围，支持触摸选点、双指缩放和单指横移。',
-          '列表可按鸿蒙应用、元服务、分类、标签、开发者等条件筛选。',
-          '每页可选择 20、50 或 100 条数据。',
-          '表格可横向查看完整字段，页面可纵向滚动。',
-          '支持升降序切换、上一页、下一页和输入页码跳转。',
+          '概况里可以查看评分分布、最低与目标 SDK 分布，以及各 Harmony API 版本占比的变化。',
+          '点一下图表即可查看具体数据；折线较密时，可以双指放大，再左右拖动。',
+          '列表可以按应用类型、分类、标签和开发者等条件筛选，也能切换排序方式。',
+          '每页可以显示 20、50 或 100 条数据，并支持翻页和直接跳到指定页。',
+          '窄屏上可以左右滑动表格，查看暂时没有显示出来的字段。',
+          '点开应用后，可以查看版本、开发者、下载量、评分、SDK、截图、更新记录和应用介绍。',
         ],
       },
       {
         title: '我的',
-        description: '管理用户名、振动、缓存和界面设置，并访问项目网站、API 文档、日志、隐私政策等入口。',
+        description: '这里可以修改用户名、振动反馈和沉浸式材质，也可以清理缓存或查看项目相关信息。',
         items: [
-          '清除缓存会删除 API 缓存、ArkWeb 缓存和 Cookie，但保留用户名与设置。',
-          '右上角问号可随时重新打开本教程。',
+          '清理缓存会删除接口缓存、网页缓存和 Cookie，但用户名与设置会保留。',
+          '项目网站、接口文档、更新日志、隐私政策和问题反馈都可以从这里进入。',
+          '右上角的问号可以随时重新打开这份教程。',
         ],
       },
     ];
@@ -159,12 +162,12 @@ export struct tutorial {
               .fontColor($r('app.color.v3_text_secondary'))
               .width('100%')
               .accessibilityText(`版本${APP_VERSION}`)
-            Text('应用采用四个固定标签页与统一原生详情页。页面右上角的问号可以重新进入教程。')
+            Text('这是一款用来浏览鸿蒙应用市场数据的看板。你可以查看市场概况、搜索应用、比较趋势，也可以从列表进入每款应用的详细页面。')
               .fontSize(14)
               .lineHeight(21)
               .fontColor($r('app.color.v3_text_primary'))
               .width('100%')
-              .accessibilityText('应用采用四个固定标签页与统一原生详情页')
+              .accessibilityText('可以查看市场概况、搜索应用、比较趋势并打开应用详情')
             Text('打开项目网站')
               .fontSize(14)
               .fontColor($r('app.color.diff_content'))
@@ -190,7 +193,7 @@ export struct tutorial {
               .fontWeight(FontWeight.Bold)
               .fontColor($r('app.color.diff_content'))
               .width('100%')
-            Text('应用详情顶部的搜索组件统一接收应用名称、包名、App ID、应用市场链接以及系统分享内容。已有应用静默更新，新应用自动执行 simple 投稿。')
+            Text('在应用页面顶部输入名称、包名或 App ID 即可搜索；从应用市场分享过来的链接也能直接识别。找到应用后可以打开详情，如果尚未收录，也可以提交收录请求。')
               .fontSize(14)
               .lineHeight(21)
               .fontColor($r('app.color.v3_text_primary'))
@@ -240,17 +243,17 @@ export struct tutorial {
               .fontWeight(FontWeight.Bold)
               .fontColor($r('app.color.diff_content'))
               .width('100%')
-            Text('所有查询、列表、分享和深链最终都进入同一个原生应用详情模板。详情页下拉可更新数据，右上角可分享 S站链接卡片。')
+            Text('无论从首页、搜索结果还是应用列表进入，都会打开同一种详情页面。下拉可以更新资料，右上角可以把这款应用的 S站详情卡片分享出去。')
               .fontSize(14)
               .lineHeight(21)
               .fontColor($r('app.color.v3_text_primary'))
               .width('100%')
               .accessibilityText('所有入口统一进入原生应用详情模板')
-            Text('碰一碰与隔空传送仅在应用详情页启用。')
+            Text('碰一碰与隔空传送可以在应用详情页使用。')
               .fontSize(13)
               .fontColor($r('app.color.v3_text_secondary'))
             KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone })
-            Text('隔空传送：在应用详情页调出分享后，可使用系统隔空传送能力发送带图标的 S站详情卡片。')
+            Text('使用隔空传送时，先在应用详情页打开分享，再选择附近设备，即可发送带应用图标的 S站详情卡片。')
               .fontSize(13)
               .lineHeight(20)
               .fontColor($r('app.color.v3_text_secondary'))
@@ -288,7 +291,7 @@ export struct tutorial {
       .backgroundColor($r('app.color.backcolor'))
       .width('100%')
       .height('100%')
-      .accessibilityText('可滚动的最新架构教程')
+      .accessibilityText('可滚动的应用使用教程')
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])

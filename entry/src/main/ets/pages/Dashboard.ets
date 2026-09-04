@@ -93,6 +93,8 @@ struct Dashboard {
                 maxFontScale: 2,
                 segmentHeight: 48,
                 normalWidth: '100%',
+                experimentalWidth: '100%',
+                experimentalHeight: 52,
                 onItemClicked: (index: number): void => {
                     this.vibrate();
                     setAppsViewIndex(index);
@@ -104,6 +106,21 @@ struct Dashboard {
         .padding({ left: 16, right: 16 })
         .constraintSize({ maxWidth: 532 })
         .justifyContent(FlexAlign.Center)
+    }
+
+    private detailNavigationTransition(
+        from: NavContentInfo,
+        to: NavContentInfo,
+        _operation: NavigationOperation,
+    ): NavigationAnimatedTransition | undefined {
+        if (from.name !== 'AppDetailPage' && to.name !== 'AppDetailPage') return undefined;
+        return {
+            timeout: 420,
+            transition: (proxy: NavigationTransitionProxy): void => {
+                // 详情页只由 geometryTransition 驱动；这里保留两端节点但不再播放 Navigation 默认位移动画。
+                setTimeout((): void => proxy.finishTransition(), 380);
+            },
+        };
     }
 
     private tabs(): MainTab[] {
@@ -216,7 +233,7 @@ struct Dashboard {
                 }
                 setTimeout(() => {
                     try {
-                        this.pageStack.pushPathByName('AppDetailPage', null);
+                        this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, false);
                     } catch (error) {
                         console.error('[Dashboard][pages/Dashboard][ERROR]', `恢复应用详情失败: ${JSON.stringify(error)}`);
                     }
@@ -324,6 +341,7 @@ struct Dashboard {
                     .accessibilityText('我的标签页')
                 }
                 .barPosition(BarPosition.End)
+                .barWidth(280)
                 .scrollable(false)
                 .vertical(false)
                 .barOverlap(true)
@@ -369,6 +387,9 @@ struct Dashboard {
         }
         .mode(NavigationMode.Stack)
         .navDestination(this.destinationBuilder)
+        .customNavContentTransition((from: NavContentInfo, to: NavContentInfo,
+            operation: NavigationOperation): NavigationAnimatedTransition | undefined =>
+            this.detailNavigationTransition(from, to, operation))
         .titleMode(HdsNavigationTitleMode.MINI)
         .hideBackButton(true)
         .hideTitleBar(this.appsSearchOpen)
@@ -426,7 +447,7 @@ struct Dashboard {
                     builder: (): void => {
                         this.appsTitleSegment();
                     },
-                    height: 48,
+                    height: 52,
                     showType: BottomBuilderShowType.DIRECTLY_SHOW,
                 } : undefined,
             },

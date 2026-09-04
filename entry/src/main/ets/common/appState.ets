@@ -83,8 +83,12 @@ export function setDetailTarget(target: AppRouteTarget): void {
     AppStorage.setOrCreate<AppRouteTarget>(APP_STATE_KEY_DETAIL_TARGET, target);
 }
 
+export function peekDetailTarget(): AppRouteTarget {
+    return AppStorage.get<AppRouteTarget>(APP_STATE_KEY_DETAIL_TARGET) ?? {};
+}
+
 export function consumeDetailTarget(): AppRouteTarget {
-    const target = AppStorage.get<AppRouteTarget>(APP_STATE_KEY_DETAIL_TARGET) ?? {};
+    const target = peekDetailTarget();
     AppStorage.setOrCreate<AppRouteTarget>(APP_STATE_KEY_DETAIL_TARGET, {});
     return target;
 }

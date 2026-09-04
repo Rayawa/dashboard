@@ -57,6 +57,7 @@ export struct HdsMiniBarButton {
         this.onButtonClick();
       }
     })
+    .accessibilityText('切换应用概况和应用列表')
   }
 
   build() {

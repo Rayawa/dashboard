@@ -4,7 +4,7 @@ import {
     CACHE_TTL_DETAIL_MS,
     CACHE_TTL_HOME_MS,
     CACHE_TTL_LIST_MS,
-    customUserAgent,
+    createApiRequestHeaders,
     DEFAULT_NETWORK_TIMEOUT_MS,
     SAPIBaseURL,
     SUBMIT_PLATFORM,
@@ -45,10 +45,7 @@ async function requestJson<T>(
         request = http.createHttp();
         const options: http.HttpRequestOptions = {
             method,
-            header: {
-                'Content-Type': 'application/json',
-                'User-Agent': customUserAgent,
-            },
+            header: createApiRequestHeaders(body !== undefined),
             expectDataType: http.HttpDataType.STRING,
             usingCache: false,
             connectTimeout: DEFAULT_NETWORK_TIMEOUT_MS,
@@ -88,10 +85,7 @@ async function postNoCache<T>(path: string, body: object): Promise<T> {
         request = http.createHttp();
         const response = await request.request(`${SAPIBaseURL.toString()}${path}`, {
             method: http.RequestMethod.POST,
-            header: {
-                'Content-Type': 'application/json',
-                'User-Agent': customUserAgent,
-            },
+            header: createApiRequestHeaders(true),
             extraData: JSON.stringify(body),
             expectDataType: http.HttpDataType.STRING,
             usingCache: false,

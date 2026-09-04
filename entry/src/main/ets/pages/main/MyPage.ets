@@ -90,6 +90,7 @@ export struct MyPage {
     @State private showWarning: boolean = false;
     @State private showContact: boolean = false;
     @State private versionTapCount: number = 0;
+    @State private contentWidth: number = 0;
     private versionTapTimer: number = -1;
     private restoredScroll: boolean = false;
 
@@ -222,153 +223,176 @@ export struct MyPage {
         }
     }
 
+    @Builder
+    private appInformation(): void {
+        Column({ space: 14 }) {
+            Column({ space: 8 }) {
+                Image($r('app.media.app_icon'))
+                    .width(100)
+                    .height(100)
+                    .borderRadius(22)
+                    .accessibilityText('Dashboard应用看板图标')
+                    .margin({ bottom: 10 })
+                Text('Dashboard应用看板')
+                    .fontSize(30)
+                    .fontWeight(800)
+                    .fontColor($r('app.color.diff_content'))
+                    .textAlign(TextAlign.Center)
+                    .accessibilityText('Dashboard应用看板')
+                Text('Harmony Dashboard')
+                    .fontSize(20)
+                    .fontWeight(600)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .textAlign(TextAlign.Center)
+                    .accessibilityText('Harmony Dashboard')
+            }
+            .width('100%')
+            .padding({ bottom: 10 })
+            .accessibilityGroup(true)
+            .accessibilityText('应用图标和名称')
+
+            Divider()
+                .color($r('app.color.border'))
+                .accessibilityText('应用名称与版本信息分隔线')
+
+            Column({ space: 5 }) {
+                Text(`版本 ${APP_VERSION}`)
+                    .fontSize(12)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .onClick(() => this.tapVersion())
+                    .accessibilityText(`版本${APP_VERSION}，连续点击十次打开开发者信息`)
+                Text('Designed & Developed by Ray Chen (Rayawa)')
+                    .fontSize(12)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .textAlign(TextAlign.Center)
+                    .accessibilityText('Designed and Developed by Ray Chen Rayawa')
+                Text('Copyright © 2026. All rights reserved.')
+                    .fontSize(12)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .textAlign(TextAlign.Center)
+                    .accessibilityText('版权所有2026')
+                Text('本应用备案域名：rayawa.top')
+                    .fontSize(12)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .textAlign(TextAlign.Center)
+                    .accessibilityText('本应用备案域名rayawa点top')
+                Text('京ICP备2025153453号')
+                    .fontSize(12)
+                    .fontColor($r('app.color.diff_content'))
+                    .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
+                    .onClick(() => {
+                        this.vibrate();
+                        this.openIcp();
+                    })
+                    .accessibilityText('京ICP备2025153453号，点击打开工信部备案页面')
+            }
+            .width('100%')
+            .accessibilityGroup(true)
+            .accessibilityText('版本版权和备案信息')
+        }
+        .width('100%')
+        .padding({ top: 18, bottom: 18, left: 12, right: 12 })
+        .accessibilityGroup(true)
+        .accessibilityText('Dashboard应用信息')
+    }
+
+    @Builder
+    private actionSection(title: string, items: MoreItem[]): void {
+        Column({ space: 8 }) {
+            Text(title)
+                .fontSize(14)
+                .fontWeight(FontWeight.Bold)
+                .fontColor($r('app.color.diff_content'))
+                .width('100%')
+                .padding({ left: 4 })
+                .accessibilityText(title)
+            Column() {
+                ForEach(items, (item: MoreItem, index: number) => {
+                    MoreRow({ item })
+                    if (index < items.length - 1) {
+                        Divider()
+                            .color($r('app.color.v3_chart_grid'))
+                            .margin({ left: 16, right: 16 })
+                            .accessibilityText(`${title}栏目分隔线`)
+                    }
+                }, (item: MoreItem) => item.title)
+            }
+            .width('100%')
+            .borderRadius(16)
+            .backgroundColor($r('app.color.v3_surface'))
+            .border({ width: 1, color: $r('app.color.nd_card_border') })
+            .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
+            .clip(true)
+            .accessibilityGroup(true)
+            .accessibilityText(`${title}栏目`)
+        }
+        .width('100%')
+    }
+
+    @Builder
+    private settingsAndLinks(): void {
+        Column({ space: 14 }) {
+            Text('设置')
+                .fontSize(14)
+                .fontWeight(FontWeight.Bold)
+                .fontColor($r('app.color.diff_content'))
+                .width('100%')
+                .padding({ left: 4 })
+                .accessibilityText('设置')
+            settings()
+            this.actionSection('更多', this.moreItems())
+            this.actionSection('帮助', this.helpItems())
+        }
+        .width('100%')
+        .accessibilityGroup(true)
+        .accessibilityText('设置、更多与帮助列表')
+    }
+
     build() {
         Stack() {
             Scroll(this.scroller) {
                 Column({ space: 14 }) {
                     Blank().height(100).width('100%')
-                    Column({ space: 8 }) {
-                        Image($r('app.media.app_icon'))
-                            .width(100)
-                            .height(100)
-                            .borderRadius(22)
-                            .accessibilityText('Dashboard应用看板图标')
-                            .margin({ bottom: 10 })
-                        Text('Dashboard应用看板')
-                            .fontSize(30)
-                            .fontWeight(800)
-                            .fontColor($r('app.color.diff_content'))
-                            .accessibilityText('Dashboard应用看板')
-                        Text('Harmony Dashboard')
-                            .fontSize(20)
-                            .fontWeight(600)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText('Harmony Dashboard')
-                    }
-                    .width('100%')
-                    .padding({ bottom: 10 })
-                    .accessibilityGroup(true)
-                    .accessibilityText('关于应用')
-
-                    Divider()
-                        .margin({ top: 4, bottom: 4 })
-                        .color($r('app.color.border'))
-                        .accessibilityText('应用信息与设置分隔线')
-
-                    Text('设置')
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.diff_content'))
-                        .width('100%')
-                        .padding({ left: 4 })
-                        .accessibilityText('设置')
-                    settings()
-
-                    Divider()
-                        .margin({ top: 6, bottom: 4 })
-                        .color($r('app.color.border'))
-                        .accessibilityText('设置与更多分隔线')
-
-                    Text('更多')
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.diff_content'))
-                        .width('100%')
-                        .padding({ left: 4, top: 6 })
-                        .accessibilityText('更多')
-                    Column() {
-                        ForEach(this.moreItems(), (item: MoreItem, index: number) => {
-                            MoreRow({ item })
-                            if (index < this.moreItems().length - 1) {
-                                Divider()
-                                    .color($r('app.color.v3_chart_grid'))
-                                    .margin({ left: 16, right: 16 })
-                                    .accessibilityText('更多栏目分隔线')
+                    if (this.contentWidth >= 840) {
+                        Row({ space: 16 }) {
+                            Column() {
+                                this.appInformation()
                             }
-                        }, (item: MoreItem) => item.title)
-                    }
-                    .width('100%')
-                    .borderRadius(16)
-                    .backgroundColor($r('app.color.v3_surface'))
-                    .border({ width: 1, color: $r('app.color.nd_card_border') })
-                    .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
-                    .clip(true)
-                    .accessibilityGroup(true)
-                    .accessibilityText('更多栏目')
+                            .layoutWeight(4)
+                            .alignItems(HorizontalAlign.Start)
 
-                    Divider()
-                        .margin({ top: 6, bottom: 4 })
-                        .color($r('app.color.border'))
-                        .accessibilityText('更多与帮助分隔线')
+                            Divider()
+                                .vertical(true)
+                                .height('100%')
+                                .color($r('app.color.border'))
+                                .accessibilityText('应用信息与功能列表分隔线')
 
-                    Text('帮助')
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.diff_content'))
-                        .width('100%')
-                        .padding({ left: 4, top: 6 })
-                        .accessibilityText('帮助')
-                    Column() {
-                        ForEach(this.helpItems(), (item: MoreItem, index: number) => {
-                            MoreRow({ item })
-                            if (index < this.helpItems().length - 1) {
-                                Divider()
-                                    .color($r('app.color.v3_chart_grid'))
-                                    .margin({ left: 16, right: 16 })
-                                    .accessibilityText('帮助栏目分隔线')
+                            Column() {
+                                this.settingsAndLinks()
                             }
-                        }, (item: MoreItem) => item.title)
+                            .layoutWeight(6)
+                            .alignItems(HorizontalAlign.Start)
+                        }
+                        .width('100%')
+                        .alignItems(VerticalAlign.Top)
+                        .accessibilityGroup(true)
+                        .accessibilityText('左侧应用信息，右侧设置、更多与帮助列表')
+                    } else {
+                        this.appInformation()
+                        Divider()
+                            .color($r('app.color.border'))
+                            .accessibilityText('应用信息与功能列表分隔线')
+                        this.settingsAndLinks()
                     }
-                    .width('100%')
-                    .borderRadius(16)
-                    .backgroundColor($r('app.color.v3_surface'))
-                    .border({ width: 1, color: $r('app.color.nd_card_border') })
-                    .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
-                    .clip(true)
-                    .accessibilityGroup(true)
-                    .accessibilityText('帮助栏目')
 
-                    Divider()
-                        .margin({ top: 6, bottom: 4 })
-                        .color($r('app.color.border'))
-                        .accessibilityText('更多与版本信息分隔线')
-
-                    Column({ space: 5 }) {
-                        Text(`版本 ${APP_VERSION}`)
-                            .fontSize(12)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .onClick(() => this.tapVersion())
-                            .accessibilityText(`版本${APP_VERSION}，连续点击十次打开开发者信息`)
-                        Text('Designed & Developed by Ray Chen (Rayawa)')
-                            .fontSize(12)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText('Designed and Developed by Ray Chen Rayawa')
-                        Text('Copyright © 2026. All rights reserved.')
-                            .fontSize(12)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText('版权所有2026')
-                        Text('本应用备案域名：rayawa.top')
-                            .fontSize(12)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText('本应用备案域名rayawa点top')
-                        Text('京ICP备2025153453号')
-                            .fontSize(12)
-                            .fontColor($r('app.color.diff_content'))
-                            .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
-                            .onClick(() => {
-                                this.vibrate();
-                                this.openIcp();
-                            })
-                            .accessibilityText('京ICP备2025153453号，点击打开工信部备案页面')
-                    }
-                    .width('100%')
-                    .padding({ top: 14, bottom: 110 })
-                    .accessibilityGroup(true)
-                    .accessibilityText('版本版权和备案信息')
+                    Blank().height(110).width('100%')
                 }
                 .width('100%')
-                .constraintSize({ maxWidth: Math.min(CONTENT_MAX_WIDTH, 900) })
+                .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
                 .padding({ left: 14, right: 14 })
+                .onAreaChange((_oldValue: Area, newValue: Area): void => {
+                    this.contentWidth = Number(newValue.width);
+                })
                 .onAppear(() => {
                     if (!this.restoredScroll) {
                         this.restoredScroll = true;

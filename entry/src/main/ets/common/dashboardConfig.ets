@@ -1,6 +1,6 @@
 import { http } from '@kit.NetworkKit';
 import {
-    customUserAgent,
+    createApiRequestHeaders,
     DEFAULT_NETWORK_TIMEOUT_MS,
     SAPIBaseURL,
     SBaseURL,
@@ -49,7 +49,7 @@ export async function fetchDashboardConfig(): Promise<DashboardVisibilityConfig>
             `${SAPIBaseURL.toString()}dashboard/config`,
             {
                 method: http.RequestMethod.GET,
-                header: { 'User-Agent': customUserAgent },
+                header: createApiRequestHeaders(),
                 expectDataType: http.HttpDataType.STRING,
                 usingCache: false,
                 connectTimeout: DEFAULT_NETWORK_TIMEOUT_MS,

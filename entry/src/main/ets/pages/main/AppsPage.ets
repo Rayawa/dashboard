@@ -40,6 +40,7 @@ struct AppTableRow {
                 Image(this.app.icon_url || $r('app.media.startIcon')).width(34).height(34).borderRadius(8)
                     .objectFit(ImageFit.Cover).alt($r('app.media.startIcon'))
                     .geometryTransition(appIconGeometryId(this.app), { follow: true })
+                    .transition(TransitionEffect.OPACITY.animation({ duration: 360, curve: Curve.Friction }))
                     .accessibilityText(`${this.app.name || '未知应用'}图标`)
                 Column({ space: 2 }) {
                     Text(this.app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
@@ -287,8 +288,14 @@ export struct AppsPage {
         this.load(false);
     }
     private openDetail(app: MarketApp): void {
-        setDetailTarget({ appId: app.app_id, packageName: app.pkg_name, previewApp: app });
-        try { this.pageStack.pushPathByName('AppDetailPage', null); }
+        try {
+            this.getUIContext().animateTo({
+                curve: curves.interpolatingSpring(0, 1, 342, 38),
+            }, (): void => {
+                setDetailTarget({ appId: app.app_id, packageName: app.pkg_name, previewApp: app });
+                this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, true);
+            });
+        }
         catch (error) {
             console.error('[Dashboard][pages/main/AppsPage][ERROR]',
                 `打开应用详情失败: ${JSON.stringify(error)}`);
@@ -447,7 +454,7 @@ export struct AppsPage {
                         if (this.selectedIndexes[0] === 0) {
                             Column({ space: 12 }) {
                                 OverviewSection()
-                                Blank().height(20).width('100%')
+                                Blank().height(110).width('100%')
                             }
                             .width('100%')
                             .transition(TransitionEffect.OPACITY.animation({ duration: 200 }))

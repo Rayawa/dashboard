@@ -1,4 +1,4 @@
-import { PromptAction } from '@kit.ArkUI';
+import { curves, PromptAction } from '@kit.ArkUI';
 import { BACKGROUND_REFRESH_DELAY_MS } from '../../common/constants';
 import { consumeSearchTarget, setDetailTarget } from '../../common/appState';
 import { fetchAppById, fetchAppByPackage, fetchAppsPage, submitApp } from '../../common/MarketApi';
@@ -256,13 +256,19 @@ export struct SearchPage {
         const targetApp = app ?? this.resultApp;
         if (!targetApp) return;
         this.vibrate();
-        setDetailTarget({
-            appId: targetApp.app_id,
-            packageName: targetApp.pkg_name,
-            backgroundRefreshHandled: this.resultApp?.app_id === targetApp.app_id,
-            previewApp: targetApp,
-        });
-        try { this.pageStack.pushPathByName('AppDetailPage', null); }
+        try {
+            this.getUIContext().animateTo({
+                curve: curves.interpolatingSpring(0, 1, 342, 38),
+            }, (): void => {
+                setDetailTarget({
+                    appId: targetApp.app_id,
+                    packageName: targetApp.pkg_name,
+                    backgroundRefreshHandled: this.resultApp?.app_id === targetApp.app_id,
+                    previewApp: targetApp,
+                });
+                this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, true);
+            });
+        }
         catch (error) {
             console.error('[Dashboard][pages/main/SearchPage][ERROR]',
                 `打开应用详情失败: ${JSON.stringify(error)}`);
@@ -297,6 +303,7 @@ export struct SearchPage {
             Image(app.icon_url || $r('app.media.startIcon'))
                 .width(42).height(42).borderRadius(10).objectFit(ImageFit.Cover)
                 .geometryTransition(appIconGeometryId(app), { follow: true })
+                .transition(TransitionEffect.OPACITY.animation({ duration: 360, curve: Curve.Friction }))
                 .alt($r('app.media.startIcon'))
                 .accessibilityText(`${app.name || '未知应用'}图标`)
             Text(app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
@@ -321,6 +328,7 @@ export struct SearchPage {
             Image(app.icon_url || $r('app.media.startIcon'))
                 .width(58).height(58).borderRadius(14).objectFit(ImageFit.Cover)
                 .geometryTransition(appIconGeometryId(app), { follow: true })
+                .transition(TransitionEffect.OPACITY.animation({ duration: 360, curve: Curve.Friction }))
                 .alt($r('app.media.startIcon')).accessibilityText(`${app.name || '未知应用'}应用图标`)
             Column({ space: 4 }) {
                 Text(app.name || '未知应用').fontSize(17).fontWeight(FontWeight.Bold)

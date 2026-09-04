@@ -76,6 +76,7 @@ struct friend {
             .height(24)
             .width(24)
             .objectFit(ImageFit.Contain)
+            .accessibilityText(`${site.title}图标`)
           Text(site.title)
             .fontSize(16)
             .margin({ left: 12 })
@@ -84,6 +85,7 @@ struct friend {
           .height(16)
           .width(16)
           .objectFit(ImageFit.Contain)
+          .accessibilityText('打开链接')
       }
       .onClick(() => {
         if(this.vibrationON) vibration.dotVibration()
@@ -103,6 +105,7 @@ struct friend {
         .strokeWidth(0.5)
         .color($r("app.color.border"))
         .margin({ left: 16, right: 16 })
+        .accessibilityText('友情链接分隔线')
     }
   }
   @Builder appLists(site: AppConfig) {
@@ -113,6 +116,7 @@ struct friend {
             .height(24)
             .width(24)
             .objectFit(ImageFit.Contain)
+            .accessibilityText(`${site.title}图标`)
           Text(site.title)
             .fontSize(16)
             .margin({ left: 12 })
@@ -121,6 +125,7 @@ struct friend {
           .height(16)
           .width(16)
           .objectFit(ImageFit.Contain)
+          .accessibilityText('在应用市场打开')
       }
       .onClick(() => {
         if(this.vibrationON) vibration.dotVibration()
@@ -138,6 +143,7 @@ struct friend {
         .strokeWidth(0.5)
         .color($r("app.color.border"))
         .margin({ left: 16, right: 16 })
+        .accessibilityText('友情链接应用分隔线')
     }
 
   }

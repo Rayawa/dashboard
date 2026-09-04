@@ -1,10 +1,11 @@
+import { common } from '@kit.AbilityKit';
 import { RESPONSIVE_BREAKPOINT_LARGE, RESPONSIVE_BREAKPOINT_MEDIUM } from '../../common/constants';
 import { fetchApiHistory, fetchRatingDistribution, fetchSdkDistribution } from '../../common/MarketApi';
 import { formatCount } from '../../common/format';
 import { vibration } from '../../common/vibration';
 import type { BaseAPIResponse, RatingDistribution } from '../../common/types';
 import { InteractiveLineChart } from './InteractiveLineChart';
-import type { LineChartPoint } from './InteractiveLineChart';
+import type { LineChartPoint, LineChartSeries } from './InteractiveLineChart';
 
 interface DistributionChart { title: string; labels: string[]; values: number[]; total: number; }
 interface HistoryPoint { date: string; values: Record<string, number>; }
@@ -13,22 +14,36 @@ interface HistoryPoint { date: string; values: Record<string, number>; }
 struct DistributionPanel {
     @Prop @Watch('onChartChanged') chart: DistributionChart = { title: '', labels: [], values: [], total: 1 };
     @State private selected: number = 0;
-    @State private revealProgress: number = 0;
+    @State private canvasSize: number = 220;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    private settings: RenderingContextSettings = new RenderingContextSettings(true);
+    private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
+    private canvasReady: boolean = false;
+    private drawProgress: number = 1;
+    private animationToken: number = 0;
 
     private onChartChanged(): void {
         this.selected = 0;
-        this.animateBars();
+        setTimeout((): void => this.animatePie(), 0);
     }
-    private animateBars(): void {
-        this.revealProgress = 0;
-        setTimeout((): void => {
-            this.getUIContext().animateTo({ duration: 800, curve: Curve.EaseOut }, (): void => {
-                this.revealProgress = 1;
-            });
-        }, 40);
+    private animatePie(): void {
+        if (!this.canvasReady || this.chart.total <= 0) {
+            this.draw();
+            return;
+        }
+        const token = ++this.animationToken;
+        const startedAt = Date.now();
+        this.drawProgress = 0;
+        const tick = (): void => {
+            if (token !== this.animationToken) return;
+            const elapsed = Math.min(1, (Date.now() - startedAt) / 700);
+            this.drawProgress = 1 - Math.pow(1 - elapsed, 3);
+            this.draw();
+            if (elapsed < 1) setTimeout(tick, 16);
+        };
+        tick();
     }
-    private colors(): ResourceColor[] {
+    private colors(): Resource[] {
         return [
             $r('app.color.diff_content'), $r('app.color.v3_accent_cyan'), $r('app.color.v3_accent_green'),
             $r('app.color.v3_accent_orange'), $r('app.color.v3_accent_red'), $r('app.color.v3_accent_purple'),
@@ -40,13 +55,78 @@ struct DistributionPanel {
         const percent = this.chart.total > 0 ? value / this.chart.total * 100 : 0;
         return `${this.chart.labels[this.selected]}：${formatCount(value)}，${percent.toFixed(1)}%`;
     }
-    private maximum(): number {
-        let maximum = 1;
-        for (const value of this.chart.values) maximum = Math.max(maximum, value);
-        return maximum;
+
+    private legendText(index: number): string {
+        const value = this.chart.values[index] ?? 0;
+        const percent = this.chart.total > 0 ? value / this.chart.total * 100 : 0;
+        return `${formatCount(value)} · ${percent.toFixed(1)}%`;
     }
-    private barWidth(value: number): string {
-        return `${Math.max(0, value / this.maximum() * 100 * this.revealProgress)}%`;
+
+    private resolvedColor(resource: Resource): number {
+        const host = this.getUIContext().getHostContext() as common.UIAbilityContext;
+        try {
+            return host.resourceManager.getColorSync(resource.id);
+        } catch (error) {
+            console.warn('[Dashboard][component/charts/OverviewSection][WARN]',
+                `饼图颜色读取失败: ${JSON.stringify(error)}`);
+            return 0xFF1E6FCD;
+        }
+    }
+
+    private draw(): void {
+        const size = this.canvasSize;
+        this.context.clearRect(0, 0, size, size);
+        if (this.chart.total <= 0 || this.chart.values.length === 0) return;
+        const colors = this.colors();
+        const center = size / 2;
+        const radius = Math.max(20, center - 12);
+        let startAngle = -Math.PI / 2;
+        const surfaceColor = this.resolvedColor($r('app.color.v3_surface'));
+        for (let index = 0; index < this.chart.values.length; index++) {
+            const sweep = Math.PI * 2 * this.chart.values[index] / this.chart.total * this.drawProgress;
+            const endAngle = startAngle + sweep;
+            this.context.beginPath();
+            this.context.moveTo(center, center);
+            this.context.arc(center, center, radius, startAngle, endAngle);
+            this.context.closePath();
+            this.context.fillStyle = this.resolvedColor(colors[index % colors.length]);
+            this.context.fill();
+            this.context.strokeStyle = surfaceColor;
+            this.context.lineWidth = 2;
+            this.context.stroke();
+            if (index === this.selected && this.drawProgress >= 1) {
+                this.context.beginPath();
+                this.context.arc(center, center, radius + 4, startAngle, endAngle);
+                this.context.strokeStyle = this.resolvedColor(colors[index % colors.length]);
+                this.context.lineWidth = 4;
+                this.context.stroke();
+            }
+            startAngle = endAngle;
+        }
+    }
+
+    private selectAt(x: number, y: number): void {
+        if (this.chart.total <= 0) return;
+        const center = this.canvasSize / 2;
+        const dx = x - center;
+        const dy = y - center;
+        if (Math.sqrt(dx * dx + dy * dy) > center) return;
+        let angle = Math.atan2(dy, dx) + Math.PI / 2;
+        if (angle < 0) angle += Math.PI * 2;
+        let accumulated = 0;
+        for (let index = 0; index < this.chart.values.length; index++) {
+            accumulated += Math.PI * 2 * this.chart.values[index] / this.chart.total;
+            if (angle <= accumulated) {
+                if (index !== this.selected && this.vibrationEnabled) vibration.dotVibration();
+                this.selected = index;
+                this.draw();
+                return;
+            }
+        }
+    }
+
+    aboutToDisappear(): void {
+        this.animationToken++;
     }
 
     build() {
@@ -54,32 +134,44 @@ struct DistributionPanel {
             Text(this.chart.title).fontSize(18).fontWeight(FontWeight.Bold)
                 .fontColor($r('app.color.v3_text_primary')).width('100%').accessibilityText(this.chart.title)
             if (this.chart.values.length > 0) {
-                Column({ space: 10 }) {
-                    ForEach(this.chart.labels, (label: string, index: number) => {
-                        Column({ space: 5 }) {
-                            Row() {
-                                Text(label).fontSize(14).fontColor($r('app.color.v3_text_secondary')).layoutWeight(1)
-                                Text(formatCount(this.chart.values[index])).fontSize(14)
-                                    .fontColor($r('app.color.v3_text_primary'))
-                            }.width('100%')
-                            Stack({ alignContent: Alignment.Start }) {
-                                Row().width('100%').height(8).borderRadius(4)
-                                    .backgroundColor($r('app.color.v3_surface_alt'))
-                                Row().width(this.barWidth(this.chart.values[index])).height(8).borderRadius(4)
-                                    .backgroundColor(this.colors()[index % this.colors().length])
-                            }
-                            .width('100%').height(8)
+                Canvas(this.context)
+                    .width(this.canvasSize).height(this.canvasSize).align(Alignment.Center)
+                    .onReady((): void => {
+                        this.canvasReady = true;
+                        this.animatePie();
+                    })
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down && event.touches.length > 0) {
+                            this.selectAt(event.touches[0].x, event.touches[0].y);
                         }
-                        .width('100%').padding(8).borderRadius(10)
-                        .backgroundColor(index === this.selected ? $r('app.color.v3_surface_alt') : Color.Transparent)
-                        .onClick(() => {
-                            if (this.vibrationEnabled) vibration.dotVibration();
-                            this.selected = index;
-                        })
-                        .accessibilityText(`${label}，数量${formatCount(this.chart.values[index])}`)
+                    })
+                    .accessibilityText(`${this.chart.title}饼图，点一下扇区可以查看具体数据`)
+                GridRow({ columns: 2, gutter: { x: 8, y: 8 } }) {
+                    ForEach(this.chart.labels, (label: string, index: number) => {
+                        GridCol({ span: 1 }) {
+                            Row({ space: 7 }) {
+                                Row().width(10).height(10).borderRadius(5)
+                                    .backgroundColor(this.colors()[index % this.colors().length])
+                                Column({ space: 2 }) {
+                                    Text(label).fontSize(14).fontWeight(FontWeight.Medium)
+                                        .fontColor($r('app.color.v3_text_primary')).maxLines(1)
+                                    Text(this.legendText(index)).fontSize(12)
+                                        .fontColor($r('app.color.v3_text_secondary')).maxLines(1)
+                                }.alignItems(HorizontalAlign.Start).layoutWeight(1)
+                            }
+                            .width('100%').padding(8).borderRadius(10)
+                            .backgroundColor(index === this.selected ?
+                                $r('app.color.v3_surface_alt') : Color.Transparent)
+                            .onClick(() => {
+                                if (this.vibrationEnabled) vibration.dotVibration();
+                                this.selected = index;
+                                this.draw();
+                            })
+                            .accessibilityText(`${label}，${this.legendText(index)}`)
+                        }
                     }, (label: string) => `${this.chart.title}-${label}`)
-                }.width('100%').accessibilityText(`${this.chart.title}分布图，触摸柱形查看数据`)
-                Text(this.selectedText()).fontSize(14).fontColor($r('app.color.v3_text_secondary'))
+                }.width('100%').accessibilityText(`${this.chart.title}图例`)
+                Text(this.selectedText()).fontSize(15).fontColor($r('app.color.v3_text_secondary'))
                     .accessibilityText(this.selectedText())
             } else {
                 Text('暂无数据').fontColor($r('app.color.v3_text_secondary')).padding(30)
@@ -88,7 +180,14 @@ struct DistributionPanel {
         }
         .width('100%').padding(16).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .onAppear(() => this.animateBars())
+        .onAreaChange((_oldArea: Area, area: Area): void => {
+            const width = Number(area.width);
+            if (width > 0) {
+                this.canvasSize = Math.max(176, Math.min(232, width - 48));
+                setTimeout((): void => this.draw(), 0);
+            }
+        })
+        .onAppear(() => this.animatePie())
         .accessibilityGroup(true).accessibilityText(`${this.chart.title}，${this.selectedText()}`)
     }
 }
@@ -97,19 +196,32 @@ struct DistributionPanel {
 struct ApiHistoryChart {
     @Prop history: HistoryPoint[] = [];
     @Prop apiKeys: string[] = [];
-    @State private selectedApiIndex: number = 0;
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
-    private options(): SelectOption[] {
-        return this.apiKeys.map((key: string) => ({ value: `API ${key}` } as SelectOption));
+    private palette(): Resource[] {
+        return [
+            $r('app.color.diff_content'),
+            $r('app.color.v3_accent_cyan'),
+            $r('app.color.v3_accent_green'),
+            $r('app.color.v3_accent_orange'),
+            $r('app.color.v3_accent_red'),
+            $r('app.color.v3_accent_purple'),
+        ];
     }
-    private currentKey(): string { return this.apiKeys[this.selectedApiIndex] ?? ''; }
-    private points(): LineChartPoint[] {
-        const key = this.currentKey();
-        return this.history.map((point: HistoryPoint): LineChartPoint => {
-            const value = point.values[key] ?? 0;
-            return { label: point.date, value, detail: `${point.date} · API ${key} 占比 ${value.toFixed(2)}%` };
-        });
+
+    private chartSeries(): LineChartSeries[] {
+        const colors = this.palette();
+        return this.apiKeys.map((key: string, index: number): LineChartSeries => ({
+            label: `API ${key}`,
+            color: colors[index % colors.length],
+            points: this.history.map((point: HistoryPoint): LineChartPoint => {
+                const value = Number(point.values[key] ?? 0);
+                return {
+                    label: point.date,
+                    value,
+                    detail: `${point.date} · API ${key} 占比 ${value.toFixed(2)}%`,
+                } as LineChartPoint;
+            }),
+        } as LineChartSeries));
     }
 
     build() {
@@ -117,19 +229,13 @@ struct ApiHistoryChart {
             Row() {
                 Text('Harmony API 版本占比历史').fontSize(18).fontWeight(FontWeight.Bold)
                     .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
-                if (this.apiKeys.length > 0) {
-                    Select(this.options()).selected(this.selectedApiIndex).value(`API ${this.currentKey()}`)
-                        .backgroundColor($r('app.color.v3_surface_alt'))
-                        .onSelect((index: number) => {
-                            if (this.vibrationEnabled) vibration.dotVibration();
-                            this.selectedApiIndex = index;
-                        })
-                        .accessibilityText('选择要查看的Harmony API版本')
-                }
             }.width('100%')
             InteractiveLineChart({
-                title: 'Harmony API版本占比历史', unit: '%', points: this.points(),
-                lineColor: $r('app.color.diff_content'), showTitle: false,
+                title: 'Harmony API版本占比历史',
+                unit: '%',
+                series: this.chartSeries(),
+                showTitle: false,
+                chartHeight: 280,
             })
         }
         .width('100%').accessibilityText('Harmony API版本占比历史')
@@ -215,17 +321,17 @@ export struct OverviewSection {
                 if (tuple.length >= 2) next.push({ date: String(tuple[0]), values: tuple[1] as Record<string, number> });
             }
             this.history = next;
-            this.apiKeys = next.length > 0 ? Object.keys(next[next.length - 1].values)
-                .sort((a: string, b: string) => Number(a) - Number(b)) : [];
+            const discovered: Record<string, boolean> = {};
+            for (const historyPoint of next) {
+                for (const key of Object.keys(historyPoint.values)) discovered[key] = true;
+            }
+            this.apiKeys = Object.keys(discovered).sort((a: string, b: string) => Number(a) - Number(b));
             this.fromCache = this.fromCache || result.stale;
         }).catch((error: Error) => this.failed('Harmony API 历史', error)).finally(() => this.finish());
     }
 
     build() {
         Column({ space: 14 }) {
-            Text('触摸图表查看数据；折线图支持双指缩放和单指左右移动').fontSize(13)
-                .fontColor($r('app.color.v3_text_secondary')).width('100%')
-                .accessibilityText('图表支持触摸查看数据，折线图支持双指缩放和单指左右移动')
             if (this.fromCache) {
                 Text('网络不可用，当前图表来自本地离线缓存').fontSize(13)
                     .fontColor($r('app.color.v3_text_primary')).padding(12).width('100%')
