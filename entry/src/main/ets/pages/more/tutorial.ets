@@ -1,6 +1,7 @@
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import {
   HdsNavDestination,
   HdsNavDestinationTitleMode,
@@ -23,6 +24,9 @@ interface TutorialSection {
 export struct tutorial {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink('vibrationON') vibrationON: boolean = true;
+  @StorageLink('immersiveTextureON') immersiveTextureON: boolean = false;
+  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
+    hdsMaterial.MaterialLevel.EXQUISITE;
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   private readonly cardSwiperResourcesPhone: CardRes[] = [{
     text: '对方手机需支持相应的 HarmonyOS 分享能力。',
@@ -36,10 +40,13 @@ export struct tutorial {
     return [
       {
         title: 'S站',
-        description: '你可以在这里直接浏览 S站。想看最新内容时下拉刷新，想快速回到开头时使用标题栏按钮。',
+        description: 'S站会直接显示在应用里，适合阅读站内文章、查看动态，或者继续上次没有看完的内容。',
         items: [
-          '登录状态和浏览记录会保留下来，下次打开不用从头开始。',
+          '登录状态、Cookie 和浏览记录会保留下来，下次打开通常不需要重新登录。',
+          '页面顶部下拉即可刷新；加载过程中会显示进度，遇到网络问题也会给出提示。',
           '再次点一下已经选中的“S站”标签，就能回到 S站首页。',
+          '页面滚动位置会被记录，从其他栏目切回来时可以继续阅读。',
+          '网页内链接仍在当前页面打开，系统能够处理的外部链接则会交给对应应用。',
           '网络暂时不可用时，页面会给出明确提示，不会让零散的图片加载失败打断浏览。',
         ],
       },
@@ -49,38 +56,94 @@ export struct tutorial {
         items: [
           '进入页面时，主要数字会用滚动效果更新到最新数值。',
           '在页面顶部下拉，可以重新获取市场状态和最近收录内容。',
+          '点一下“最近收录”中的应用，可以直接打开对应的原生详情页。',
+          '平板和宽屏设备采用左右分栏：左边固定显示市场概览，右边可以单独滚动最近收录。',
+          '手机上所有内容保持纵向排列，直接上下滑动即可浏览。',
           '没有网络时仍会尽量显示上次成功加载的数据，并标明这些内容来自缓存。',
         ],
       },
       {
-        title: '应用搜索',
-        description: '想找一款应用时，可以输入应用名称、包名、App ID，也可以直接粘贴应用市场链接。',
+        title: '应用概况',
+        description: '进入“应用详情”栏目后，顶部的“应用概况”和“应用列表”切换条始终固定，向下浏览时也能随时换页。',
         items: [
-          '搜索前会显示最近使用过的关键词和推荐应用，历史记录可以随时清空。',
-          '搜索结果会根据手机或平板的宽度自动排版。',
-          '找到已有应用后会顺便更新资料；如果还未收录，可以提交收录请求。',
-          '应用列表向下滚动后，标题栏会出现搜索入口，方便随时开始新的查询。',
+          '三个饼图分别展示目标 SDK、最低 SDK 和应用评分分布，版本与星级按从高到低排列。',
+          '在窄屏上，两个 SDK 图各自带有图例；屏幕较宽时，它们会放进同一个卡片并共用图例。',
+          '点一下饼图扇区或图例，可以高亮对应项目并查看数量和占比。',
+          'SDK 版本较多时会先合并成灰色“其他”，点扇区或“点击展开全部”就能查看完整版本。',
+          'Harmony API 占比历史把所有 API 版本画在同一张折线图上，便于比较版本迁移。',
+          '折线图可以点选数据、双指缩放；放大后用单指左右拖动查看不同日期。',
         ],
       },
       {
-        title: '应用概况与列表',
-        description: '在顶部切换“应用概况”和“应用列表”，可以从整体趋势一路查看到某一款应用的详细资料。',
+        title: '应用列表',
+        description: '应用列表适合从市场数据中筛选应用，也可以按常用指标重新排序。',
         items: [
-          '概况里可以查看评分分布、最低与目标 SDK 分布，以及各 Harmony API 版本占比的变化。',
-          '点一下图表即可查看具体数据；折线较密时，可以双指放大，再左右拖动。',
-          '列表可以按应用类型、分类、标签和开发者等条件筛选，也能切换排序方式。',
+          '先选择全部类型、鸿蒙应用或元服务，再按应用名称、分类、标签、开发者等字段筛选。',
+          '排序字段和升降序可以组合使用，例如优先查看下载量最高或最近更新的应用。',
+          '切换筛选条件后点“筛选”；想回到完整列表时使用“清除筛选”。',
           '每页可以显示 20、50 或 100 条数据，并支持翻页和直接跳到指定页。',
           '窄屏上可以左右滑动表格，查看暂时没有显示出来的字段。',
-          '点开应用后，可以查看版本、开发者、下载量、评分、SDK、截图、更新记录和应用介绍。',
+          '平板和宽屏会利用多出的空间显示开发者等字段，手机布局不会被强行压缩。',
+          '点任意应用行即可进入详情；返回列表后，原来的筛选条件和滚动位置会尽量保留。',
+        ],
+      },
+      {
+        title: '搜索、查询与收录',
+        description: '顶部搜索栏支持应用名称、包名、App ID 和应用市场链接，不需要记住固定格式。',
+        items: [
+          '搜索栏不会自动弹出键盘，需要搜索时再点一下输入框即可。',
+          '没有输入内容时会显示搜索历史和推荐应用；历史记录可以逐条使用，也可以一次清空。',
+          '结果较多时会继续分批加载，并根据手机或平板宽度自动调整排列方式。',
+          '查到已经收录的应用时会打开详情，并尝试更新市场资料。',
+          '查不到应用时，可以按页面提示提交收录；从应用市场分享链接过来，也会进入同一套查询流程。',
+          '包名、App ID 或市场链接通常比简称更准确，遇到同名应用时可以优先使用这些信息。',
+        ],
+      },
+      {
+        title: '应用详情',
+        description: '从首页、搜索结果和应用列表进入的都是同一种原生详情页，资料和操作位置保持一致。',
+        items: [
+          '页面顶部会显示应用图标、名称、开发者、版本和主要指标，继续下滑可以查看完整字段。',
+          '详情字段包括包名、App ID、SDK、Harmony API、下载量、评分、大小、备案与上架时间等信息。',
+          '截图区域可以左右滑动；下方还会显示下载量趋势、评分趋势、应用介绍和新版特性。',
+          '点“应用市场”可以交给系统打开对应商店页面。',
+          '详情暂时加载失败时可以重试；显示缓存内容时，页面会明确标出数据可能不是最新。',
+          '下拉刷新会重新查询当前应用，不需要返回列表再次搜索。',
+        ],
+      },
+      {
+        title: '分享应用',
+        description: '应用详情右上角提供分享入口，可以把带应用图标的 S站详情卡片发送给其他设备或应用。',
+        items: [
+          '普通系统分享、碰一碰和隔空传送都从详情页发起，分享内容指向同一款应用。',
+          '分享前需要先等详情加载完成，避免发送缺少名称或图标的卡片。',
+          '碰一碰需要双方设备和系统版本支持对应能力，并按系统提示靠近设备。',
+          '隔空传送时选择附近设备，接收方确认后即可打开详情链接。',
+          '从应用市场把链接分享给本应用时，则用于查询、更新或提交收录，不是转发详情卡片。',
         ],
       },
       {
         title: '我的',
         description: '这里可以修改用户名、振动反馈和沉浸式材质，也可以清理缓存或查看项目相关信息。',
         items: [
+          '用户名会用于首页问候；修改后无需重新启动应用。',
+          '振动反馈开关会同时控制主要按钮、返回和图表选择时的轻触反馈。',
+          '沉浸式材质会同步作用于支持的导航栏和切换栏，关闭后使用普通背景样式。',
           '清理缓存会删除接口缓存、网页缓存和 Cookie，但用户名与设置会保留。',
+          '缓存项旁会显示当前占用空间；清理后，S站可能需要重新登录，数据页面也需要重新联网加载。',
           '项目网站、接口文档、更新日志、隐私政策和问题反馈都可以从这里进入。',
           '右上角的问号可以随时重新打开这份教程。',
+        ],
+      },
+      {
+        title: '刷新、离线与接续',
+        description: '应用会尽量保留正在看的内容，但网络数据和设备接续各有自己的更新规则。',
+        items: [
+          '首页、应用概况、应用列表和详情页都支持重新加载；下拉刷新时请等待顶部进度结束。',
+          '网络中断后，如果本机有缓存，会继续展示上次成功获取的数据，并在页面上标明缓存状态。',
+          '缓存只用于临时浏览，市场数量、评分和版本占比仍以恢复联网后的刷新结果为准。',
+          '跨设备接续会恢复主栏目、应用详情子页面和已经记录的滚动位置。',
+          '接续设备需要安装兼容版本；目标设备无法恢复某项内容时，会回到最接近的可用页面。',
         ],
       },
     ];
@@ -308,6 +371,48 @@ export struct tutorial {
           blurEffectiveStartOffset: LengthMetrics.vp(0),
           blurEffectiveEndOffset: LengthMetrics.vp(20),
         },
+        originalStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('sys.color.ohos_id_color_background'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+              subTitleColor: $r('sys.color.font_secondary'),
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary'),
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary'),
+            },
+          },
+        },
+        scrollEffectStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary'),
+              subTitleColor: $r('sys.color.font_secondary'),
+            },
+            menuStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary'),
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_tertiary'),
+              iconColor: $r('sys.color.icon_primary'),
+            },
+          },
+        },
+        systemMaterialEffect: this.immersiveTextureON ? {
+          materialType: hdsMaterial.MaterialType.IMMERSIVE,
+          materialLevel: this.immersiveMaterialLevel,
+        } : undefined,
       },
       content: {
         title: {

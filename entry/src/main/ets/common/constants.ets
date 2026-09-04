@@ -15,6 +15,7 @@ export const STORAGE_KEY_VIBRATION = 'vibrationON';
 export const STORAGE_KEY_HOLD_CHECK = 'holdCheckON';
 export const STORAGE_KEY_BUTTON_RIGHT = 'buttonPositionRIGHT';
 export const STORAGE_KEY_IMMERSIVE = 'immersiveTextureON';
+export const STORAGE_KEY_IMMERSIVE_MATERIAL_LEVEL = 'immersiveMaterialLevel';
 export const STORAGE_KEY_SEARCH_HISTORY = 'searchHistory';
 export const APP_STATE_KEY_PAGE_URL = 'pageUrl';
 export const APP_STATE_KEY_SCROLL_DISTANCE = 'scrollDistance';
@@ -32,6 +33,8 @@ export const DEFAULT_VIBRATION_ENABLED = true;
 export const DEFAULT_HOLD_CHECK_ENABLED = false;
 export const DEFAULT_BUTTON_RIGHT = false;
 export const DEFAULT_IMMERSIVE_TEXTURE = false;
+// hdsMaterial.MaterialLevel.EXQUISITE；保持为数字，避免存储层依赖 UI Design Kit。
+export const DEFAULT_IMMERSIVE_MATERIAL_LEVEL = 0;
 export const DEFAULT_WINDOW_WIDTH = 1260;
 export const DEFAULT_WINDOW_HEIGHT = 2224;
 export const DEFAULT_SCROLL_DISTANCE = 0;

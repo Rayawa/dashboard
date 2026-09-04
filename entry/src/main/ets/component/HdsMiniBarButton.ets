@@ -1,114 +1,107 @@
+import { hdsMaterial, HdsTabs } from '@kit.UIDesignKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
-import { hdsEffect, HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
+import { ConfigurationConstant } from '@kit.AbilityKit';
 
 /**
- * 基于 HdsTabs 迷你栏材质的通用按钮承载层。
- * 保留独立组件，方便后续重新接入智感握持位置策略。
+ * HdsMiniBarButton 浮动迷你栏按钮组件。
+ * 结构同步自 Deadliner 手机端概览页使用的原版 HdsTabs 材质承载组件。
  */
 @Component
 export struct HdsMiniBarButton {
-  @Prop barWidth: number = 240;
-  @Prop barHeight: number = 52;
-  @Prop materialLevel: number = 10;
-  @Prop materialType: number = 100;
-  @BuilderParam buttonContent: () => void = this.defaultContent;
+  @Prop barWidth: number = 50;
+  @Prop barHeight: number = 50;
+  @Prop contentPadding: number = 8;
+  @Prop containerSize: SizeOptions | undefined = undefined;
+
+  @Prop iconResource: Resource | undefined = undefined;
+  @Prop iconSize: number = 27;
+  @Prop iconColor: ResourceColor[] = [Color.Gray];
+
+  @Prop maskColor: ResourceColor = Color.Transparent;
+  @Prop barBottomMargin: number = 0;
+  @Prop barPosition: BarPosition = BarPosition.End;
+  @Prop barOverlap: boolean = true;
+  @Prop activeThemeId: string = 'default';
+
+  @StorageLink('isHdsTabsEnabled') isHdsTabsEnabled: boolean = true;
+  @StorageLink('currentColorMode') currentColorMode: number =
+    ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
+
   public onButtonClick: (() => void) | undefined = undefined;
-  private controller: HdsTabsController = new HdsTabsController();
-  @State private pressed: boolean = false;
-  @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
   @Builder
-  private defaultContent(): void {
-    Blank()
+  private defaultButtonBuilder(): void {
+    if (this.iconResource) {
+      SymbolGlyph(this.iconResource)
+        .fontSize(this.iconSize)
+        .fontColor(this.iconColor)
+    }
   }
 
-  @Builder
-  private miniBarContent(): void {
-    Stack({ alignContent: Alignment.Center }) {
-      this.buttonContent()
+  @BuilderParam buttonContent: () => void = this.defaultButtonBuilder;
+  @StorageLink('immersiveMaterialLevel') materialLevel: number = 0;
+  @StorageLink('materialType') materialType: number = 100;
+
+  private getComputedContainerSize(): SizeOptions {
+    if (this.containerSize !== undefined) {
+      return this.containerSize;
     }
-    .width('100%')
-    .height('100%')
-    .borderRadius(this.barHeight / 2)
-    .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
-    .animation({ curve: Curve.EaseOut, duration: 150 })
-    .visualEffect(new hdsEffect.HdsEffectBuilder()
-      .pointLight({
-        sourceType: this.pointLight,
-        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-        options: {
-          color: $r('app.color.diff_content'),
-          intensity: 10,
-          height: 150,
-        },
-      })
-      .buildEffect())
-    .onTouch((event: TouchEvent) => {
-      if (event.type === TouchType.Down) {
-        this.pressed = true;
-        this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
-      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-        this.pressed = false;
-        this.pointLight = hdsEffect.PointLightSourceType.NONE;
-      }
-    })
-    .onClick(() => {
-      if (this.onButtonClick) {
-        this.onButtonClick();
-      }
-    })
-    .accessibilityText('切换应用概况和应用列表')
+    return {
+      width: this.barWidth + 30 + this.contentPadding * 2,
+      height: this.barHeight + 10 + this.contentPadding * 2,
+    };
   }
 
   build() {
-    Column() {
-      if (deviceInfo.distributionOSApiVersion >= 60100) {
-        HdsTabs({ controller: this.controller }) {
-          TabContent()
-            .backgroundColor(Color.Transparent)
-        }
-        .height(this.barHeight - 12)
-        .barWidth(this.barWidth)
-        .barHeight(this.barHeight - 12)
-        .barOverlap(true)
-        .barPosition(BarPosition.End)
-        .backgroundColor(Color.Transparent)
-        .barFloatingStyle({
-          barWidth: {
-            smallWidth: this.barWidth,
-            mediumWidth: this.barWidth,
-            largeWidth: this.barWidth,
-          },
-          gradientMask: { maskColor: Color.Transparent },
-          barBottomMargin: 0,
-          barSideMargin: 0,
-          lightColor: $r('app.color.light_color'),
-          systemMaterialEffect: {
-            materialType: this.materialType,
-            materialLevel: this.materialLevel,
-          },
-          miniBar: {
-            miniBarBuilder: () => {
-              this.miniBarContent()
+    Row() {
+      if (this.isHdsTabsEnabled && deviceInfo.distributionOSApiVersion >= 60100) {
+        Row() {
+          HdsTabs() {
+            TabContent()
+              .tabBar(this.buttonContent())
+          }
+          .height(this.barHeight)
+          .barWidth(this.barWidth)
+          .barHeight(this.barHeight - 10)
+          .barOverlap(this.barOverlap)
+          .barPosition(this.barPosition)
+          .barFloatingStyle({
+            gradientMask: {
+              maskColor: this.maskColor,
             },
-            miniBarStyle: 1,
-          },
-        })
+            barBottomMargin: this.barBottomMargin + 5,
+            systemMaterialEffect: {
+              materialType: this.materialType as hdsMaterial.MaterialType,
+              materialLevel: this.materialLevel as hdsMaterial.MaterialLevel,
+            },
+          })
+          .onTabBarClick(() => {
+            if (this.onButtonClick) {
+              this.onButtonClick();
+            }
+          })
+        }
+        .alignItems(VerticalAlign.Center)
       } else {
         Row() {
-          this.miniBarContent()
+          this.buttonContent()
         }
         .width(this.barWidth)
-        .height(this.barHeight - 12)
-        .borderRadius(this.barHeight / 2)
-        .backgroundColor($r('app.color.v3_surface'))
+        .height(this.barHeight - 10)
+        .backgroundColor(this.currentColorMode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT ?
+          'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)')
+        .borderRadius(30)
+        .onClick(() => {
+          if (this.onButtonClick) {
+            this.onButtonClick();
+          }
+        })
       }
     }
-    .width(this.barWidth)
-    .height(this.barHeight)
+    .size(this.getComputedContainerSize())
+    .padding(this.contentPadding)
     .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
-    .backgroundColor(Color.Transparent)
+    .alignItems(VerticalAlign.Center)
     .accessibilityText('应用概况和应用列表分段控件')
   }
 }

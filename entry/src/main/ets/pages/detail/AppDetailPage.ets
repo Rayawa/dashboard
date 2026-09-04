@@ -91,6 +91,8 @@ export struct AppDetailPage {
     @State private started: boolean = false;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
+    @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
+        hdsMaterial.MaterialLevel.EXQUISITE;
 
     private vibrate(): void {
         if (this.vibrationEnabled) {
@@ -347,9 +349,8 @@ export struct AppDetailPage {
                                 .height(82)
                                 .borderRadius(18)
                                 .objectFit(ImageFit.Cover)
-                                .geometryTransition(appIconGeometryId(this.app))
-                                .transition(TransitionEffect.opacity(0.99)
-                                    .animation({ duration: 360, curve: Curve.Friction }))
+                                .geometryTransition(this.target.geometryId ?? appIconGeometryId(this.app, 'detail'))
+                                .transition(TransitionEffect.opacity(0.99))
                                 .alt($r('app.media.startIcon'))
                                 .accessibilityText(`${this.app.name}应用图标`)
                             Column({ space: 5 }) {
@@ -605,7 +606,7 @@ export struct AppDetailPage {
                 },
                 systemMaterialEffect: this.immersiveTexture ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
-                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE,
+                    materialLevel: this.immersiveMaterialLevel,
                 } : undefined,
             },
             content: {
@@ -631,6 +632,7 @@ export struct AppDetailPage {
             },
         })
         .titleMode(HdsNavDestinationTitleMode.MINI)
+        .transition(TransitionEffect.OPACITY)
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .onBackPressed(() => {
             this.closePage();

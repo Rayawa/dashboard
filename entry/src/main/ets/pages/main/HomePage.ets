@@ -95,54 +95,41 @@ struct HomeStatCard {
 @Component
 struct RecentAppCard {
     app: MarketApp = {} as MarketApp;
-    @Prop showSectionTitle: boolean = false;
     onOpen: (app: MarketApp) => void = () => {};
 
     build() {
-        Column({ space: 12 }) {
-            if (this.showSectionTitle) {
-                Text('最近收录')
-                    .width('100%')
-                    .fontSize(18)
-                    .fontWeight(FontWeight.Bold)
+        Row({ space: 12 }) {
+            Image(this.app.icon_url || $r('app.media.startIcon'))
+                .width(48)
+                .height(48)
+                .borderRadius(12)
+                .objectFit(ImageFit.Cover)
+                .geometryTransition(appIconGeometryId(this.app, 'home'), { follow: true })
+                .alt($r('app.media.startIcon'))
+                .accessibilityText(`${this.app.name || '未知应用'}图标`)
+            Column({ space: 4 }) {
+                Text(this.app.name || '未知应用')
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
                     .fontColor($r('app.color.v3_text_primary'))
-                    .accessibilityText('最近收录应用')
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                Text(`${this.app.developer_name || '未知开发者'} · ${this.app.version || '未知版本'}`)
+                    .fontSize(12)
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                Text(`收录于 ${formatDateTime(this.app.listed_at)}`)
+                    .fontSize(11)
+                    .fontColor($r('app.color.v3_text_secondary'))
             }
-            Row({ space: 12 }) {
-                Image(this.app.icon_url || $r('app.media.startIcon'))
-                    .width(48)
-                    .height(48)
-                    .borderRadius(12)
-                    .objectFit(ImageFit.Cover)
-                    .geometryTransition(appIconGeometryId(this.app), { follow: true })
-                    .transition(TransitionEffect.OPACITY.animation({ duration: 360, curve: Curve.Friction }))
-                    .alt($r('app.media.startIcon'))
-                    .accessibilityText(`${this.app.name || '未知应用'}图标`)
-                Column({ space: 4 }) {
-                    Text(this.app.name || '未知应用')
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor($r('app.color.v3_text_primary'))
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    Text(`${this.app.developer_name || '未知开发者'} · ${this.app.version || '未知版本'}`)
-                        .fontSize(12)
-                        .fontColor($r('app.color.v3_text_secondary'))
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    Text(`收录于 ${formatDateTime(this.app.listed_at)}`)
-                        .fontSize(11)
-                        .fontColor($r('app.color.v3_text_secondary'))
-                }
-                .alignItems(HorizontalAlign.Start)
-                .layoutWeight(1)
-                Image($r('sys.symbol.chevron_right'))
-                    .width(18)
-                    .height(18)
-                    .fillColor($r('app.color.v3_text_secondary'))
-                    .accessibilityText('打开详情')
-            }
-            .width('100%')
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1)
+            Image($r('sys.symbol.chevron_right'))
+                .width(18)
+                .height(18)
+                .fillColor($r('app.color.v3_text_secondary'))
+                .accessibilityText('打开详情')
         }
         .width('100%')
         .padding(14)
@@ -232,7 +219,7 @@ export struct HomePage {
 
     private async loadRecentApps(force: boolean): Promise<void> {
         try {
-            const result = await fetchAppsPage(1, 6, 'listed_at', true, undefined, undefined, false, force);
+            const result = await fetchAppsPage(1, 12, 'listed_at', true, undefined, undefined, false, force);
             const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
             if (response.success && response.data) {
                 this.recentApps = response.data.data ?? [];
@@ -248,7 +235,12 @@ export struct HomePage {
             this.getUIContext().animateTo({
                 curve: curves.interpolatingSpring(0, 1, 342, 38),
             }, (): void => {
-                setDetailTarget({ appId: app.app_id, packageName: app.pkg_name, previewApp: app });
+                setDetailTarget({
+                    appId: app.app_id,
+                    packageName: app.pkg_name,
+                    previewApp: app,
+                    geometryId: appIconGeometryId(app, 'home'),
+                });
                 this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, true);
             });
         } catch (error) {
@@ -370,10 +362,9 @@ export struct HomePage {
                     Text('最近收录').width('100%').fontSize(18).fontWeight(FontWeight.Bold)
                         .fontColor($r('app.color.v3_text_primary')).accessibilityText('最近收录应用')
                 }
-                ForEach(this.recentApps, (app: MarketApp, index: number) => {
+                ForEach(this.recentApps, (app: MarketApp) => {
                     RecentAppCard({
                         app,
-                        showSectionTitle: !showTitle && index === 0,
                         onOpen: (target: MarketApp) => this.openDetail(target),
                     })
                 }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
@@ -381,138 +372,199 @@ export struct HomePage {
         }
     }
 
-    build() {
-        Scroll(this.scroller) {
-            Column({ space: 14 }) {
-                Blank().height(100).width('100%')
-                Row() {
-                    Column({ space: 5 }) {
-                        Text(`${this.greeting()}，${this.username || 'HarmonyOS用户'}`)
-                            .fontSize(26)
-                            .fontWeight(FontWeight.Bold)
-                            .fontColor($r('app.color.v3_text_primary'))
-                            .accessibilityText(`${this.greeting()}，${this.username || 'HarmonyOS用户'}`)
-                        Text('欢迎来到鸿蒙应用市场数据看板')
-                            .fontSize(14)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText('欢迎来到鸿蒙应用市场数据看板')
-                    }
-                    .alignItems(HorizontalAlign.Start)
+    @Builder
+    private greetingHeader(): void {
+        Column({ space: 5 }) {
+            Text(`${this.greeting()}，${this.username || 'HarmonyOS用户'}`)
+                .fontSize(26)
+                .fontWeight(FontWeight.Bold)
+                .fontColor($r('app.color.v3_text_primary'))
+                .accessibilityText(`${this.greeting()}，${this.username || 'HarmonyOS用户'}`)
+            Text('欢迎来到鸿蒙应用市场数据看板')
+                .fontSize(14)
+                .fontColor($r('app.color.v3_text_secondary'))
+                .accessibilityText('欢迎来到鸿蒙应用市场数据看板')
+        }
+        .width('100%')
+        .alignItems(HorizontalAlign.Start)
+        .padding({ left: 4, right: 4 })
+        .accessibilityGroup(true)
+    }
+
+    @Builder
+    private statusNotices(): void {
+        if (this.stale) {
+            Row({ space: 8 }) {
+                Image($r('app.media.attention'))
+                    .width(18)
+                    .height(18)
+                    .objectFit(ImageFit.Contain)
+                    .accessibilityText('离线缓存图标')
+                Text(`当前显示离线缓存 · ${formatDateTime(new Date(this.cachedAt).toISOString())}`)
+                    .fontSize(13)
+                    .fontColor($r('app.color.v3_text_primary'))
                     .layoutWeight(1)
-                }
-                .width('100%')
-                .padding({ left: 4, right: 4 })
-                .accessibilityGroup(true)
-
-                if (this.stale) {
-                    Row({ space: 8 }) {
-                        Image($r('app.media.attention'))
-                            .width(18)
-                            .height(18)
-                            .objectFit(ImageFit.Contain)
-                            .accessibilityText('离线缓存图标')
-                        Text(`当前显示离线缓存 · ${formatDateTime(new Date(this.cachedAt).toISOString())}`)
-                            .fontSize(13)
-                            .fontColor($r('app.color.v3_text_primary'))
-                            .layoutWeight(1)
-                            .accessibilityText('当前显示离线缓存数据')
-                    }
-                    .width('100%')
-                    .padding(12)
-                    .borderRadius(12)
-                    .backgroundColor($r('app.color.v3_warning_bg'))
-                    .accessibilityGroup(true)
-                    .accessibilityText('离线缓存提示')
-                }
-
-                if (this.loading && !this.market) {
-                    Row({ space: 10 }) {
-                        LoadingProgress()
-                            .width(26)
-                            .height(26)
-                            .color($r('app.color.diff_content'))
-                            .accessibilityText('首页数据加载中')
-                        Text('正在获取最新市场状态…')
-                            .fontColor($r('app.color.v3_text_secondary'))
-                            .accessibilityText('正在获取最新市场状态')
-                    }
-                    .padding(30)
-                    .accessibilityGroup(true)
-                }
-
-                if (this.errorMessage !== '') {
-                    Column({ space: 10 }) {
-                        Text(this.errorMessage)
-                            .fontColor($r('app.color.v3_accent_red'))
-                            .accessibilityText(this.errorMessage)
-                        Button('重试')
-                            .backgroundColor($r('app.color.diff_content'))
-                            .onClick(() => { this.load(true); })
-                            .accessibilityText('重试加载首页')
-                    }
-                    .padding(18)
-                    .width('100%')
-                    .borderRadius(14)
-                    .backgroundColor($r('app.color.v3_surface'))
-                    .accessibilityGroup(true)
-                }
-
-                if (this.contentWidth >= 840) {
-                    Row({ space: 16 }) {
-                        Column() { this.dataAndStatus() }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-                        Column() { this.recentSection(false) }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-                    }.width('100%').alignItems(VerticalAlign.Top)
-                        .accessibilityText('左侧市场数据和状态，右侧最近收录应用')
-                } else {
-                    this.dataAndStatus()
-                    this.recentSection()
-                }
-
-                Blank().height(96)
+                    .accessibilityText('当前显示离线缓存数据')
             }
             .width('100%')
-            .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
-            .padding({ left: 14, right: 14 })
-            .onAreaChange((_oldValue: Area, newValue: Area): void => {
-                this.contentWidth = Number(newValue.width);
-            })
-            .onAppear(() => {
-                if (!this.loaded) {
-                    this.load(false);
-                }
-                if (!this.restoredScroll) {
-                    this.restoredScroll = true;
-                    const continuation = getContinuationState();
-                    if (continuation.mainTab === MAIN_TAB_HOME && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
-                        continuation.scrollDistance > 0) {
-                        setTimeout((): void => {
-                            try {
-                                this.scroller.scrollTo({
-                                    xOffset: 0,
-                                    yOffset: continuation.scrollDistance,
-                                    animation: { duration: 0 },
-                                });
-                            } catch (error) {
-                                console.warn('[Dashboard][pages/main/HomePage][WARN]',
-                                    `恢复滚动位置失败: ${JSON.stringify(error)}`);
+            .padding(12)
+            .borderRadius(12)
+            .backgroundColor($r('app.color.v3_warning_bg'))
+            .accessibilityGroup(true)
+            .accessibilityText('离线缓存提示')
+        }
+
+        if (this.loading && !this.market) {
+            Row({ space: 10 }) {
+                LoadingProgress()
+                    .width(26)
+                    .height(26)
+                    .color($r('app.color.diff_content'))
+                    .accessibilityText('首页数据加载中')
+                Text('正在获取最新市场状态…')
+                    .fontColor($r('app.color.v3_text_secondary'))
+                    .accessibilityText('正在获取最新市场状态')
+            }
+            .padding(30)
+            .accessibilityGroup(true)
+        }
+
+        if (this.errorMessage !== '') {
+            Column({ space: 10 }) {
+                Text(this.errorMessage)
+                    .fontColor($r('app.color.v3_accent_red'))
+                    .accessibilityText(this.errorMessage)
+                Button('重试')
+                    .backgroundColor($r('app.color.diff_content'))
+                    .onClick(() => { this.load(true); })
+                    .accessibilityText('重试加载首页')
+            }
+            .padding(18)
+            .width('100%')
+            .borderRadius(14)
+            .backgroundColor($r('app.color.v3_surface'))
+            .accessibilityGroup(true)
+        }
+    }
+
+    private restoreScrollPosition(): void {
+        if (this.restoredScroll) return;
+        this.restoredScroll = true;
+        const continuation = getContinuationState();
+        if (continuation.mainTab !== MAIN_TAB_HOME || continuation.routeName !== CONTINUATION_ROUTE_MAIN ||
+            continuation.scrollDistance <= 0) return;
+        setTimeout((): void => {
+            try {
+                this.scroller.scrollTo({
+                    xOffset: 0,
+                    yOffset: continuation.scrollDistance,
+                    animation: { duration: 0 },
+                });
+            } catch (error) {
+                console.warn('[Dashboard][pages/main/HomePage][WARN]',
+                    `恢复滚动位置失败: ${JSON.stringify(error)}`);
+            }
+        }, 80);
+    }
+
+    private handleAppear(): void {
+        if (!this.loaded) this.load(false);
+        this.restoreScrollPosition();
+    }
+
+    private saveScrollPosition(): void {
+        try {
+            setContinuationView(MAIN_TAB_HOME, this.scroller.currentOffset().yOffset);
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/HomePage][WARN]',
+                `保存滚动位置失败: ${JSON.stringify(error)}`);
+        }
+    }
+
+    build() {
+        Stack() {
+            if (this.contentWidth >= 840) {
+                Column() {
+                    Row({ space: 16 }) {
+                        Column() {
+                            Blank()
+                                .height(80)
+                                .width('100%')
+                            Column({ space: 14 }) {
+                                this.greetingHeader()
+                                this.statusNotices()
+                                this.dataAndStatus()
                             }
-                        }, 80);
+                            .layoutWeight(1)
+                            .width('100%')
+                            .justifyContent(FlexAlign.Center)
+                        }
+                        .layoutWeight(4)
+                        .height('100%')
+                        .padding({ left: 14, right: 14 })
+                        .accessibilityGroup(true)
+                        .accessibilityText('固定显示的市场数据和状态')
+
+                        Divider()
+                            .vertical(true)
+                            .height('100%')
+                            .color($r('app.color.border'))
+                            .accessibilityText('市场概览与最近收录分隔线')
+
+                        Scroll(this.scroller) {
+                            Column({ space: 14 }) {
+                                Blank().height(100).width('100%')
+                                this.recentSection()
+                                Blank().height(96).width('100%')
+                            }
+                            .width('100%')
+                            .padding({ left: 14, right: 14 })
+                        }
+                        .layoutWeight(6)
+                        .height('100%')
+                        .scrollBar(BarState.Off)
+                        .onDidScroll((): void => this.saveScrollPosition())
+                        .accessibilityText('可上下滚动的最近收录应用')
                     }
+                    .width('100%')
+                    .height('100%')
+                    .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
+                    .padding({ left: 14, right: 14 })
+                    .alignItems(VerticalAlign.Top)
                 }
-            })
-          }
-          .width('100%')
-          .height('100%')
-          .scrollBar(BarState.Off)
-          .onDidScroll((): void => {
-              try {
-                  setContinuationView(MAIN_TAB_HOME, this.scroller.currentOffset().yOffset);
-              } catch (error) {
-                  console.warn('[Dashboard][pages/main/HomePage][WARN]',
-                      `保存滚动位置失败: ${JSON.stringify(error)}`);
-              }
-          })
-          .backgroundColor($r('app.color.background'))
-          .accessibilityText('首页')
+                .width('100%')
+                .height('100%')
+                .alignItems(HorizontalAlign.Center)
+                .backgroundColor($r('app.color.background'))
+            } else {
+                Scroll(this.scroller) {
+                    Column({ space: 14 }) {
+                        Blank().height(100).width('100%')
+                        this.greetingHeader()
+                        this.statusNotices()
+                        this.dataAndStatus()
+                        this.recentSection()
+                        Blank().height(96).width('100%')
+                    }
+                    .width('100%')
+                    .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
+                    .padding({ left: 14, right: 14 })
+                }
+                .width('100%')
+                .height('100%')
+                .scrollBar(BarState.Off)
+                .onDidScroll((): void => this.saveScrollPosition())
+                .backgroundColor($r('app.color.background'))
+                .accessibilityText('可滚动的首页')
+            }
+        }
+        .width('100%')
+        .height('100%')
+        .backgroundColor($r('app.color.background'))
+        .onAreaChange((_oldValue: Area, newValue: Area): void => {
+            this.contentWidth = Number(newValue.width);
+        })
+        .onAppear(() => this.handleAppear())
+        .accessibilityText('首页')
     }
 }

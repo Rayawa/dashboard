@@ -30,6 +30,8 @@ struct friend {
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
+  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
+    hdsMaterial.MaterialLevel.EXQUISITE;
   private isExiting: boolean = false;
 
   private jumpToMarket(appId: string): void {
@@ -269,7 +271,7 @@ struct friend {
         },
         systemMaterialEffect: this.immersiveTextureON ? {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
-          materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+          materialLevel: this.immersiveMaterialLevel
         } : undefined
       },
       content: {

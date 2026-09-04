@@ -67,6 +67,8 @@ struct Dashboard {
     private tabsController: HdsTabsController = new HdsTabsController();
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
+    @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
+        hdsMaterial.MaterialLevel.EXQUISITE;
     @State private selectedIndex: number = MAIN_TAB_DEFAULT;
     @State private searchRequestVersion: number = 0;
     @State private showWarning: boolean = false;
@@ -83,6 +85,24 @@ struct Dashboard {
         { text: '应用概况', accessibilityText: '应用概况' },
         { text: '应用列表', accessibilityText: '应用列表' },
     ]);
+
+    private detailNavigationTransition(
+        from: NavContentInfo,
+        to: NavContentInfo,
+        _operation: NavigationOperation,
+    ): NavigationAnimatedTransition | undefined {
+        if (from.name !== 'AppDetailPage' && to.name !== 'AppDetailPage') {
+            return undefined;
+        }
+        return {
+            timeout: 600,
+            transition: (proxy: NavigationTransitionProxy): void => {
+                // HdsNavigation 需要接管动画路由才能关闭默认横向推入；
+                // 页面几何变化由调用方 animateTo 中的 geometryTransition 独立驱动。
+                setTimeout((): void => proxy.finishTransition(), 500);
+            },
+        };
+    }
 
     @Builder
     private appsTitleSegment(): void {
@@ -106,21 +126,6 @@ struct Dashboard {
         .padding({ left: 16, right: 16 })
         .constraintSize({ maxWidth: 532 })
         .justifyContent(FlexAlign.Center)
-    }
-
-    private detailNavigationTransition(
-        from: NavContentInfo,
-        to: NavContentInfo,
-        _operation: NavigationOperation,
-    ): NavigationAnimatedTransition | undefined {
-        if (from.name !== 'AppDetailPage' && to.name !== 'AppDetailPage') return undefined;
-        return {
-            timeout: 420,
-            transition: (proxy: NavigationTransitionProxy): void => {
-                // 详情页只由 geometryTransition 驱动；这里保留两端节点但不再播放 Navigation 默认位移动画。
-                setTimeout((): void => proxy.finishTransition(), 380);
-            },
-        };
     }
 
     private tabs(): MainTab[] {
@@ -352,7 +357,7 @@ struct Dashboard {
                     gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
                     systemMaterialEffect: this.immersiveTexture ? {
                         materialType: hdsMaterial.MaterialType.IMMERSIVE,
-                        materialLevel: hdsMaterial.MaterialLevel.EXQUISITE,
+                        materialLevel: this.immersiveMaterialLevel,
                     } : undefined,
                 })
                 .onTabBarClick((index: number) => this.handleTabBarClick(index))
@@ -432,7 +437,7 @@ struct Dashboard {
                 },
                 systemMaterialEffect: this.immersiveTexture && this.selectedIndex !== MAIN_TAB_APPS ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
-                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE,
+                    materialLevel: this.immersiveMaterialLevel,
                 } : undefined,
             },
             content: {
