@@ -1,15 +1,15 @@
-import { curves, PromptAction, SegmentButtonV2Items } from '@kit.ArkUI';
+import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { CONTINUATION_ROUTE_MAIN, MAIN_TAB_APPS } from '../../common/constants';
 import {
-    getContinuationState, hasPendingSearchTarget, setAppsViewIndex, setContinuationView, setDetailTarget,
+    getContinuationState, hasPendingSearchTarget, setContinuationView, setDetailTarget,
 } from '../../common/appState';
 import { fetchAppsPage } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import type { BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
+import { appIconGeometryId } from '../../common/sharedTransition';
 import { vibration } from '../../common/vibration';
-import { HdsTitleBarSegment } from '../../component/HdsTitleBarSegment';
 import { OverviewSection } from '../../component/charts/OverviewSection';
 import { SEARCH_SHARED_GEOMETRY_ID, SearchPage } from './SearchPage';
 
@@ -39,6 +39,7 @@ struct AppTableRow {
             Row({ space: 8 }) {
                 Image(this.app.icon_url || $r('app.media.startIcon')).width(34).height(34).borderRadius(8)
                     .objectFit(ImageFit.Cover).alt($r('app.media.startIcon'))
+                    .geometryTransition(appIconGeometryId(this.app), { follow: true })
                     .accessibilityText(`${this.app.name || '未知应用'}图标`)
                 Column({ space: 2 }) {
                     Text(this.app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
@@ -106,13 +107,9 @@ export struct AppsPage {
     @Prop @Watch('onSearchCloseVersionChanged') searchCloseVersion: number = 0;
     onSearchVisibilityChanged?: (visible: boolean) => void;
     onSearchOpenChanged?: (open: boolean) => void;
+    @Link selectedIndexes: number[];
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private pageScroller: Scroller = new Scroller();
-    private segmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
-        { text: '应用概况', accessibilityText: '应用概况' },
-        { text: '应用列表', accessibilityText: '应用列表' },
-    ]);
-    @State private selectedIndexes: number[] = [0];
     @State private searchExpanded: boolean = false;
     @State private searchPullRefreshing: boolean = false;
     @State private titleSearchVisible: boolean = false;
@@ -157,10 +154,12 @@ export struct AppsPage {
         if (withFeedback) this.vibrate();
         this.titleSearchVisible = false;
         if (this.onSearchVisibilityChanged) this.onSearchVisibilityChanged(false);
-        if (this.onSearchOpenChanged) this.onSearchOpenChanged(true);
         this.getUIContext().animateTo({
             curve: curves.interpolatingSpring(0, 1, 342, 38),
-        }, (): void => { this.searchExpanded = true; });
+        }, (): void => {
+            this.searchExpanded = true;
+            if (this.onSearchOpenChanged) this.onSearchOpenChanged(true);
+        });
     }
     private pullOpenSearch(): void {
         this.searchPullRefreshing = true;
@@ -168,11 +167,11 @@ export struct AppsPage {
     }
     private closeSearch(): void {
         this.searchPullRefreshing = false;
-        if (this.onSearchOpenChanged) this.onSearchOpenChanged(false);
         this.getUIContext().animateTo({
             curve: curves.interpolatingSpring(0, 1, 342, 38),
         }, (): void => {
             this.searchExpanded = false;
+            if (this.onSearchOpenChanged) this.onSearchOpenChanged(false);
             this.updateTitleSearch(this.pageScroller);
         });
     }
@@ -288,7 +287,7 @@ export struct AppsPage {
         this.load(false);
     }
     private openDetail(app: MarketApp): void {
-        setDetailTarget({ appId: app.app_id, packageName: app.pkg_name });
+        setDetailTarget({ appId: app.app_id, packageName: app.pkg_name, previewApp: app });
         try { this.pageStack.pushPathByName('AppDetailPage', null); }
         catch (error) {
             console.error('[Dashboard][pages/main/AppsPage][ERROR]',
@@ -316,36 +315,16 @@ export struct AppsPage {
 
     @Builder
     private commonHeader(): void {
-        Column({ space: 8 }) {
+        Column() {
             Search({ placeholder: '搜索应用名称、包名、App ID 或链接' })
                 .width('100%').height(48).defaultFocus(false)
                 .backgroundColor($r('app.color.v3_surface_alt'))
                 .geometryTransition(SEARCH_SHARED_GEOMETRY_ID, { follow: true })
                 .onClick(() => this.openSearch())
                 .accessibilityText('打开应用搜索')
-            Row() {
-                HdsTitleBarSegment({
-                    items: this.segmentItems,
-                    selectedIndexes: $selectedIndexes,
-                    maxFontScale: 2,
-                    segmentHeight: 48,
-                    normalWidth: '100%',
-                    experimentalWidth: '100%',
-                    experimentalHeight: 52,
-                    onItemClicked: (index: number): void => {
-                        this.vibrate();
-                        this.getUIContext().animateTo({ duration: 240, curve: Curve.EaseInOut }, (): void => {
-                            this.selectedIndexes = [index];
-                        });
-                        setAppsViewIndex(index);
-                        this.updateTitleSearch(this.pageScroller);
-                    },
-                })
-            }
-            .width('100%').constraintSize({ maxWidth: 500 }).justifyContent(FlexAlign.Center)
         }
         .width('100%')
-        .accessibilityText('应用搜索以及应用概况和应用列表切换栏')
+        .accessibilityText('应用搜索入口')
     }
 
     @Builder
@@ -461,7 +440,7 @@ export struct AppsPage {
             Refresh({ refreshing: $$this.searchPullRefreshing, builder: this.searchPullHint() }) {
                 Scroll(this.pageScroller) {
                     Column({ space: 12 }) {
-                        Blank().height(100).width('100%')
+                        Blank().height(148).width('100%')
                         if (!this.searchExpanded) {
                             this.commonHeader()
                         }

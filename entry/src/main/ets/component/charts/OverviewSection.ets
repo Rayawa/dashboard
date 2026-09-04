@@ -13,9 +13,21 @@ interface HistoryPoint { date: string; values: Record<string, number>; }
 struct DistributionPanel {
     @Prop @Watch('onChartChanged') chart: DistributionChart = { title: '', labels: [], values: [], total: 1 };
     @State private selected: number = 0;
+    @State private revealProgress: number = 0;
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
 
-    private onChartChanged(): void { this.selected = 0; }
+    private onChartChanged(): void {
+        this.selected = 0;
+        this.animateBars();
+    }
+    private animateBars(): void {
+        this.revealProgress = 0;
+        setTimeout((): void => {
+            this.getUIContext().animateTo({ duration: 800, curve: Curve.EaseOut }, (): void => {
+                this.revealProgress = 1;
+            });
+        }, 40);
+    }
     private colors(): ResourceColor[] {
         return [
             $r('app.color.diff_content'), $r('app.color.v3_accent_cyan'), $r('app.color.v3_accent_green'),
@@ -33,7 +45,9 @@ struct DistributionPanel {
         for (const value of this.chart.values) maximum = Math.max(maximum, value);
         return maximum;
     }
-    private barWidth(value: number): string { return `${Math.max(2, value / this.maximum() * 100)}%`; }
+    private barWidth(value: number): string {
+        return `${Math.max(0, value / this.maximum() * 100 * this.revealProgress)}%`;
+    }
 
     build() {
         Column({ space: 12 }) {
@@ -48,14 +62,16 @@ struct DistributionPanel {
                                 Text(formatCount(this.chart.values[index])).fontSize(14)
                                     .fontColor($r('app.color.v3_text_primary'))
                             }.width('100%')
-                            Row() {
-                                Row().width(this.barWidth(this.chart.values[index])).height(11).borderRadius(6)
+                            Stack({ alignContent: Alignment.Start }) {
+                                Row().width('100%').height(8).borderRadius(4)
+                                    .backgroundColor($r('app.color.v3_surface_alt'))
+                                Row().width(this.barWidth(this.chart.values[index])).height(8).borderRadius(4)
                                     .backgroundColor(this.colors()[index % this.colors().length])
                             }
-                            .width('100%').height(12)
-                            .border({ width: { left: 1, bottom: 1 }, color: $r('app.color.v3_chart_grid') })
+                            .width('100%').height(8)
                         }
-                        .width('100%').padding({ top: 2, bottom: 2 })
+                        .width('100%').padding(8).borderRadius(10)
+                        .backgroundColor(index === this.selected ? $r('app.color.v3_surface_alt') : Color.Transparent)
                         .onClick(() => {
                             if (this.vibrationEnabled) vibration.dotVibration();
                             this.selected = index;
@@ -72,6 +88,7 @@ struct DistributionPanel {
         }
         .width('100%').padding(16).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
+        .onAppear(() => this.animateBars())
         .accessibilityGroup(true).accessibilityText(`${this.chart.title}，${this.selectedText()}`)
     }
 }

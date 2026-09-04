@@ -24,12 +24,69 @@ export struct InteractiveLineChart {
     @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
     private zoomAtGestureStart: number = 1;
     private panAtGestureStart: number = 0;
+    private canvasReady: boolean = false;
+    private drawProgress: number = 1;
+    private animationToken: number = 0;
 
     private onPointsChanged(): void {
         this.selected = Math.max(0, this.points.length - 1);
         this.zoom = 1;
         this.panOffset = 0;
-        setTimeout((): void => this.draw(), 0);
+        setTimeout((): void => this.startEntranceAnimation(), 0);
+    }
+
+    private startEntranceAnimation(): void {
+        if (!this.canvasReady || this.points.length === 0) {
+            this.draw();
+            return;
+        }
+        const token = ++this.animationToken;
+        const startedAt = Date.now();
+        this.drawProgress = 0;
+        const tick = (): void => {
+            if (token !== this.animationToken) return;
+            const elapsed = Math.min(1, (Date.now() - startedAt) / 800);
+            this.drawProgress = 1 - Math.pow(1 - elapsed, 3);
+            this.draw();
+            if (elapsed < 1) setTimeout(tick, 16);
+        };
+        tick();
+    }
+
+    private rgba(color: number, alpha: number): string {
+        const red = (color >>> 16) & 0xFF;
+        const green = (color >>> 8) & 0xFF;
+        const blue = color & 0xFF;
+        return `rgba(${red},${green},${blue},${alpha})`;
+    }
+
+    private pointY(index: number, top: number, drawHeight: number, maximum: number): number {
+        const baseline = top + drawHeight;
+        const target = top + drawHeight * (1 - this.points[index].value / maximum);
+        return baseline - (baseline - target) * this.drawProgress;
+    }
+
+    private traceSmoothLine(top: number, drawHeight: number, maximum: number): void {
+        if (this.points.length === 0) return;
+        const firstX = this.pointX(0);
+        const firstY = this.pointY(0, top, drawHeight, maximum);
+        this.context.moveTo(firstX, firstY);
+        for (let index = 1; index < this.points.length; index++) {
+            const previousX = this.pointX(index - 1);
+            const previousY = this.pointY(index - 1, top, drawHeight, maximum);
+            const x = this.pointX(index);
+            const y = this.pointY(index, top, drawHeight, maximum);
+            const controlOffset = (x - previousX) * 0.34;
+            this.context.bezierCurveTo(
+                previousX + controlOffset, previousY,
+                x - controlOffset, y,
+                x, y,
+            );
+        }
+    }
+
+    aboutToDisappear(): void {
+        this.animationToken++;
     }
 
     private maximum(): number {
@@ -107,7 +164,8 @@ export struct InteractiveLineChart {
         this.context.strokeStyle = gridColor;
         this.context.fillStyle = textColor;
         this.context.lineWidth = 1;
-        this.context.font = '16px sans-serif';
+        this.context.font = '13px sans-serif';
+        this.context.setLineDash([5, 6]);
         for (let row = 0; row <= 4; row++) {
             const y = top + drawHeight * row / 4;
             this.context.beginPath();
@@ -117,38 +175,57 @@ export struct InteractiveLineChart {
             this.context.textAlign = 'right';
             this.context.fillText(this.valueLabel(maximum * (4 - row) / 4), left - 8, y + 4);
         }
-        this.context.beginPath();
-        this.context.moveTo(left, top);
-        this.context.lineTo(left, top + drawHeight);
-        this.context.lineTo(left + drawWidth, top + drawHeight);
-        this.context.stroke();
+        this.context.setLineDash([]);
 
         this.context.save();
         this.context.beginPath();
         this.context.rect(left, 0, drawWidth, height);
         this.context.clip();
-        this.context.strokeStyle = resolvedLineColor;
-        this.context.lineWidth = 3;
+        const baseline = top + drawHeight;
+        const firstX = this.pointX(0);
+        const lastX = this.pointX(this.points.length - 1);
+        const gradient = this.context.createLinearGradient(0, top, 0, baseline);
+        gradient.addColorStop(0, this.rgba(resolvedLineColor, 0.34));
+        gradient.addColorStop(1, this.rgba(resolvedLineColor, 0));
+        this.context.fillStyle = gradient;
         this.context.beginPath();
-        for (let index = 0; index < this.points.length; index++) {
-            const x = this.pointX(index);
-            const y = top + drawHeight * (1 - this.points[index].value / maximum);
-            if (index === 0) this.context.moveTo(x, y); else this.context.lineTo(x, y);
-        }
+        this.traceSmoothLine(top, drawHeight, maximum);
+        this.context.lineTo(lastX, baseline);
+        this.context.lineTo(firstX, baseline);
+        this.context.closePath();
+        this.context.fill();
+
+        this.context.strokeStyle = resolvedLineColor;
+        this.context.lineWidth = 2.5;
+        this.context.lineJoin = 'round';
+        this.context.lineCap = 'round';
+        this.context.beginPath();
+        this.traceSmoothLine(top, drawHeight, maximum);
         this.context.stroke();
-        const labelStep = Math.max(1, Math.ceil(this.points.length / Math.max(2, Math.floor(drawWidth / 108))));
+        const labelStep = Math.max(1, Math.ceil(this.points.length / Math.max(2, Math.floor(drawWidth / 82))));
         for (let index = 0; index < this.points.length; index++) {
             const x = this.pointX(index);
             if (x < left - 6 || x > left + drawWidth + 6) continue;
-            const y = top + drawHeight * (1 - this.points[index].value / maximum);
+            const y = this.pointY(index, top, drawHeight, maximum);
             this.context.fillStyle = resolvedLineColor;
             this.context.beginPath();
-            this.context.arc(x, y, index === this.selected ? 6 : 3.5, 0, Math.PI * 2);
+            this.context.arc(x, y, index === this.selected ? 5 : 2.8, 0, Math.PI * 2);
             this.context.fill();
+            if (index === this.selected) {
+                this.context.strokeStyle = this.rgba(resolvedLineColor, 0.28);
+                this.context.lineWidth = 6;
+                this.context.beginPath();
+                this.context.arc(x, y, 7, 0, Math.PI * 2);
+                this.context.stroke();
+            }
             if (index % labelStep === 0 || index === this.points.length - 1) {
                 this.context.fillStyle = textColor;
                 this.context.textAlign = 'center';
-                this.context.fillText(this.points[index].label, x, height - 16);
+                this.context.save();
+                this.context.translate(x, height - 12);
+                this.context.rotate(-Math.PI / 5);
+                this.context.fillText(this.points[index].label, 0, 0);
+                this.context.restore();
             }
         }
         if (this.selected >= 0 && this.selected < this.points.length) {
@@ -156,10 +233,12 @@ export struct InteractiveLineChart {
             if (selectedX >= left && selectedX <= left + drawWidth) {
                 this.context.strokeStyle = resolvedLineColor;
                 this.context.lineWidth = 1;
+                this.context.setLineDash([4, 4]);
                 this.context.beginPath();
                 this.context.moveTo(selectedX, top);
                 this.context.lineTo(selectedX, top + drawHeight);
                 this.context.stroke();
+                this.context.setLineDash([]);
             }
         }
         this.context.restore();
@@ -174,7 +253,10 @@ export struct InteractiveLineChart {
             if (this.points.length > 0) {
                 Canvas(this.context)
                     .width('100%').height(this.chartHeight)
-                    .onReady(() => this.draw())
+                    .onReady(() => {
+                        this.canvasReady = true;
+                        this.startEntranceAnimation();
+                    })
                     .onAreaChange((_oldArea: Area, newArea: Area): void => {
                         const width = Number(newArea.width);
                         if (width > 0) {

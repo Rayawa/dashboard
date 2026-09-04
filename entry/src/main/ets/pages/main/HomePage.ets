@@ -10,17 +10,61 @@ import { getContinuationState, setContinuationView, setDetailTarget } from '../.
 import { fetchAppsPage, fetchMarketInfo } from '../../common/MarketApi';
 import { formatDateTime, formatExactCount } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
+import { appIconGeometryId } from '../../common/sharedTransition';
 import type { BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
 
 interface HomeStat {
     label: string;
-    value: string;
+    value: number;
     color: ResourceColor;
 }
 
 @Component
+struct RollingNumber {
+    @Prop @Watch('animateValue') value: number = 0;
+    @Prop fontSize: number = 24;
+    @Prop color: ResourceColor = $r('app.color.diff_content');
+    @Prop accessibilityLabel: string = '';
+    @State private displayedValue: number = 0;
+    private animationToken: number = 0;
+
+    private animateValue(): void {
+        const target = Math.max(0, Math.round(this.value));
+        const token = ++this.animationToken;
+        this.displayedValue = 0;
+        setTimeout((): void => {
+            if (token !== this.animationToken) return;
+            this.getUIContext().animateTo({ duration: 850, curve: Curve.EaseOut }, (): void => {
+                this.displayedValue = target;
+            });
+        }, 60);
+    }
+
+    aboutToAppear(): void {
+        this.animateValue();
+    }
+
+    aboutToDisappear(): void {
+        this.animationToken++;
+    }
+
+    build() {
+        Text(String(this.displayedValue))
+            .fontSize(this.fontSize)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(this.color)
+            .maxLines(1)
+            .contentTransition(new NumericTextTransition({
+                flipDirection: FlipDirection.DOWN,
+                enableBlur: true,
+            }))
+            .accessibilityText(`${this.accessibilityLabel}${this.value}`)
+    }
+}
+
+@Component
 struct HomeStatCard {
-    stat: HomeStat = { label: '', value: '-', color: $r('app.color.diff_content') };
+    stat: HomeStat = { label: '', value: 0, color: $r('app.color.diff_content') };
 
     build() {
         Column({ space: 8 }) {
@@ -29,12 +73,12 @@ struct HomeStatCard {
                 .fontColor($r('app.color.v3_text_secondary'))
                 .maxLines(1)
                 .accessibilityText(this.stat.label)
-            Text(this.stat.value)
-                .fontSize(24)
-                .fontWeight(FontWeight.Bold)
-                .fontColor(this.stat.color)
-                .maxLines(1)
-                .accessibilityText(`${this.stat.label}${this.stat.value}`)
+            RollingNumber({
+                value: this.stat.value,
+                fontSize: 24,
+                color: this.stat.color,
+                accessibilityLabel: this.stat.label,
+            })
         }
         .alignItems(HorizontalAlign.Start)
         .width('100%')
@@ -60,6 +104,7 @@ struct RecentAppCard {
                 .height(48)
                 .borderRadius(12)
                 .objectFit(ImageFit.Cover)
+                .geometryTransition(appIconGeometryId(this.app), { follow: true })
                 .alt($r('app.media.startIcon'))
                 .accessibilityText(`${this.app.name || '未知应用'}图标`)
             Column({ space: 4 }) {
@@ -186,7 +231,7 @@ export struct HomePage {
     }
 
     private openDetail(app: MarketApp): void {
-        setDetailTarget({ appId: app.app_id, packageName: app.pkg_name });
+        setDetailTarget({ appId: app.app_id, packageName: app.pkg_name, previewApp: app });
         try {
             this.pageStack.pushPathByName('AppDetailPage', null);
         } catch (error) {
@@ -200,8 +245,8 @@ export struct HomePage {
             return [];
         }
         return [
-            { label: '开发者', value: formatExactCount(this.market.developer_count), color: $r('app.color.v3_accent_purple') },
-            { label: '专题', value: formatExactCount(this.market.substance_count), color: $r('app.color.v3_accent_orange') },
+            { label: '开发者', value: this.market.developer_count, color: $r('app.color.v3_accent_purple') },
+            { label: '专题', value: this.market.substance_count, color: $r('app.color.v3_accent_orange') },
         ];
     }
 
@@ -212,19 +257,31 @@ export struct HomePage {
                 Column({ space: 4 }) {
                     Text('应用总数').fontSize(16).fontWeight(FontWeight.Bold)
                         .fontColor($r('app.color.v3_text_primary'))
-                    Text(formatExactCount(this.market.app_count.apps + this.market.app_count.atomic_services))
-                        .fontSize(34).fontWeight(FontWeight.Bold).fontColor($r('app.color.diff_content'))
+                    RollingNumber({
+                        value: this.market.app_count.apps + this.market.app_count.atomic_services,
+                        fontSize: 34,
+                        color: $r('app.color.diff_content'),
+                        accessibilityLabel: '应用总数',
+                    })
                 }.width('100%').alignItems(HorizontalAlign.Start)
                 Row({ space: 12 }) {
                     Column({ space: 4 }) {
                         Text('鸿蒙应用').fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text(formatExactCount(this.market.app_count.apps)).fontSize(20).fontWeight(FontWeight.Bold)
-                            .fontColor($r('app.color.diff_content'))
+                        RollingNumber({
+                            value: this.market.app_count.apps,
+                            fontSize: 20,
+                            color: $r('app.color.diff_content'),
+                            accessibilityLabel: '鸿蒙应用',
+                        })
                     }.layoutWeight(1).alignItems(HorizontalAlign.Start)
                     Column({ space: 4 }) {
                         Text('元服务').fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text(formatExactCount(this.market.app_count.atomic_services)).fontSize(20)
-                            .fontWeight(FontWeight.Bold).fontColor($r('app.color.v3_accent_cyan'))
+                        RollingNumber({
+                            value: this.market.app_count.atomic_services,
+                            fontSize: 20,
+                            color: $r('app.color.v3_accent_cyan'),
+                            accessibilityLabel: '元服务',
+                        })
                     }.layoutWeight(1).alignItems(HorizontalAlign.Start)
                 }.width('100%')
             }

@@ -1,4 +1,5 @@
 import {
+  BottomBuilderShowType,
   BlurStrategy,
   HdsNavigation,
   HdsNavigationTitleMode,
@@ -7,10 +8,12 @@ import {
   ScrollEffectType,
   TitleSize,
 } from '@kit.UIDesignKit';
-import { curves, LengthMetrics } from '@kit.ArkUI';
+import { curves, LengthMetrics, SegmentButtonV2Items } from '@kit.ArkUI';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { getFirstLaunch } from '../common/storage';
-import { consumeMainTab, getContinuationState, setContinuationView, setMainTab } from '../common/appState';
+import {
+  consumeMainTab, getContinuationState, setAppsViewIndex, setContinuationView, setMainTab,
+} from '../common/appState';
 import {
   APP_STATE_KEY_DETAIL_TARGET,
   CONTINUATION_ROUTE_DETAIL,
@@ -39,6 +42,7 @@ import { TutorialPageBuilder } from './more/tutorial';
 import { FriendPageBuilder } from './more/friend';
 import { FriendPageWebBuilder } from './more/friendWeb';
 import { DeveloperPage } from './more/DeveloperPage';
+import { HdsTitleBarSegment } from '../component/HdsTitleBarSegment';
 
 interface MainTab {
     label: string;
@@ -71,9 +75,36 @@ struct Dashboard {
     @State private appsSearchCommandVersion: number = 0;
     @State private appsTitleSearchVisible: boolean = false;
     @State private appsSearchOpen: boolean = false;
+    @State private appsViewIndexes: number[] = [0];
     @State private appsSearchCloseVersion: number = 0;
     @State private sStationCommand: number = S_STATION_COMMAND_NONE;
     @State private sStationCommandVersion: number = 0;
+    private appsSegmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
+        { text: '应用概况', accessibilityText: '应用概况' },
+        { text: '应用列表', accessibilityText: '应用列表' },
+    ]);
+
+    @Builder
+    private appsTitleSegment(): void {
+        Column() {
+            HdsTitleBarSegment({
+                items: this.appsSegmentItems,
+                selectedIndexes: $appsViewIndexes,
+                maxFontScale: 2,
+                segmentHeight: 48,
+                normalWidth: '100%',
+                onItemClicked: (index: number): void => {
+                    this.vibrate();
+                    setAppsViewIndex(index);
+                },
+            })
+        }
+        .width('100%')
+        .height('100%')
+        .padding({ left: 16, right: 16 })
+        .constraintSize({ maxWidth: 532 })
+        .justifyContent(FlexAlign.Center)
+    }
 
     private tabs(): MainTab[] {
         return [
@@ -260,6 +291,7 @@ struct Dashboard {
 
                     TabContent() {
                         AppsPage({
+                            selectedIndexes: $appsViewIndexes,
                             scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
                             requestVersion: this.searchRequestVersion,
                             searchCommandVersion: this.appsSearchCommandVersion,
@@ -339,6 +371,7 @@ struct Dashboard {
         .navDestination(this.destinationBuilder)
         .titleMode(HdsNavigationTitleMode.MINI)
         .hideBackButton(true)
+        .hideTitleBar(this.appsSearchOpen)
         .divider({ color: $r('app.color.border') })
         .titleBar({
             style: {
@@ -376,7 +409,7 @@ struct Dashboard {
                         },
                     },
                 },
-                systemMaterialEffect: this.immersiveTexture ? {
+                systemMaterialEffect: this.immersiveTexture && this.selectedIndex !== MAIN_TAB_APPS ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: hdsMaterial.MaterialLevel.EXQUISITE,
                 } : undefined,
@@ -389,6 +422,13 @@ struct Dashboard {
                 menu: {
                     value: this.titleMenuItems(),
                 },
+                bottomBuilder: this.selectedIndex === MAIN_TAB_APPS && !this.appsSearchOpen ? {
+                    builder: (): void => {
+                        this.appsTitleSegment();
+                    },
+                    height: 48,
+                    showType: BottomBuilderShowType.DIRECTLY_SHOW,
+                } : undefined,
             },
         })
         .width('100%')
