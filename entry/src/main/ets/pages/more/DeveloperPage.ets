@@ -23,9 +23,8 @@ interface DeveloperField {
 
 @Component
 export struct DeveloperPage {
-  @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
   @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.EXQUISITE;
+    hdsMaterial.MaterialLevel.SMOOTH;
   private fields(): DeveloperField[] {
     return [
       { label: '应用版本', value: APP_VERSION },
@@ -135,10 +134,10 @@ export struct DeveloperPage {
             },
           },
         },
-        systemMaterialEffect: this.immersiveTexture ? {
+        systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: this.immersiveMaterialLevel,
-        } : undefined,
+        },
       },
       content: {
         title: {

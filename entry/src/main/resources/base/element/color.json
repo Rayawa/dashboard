@@ -21,6 +21,10 @@
       "value": "#33E5E5E5"
     },
     {
+      "name": "segmented_color_selected",
+      "value": "#22666666"
+    },
+    {
       "name": "button_border",
       "value": "#FFFFFF"
     },

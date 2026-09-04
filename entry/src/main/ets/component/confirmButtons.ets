@@ -10,7 +10,7 @@ import { showToastSafely } from '../common/safeUi';
 export struct confirmButtons {
     @Link isShow: boolean;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink("vibrationON") vibrationON: boolean = true;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 2;
     @State countDown: number = 3;
     @State isConfirmEnabled: boolean = false;
     @State isExiting: boolean = false;
@@ -108,7 +108,7 @@ export struct confirmButtons {
                 .borderRadius(this.BORDER_RADIUS)
                 .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
                 .onClick(() => {
-                    if(this.vibrationON) vibration.dotVibration()
+                    if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleCancel();
                 })
                 .accessibilityText(this.isExiting ? '正在退出应用' : '取消重要提示并退出应用')
@@ -124,7 +124,7 @@ export struct confirmButtons {
                 .borderRadius(this.BORDER_RADIUS)
                 .clickEffect({ level: ClickEffectLevel.HEAVY, scale: this.BUTTON_CLICK_SCALE })
                 .onClick(() => {
-                    if(this.vibrationON) vibration.dotVibration()
+                    if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleConfirm();
                 })
                 .accessibilityText(this.isConfirmEnabled ? '同意重要提示且不再显示' : `请等待${this.countDown}秒后同意`)

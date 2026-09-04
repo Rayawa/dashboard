@@ -49,7 +49,7 @@ export struct SearchPage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private resultSource: SearchResultDataSource = new SearchResultDataSource();
     @StorageLink('username') private username: string = '';
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     @StorageLink('statusBarHeight') private statusBarHeight: number = 38;
     @State private input: string = '';
     @State private loading: boolean = false;
@@ -61,6 +61,8 @@ export struct SearchPage {
     @State private fromCache: boolean = false;
     @State private history: string[] = [];
     @State private recommendedApps: MarketApp[] = [];
+    @State private transitionEffect: TransitionEffect =
+        TransitionEffect.OPACITY.animation({ duration: 180, curve: Curve.EaseOut });
     private activeTarget: AppRouteTarget = {};
     private openDetailAfterSearch: boolean = false;
     private backgroundUpdateToken: number = 0;
@@ -78,7 +80,7 @@ export struct SearchPage {
         }
     }
 
-    private vibrate(): void { if (this.vibrationEnabled) vibration.dotVibration(); }
+    private vibrate(): void { if (this.vibrationLevel > 0) vibration.dotVibration(); }
     private setResults(results: MarketApp[]): void {
         this.resultSource.replace(results);
         this.resultCount = results.length;
@@ -256,18 +258,22 @@ export struct SearchPage {
         const targetApp = app ?? this.resultApp;
         if (!targetApp) return;
         this.vibrate();
+        const target: AppRouteTarget = {
+            appId: targetApp.app_id,
+            packageName: targetApp.pkg_name,
+            backgroundRefreshHandled: this.resultApp?.app_id === targetApp.app_id,
+            previewApp: targetApp,
+            geometryId: appIconGeometryId(targetApp, 'search'),
+        };
+        this.transitionEffect = TransitionEffect.OPACITY
+            .combine(TransitionEffect.scale({ x: 0.9, y: 0.9 }))
+            .animation({ curve: curves.interpolatingSpring(0, 1, 195, 23) });
         try {
             this.getUIContext().animateTo({
-                curve: curves.interpolatingSpring(0, 1, 342, 38),
+                curve: curves.interpolatingSpring(0, 1, 328, 36),
             }, (): void => {
-                setDetailTarget({
-                    appId: targetApp.app_id,
-                    packageName: targetApp.pkg_name,
-                    backgroundRefreshHandled: this.resultApp?.app_id === targetApp.app_id,
-                    previewApp: targetApp,
-                    geometryId: appIconGeometryId(targetApp, 'search'),
-                });
-                this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, true);
+                setDetailTarget(target);
+                this.pageStack.pushPath({ name: 'AppDetailPage', param: target }, false);
             });
         }
         catch (error) {
@@ -301,11 +307,15 @@ export struct SearchPage {
     @Builder
     private recommendCard(app: MarketApp): void {
         Column({ space: 5 }) {
-            Image(app.icon_url || $r('app.media.startIcon'))
-                .width(42).height(42).borderRadius(10).objectFit(ImageFit.Cover)
+            Stack() {
+                Image(app.icon_url || $r('app.media.startIcon'))
+                    .width('100%').height('100%').objectFit(ImageFit.Cover)
+                    .alt($r('app.media.startIcon'))
+                    .accessibilityText(`${app.name || '未知应用'}图标`)
+            }
+                .width(42).height(42).borderRadius(10).clip(true)
                 .geometryTransition(appIconGeometryId(app, 'search'), { follow: true })
-                .alt($r('app.media.startIcon'))
-                .accessibilityText(`${app.name || '未知应用'}图标`)
+                .transition(TransitionEffect.OPACITY)
             Text(app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
                 .fontColor($r('app.color.v3_text_primary')).maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -325,10 +335,15 @@ export struct SearchPage {
     @Builder
     private resultCard(app: MarketApp): void {
         Row({ space: 12 }) {
-            Image(app.icon_url || $r('app.media.startIcon'))
-                .width(58).height(58).borderRadius(14).objectFit(ImageFit.Cover)
+            Stack() {
+                Image(app.icon_url || $r('app.media.startIcon'))
+                    .width('100%').height('100%').objectFit(ImageFit.Cover)
+                    .alt($r('app.media.startIcon'))
+                    .accessibilityText(`${app.name || '未知应用'}应用图标`)
+            }
+                .width(58).height(58).borderRadius(14).clip(true)
                 .geometryTransition(appIconGeometryId(app, 'search'), { follow: true })
-                .alt($r('app.media.startIcon')).accessibilityText(`${app.name || '未知应用'}应用图标`)
+                .transition(TransitionEffect.OPACITY)
             Column({ space: 4 }) {
                 Text(app.name || '未知应用').fontSize(17).fontWeight(FontWeight.Bold)
                     .fontColor($r('app.color.v3_text_primary')).maxLines(1)
@@ -435,7 +450,7 @@ export struct SearchPage {
             }
         }
         .width('100%').height('100%').backgroundColor($r('app.color.background'))
-        .transition(TransitionEffect.OPACITY.animation({ duration: 180, curve: Curve.EaseOut }))
+        .transition(this.transitionEffect)
         .gesture(
             PanGesture({ fingers: 1, direction: PanDirection.Vertical })
                 .onActionEnd((event: GestureEvent): void => {

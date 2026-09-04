@@ -7,7 +7,7 @@ import { showToastSafely } from '../common/safeUi';
 @Component
 export struct contact {
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink("vibrationON") vibrationON: boolean = true;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 2;
 
     @Builder ContactItem(title: string, name: string, detail: string, copyContent: string, toastLabel: string) {
         Column({ space: 4 }) {
@@ -21,7 +21,7 @@ export struct contact {
         .padding(14)
         .borderRadius(16)
         .onClick(async () => {
-            if(this.vibrationON) vibration.dotVibration()
+            if(this.vibrationLevel > 0) vibration.dotVibration()
             await this.copyToClipboard(copyContent, toastLabel);
         })
         .accessibilityGroup(true)
@@ -47,7 +47,7 @@ export struct contact {
             .padding(14)
             .borderRadius(16)
             .onClick(async () => {
-                if(this.vibrationON) vibration.dotVibration()
+                if(this.vibrationLevel > 0) vibration.dotVibration()
                 const url = "https://afdian.com/a/shenjack";
                 const ui_content = this.getUIContext();
                 try {

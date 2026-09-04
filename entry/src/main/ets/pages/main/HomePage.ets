@@ -11,7 +11,7 @@ import { fetchAppsPage, fetchMarketInfo } from '../../common/MarketApi';
 import { formatDateTime, formatExactCount } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
 import { appIconGeometryId } from '../../common/sharedTransition';
-import type { BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
+import type { AppRouteTarget, BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
 
 interface HomeStat {
     label: string;
@@ -99,14 +99,20 @@ struct RecentAppCard {
 
     build() {
         Row({ space: 12 }) {
-            Image(this.app.icon_url || $r('app.media.startIcon'))
+            Stack() {
+                Image(this.app.icon_url || $r('app.media.startIcon'))
+                    .width('100%')
+                    .height('100%')
+                    .objectFit(ImageFit.Cover)
+                    .alt($r('app.media.startIcon'))
+                    .accessibilityText(`${this.app.name || '未知应用'}图标`)
+            }
                 .width(48)
                 .height(48)
                 .borderRadius(12)
-                .objectFit(ImageFit.Cover)
+                .clip(true)
                 .geometryTransition(appIconGeometryId(this.app, 'home'), { follow: true })
-                .alt($r('app.media.startIcon'))
-                .accessibilityText(`${this.app.name || '未知应用'}图标`)
+                .transition(TransitionEffect.OPACITY)
             Column({ space: 4 }) {
                 Text(this.app.name || '未知应用')
                     .fontSize(16)
@@ -158,6 +164,7 @@ export struct HomePage {
     @State private loaded: boolean = false;
     @State private recentApps: MarketApp[] = [];
     @State private contentWidth: number = 0;
+    @State private transitionEffect: TransitionEffect = TransitionEffect.IDENTITY;
     private restoredScroll: boolean = false;
     private reloadAfterCurrent: boolean = false;
 
@@ -231,17 +238,21 @@ export struct HomePage {
     }
 
     private openDetail(app: MarketApp): void {
+        const target: AppRouteTarget = {
+            appId: app.app_id,
+            packageName: app.pkg_name,
+            previewApp: app,
+            geometryId: appIconGeometryId(app, 'home'),
+        };
+        this.transitionEffect = TransitionEffect.OPACITY
+            .combine(TransitionEffect.scale({ x: 0.9, y: 0.9 }))
+            .animation({ curve: curves.interpolatingSpring(0, 1, 195, 23) });
         try {
             this.getUIContext().animateTo({
-                curve: curves.interpolatingSpring(0, 1, 342, 38),
+                curve: curves.interpolatingSpring(0, 1, 328, 36),
             }, (): void => {
-                setDetailTarget({
-                    appId: app.app_id,
-                    packageName: app.pkg_name,
-                    previewApp: app,
-                    geometryId: appIconGeometryId(app, 'home'),
-                });
-                this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, true);
+                setDetailTarget(target);
+                this.pageStack.pushPath({ name: 'AppDetailPage', param: target }, false);
             });
         } catch (error) {
             console.error('[Dashboard][pages/main/HomePage][ERROR]', `打开应用详情失败: ${JSON.stringify(error)}`);
@@ -561,6 +572,7 @@ export struct HomePage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.background'))
+        .transition(this.transitionEffect)
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })

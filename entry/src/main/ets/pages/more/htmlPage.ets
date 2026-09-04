@@ -15,10 +15,9 @@ import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation'
 @Component
 export struct HTML {
   @Consume('pageStack') pageStack: NavPathStack;
-  @StorageLink("vibrationON") vibrationON: boolean = true;
-  @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.EXQUISITE;
+    hdsMaterial.MaterialLevel.SMOOTH;
   controller: webview.WebviewController = new webview.WebviewController();
   @State params: WebViewParam = new WebViewParam('', '');
   @State private topPlaceholderHeight: number = 100;
@@ -109,7 +108,7 @@ export struct HTML {
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .titleMode(HdsNavDestinationTitleMode.MINI)
     .onBackPressed(() => {
-      if(this.vibrationON) vibration.dotVibration()
+      if(this.vibrationLevel > 0) vibration.dotVibration()
       popPathSafely(this.pageStack, 'pages/more/htmlPage');
       return true;
     })
@@ -159,10 +158,10 @@ export struct HTML {
             },
           },
         },
-        systemMaterialEffect: this.immersiveTextureON ? {
+        systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: this.immersiveMaterialLevel
-        } : undefined
+        }
       },
       content: {
         title: {
@@ -177,7 +176,7 @@ export struct HTML {
                 icon: $r("sys.symbol.xmark_circle"),
                 isEnabled: true,
                 action: () => {
-                  if(this.vibrationON) vibration.dotVibration()
+                  if(this.vibrationLevel > 0) vibration.dotVibration()
                   this.closePage();
                 },
               },
@@ -186,7 +185,7 @@ export struct HTML {
         },
         backIcon: {
           action: () => {
-            if(this.vibrationON) vibration.dotVibration()
+            if(this.vibrationLevel > 0) vibration.dotVibration()
             popPathSafely(this.pageStack, 'pages/more/htmlPage')
           },
         },

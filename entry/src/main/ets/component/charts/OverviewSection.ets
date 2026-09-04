@@ -20,11 +20,19 @@ struct DistributionPanel {
     @Prop colorLabels: string[] = [];
     @Prop @Watch('onSelectedLabelChanged') selectedLabel: string = '';
     @Prop embedded: boolean = false;
+    @Prop showTitle: boolean = true;
+    @Prop showExpandAction: boolean = false;
+    @Prop chartCaption: string = '';
+    @Prop reserveCaptionSpace: boolean = false;
+    @Prop @Watch('onOtherHiddenChanged') otherHidden: boolean = false;
     onExpand?: () => void;
+    onCollapse?: () => void;
     onSelect?: (label: string) => void;
+    onToggleOther?: (hidden: boolean) => void;
     @State private selected: number = 0;
     @State private canvasSize: number = 220;
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @State private localOtherHidden: boolean = false;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
     private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
     private canvasReady: boolean = false;
@@ -41,6 +49,9 @@ struct DistributionPanel {
     }
     private onSelectedLabelChanged(): void {
         setTimeout((): void => this.draw(), 0);
+    }
+    private onOtherHiddenChanged(): void {
+        setTimeout((): void => this.animatePie(), 0);
     }
     private animatePie(): void {
         if (!this.canvasReady || this.chart.total <= 0) {
@@ -71,18 +82,63 @@ struct DistributionPanel {
         ];
     }
     private hasOverflow(): boolean {
-        return this.collapsible && this.chart.labels.length > COLLAPSED_SDK_COUNT;
+        const labelCount = this.onSelect && this.colorLabels.length > 0 ?
+            this.colorLabels.length : this.chart.labels.length;
+        return this.collapsible && labelCount > COLLAPSED_SDK_COUNT;
+    }
+    private toggleExpansion(): void {
+        if (this.expanded) {
+            if (this.onCollapse) this.onCollapse();
+        } else if (this.onExpand) {
+            this.onExpand();
+        }
+    }
+    private usesSharedLabels(): boolean {
+        return this.onSelect !== undefined && this.colorLabels.length > 0;
+    }
+    private sourceLabels(): string[] {
+        return this.usesSharedLabels() ? this.colorLabels : this.chart.labels;
     }
     private displayLabels(): string[] {
-        if (!this.hasOverflow() || this.expanded) return this.chart.labels;
-        return this.chart.labels.slice(0, COLLAPSED_SDK_COUNT).concat(['其他']);
+        const labels = this.sourceLabels();
+        if (!this.hasOverflow() || this.expanded) return labels;
+        return labels.slice(0, COLLAPSED_SDK_COUNT).concat(['其他']);
     }
     private displayValues(): number[] {
-        if (!this.hasOverflow() || this.expanded) return this.chart.values;
-        const values = this.chart.values.slice(0, COLLAPSED_SDK_COUNT);
-        values.push(this.chart.values.slice(COLLAPSED_SDK_COUNT)
-            .reduce((sum: number, value: number) => sum + value, 0));
-        return values;
+        const collapsedLabels = this.sourceLabels().slice(0, COLLAPSED_SDK_COUNT);
+        return this.displayLabels().map((label: string): number => {
+            if (label !== '其他') {
+                const index = this.chart.labels.indexOf(label);
+                return index >= 0 ? (this.chart.values[index] ?? 0) : 0;
+            }
+            let total = 0;
+            for (let index = 0; index < this.chart.labels.length; index++) {
+                if (collapsedLabels.indexOf(this.chart.labels[index]) < 0) total += this.chart.values[index] ?? 0;
+            }
+            return total;
+        });
+    }
+    private isOtherHidden(): boolean {
+        return this.onToggleOther !== undefined ? this.otherHidden : this.localOtherHidden;
+    }
+    private visibleValues(): number[] {
+        const labels = this.displayLabels();
+        return this.displayValues().map((value: number, index: number): number =>
+            labels[index] === '其他' && this.isOtherHidden() ? 0 : value);
+    }
+    private visibleTotal(): number {
+        return this.visibleValues().reduce((sum: number, value: number) => sum + value, 0);
+    }
+    private toggleOtherVisibility(): void {
+        const hidden = !this.isOtherHidden();
+        if (this.vibrationLevel > 0) vibration.dotVibration();
+        this.selected = 0;
+        if (this.onToggleOther) {
+            this.onToggleOther(hidden);
+        } else {
+            this.localOtherHidden = hidden;
+            this.animatePie();
+        }
     }
     private colorAt(index: number): Resource {
         const colors = this.colors();
@@ -128,14 +184,16 @@ struct DistributionPanel {
     private draw(): void {
         const size = this.canvasSize;
         this.context.clearRect(0, 0, size, size);
-        const values = this.displayValues();
-        if (this.chart.total <= 0 || values.length === 0) return;
+        const values = this.visibleValues();
+        const visibleTotal = this.visibleTotal();
+        if (visibleTotal <= 0 || values.length === 0) return;
         const center = size / 2;
         const radius = Math.max(20, center - 12);
         let startAngle = -Math.PI / 2;
         const surfaceColor = this.resolvedColor($r('app.color.v3_surface'));
         for (let index = 0; index < values.length; index++) {
-            const sweep = Math.PI * 2 * values[index] / this.chart.total * this.drawProgress;
+            if (values[index] <= 0) continue;
+            const sweep = Math.PI * 2 * values[index] / visibleTotal * this.drawProgress;
             const endAngle = startAngle + sweep;
             this.context.beginPath();
             this.context.moveTo(center, center);
@@ -160,7 +218,9 @@ struct DistributionPanel {
     private selectAt(x: number, y: number): void {
         if (this.chart.total <= 0) return;
         const labels = this.displayLabels();
-        const values = this.displayValues();
+        const values = this.visibleValues();
+        const visibleTotal = this.visibleTotal();
+        if (visibleTotal <= 0) return;
         const center = this.canvasSize / 2;
         const dx = x - center;
         const dy = y - center;
@@ -169,14 +229,14 @@ struct DistributionPanel {
         if (angle < 0) angle += Math.PI * 2;
         let accumulated = 0;
         for (let index = 0; index < values.length; index++) {
-            accumulated += Math.PI * 2 * values[index] / this.chart.total;
+            if (values[index] <= 0) continue;
+            accumulated += Math.PI * 2 * values[index] / visibleTotal;
             if (angle <= accumulated) {
-                if (labels[index] === '其他' && this.onExpand) {
-                    this.selected = 0;
-                    this.onExpand();
+                if (labels[index] === '其他') {
+                    this.toggleOtherVisibility();
                     return;
                 }
-                if (!this.onSelect && index !== this.selectedIndex() && this.vibrationEnabled) vibration.dotVibration();
+                if (!this.onSelect && index !== this.selectedIndex() && this.vibrationLevel > 0) vibration.dotVibration();
                 this.selected = index;
                 if (this.onSelect) this.onSelect(labels[index]);
                 this.draw();
@@ -214,8 +274,22 @@ struct DistributionPanel {
                         Row().width(8).height(8).borderRadius(4)
                             .backgroundColor(this.colorAt(index))
                         Column({ space: 1 }) {
-                            Text(label).fontSize(13).fontWeight(FontWeight.Medium)
-                                .fontColor($r('app.color.v3_text_primary')).maxLines(1)
+                            if (label === '其他') {
+                                Row({ space: 3 }) {
+                                    Text(label).fontSize(13).fontWeight(FontWeight.Medium)
+                                        .fontColor($r('app.color.v3_text_primary')).maxLines(1)
+                                        .decoration({ type: TextDecorationType.Underline,
+                                            color: $r('app.color.v3_text_primary') })
+                                    SymbolGlyph(this.isOtherHidden() ?
+                                        $r('sys.symbol.eye') : $r('sys.symbol.eye_slash'))
+                                        .fontSize(12)
+                                        .fontColor([$r('app.color.v3_text_secondary')])
+                                        .accessibilityText(this.isOtherHidden() ? '显示其他' : '隐藏其他')
+                                }
+                            } else {
+                                Text(label).fontSize(13).fontWeight(FontWeight.Medium)
+                                    .fontColor($r('app.color.v3_text_primary')).maxLines(1)
+                            }
                             Text(this.legendText(index)).fontSize(11)
                                 .fontColor($r('app.color.v3_text_secondary')).maxLines(1)
                         }.alignItems(HorizontalAlign.Start).layoutWeight(1)
@@ -224,19 +298,20 @@ struct DistributionPanel {
                     .backgroundColor(index === this.selectedIndex() ?
                         $r('app.color.v3_surface_alt') : Color.Transparent)
                     .onClick(() => {
-                        if (!this.onSelect && this.vibrationEnabled) vibration.dotVibration();
-                        if (label === '其他' && this.onExpand) {
-                            this.selected = 0;
-                            this.onExpand();
+                        if (label === '其他') {
+                            this.toggleOtherVisibility();
                             return;
                         }
+                        if (!this.onSelect && this.vibrationLevel > 0) vibration.dotVibration();
                         this.selected = index;
                         if (this.onSelect) this.onSelect(label);
                         this.draw();
                     })
                     .transition(TransitionEffect.OPACITY.combine(
                         TransitionEffect.scale({ x: 0.94, y: 0.94 })))
-                    .accessibilityText(`${label}，${this.legendText(index)}`)
+                    .accessibilityText(label === '其他' ?
+                        `其他，${this.legendText(index)}，${this.isOtherHidden() ? '点击显示' : '点击隐藏'}` :
+                        `${label}，${this.legendText(index)}`)
                 }
             }, (label: string) => `${this.chart.title}-${label}`)
         }
@@ -246,8 +321,33 @@ struct DistributionPanel {
 
     build() {
         Column({ space: 8 }) {
-            Text(this.chart.title).fontSize(18).fontWeight(FontWeight.Bold)
-                .fontColor($r('app.color.v3_text_primary')).width('100%').accessibilityText(this.chart.title)
+            if (this.showTitle) {
+                Row() {
+                    Text(this.chart.title).fontSize(18).fontWeight(FontWeight.Bold)
+                        .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
+                        .accessibilityText(this.chart.title)
+                    if (this.showExpandAction && this.hasOverflow()) {
+                        Text(this.expanded ? '收起' : '展开全部')
+                            .fontSize(13)
+                            .fontColor($r('app.color.diff_content'))
+                            .onClick(() => this.toggleExpansion())
+                            .accessibilityText(this.expanded ? `收起${this.chart.title}` : `展开${this.chart.title}全部SDK`)
+                    }
+                }
+                .width('100%')
+                .alignItems(VerticalAlign.Center)
+            }
+            if (this.chartCaption.length > 0 || this.reserveCaptionSpace) {
+                Text(this.chartCaption)
+                    .height(20)
+                    .fontSize(13)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(this.chartCaption.length > 0 ?
+                        $r('app.color.v3_text_secondary') : Color.Transparent)
+                    .width('100%')
+                    .textAlign(TextAlign.Center)
+                    .accessibilityText(this.chartCaption)
+            }
             if (this.chart.values.length > 0) {
                 if (this.horizontalLegend) {
                     Row({ space: 10 }) {
@@ -278,7 +378,8 @@ struct DistributionPanel {
             const width = Number(area.width);
             if (width > 0) {
                 this.canvasSize = this.horizontalLegend ?
-                    Math.max(154, Math.min(196, width * 0.36)) : Math.max(164, Math.min(220, width - 44));
+                    Math.max(154, Math.min(196, width * 0.36)) :
+                    Math.max(164, Math.min(220, width - (this.embedded ? 24 : 44)));
                 setTimeout((): void => this.draw(), 0);
             }
         })
@@ -362,8 +463,11 @@ export struct OverviewSection {
     @State private apiKeys: string[] = [];
     @State private contentWidth: number = 0;
     @State private sdkExpanded: boolean = false;
+    @State private targetSdkExpanded: boolean = false;
+    @State private minSdkExpanded: boolean = false;
     @State private selectedSdkLabel: string = '';
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @State private sdkOtherHidden: boolean = false;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     private pendingLoads: number = 0;
     private reloadAfterCurrent: boolean = false;
 
@@ -421,15 +525,21 @@ export struct OverviewSection {
     }
     private selectSdk(label: string): void {
         if (label === '其他') {
-            this.expandSdk();
+            if (this.vibrationLevel > 0) vibration.dotVibration();
+            this.setSdkOtherHidden(!this.sdkOtherHidden);
             return;
         }
-        if (label !== this.activeSdkLabel() && this.vibrationEnabled) vibration.dotVibration();
+        if (label !== this.activeSdkLabel() && this.vibrationLevel > 0) vibration.dotVibration();
         this.selectedSdkLabel = label;
+    }
+    private setSdkOtherHidden(hidden: boolean): void {
+        this.getUIContext().animateTo({ duration: 300, curve: Curve.Friction }, (): void => {
+            this.sdkOtherHidden = hidden;
+        });
     }
     private expandSdk(): void {
         if (this.sdkExpanded) return;
-        if (this.vibrationEnabled) vibration.dotVibration();
+        if (this.vibrationLevel > 0) vibration.dotVibration();
         this.getUIContext().animateTo({ duration: 360, curve: Curve.Friction }, (): void => {
             this.sdkExpanded = true;
             this.selectedSdkLabel = this.sdkLabels()[0] ?? '';
@@ -437,7 +547,7 @@ export struct OverviewSection {
     }
     private collapseSdk(): void {
         if (!this.sdkExpanded) return;
-        if (this.vibrationEnabled) vibration.dotVibration();
+        if (this.vibrationLevel > 0) vibration.dotVibration();
         this.getUIContext().animateTo({ duration: 300, curve: Curve.Friction }, (): void => {
             const collapsedLabels = this.sdkLabels().slice(0, COLLAPSED_SDK_COUNT);
             if (collapsedLabels.indexOf(this.selectedSdkLabel) < 0) {
@@ -446,26 +556,39 @@ export struct OverviewSection {
             this.sdkExpanded = false;
         });
     }
+    private expandTargetSdk(): void {
+        if (this.targetSdkExpanded) return;
+        if (this.vibrationLevel > 0) vibration.dotVibration();
+        this.getUIContext().animateTo({ duration: 360, curve: Curve.Friction }, (): void => {
+            this.targetSdkExpanded = true;
+        });
+    }
+    private collapseTargetSdk(): void {
+        if (!this.targetSdkExpanded) return;
+        if (this.vibrationLevel > 0) vibration.dotVibration();
+        this.getUIContext().animateTo({ duration: 300, curve: Curve.Friction }, (): void => {
+            this.targetSdkExpanded = false;
+        });
+    }
+    private expandMinSdk(): void {
+        if (this.minSdkExpanded) return;
+        if (this.vibrationLevel > 0) vibration.dotVibration();
+        this.getUIContext().animateTo({ duration: 360, curve: Curve.Friction }, (): void => {
+            this.minSdkExpanded = true;
+        });
+    }
+    private collapseMinSdk(): void {
+        if (!this.minSdkExpanded) return;
+        if (this.vibrationLevel > 0) vibration.dotVibration();
+        this.getUIContext().animateTo({ duration: 300, curve: Curve.Friction }, (): void => {
+            this.minSdkExpanded = false;
+        });
+    }
 
     @Builder
     private sdkLegend(): void {
         if (this.sdkLabels().length > 0) {
-            Column({ space: 8 }) {
-                Row() {
-                    Text('SDK 图例')
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.v3_text_primary'))
-                    Blank()
-                    if (this.sdkExpanded && this.sdkLabels().length > COLLAPSED_SDK_COUNT) {
-                        Text('收起')
-                            .fontSize(13)
-                            .fontColor($r('app.color.diff_content'))
-                            .onClick(() => this.collapseSdk())
-                            .accessibilityText('收起SDK完整图例')
-                    }
-                }
-                .width('100%')
+            Column() {
                 GridRow({ columns: this.contentWidth >= 840 ? 4 : (this.contentWidth >= 600 ? 3 : 2),
                     gutter: { x: 5, y: 5 } }) {
                     ForEach(this.visibleSdkLabels(), (label: string, index: number) => {
@@ -475,9 +598,24 @@ export struct OverviewSection {
                                     .backgroundColor(label === '其他' ? $r('app.color.nd_text_sub') :
                                         this.sdkColors()[this.sdkLabels().indexOf(label) % this.sdkColors().length])
                                 Column({ space: 1 }) {
-                                    Text(label).fontSize(13).fontWeight(FontWeight.Medium)
-                                        .fontColor($r('app.color.v3_text_primary')).maxLines(1)
-                                    Text(label === '其他' ? '点击展开全部' :
+                                    if (label === '其他') {
+                                        Row({ space: 3 }) {
+                                            Text(label).fontSize(13).fontWeight(FontWeight.Medium)
+                                                .fontColor($r('app.color.v3_text_primary')).maxLines(1)
+                                                .decoration({ type: TextDecorationType.Underline,
+                                                    color: $r('app.color.v3_text_primary') })
+                                            SymbolGlyph(this.sdkOtherHidden ?
+                                                $r('sys.symbol.eye') : $r('sys.symbol.eye_slash'))
+                                                .fontSize(12)
+                                                .fontColor([$r('app.color.v3_text_secondary')])
+                                                .accessibilityText(this.sdkOtherHidden ? '显示其他' : '隐藏其他')
+                                        }
+                                    } else {
+                                        Text(label).fontSize(13).fontWeight(FontWeight.Medium)
+                                            .fontColor($r('app.color.v3_text_primary')).maxLines(1)
+                                    }
+                                    Text(label === '其他' ?
+                                        (this.sdkOtherHidden ? '已隐藏，点击显示' : '点击隐藏') :
                                         `目标 ${this.sdkPercent(this.targetSdkChart, label)} · 最低 ${this.sdkPercent(this.minSdkChart, label)}`)
                                         .fontSize(10).fontColor($r('app.color.v3_text_secondary')).maxLines(1)
                                 }
@@ -494,7 +632,8 @@ export struct OverviewSection {
                             })
                             .transition(TransitionEffect.OPACITY.combine(
                                 TransitionEffect.scale({ x: 0.94, y: 0.94 })))
-                            .accessibilityText(label === '其他' ? '其他SDK，点击展开全部版本' :
+                            .accessibilityText(label === '其他' ?
+                                `其他SDK，${this.sdkOtherHidden ? '已隐藏，点击显示' : '点击隐藏'}` :
                                 `${label}，目标占比${this.sdkPercent(this.targetSdkChart, label)}，最低占比${this.sdkPercent(this.minSdkChart, label)}`)
                         }
                     }, (label: string) => `sdk-shared-${label}`)
@@ -503,42 +642,56 @@ export struct OverviewSection {
                 .animation({ duration: 360, curve: Curve.Friction })
             }
             .width('100%')
-            .padding({ top: 2 })
             .accessibilityText('目标SDK与最低SDK共享图例')
         }
     }
 
     @Builder
     private combinedSdkPanel(): void {
-        Column({ space: 12 }) {
+        Column({ space: 8 }) {
+            Row() {
+                Text('应用SDK分布')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor($r('app.color.v3_text_primary'))
+                    .layoutWeight(1)
+                    .accessibilityText('应用SDK分布')
+                if (this.sdkLabels().length > COLLAPSED_SDK_COUNT) {
+                    Text(this.sdkExpanded ? '收起' : '展开全部')
+                        .fontSize(13)
+                        .fontColor($r('app.color.diff_content'))
+                        .onClick(() => {
+                            if (this.sdkExpanded) this.collapseSdk(); else this.expandSdk();
+                        })
+                        .accessibilityText(this.sdkExpanded ? '收起全部SDK版本' : '展开全部SDK版本')
+                }
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
             Row({ space: 12 }) {
                 Column() {
                     DistributionPanel({ chart: this.targetSdkChart, showLegend: false, collapsible: true,
                         expanded: this.sdkExpanded, colorLabels: this.sdkLabels(), embedded: true,
+                        showTitle: false, chartCaption: '目标 SDK',
+                        otherHidden: this.sdkOtherHidden,
                         selectedLabel: this.activeSdkLabel(),
                         onSelect: (label: string): void => this.selectSdk(label),
-                        onExpand: (): void => this.expandSdk() })
+                        onToggleOther: (hidden: boolean): void => this.setSdkOtherHidden(hidden) })
                 }
                 .layoutWeight(1)
-                Divider()
-                    .vertical(true)
-                    .height('100%')
-                    .color($r('app.color.nd_card_border'))
-                    .accessibilityText('目标SDK与最低SDK图表分隔线')
                 Column() {
                     DistributionPanel({ chart: this.minSdkChart, showLegend: false, collapsible: true,
                         expanded: this.sdkExpanded, colorLabels: this.sdkLabels(), embedded: true,
+                        showTitle: false, chartCaption: '最低 SDK',
+                        otherHidden: this.sdkOtherHidden,
                         selectedLabel: this.activeSdkLabel(),
                         onSelect: (label: string): void => this.selectSdk(label),
-                        onExpand: (): void => this.expandSdk() })
+                        onToggleOther: (hidden: boolean): void => this.setSdkOtherHidden(hidden) })
                 }
                 .layoutWeight(1)
             }
             .width('100%')
             .alignItems(VerticalAlign.Top)
-            Divider()
-                .color($r('app.color.nd_card_border'))
-                .accessibilityText('SDK图表与共用图例分隔线')
             this.sdkLegend()
         }
         .width('100%')
@@ -625,7 +778,9 @@ export struct OverviewSection {
                     Column() {
                         this.combinedSdkPanel()
                     }.layoutWeight(2)
-                    Column() { DistributionPanel({ chart: this.ratingChart }) }.layoutWeight(1)
+                    Column() {
+                        DistributionPanel({ chart: this.ratingChart, reserveCaptionSpace: true })
+                    }.layoutWeight(1)
                 }
                 .width('100%')
                 .alignItems(VerticalAlign.Top)
@@ -640,11 +795,13 @@ export struct OverviewSection {
             } else {
                 Column({ space: 12 }) {
                     DistributionPanel({ chart: this.targetSdkChart, collapsible: true,
-                        expanded: this.sdkExpanded, colorLabels: this.sdkLabels(),
-                        onExpand: (): void => this.expandSdk() })
+                        expanded: this.targetSdkExpanded, colorLabels: this.sdkLabels(), showExpandAction: true,
+                        onExpand: (): void => this.expandTargetSdk(),
+                        onCollapse: (): void => this.collapseTargetSdk() })
                     DistributionPanel({ chart: this.minSdkChart, collapsible: true,
-                        expanded: this.sdkExpanded, colorLabels: this.sdkLabels(),
-                        onExpand: (): void => this.expandSdk() })
+                        expanded: this.minSdkExpanded, colorLabels: this.sdkLabels(), showExpandAction: true,
+                        onExpand: (): void => this.expandMinSdk(),
+                        onCollapse: (): void => this.collapseMinSdk() })
                     DistributionPanel({ chart: this.ratingChart })
                 }
                 .width('100%')

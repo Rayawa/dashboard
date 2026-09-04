@@ -22,10 +22,10 @@ struct aboutWeb {
   @State progress: number = 0;
   @State loading: boolean = true;
   @State errorMessage: string = '';
-  @StorageLink('vibrationON') vibrationON: boolean = true;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
 
   private refresh(): void {
-    if (this.vibrationON) vibration.dotVibration();
+    if (this.vibrationLevel > 0) vibration.dotVibration();
     this.errorMessage = '';
     this.loading = true;
     try {
@@ -37,7 +37,7 @@ struct aboutWeb {
   }
 
   private async openBrowser(): Promise<void> {
-    if (this.vibrationON) vibration.dotVibration();
+    if (this.vibrationLevel > 0) vibration.dotVibration();
     try {
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
       await context.startAbility({
@@ -52,7 +52,7 @@ struct aboutWeb {
   }
 
   private goBack(): boolean {
-    if (this.vibrationON) vibration.dotVibration();
+    if (this.vibrationLevel > 0) vibration.dotVibration();
     try {
       if (this.controller.accessBackward()) {
         this.controller.backward();

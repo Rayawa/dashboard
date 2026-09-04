@@ -1,36 +1,29 @@
 import { vibration } from '../common/vibration';
 import { common } from '@kit.AbilityKit';
-import { deviceInfo } from '@kit.BasicServicesKit';
 import {
   setImmersiveMaterialLevel,
-  setImmersiveTexture,
   setUsername,
-  setVibrationEnabled
+  setVibrationLevel
 } from '../common/storage';
 import { clearCompleteCache, getCacheSizeBytes } from '../common/CacheService';
 import { formatBytes } from '../common/format';
 import { showToastSafely } from '../common/safeUi';
+import { HdsListItemCard, IconSize, PrefixIcon, SuffixCustomBuilder } from '@kit.UIDesignKit';
 
 @Component
 export struct settings {
-    @StorageLink("vibrationON") vibrationON: boolean = true;
-    @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
-    @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = 0;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+    @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = 2;
     @StorageLink('username') username: string = '';
 
     @State handlePopupTrash: boolean = false;
     @State cacheSize: string = '计算中…';
     @State showUsernameHelp: boolean = false;
+    @State private contentWidth: number = 0;
 
-    async aboutToAppear(): Promise<void> {
+    aboutToAppear(): void {
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
         this.cacheSize = formatBytes(getCacheSizeBytes(context));
-        if(deviceInfo.sdkApiVersion >= 23){
-            console.info('[Dashboard][component/settings][INFO]', "settings, api23 true! API: ", deviceInfo.sdkApiVersion)
-        } else {
-            await setImmersiveTexture(false);
-            console.info('[Dashboard][component/settings][INFO]', "settings, api23 false! API: ", deviceInfo.sdkApiVersion)
-        }
     }
 
     private trash(): void {
@@ -66,25 +59,11 @@ export struct settings {
             this.UsernameItem()
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
-            SettingItem({
-                icon: $r("app.media.vibrate"),
-                title: "全局振动反馈",
-                isOn: this.vibrationON,
-                onToggle: async (val) => { await setVibrationEnabled(val); }
-            })
+            this.VibrationLevelItem()
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
 
-            SettingItem({
-                icon: $r("app.media.immersive"),
-                title: "使用沉浸式材质",
-                isOn: this.immersiveTextureON,
-                promptMsg: "开启沉浸式材质将增加应用功耗，\n如遇卡顿建议关闭。",
-                onToggle: async (val) => { await setImmersiveTexture(val); }
-            })
-            if (this.immersiveTextureON) {
-                this.MaterialLevelSelector()
-            }
+            this.MaterialLevelItem()
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
 
@@ -97,8 +76,104 @@ export struct settings {
         .borderWidth(0.5)
         .borderColor($r("app.color.border"))
         .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
+        .clip(true)
+        .onAreaChange((_oldValue: Area, newValue: Area): void => {
+            this.contentWidth = Number(newValue.width);
+        })
         .accessibilityGroup(true)
         .accessibilityText('应用设置')
+    }
+
+    private isNarrowSettings(): boolean {
+        return this.contentWidth > 0 && this.contentWidth < 330;
+    }
+
+    private vibrationLevelName(): string {
+        if (this.vibrationLevel === 0) return '关闭';
+        if (this.vibrationLevel === 1) return '轻触';
+        return '硬朗';
+    }
+
+    @Builder
+    VibrationLevelItem() {
+        HdsListItemCard({
+            prefixItem: new PrefixIcon({
+                iconSize: IconSize.SYSTEM_ICON,
+                iconValue: { image: $r('app.media.vibrate') },
+            }),
+            textItem: { customBuilder: this.VibrationLevelContent },
+            cardHeight: this.isNarrowSettings() ? 116 : 68,
+            cardBackgroundColor: $r('app.color.v3_surface'),
+            cardBorderRadius: 0,
+            hoverBorderRadius: 12,
+            cardPrefixMargin: 16,
+            cardSuffixMargin: 16,
+            accessibilityOptions: {
+                accessibilityText: `振动强度，当前${this.vibrationLevelName()}`,
+            },
+        })
+    }
+
+    @Builder
+    VibrationLevelContent() {
+        Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween, alignItems: ItemAlign.Center }) {
+            Text('振动强度')
+                .fontSize(16)
+                .fontColor($r('app.color.v3_text_primary'))
+                .maxLines(2)
+                .accessibilityText('振动强度')
+            Column({ space: 1 }) {
+                Slider({
+                    value: this.vibrationLevel,
+                    min: 0,
+                    max: 2,
+                    step: 1,
+                    style: SliderStyle.InSet,
+                })
+                    .width(184)
+                    .selectedColor($r('app.color.diff_content'))
+                    .trackColor($r('app.color.v3_surface_alt'))
+                    .blockColor($r('app.color.v3_text_primary'))
+                    .blockBorderColor($r('app.color.v3_surface'))
+                    .showSteps(true)
+                    .showTips(false)
+                    .onChange((value: number) => {
+                        const nextLevel = Math.round(value);
+                        if (nextLevel === this.vibrationLevel) return;
+                        this.vibrationLevel = nextLevel;
+                        vibration.dotVibration();
+                        setVibrationLevel(nextLevel).catch((error: Error) => {
+                            console.error('[Dashboard][component/settings][ERROR]',
+                                `保存振动强度失败: ${error.message}`);
+                        });
+                    })
+                    .accessibilityText(`振动强度，当前${this.vibrationLevelName()}，共三档`)
+                Row() {
+                    this.VibrationLevelLabel('关闭', 0)
+                    this.VibrationLevelLabel('轻触', 1)
+                    this.VibrationLevelLabel('硬朗', 2)
+                }
+                .width(184)
+                .justifyContent(FlexAlign.SpaceBetween)
+            }
+            .width(184)
+            .margin({ top: this.isNarrowSettings() ? 4 : 0 })
+        }
+        .width('100%')
+        .accessibilityGroup(true)
+        .accessibilityText(`振动强度，当前${this.vibrationLevelName()}`)
+    }
+
+    @Builder
+    VibrationLevelLabel(label: string, level: number) {
+        Text(label)
+            .fontSize(12)
+            .fontWeight(this.vibrationLevel === level ? FontWeight.Medium : FontWeight.Regular)
+            .fontColor(this.vibrationLevel === level ?
+                $r('app.color.diff_content') : $r('app.color.v3_text_secondary'))
+            .width(40)
+            .textAlign(TextAlign.Center)
+            .accessibilityText(`${label}振动${this.vibrationLevel === level ? '，已选择' : ''}`)
     }
 
     private materialLevelFromSlider(value: number): number {
@@ -113,44 +188,73 @@ export struct settings {
     }
 
     @Builder
-    MaterialLevelSelector() {
-        Column({ space: 2 }) {
-            Slider({
-                value: 2 - this.immersiveMaterialLevel,
-                min: 0,
-                max: 2,
-                step: 1,
-                style: SliderStyle.InSet,
-            })
-                .width('100%')
-                .selectedColor($r('app.color.diff_content'))
-                .trackColor($r('app.color.v3_surface_alt'))
-                .blockColor($r('app.color.diff_content'))
-                .showSteps(true)
-                .showTips(false)
-                .onChange((value: number) => {
-                    const nextLevel = this.materialLevelFromSlider(value);
-                    if (nextLevel === this.immersiveMaterialLevel) return;
-                    this.immersiveMaterialLevel = nextLevel;
-                    if (this.vibrationON) vibration.dotVibration();
-                    setImmersiveMaterialLevel(nextLevel).catch((error: Error) => {
-                        console.error('[Dashboard][component/settings][ERROR]',
-                            `保存材质等级失败: ${error.message}`);
-                    });
+    MaterialLevelItem() {
+        HdsListItemCard({
+            prefixItem: new PrefixIcon({
+                iconSize: IconSize.SYSTEM_ICON,
+                iconValue: { image: $r('app.media.immersive') },
+            }),
+            textItem: { customBuilder: this.MaterialLevelContent },
+            cardHeight: this.isNarrowSettings() ? 116 : 68,
+            cardBackgroundColor: $r('app.color.v3_surface'),
+            cardBorderRadius: 0,
+            hoverBorderRadius: 12,
+            cardPrefixMargin: 16,
+            cardSuffixMargin: 16,
+            accessibilityOptions: {
+                accessibilityText: `材质等级，当前${this.materialLevelName()}`,
+            },
+        })
+    }
+
+    @Builder
+    MaterialLevelContent() {
+        Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween, alignItems: ItemAlign.Center }) {
+            Text('材质等级')
+                .fontSize(16)
+                .fontColor($r('app.color.v3_text_primary'))
+                .maxLines(2)
+                .accessibilityText('材质等级')
+            Column({ space: 1 }) {
+                Slider({
+                    value: 2 - this.immersiveMaterialLevel,
+                    min: 0,
+                    max: 2,
+                    step: 1,
+                    style: SliderStyle.InSet,
                 })
-                .accessibilityText(`沉浸式材质等级，当前${this.materialLevelName()}，共三档`)
-            Row() {
-                this.MaterialLevelLabel('流畅', 2)
-                this.MaterialLevelLabel('轻柔', 1)
-                this.MaterialLevelLabel('精美', 0)
+                    .width(184)
+                    .selectedColor($r('app.color.diff_content'))
+                    .trackColor($r('app.color.v3_surface_alt'))
+                    .blockColor($r('app.color.v3_text_primary'))
+                    .blockBorderColor($r('app.color.v3_surface'))
+                    .showSteps(true)
+                    .showTips(false)
+                    .onChange((value: number) => {
+                        const nextLevel = this.materialLevelFromSlider(value);
+                        if (nextLevel === this.immersiveMaterialLevel) return;
+                        this.immersiveMaterialLevel = nextLevel;
+                        vibration.dotVibration();
+                        setImmersiveMaterialLevel(nextLevel).catch((error: Error) => {
+                            console.error('[Dashboard][component/settings][ERROR]',
+                                `保存材质等级失败: ${error.message}`);
+                        });
+                    })
+                    .accessibilityText(`材质等级，当前${this.materialLevelName()}，共三档`)
+                Row() {
+                    this.MaterialLevelLabel('流畅', 2)
+                    this.MaterialLevelLabel('轻柔', 1)
+                    this.MaterialLevelLabel('精美', 0)
+                }
+                .width(184)
+                .justifyContent(FlexAlign.SpaceBetween)
             }
-            .width('100%')
-            .justifyContent(FlexAlign.SpaceBetween)
+            .width(184)
+            .margin({ top: this.isNarrowSettings() ? 4 : 0 })
         }
         .width('100%')
-        .padding({ left: 52, right: 16, bottom: 12 })
         .accessibilityGroup(true)
-        .accessibilityText(`沉浸式材质等级，当前${this.materialLevelName()}`)
+        .accessibilityText(`材质等级，当前${this.materialLevelName()}`)
     }
 
     @Builder
@@ -167,64 +271,103 @@ export struct settings {
 
     @Builder
     UsernameItem() {
+        HdsListItemCard({
+            prefixItem: new PrefixIcon({
+                iconSize: IconSize.SYSTEM_ICON,
+                iconValue: { image: $r('app.media.user') },
+            }),
+            textItem: { customBuilder: this.UsernameContent },
+            cardHeight: this.isNarrowSettings() ? 108 : 72,
+            cardBackgroundColor: $r('app.color.v3_surface'),
+            cardBorderRadius: 0,
+            hoverBorderRadius: 12,
+            cardPrefixMargin: 16,
+            cardSuffixMargin: 16,
+            accessibilityOptions: {
+                accessibilityText: `用户名设置，当前${this.username || 'HarmonyOS用户'}`,
+            },
+        })
+    }
+
+    @Builder
+    UsernameContent() {
         Column({ space: 4 }) {
-            Row({ space: 10 }) {
-                Image($r('app.media.user'))
-                    .height(24)
-                    .width(24)
-                    .objectFit(ImageFit.Contain)
-                    .accessibilityText('用户名图标')
+            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween, alignItems: ItemAlign.Center }) {
                 Text('用户名')
                     .fontSize(16)
                     .fontColor($r('app.color.v3_text_primary'))
-                TextInput({ text: this.username, placeholder: 'HarmonyOS用户' })
-                    .layoutWeight(1)
-                    .height(40)
-                    .enableKeyboardOnFocus(false)
-                    .backgroundColor($r('app.color.v3_surface_alt'))
-                    .onChange((value: string) => {
-                        this.username = value;
-                        setUsername(value.trim()).catch((error: Error) => {
-                            console.error('[Dashboard][component/settings][ERROR]', `自动保存用户名失败: ${error.message}`);
-                        });
-                    })
-                    .accessibilityText(`用户名输入框，当前${this.username || 'HarmonyOS用户'}`)
-                Image($r('app.media.question'))
-                    .height(22)
-                    .width(22)
-                    .objectFit(ImageFit.Contain)
-                    .onClick(() => {
-                        if (this.vibrationON) vibration.dotVibration();
-                        this.showUsernameHelp = !this.showUsernameHelp;
-                    })
-                    .bindPopup(this.showUsernameHelp, {
-                        message: '此用户名会随投稿与更新请求提交；留空时显示为 HarmonyOS用户',
-                        onStateChange: (event) => { if (!event.isVisible) this.showUsernameHelp = false },
-                    })
-                    .accessibilityText('查看用户名说明')
+                Row({ space: 8 }) {
+                    TextInput({ text: this.username, placeholder: 'HarmonyOS用户' })
+                        .layoutWeight(1)
+                        .height(40)
+                        .enableKeyboardOnFocus(false)
+                        .backgroundColor($r('app.color.v3_surface_alt'))
+                        .onChange((value: string) => {
+                            this.username = value;
+                            setUsername(value.trim()).catch((error: Error) => {
+                                console.error('[Dashboard][component/settings][ERROR]',
+                                    `自动保存用户名失败: ${error.message}`);
+                            });
+                        })
+                        .accessibilityText(`用户名输入框，当前${this.username || 'HarmonyOS用户'}`)
+                    Image($r('app.media.question'))
+                        .height(22)
+                        .width(22)
+                        .objectFit(ImageFit.Contain)
+                        .onClick(() => {
+                            vibration.dotVibration();
+                            this.showUsernameHelp = !this.showUsernameHelp;
+                        })
+                        .bindPopup(this.showUsernameHelp, {
+                            message: '此用户名会随投稿与更新请求提交；留空时显示为 HarmonyOS用户',
+                            onStateChange: (event) => { if (!event.isVisible) this.showUsernameHelp = false },
+                        })
+                        .accessibilityText('查看用户名说明')
+                }
+                .width(this.isNarrowSettings() ? '100%' : 204)
+                .margin({ top: this.isNarrowSettings() ? 4 : 0 })
             }
             .width('100%')
             Text('修改后自动保存')
                 .fontSize(11)
                 .fontColor($r('app.color.v3_text_secondary'))
-                .padding({ left: 134 })
+                .width('100%')
+                .textAlign(TextAlign.End)
                 .accessibilityText('用户名修改后自动保存')
         }
         .width('100%')
-        .padding({ left: 16, right: 16, top: 8, bottom: 8 })
         .accessibilityGroup(true)
         .accessibilityText(`用户名设置，当前${this.username || 'HarmonyOS用户'}`)
     }
 
     @Builder
     TrashItem() {
+        HdsListItemCard({
+            prefixItem: new PrefixIcon({
+                iconSize: IconSize.SYSTEM_ICON,
+                iconValue: { image: $r('app.media.trash') },
+            }),
+            textItem: { primaryText: { text: '清除缓存' } },
+            suffixItem: new SuffixCustomBuilder(this.TrashSuffix),
+            onClick: () => {
+                vibration.dotVibration();
+                this.trash();
+            },
+            cardHeight: 52,
+            cardBackgroundColor: $r('app.color.v3_surface'),
+            cardBorderRadius: 0,
+            hoverBorderRadius: 12,
+            cardPrefixMargin: 16,
+            cardSuffixMargin: 16,
+            accessibilityOptions: {
+                accessibilityText: `清除缓存，当前缓存文件总大小${this.cacheSize}`,
+            },
+        })
+    }
+
+    @Builder
+    TrashSuffix() {
         Row() {
-            Row({ space: 12 }) {
-                Image($r("app.media.trash")).height(24).width(24).objectFit(ImageFit.Contain)
-                    .accessibilityText('清除缓存图标')
-                Text("清除缓存").fontSize(16)
-                    .accessibilityText('清除缓存')
-            }
             Row({ space: 8 }) {
                 Text(this.cacheSize)
                     .fontSize(13)
@@ -234,7 +377,7 @@ export struct settings {
                     .height(24).width(24).objectFit(ImageFit.Contain)
                     .accessibilityText('查看清除缓存说明')
                     .onClick(() => {
-                        if (this.vibrationON) vibration.dotVibration();
+                        if (this.vibrationLevel > 0) vibration.dotVibration();
                         this.handlePopupTrash = !this.handlePopupTrash;
                     })
                     .monopolizeEvents(true)
@@ -244,63 +387,7 @@ export struct settings {
                     })
             }
         }
-        .height(52).width("100%").justifyContent(FlexAlign.SpaceBetween).padding({ left: 16, right: 16 })
-        .onClick(() => {
-            if (this.vibrationON) vibration.dotVibration();
-            this.trash();
-        })
         .accessibilityGroup(true)
-        .accessibilityText(`清除缓存，当前缓存文件总大小${this.cacheSize}`)
-    }
-}
-
-@Component
-struct SettingItem {
-    @Prop icon: Resource;
-    @Prop title: string;
-    @Prop isOn: boolean;
-    @Prop both: boolean = false;
-    @Prop onText: string = "开";
-    @Prop offText: string = "关";
-    @Prop promptMsg: string = "";
-    @StorageLink("vibrationON") canVibrate: boolean = true;
-
-    onToggle: (isOn: boolean) => Promise<void> = async () => {};
-
-    build() {
-        Column() {
-            Row() {
-                Row({ space: 12 }) {
-                    Image(this.icon).height(24).width(24).objectFit(ImageFit.Contain)
-                        .accessibilityText(`${this.title}图标`)
-                    Text(this.title).fontSize(16)
-                        .accessibilityText(this.title)
-                }
-                Row({ space: 8 }) {
-                    Text(this.offText).fontSize(14).fontColor($r('app.color.v3_text_secondary')).width(24).textAlign(TextAlign.Center)
-                    Toggle({ type: ToggleType.Switch, isOn: this.isOn })
-                        .selectedColor($r("app.color.diff_content"))
-                        .switchStyle({
-                            unselectedColor: this.both? $r("app.color.diff_content") : undefined
-                        })
-                        .accessibilityText(`${this.title}开关，当前${this.isOn ? this.onText : this.offText}`)
-                        .onChange(async (checked: boolean) => {
-                            if (this.canVibrate) vibration.dotVibration();
-                            await this.onToggle(checked);
-                            if (checked && this.promptMsg !== "") {
-                                showToastSafely(this.getUIContext().getPromptAction(), this.promptMsg, 1000, 'SettingItem');
-                            }
-                        })
-                    Text(this.onText).fontSize(14).fontColor($r('app.color.v3_text_secondary')).width(24).textAlign(TextAlign.Center)
-                }
-            }
-            .height(52)
-            .width("100%")
-            .justifyContent(FlexAlign.SpaceBetween)
-            .padding({ left: 16, right: 16 })
-            .accessibilityGroup(true)
-            .accessibilityText(`${this.title}设置`)
-
-        }
+        .accessibilityText(`缓存文件总大小${this.cacheSize}`)
     }
 }

@@ -21,7 +21,7 @@ export struct SStationPage {
     private scroller: Scroller = new Scroller();
     @Prop command: number = 0;
     @Prop @Watch('onCommandVersionChanged') commandVersion: number = 0;
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     @State private progress: number = 0;
     @State private loading: boolean = true;
     @State private errorMessage: string = '';
@@ -192,7 +192,7 @@ export struct SStationPage {
                     Button('重新加载')
                         .backgroundColor($r('app.color.diff_content'))
                         .onClick(() => {
-                            if (this.vibrationEnabled) vibration.dotVibration();
+                            if (this.vibrationLevel > 0) vibration.dotVibration();
                             this.errorMessage = '';
                             this.loading = true;
                             try {

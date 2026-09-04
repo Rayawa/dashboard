@@ -29,7 +29,7 @@ export struct InteractiveLineChart {
     @State private selected: number = 0;
     @State private zoom: number = 1;
     @State private panOffset: number = 0;
-    @StorageLink('vibrationON') private vibrationEnabled: boolean = true;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
     private zoomAtGestureStart: number = 1;
     private panAtGestureStart: number = 0;
     private canvasReady: boolean = false;
@@ -159,7 +159,7 @@ export struct InteractiveLineChart {
         const virtualX = x - dimensions[0] + this.panOffset;
         const ratio = Math.max(0, Math.min(1, virtualX / Math.max(1, dimensions[2] * this.zoom)));
         const index = Math.round(ratio * Math.max(0, this.pointCount() - 1));
-        if (index !== this.selected && this.vibrationEnabled) vibration.dotVibration();
+        if (index !== this.selected && this.vibrationLevel > 0) vibration.dotVibration();
         this.selected = index;
         this.draw();
     }
