@@ -12,6 +12,7 @@ import { APP_VERSION, mainPage } from '../../common/constants';
 import { popPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
+import { pageTransition } from '../../common/motion';
 import KnockShareGuideCard, { CardRes } from '../../component/KnockShareGuideCard';
 
 interface TutorialSection {
@@ -23,7 +24,7 @@ interface TutorialSection {
 @Component
 export struct tutorial {
   @Consume('pageStack') pageStack: NavPathStack;
-  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
     hdsMaterial.MaterialLevel.SMOOTH;
   private prompt: PromptAction = this.getUIContext().getPromptAction();
@@ -126,7 +127,7 @@ export struct tutorial {
         description: '这里可以修改用户名、振动强度和材质等级，也可以清理缓存或查看项目相关信息。',
         items: [
           '用户名会用于首页问候；修改后无需重新启动应用。',
-          '振动强度会同时作用于主要按钮、返回和图表选择，可选择关闭、轻触或硬朗。',
+          '振动强度会同时作用于主要按钮、返回和图表选择，可选择关闭、灵动或硬朗。',
           '材质等级会同步作用于支持的导航栏和切换栏，可按设备性能选择流畅、轻柔或精美。',
           '清理缓存会删除接口缓存、网页缓存和 Cookie，但用户名与设置会保留。',
           '缓存项旁会显示当前占用空间；清理后，S站可能需要重新登录，数据页面也需要重新联网加载。',
@@ -234,6 +235,7 @@ export struct tutorial {
               .fontSize(14)
               .fontColor($r('app.color.diff_content'))
               .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
+              .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.96 })
               .onClick(() => this.openProjectSite())
               .accessibilityText('打开Dashboard项目网站')
           }
@@ -356,9 +358,10 @@ export struct tutorial {
       .accessibilityText('可滚动的应用使用教程')
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
+    .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {
-      if (this.vibrationLevel > 0) vibration.dotVibration();
+      if (this.vibrationLevel > 0) vibration.backVibration();
       popPathSafely(this.pageStack, 'pages/more/tutorial');
       return true;
     })
@@ -420,7 +423,7 @@ export struct tutorial {
         },
         backIcon: {
           action: () => {
-            if (this.vibrationLevel > 0) vibration.dotVibration();
+            if (this.vibrationLevel > 0) vibration.backVibration();
             popPathSafely(this.pageStack, 'pages/more/tutorial');
           },
         },

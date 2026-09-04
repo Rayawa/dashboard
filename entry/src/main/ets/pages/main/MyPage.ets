@@ -1,6 +1,6 @@
 import { common, Want } from '@kit.AbilityKit';
-import { PromptAction, TextModifier } from '@kit.ArkUI';
-import { HdsListItemCard, IconSize, PrefixIcon, SuffixArrow } from '@kit.UIDesignKit';
+import { curves, PromptAction, TextModifier } from '@kit.ArkUI';
+import { hdsEffect, HdsListItemCard, IconSize, PrefixIcon, SuffixArrow } from '@kit.UIDesignKit';
 import { settings } from '../../component/settings';
 import { contact } from '../../component/contact';
 import { warn } from '../../component/warn';
@@ -20,6 +20,7 @@ import URL from '../../common/url';
 import { showToastSafely } from '../../common/safeUi';
 import { EmptyPathParam } from '../../common/safeNavigation';
 import { vibration } from '../../common/vibration';
+import { runPageEnterAnimation } from '../../common/motion';
 
 interface MoreItem {
     title: string;
@@ -30,7 +31,9 @@ interface MoreItem {
 @Component
 struct MoreRow {
     item: MoreItem = { title: '', icon: $r('app.media.info'), action: () => {} };
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @State private pressed: boolean = false;
+    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
     build() {
         HdsListItemCard({
@@ -46,7 +49,7 @@ struct MoreRow {
                         .fontColor($r('app.color.v3_text_primary')),
                 },
             },
-            suffixItem: new SuffixArrow(),
+            suffixItem: new SuffixArrow({ color: $r('sys.color.icon_secondary') }),
             onClick: () => {
                 if (this.vibrationLevel > 0) vibration.dotVibration();
                 this.item.action();
@@ -55,11 +58,27 @@ struct MoreRow {
             cardBackgroundColor: $r('app.color.v3_surface'),
             cardBorderRadius: 0,
             hoverBorderRadius: 12,
-            cardPrefixMargin: 16,
-            cardSuffixMargin: 16,
+            cardPrefixMargin: 8,
+            cardSuffixMargin: 12,
             accessibilityOptions: {
                 accessibilityText: `进入${this.item.title}`,
             },
+        })
+        .scale({ x: this.pressed ? 0.98 : 1, y: this.pressed ? 0.98 : 1 })
+        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+        .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+            sourceType: this.pointLight,
+            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+            options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+        }).buildEffect())
+        .onTouch((event: TouchEvent): void => {
+            if (event.type === TouchType.Down) {
+                this.pressed = true;
+                this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressed = false;
+                this.pointLight = hdsEffect.PointLightSourceType.NONE;
+            }
         })
     }
 }
@@ -70,11 +89,13 @@ export struct MyPage {
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     @State private showWarning: boolean = false;
     @State private showContact: boolean = false;
     @State private versionTapCount: number = 0;
     @State private contentWidth: number = 0;
+    @State private pageVisible: boolean = false;
+    @State private infoPressed: string = '';
     private versionTapTimer: number = -1;
     private restoredScroll: boolean = false;
 
@@ -241,7 +262,17 @@ export struct MyPage {
             Text(`版本 ${APP_VERSION}`)
                 .fontSize(12)
                 .fontColor($r('app.color.v3_text_secondary'))
-                .onClick(() => this.tapVersion())
+                .scale({ x: this.infoPressed === 'version' ? 0.96 : 1,
+                    y: this.infoPressed === 'version' ? 0.96 : 1 })
+                .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) this.infoPressed = 'version';
+                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.infoPressed = '';
+                })
+                .onClick(() => {
+                    this.vibrate();
+                    this.tapVersion();
+                })
                 .accessibilityText(`版本${APP_VERSION}，连续点击十次打开开发者信息`)
             Text('Designed & Developed by Ray Chen (Rayawa)')
                 .fontSize(12)
@@ -262,6 +293,13 @@ export struct MyPage {
                 .fontSize(12)
                 .fontColor($r('app.color.diff_content'))
                 .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
+                .scale({ x: this.infoPressed === 'icp' ? 0.96 : 1,
+                    y: this.infoPressed === 'icp' ? 0.96 : 1 })
+                .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) this.infoPressed = 'icp';
+                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.infoPressed = '';
+                })
                 .onClick(() => {
                     this.vibrate();
                     this.openIcp();
@@ -397,7 +435,7 @@ export struct MyPage {
 
                         Scroll(this.scroller) {
                             Column() {
-                                Blank().height(100).width('100%')
+                                Blank().height(10).width('100%')
                                 this.settingsAndLinks()
                                 Blank().height(110).width('100%')
                             }
@@ -457,7 +495,10 @@ export struct MyPage {
                     .height('100%')
                     .backgroundColor($r('app.color.v3_scrim'))
                     .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                    .onClick(() => this.showWarning = false)
+                    .onClick(() => {
+                        this.vibrate();
+                        this.showWarning = false;
+                    })
                     .accessibilityText('点击关闭重要提示')
                 warn({ isShow: this.showWarning })
             }
@@ -465,14 +506,24 @@ export struct MyPage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.background'))
+        .opacity(this.pageVisible ? 1 : 0.01)
+        .translate({ y: this.pageVisible ? 0 : 10 })
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })
+        .onAppear(() => {
+            this.pageVisible = false;
+            runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
+        })
+        .onDisAppear(() => { this.pageVisible = false; })
         .accessibilityText('我的与关于页面')
         .bindSheet($$this.showContact, this.ContactSheet(), {
             title: { title: '联系我们' },
             height: SheetSize.FIT_CONTENT,
-            onWillDisappear: () => this.showContact = false,
+            onWillDisappear: () => {
+                this.vibrate();
+                this.showContact = false;
+            },
         })
     }
 

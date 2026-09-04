@@ -8,6 +8,7 @@ const EFFECT_SOFT = 'haptic.effect.soft';
 const EFFECT_HARD = 'haptic.effect.hard';
 
 export class vibration {
+  private static lastBackVibrationAt: number = 0;
   private static currentEffectId(): string | undefined {
     const level = AppStorage.get<number>(STORAGE_KEY_VIBRATION_LEVEL) ?? DEFAULT_VIBRATION_LEVEL;
     if (level === VIBRATION_LEVEL_OFF) return undefined;
@@ -55,6 +56,17 @@ export class vibration {
   }
 
   static dotVibration(): void {
+    vibration.startPresetVibration(1, 50);
+  }
+
+  /**
+   * 返回键、标题栏返回与系统侧滑返回可能在同一帧触发多个回调；短时间去重，
+   * 保证一次返回动作只产生一次清晰的触觉反馈。
+   */
+  static backVibration(): void {
+    const now = Date.now();
+    if (now - vibration.lastBackVibrationAt < 120) return;
+    vibration.lastBackVibrationAt = now;
     vibration.startPresetVibration(1, 50);
   }
 

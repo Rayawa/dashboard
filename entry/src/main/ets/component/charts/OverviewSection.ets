@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit';
+import { hdsEffect } from '@kit.UIDesignKit';
 import { fetchApiHistory, fetchRatingDistribution, fetchSdkDistribution } from '../../common/MarketApi';
 import { formatCount } from '../../common/format';
 import { vibration } from '../../common/vibration';
@@ -32,7 +33,9 @@ struct DistributionPanel {
     @State private selected: number = 0;
     @State private canvasSize: number = 220;
     @State private localOtherHidden: boolean = false;
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @State private pressed: boolean = false;
+    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
     private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
     private canvasReady: boolean = false;
@@ -253,11 +256,25 @@ struct DistributionPanel {
     private pieCanvas(): void {
         Canvas(this.context)
             .width(this.canvasSize).height(this.canvasSize).align(Alignment.Center)
+            .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+            .animation({ duration: 120, curve: Curve.EaseOut })
+            .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+                sourceType: this.pointLight,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
+            }).buildEffect())
             .onReady((): void => {
                 this.canvasReady = true;
                 this.animatePie();
             })
             .onTouch((event: TouchEvent): void => {
+                if (event.type === TouchType.Down) {
+                    this.pressed = true;
+                    this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                    this.pressed = false;
+                    this.pointLight = hdsEffect.PointLightSourceType.NONE;
+                }
                 if (event.type === TouchType.Down && event.touches.length > 0) {
                     this.selectAt(event.touches[0].x, event.touches[0].y);
                 }
@@ -297,6 +314,7 @@ struct DistributionPanel {
                     .width('100%').padding({ left: 6, right: 6, top: 5, bottom: 5 }).borderRadius(8)
                     .backgroundColor(index === this.selectedIndex() ?
                         $r('app.color.v3_surface_alt') : Color.Transparent)
+                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.97 })
                     .onClick(() => {
                         if (label === '其他') {
                             this.toggleOtherVisibility();
@@ -330,6 +348,7 @@ struct DistributionPanel {
                         Text(this.expanded ? '收起' : '展开全部')
                             .fontSize(13)
                             .fontColor($r('app.color.diff_content'))
+                            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.94 })
                             .onClick(() => this.toggleExpansion())
                             .accessibilityText(this.expanded ? `收起${this.chart.title}` : `展开${this.chart.title}全部SDK`)
                     }
@@ -467,7 +486,7 @@ export struct OverviewSection {
     @State private minSdkExpanded: boolean = false;
     @State private selectedSdkLabel: string = '';
     @State private sdkOtherHidden: boolean = false;
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     private pendingLoads: number = 0;
     private reloadAfterCurrent: boolean = false;
 
@@ -627,6 +646,7 @@ export struct OverviewSection {
                             .borderRadius(8)
                             .backgroundColor(label === this.activeSdkLabel() ?
                                 $r('app.color.v3_surface_alt') : Color.Transparent)
+                            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.97 })
                             .onClick(() => {
                                 this.selectSdk(label);
                             })
@@ -660,6 +680,7 @@ export struct OverviewSection {
                     Text(this.sdkExpanded ? '收起' : '展开全部')
                         .fontSize(13)
                         .fontColor($r('app.color.diff_content'))
+                        .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.94 })
                         .onClick(() => {
                             if (this.sdkExpanded) this.collapseSdk(); else this.expandSdk();
                         })

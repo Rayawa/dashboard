@@ -2,6 +2,7 @@ import { LengthMetrics, PromptAction, promptAction } from '@kit.ArkUI';
 import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
+import { pageTransition } from '../../common/motion';
 import { webview } from '@kit.ArkWeb';
 import { WebViewParam } from '../../common/types';
 import { common } from '@kit.AbilityKit';
@@ -15,7 +16,7 @@ import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation'
 @Component
 export struct HTML {
   @Consume('pageStack') pageStack: NavPathStack;
-  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
     hdsMaterial.MaterialLevel.SMOOTH;
   controller: webview.WebviewController = new webview.WebviewController();
@@ -107,8 +108,9 @@ export struct HTML {
     }
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .titleMode(HdsNavDestinationTitleMode.MINI)
+    .transition(pageTransition())
     .onBackPressed(() => {
-      if(this.vibrationLevel > 0) vibration.dotVibration()
+      if(this.vibrationLevel > 0) vibration.backVibration()
       popPathSafely(this.pageStack, 'pages/more/htmlPage');
       return true;
     })
@@ -185,7 +187,7 @@ export struct HTML {
         },
         backIcon: {
           action: () => {
-            if(this.vibrationLevel > 0) vibration.dotVibration()
+            if(this.vibrationLevel > 0) vibration.backVibration()
             popPathSafely(this.pageStack, 'pages/more/htmlPage')
           },
         },

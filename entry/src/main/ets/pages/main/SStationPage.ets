@@ -14,6 +14,7 @@ import {
     setMainTab,
 } from '../../common/appState';
 import { vibration } from '../../common/vibration';
+import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
 
 @Component
 export struct SStationPage {
@@ -21,16 +22,19 @@ export struct SStationPage {
     private scroller: Scroller = new Scroller();
     @Prop command: number = 0;
     @Prop @Watch('onCommandVersionChanged') commandVersion: number = 0;
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     @State private progress: number = 0;
     @State private loading: boolean = true;
     @State private errorMessage: string = '';
     @State private currentUrl: string = SBaseURL.toString();
     @State private initialUrl: string = SBaseURL.toString();
+    @State private pageVisible: boolean = false;
     private pendingScrollDistance: number = 0;
     private restoredScroll: boolean = false;
 
     aboutToAppear(): void {
+        this.pageVisible = false;
+        runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
         try {
             const continuation = getContinuationState();
             if (continuation.mainTab === MAIN_TAB_S_STATION &&
@@ -174,6 +178,7 @@ export struct SStationPage {
                     .height(4)
                     .position({ y: 96 })
                     .color($r('app.color.diff_content'))
+                    .transition(TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.EaseOut }))
                     .accessibilityText(`S站加载进度百分之${this.progress}`)
             }
 
@@ -211,11 +216,14 @@ export struct SStationPage {
                 .width('80%')
                 .accessibilityGroup(true)
                 .accessibilityText('S站主页面网络错误提示')
+                .transition(contentEnterTransition())
             }
         }
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.backcolor'))
+        .opacity(this.pageVisible ? 1 : 0.01)
+        .translate({ y: this.pageVisible ? 0 : 10 })
         .accessibilityGroup(true)
         .accessibilityText('S站页面')
     }

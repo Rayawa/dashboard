@@ -28,8 +28,8 @@ export const APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE = 'continuationDetailPack
 export const LOCAL_STORAGE_KEY_WINDOW_WIDTH = 'winWidth';
 export const LOCAL_STORAGE_KEY_WINDOW_HEIGHT = 'winHeight';
 
-// 0 = 关闭，1 = 轻触，2 = 硬朗；默认延续原有的硬朗反馈。
-export const DEFAULT_VIBRATION_LEVEL = 2;
+// 0 = 关闭，1 = 灵动，2 = 硬朗；全新安装默认关闭振动。
+export const DEFAULT_VIBRATION_LEVEL = 0;
 export const DEFAULT_HOLD_CHECK_ENABLED = false;
 export const DEFAULT_BUTTON_RIGHT = false;
 // hdsMaterial.MaterialLevel.SMOOTH；保持为数字，避免存储层依赖 UI Design Kit。

@@ -1,5 +1,6 @@
 import { deviceInfo } from '@kit.BasicServicesKit';
-import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
+import { hdsEffect, HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
+import { curves } from '@kit.ArkUI';
 
 /**
  * 基于 HdsTabs 迷你栏材质的通用按钮承载层。
@@ -14,6 +15,8 @@ export struct HdsMiniBarButton {
   @BuilderParam buttonContent: () => void = this.defaultContent;
   public onButtonClick: (() => void) | undefined = undefined;
   private controller: HdsTabsController = new HdsTabsController();
+  @State private pressed: boolean = false;
+  @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
   @Builder
   private defaultContent(): void {
@@ -28,6 +31,22 @@ export struct HdsMiniBarButton {
     .width('100%')
     .height('100%')
     .borderRadius(this.barHeight / 2)
+    .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+    .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+    .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+      sourceType: this.pointLight,
+      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+      options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
+    }).buildEffect())
+    .onTouch((event: TouchEvent): void => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true;
+        this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false;
+        this.pointLight = hdsEffect.PointLightSourceType.NONE;
+      }
+    })
     .onClick(() => {
       if (this.onButtonClick) {
         this.onButtonClick();

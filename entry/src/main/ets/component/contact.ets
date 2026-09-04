@@ -1,4 +1,5 @@
-import { PromptAction } from '@kit.ArkUI';
+import { curves, PromptAction } from '@kit.ArkUI';
+import { hdsEffect } from '@kit.UIDesignKit';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { vibration } from '../common/vibration';
@@ -7,7 +8,12 @@ import { showToastSafely } from '../common/safeUi';
 @Component
 export struct contact {
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 0;
+    @State private pressedItem: string = '';
+
+    private updatePressed(item: string, pressed: boolean): void {
+        this.pressedItem = pressed ? item : '';
+    }
 
     @Builder ContactItem(title: string, name: string, detail: string, copyContent: string, toastLabel: string) {
         Column({ space: 4 }) {
@@ -20,6 +26,18 @@ export struct contact {
         .backgroundColor($r("app.color.background"))
         .padding(14)
         .borderRadius(16)
+        .scale({ x: this.pressedItem === title ? 0.97 : 1, y: this.pressedItem === title ? 0.97 : 1 })
+        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+        .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+            sourceType: this.pressedItem === title ?
+                hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+            options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+        }).buildEffect())
+        .onTouch((event: TouchEvent): void => {
+            if (event.type === TouchType.Down) this.updatePressed(title, true);
+            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.updatePressed(title, false);
+        })
         .onClick(async () => {
             if(this.vibrationLevel > 0) vibration.dotVibration()
             await this.copyToClipboard(copyContent, toastLabel);
@@ -46,6 +64,21 @@ export struct contact {
             .backgroundColor($r("app.color.background"))
             .padding(14)
             .borderRadius(16)
+            .scale({ x: this.pressedItem === 'sponsor' ? 0.97 : 1,
+                y: this.pressedItem === 'sponsor' ? 0.97 : 1 })
+            .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+            .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
+                sourceType: this.pressedItem === 'sponsor' ?
+                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+            }).buildEffect())
+            .onTouch((event: TouchEvent): void => {
+                if (event.type === TouchType.Down) this.updatePressed('sponsor', true);
+                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                    this.updatePressed('sponsor', false);
+                }
+            })
             .onClick(async () => {
                 if(this.vibrationLevel > 0) vibration.dotVibration()
                 const url = "https://afdian.com/a/shenjack";

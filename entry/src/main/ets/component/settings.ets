@@ -12,7 +12,7 @@ import { HdsListItemCard, IconSize, PrefixIcon, SuffixCustomBuilder } from '@kit
 
 @Component
 export struct settings {
-    @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 0;
     @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = 2;
     @StorageLink('username') username: string = '';
 
@@ -90,7 +90,7 @@ export struct settings {
 
     private vibrationLevelName(): string {
         if (this.vibrationLevel === 0) return '关闭';
-        if (this.vibrationLevel === 1) return '轻触';
+        if (this.vibrationLevel === 1) return '灵动';
         return '硬朗';
     }
 
@@ -101,13 +101,17 @@ export struct settings {
                 iconSize: IconSize.SYSTEM_ICON,
                 iconValue: { image: $r('app.media.vibrate') },
             }),
-            textItem: { customBuilder: this.VibrationLevelContent },
+            textItem: {
+                customBuilder: () => {
+                    this.VibrationLevelContent()
+                },
+            },
             cardHeight: this.isNarrowSettings() ? 116 : 68,
             cardBackgroundColor: $r('app.color.v3_surface'),
             cardBorderRadius: 0,
             hoverBorderRadius: 12,
-            cardPrefixMargin: 16,
-            cardSuffixMargin: 16,
+            cardPrefixMargin: 8,
+            cardSuffixMargin: 12,
             accessibilityOptions: {
                 accessibilityText: `振动强度，当前${this.vibrationLevelName()}`,
             },
@@ -150,7 +154,7 @@ export struct settings {
                     .accessibilityText(`振动强度，当前${this.vibrationLevelName()}，共三档`)
                 Row() {
                     this.VibrationLevelLabel('关闭', 0)
-                    this.VibrationLevelLabel('轻触', 1)
+                    this.VibrationLevelLabel('灵动', 1)
                     this.VibrationLevelLabel('硬朗', 2)
                 }
                 .width(184)
@@ -194,13 +198,17 @@ export struct settings {
                 iconSize: IconSize.SYSTEM_ICON,
                 iconValue: { image: $r('app.media.immersive') },
             }),
-            textItem: { customBuilder: this.MaterialLevelContent },
+            textItem: {
+                customBuilder: () => {
+                    this.MaterialLevelContent()
+                },
+            },
             cardHeight: this.isNarrowSettings() ? 116 : 68,
             cardBackgroundColor: $r('app.color.v3_surface'),
             cardBorderRadius: 0,
             hoverBorderRadius: 12,
-            cardPrefixMargin: 16,
-            cardSuffixMargin: 16,
+            cardPrefixMargin: 8,
+            cardSuffixMargin: 12,
             accessibilityOptions: {
                 accessibilityText: `材质等级，当前${this.materialLevelName()}`,
             },
@@ -276,13 +284,17 @@ export struct settings {
                 iconSize: IconSize.SYSTEM_ICON,
                 iconValue: { image: $r('app.media.user') },
             }),
-            textItem: { customBuilder: this.UsernameContent },
+            textItem: {
+                customBuilder: () => {
+                    this.UsernameContent()
+                },
+            },
             cardHeight: this.isNarrowSettings() ? 108 : 72,
             cardBackgroundColor: $r('app.color.v3_surface'),
             cardBorderRadius: 0,
             hoverBorderRadius: 12,
-            cardPrefixMargin: 16,
-            cardSuffixMargin: 16,
+            cardPrefixMargin: 8,
+            cardSuffixMargin: 12,
             accessibilityOptions: {
                 accessibilityText: `用户名设置，当前${this.username || 'HarmonyOS用户'}`,
             },
@@ -314,6 +326,7 @@ export struct settings {
                         .height(22)
                         .width(22)
                         .objectFit(ImageFit.Contain)
+                        .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.9 })
                         .onClick(() => {
                             vibration.dotVibration();
                             this.showUsernameHelp = !this.showUsernameHelp;
@@ -348,7 +361,9 @@ export struct settings {
                 iconValue: { image: $r('app.media.trash') },
             }),
             textItem: { primaryText: { text: '清除缓存' } },
-            suffixItem: new SuffixCustomBuilder(this.TrashSuffix),
+            suffixItem: new SuffixCustomBuilder(() => {
+                this.TrashSuffix()
+            }),
             onClick: () => {
                 vibration.dotVibration();
                 this.trash();
@@ -357,8 +372,8 @@ export struct settings {
             cardBackgroundColor: $r('app.color.v3_surface'),
             cardBorderRadius: 0,
             hoverBorderRadius: 12,
-            cardPrefixMargin: 16,
-            cardSuffixMargin: 16,
+            cardPrefixMargin: 8,
+            cardSuffixMargin: 12,
             accessibilityOptions: {
                 accessibilityText: `清除缓存，当前缓存文件总大小${this.cacheSize}`,
             },
@@ -376,6 +391,7 @@ export struct settings {
                 Image($r("app.media.question"))
                     .height(24).width(24).objectFit(ImageFit.Contain)
                     .accessibilityText('查看清除缓存说明')
+                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.9 })
                     .onClick(() => {
                         if (this.vibrationLevel > 0) vibration.dotVibration();
                         this.handlePopupTrash = !this.handlePopupTrash;

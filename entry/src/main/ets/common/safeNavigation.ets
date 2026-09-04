@@ -1,3 +1,5 @@
+import { vibration } from './vibration';
+
 export class EmptyPathParam {}
 
 export function pushPathSafely(
@@ -17,6 +19,7 @@ export function pushPathSafely(
 
 export function popPathSafely(stack: NavPathStack, scope: string = 'Navigation'): boolean {
     try {
+        vibration.backVibration();
         stack.pop();
         return true;
     } catch (error) {

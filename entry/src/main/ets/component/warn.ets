@@ -12,7 +12,7 @@ import { showToastSafely } from '../common/safeUi';
 export struct warn {
   @Link isShow: boolean;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  @StorageLink('vibrationLevel') vibrationLevel: number = 2;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
   @State private isFirstLaunch: boolean = true;
   async aboutToAppear(): Promise<void> {
     try {
@@ -26,17 +26,17 @@ export struct warn {
   private readonly effect: TransitionEffect = TransitionEffect.OPACITY.combine(
     TransitionEffect.move(TransitionEdge.BOTTOM),
   )
-    .combine(TransitionEffect.scale({ x: 0, y: 1 }))
-    .animation({ curve: curves.springMotion(0.7, 0.8), duration: 1000 });
+    .combine(TransitionEffect.scale({ x: 0.98, y: 0.98 }))
+    .animation({ curve: curves.springMotion(0.42, 0.92), duration: 320 });
 
   build() {
     if (this.isShow) {
       Column() {
         Blank().height(60).onClick(() => {
+          if(this.vibrationLevel > 0) vibration.dotVibration();
           if(this.isFirstLaunch){
             showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
           } else {
-            if(this.vibrationLevel > 0) vibration.dotVibration();
             this.isShow = false;
           }
         })
@@ -140,10 +140,10 @@ export struct warn {
 
         if (this.isFirstLaunch) {
           Blank().height(15).onClick(() => {
+            if(this.vibrationLevel > 0) vibration.dotVibration();
             if(this.isFirstLaunch){
               showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
             } else {
-              if(this.vibrationLevel > 0) vibration.dotVibration();
               this.isShow = false;
             }
           })
@@ -151,10 +151,14 @@ export struct warn {
           Text("* 点击外部区域或向下滑动关闭页面")
             .fontSize(14)
             .fontColor($r('app.color.v3_text_secondary'))
-            .hitTestBehavior(HitTestMode.None)
+            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.96 })
             .onClick(() => {
               if (this.vibrationLevel > 0) vibration.dotVibration();
-              this.isShow = false
+              if (this.isFirstLaunch) {
+                showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
+              } else {
+                this.isShow = false
+              }
             })
             .accessibilityText('点击外部区域或向下滑动关闭重要提示')
         }
@@ -165,10 +169,10 @@ export struct warn {
       .transition(this.effect)
       .gesture(
         SwipeGesture({ direction: SwipeDirection.Vertical }).onAction(() => {
+          if(this.vibrationLevel > 0) vibration.dotVibration();
           if(this.isFirstLaunch){
             showToastSafely(this.PromptAction, '请先阅读并同意重要提示！', 1000, 'Warning');
           } else {
-            if(this.vibrationLevel > 0) vibration.dotVibration();
             this.isShow = false;
           }
         })
