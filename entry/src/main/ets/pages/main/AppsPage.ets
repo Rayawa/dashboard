@@ -39,8 +39,7 @@ struct AppTableRow {
             Row({ space: 8 }) {
                 Image(this.app.icon_url || $r('app.media.startIcon')).width(34).height(34).borderRadius(8)
                     .objectFit(ImageFit.Cover).alt($r('app.media.startIcon'))
-                    .geometryTransition(appIconGeometryId(this.app), { follow: true })
-                    .transition(TransitionEffect.OPACITY.animation({ duration: 360, curve: Curve.Friction }))
+                    .geometryTransition(appIconGeometryId(this.app, 'apps'), { follow: true })
                     .accessibilityText(`${this.app.name || '未知应用'}图标`)
                 Column({ space: 2 }) {
                     Text(this.app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
@@ -292,7 +291,12 @@ export struct AppsPage {
             this.getUIContext().animateTo({
                 curve: curves.interpolatingSpring(0, 1, 342, 38),
             }, (): void => {
-                setDetailTarget({ appId: app.app_id, packageName: app.pkg_name, previewApp: app });
+                setDetailTarget({
+                    appId: app.app_id,
+                    packageName: app.pkg_name,
+                    previewApp: app,
+                    geometryId: appIconGeometryId(app, 'apps'),
+                });
                 this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, true);
             });
         }

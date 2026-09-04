@@ -22,6 +22,7 @@ export struct InteractiveLineChart {
     @Prop lineColor: Resource = $r('app.color.diff_content');
     @Prop showTitle: boolean = true;
     @Prop chartHeight: number = 250;
+    @Prop responsiveAxisFont: boolean = false;
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
     private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
     @State private canvasWidth: number = 320;
@@ -124,9 +125,17 @@ export struct InteractiveLineChart {
     }
 
     private dimensions(): number[] {
-        const left = 60;
+        const left = this.responsiveAxisFont && this.canvasWidth < 600 ? 68 :
+            (this.responsiveAxisFont && this.canvasWidth < 840 ? 64 : 60);
         const right = 10;
         return [left, right, Math.max(1, this.canvasWidth - left - right)];
+    }
+
+    private axisFontSize(): number {
+        if (!this.responsiveAxisFont) return 15;
+        if (this.canvasWidth < 600) return 17;
+        if (this.canvasWidth < 840) return 16;
+        return 15;
     }
 
     private maxPan(zoom: number = this.zoom): number {
@@ -217,7 +226,7 @@ export struct InteractiveLineChart {
         this.context.strokeStyle = gridColor;
         this.context.fillStyle = textColor;
         this.context.lineWidth = 1;
-        this.context.font = '15vp sans-serif';
+        this.context.font = `${this.axisFontSize()}vp sans-serif`;
         this.context.setLineDash([5, 6]);
         for (let row = 0; row <= 4; row++) {
             const y = top + drawHeight * row / 4;
@@ -309,9 +318,9 @@ export struct InteractiveLineChart {
         Column({ space: 8 }) {
           Text(this.selectedDate()).fontSize(15).fontWeight(FontWeight.Medium)
             .fontColor($r('app.color.v3_text_primary')).width('100%')
-          GridRow({ columns: { xs: 1, sm: 2, md: 3 }, gutter: { x: 8, y: 8 } }) {
-            ForEach(this.sourceSeries(), (chartSeries: LineChartSeries) => {
-              GridCol({ span: 1 }) {
+          Scroll() {
+            Row({ space: 8 }) {
+              ForEach(this.sourceSeries(), (chartSeries: LineChartSeries) => {
                 Row({ space: 7 }) {
                   Row().width(10).height(10).borderRadius(5).backgroundColor(chartSeries.color)
                   Text(chartSeries.label).fontSize(14).fontColor($r('app.color.v3_text_secondary'))
@@ -319,11 +328,17 @@ export struct InteractiveLineChart {
                   Text(this.selectedSeriesValue(chartSeries)).fontSize(14).fontWeight(FontWeight.Medium)
                     .fontColor($r('app.color.v3_text_primary'))
                 }
-                .width('100%').padding({ left: 9, right: 9, top: 8, bottom: 8 })
+                .width(148).padding({ left: 9, right: 9, top: 8, bottom: 8 })
                 .borderRadius(10).backgroundColor($r('app.color.v3_surface_alt'))
-              }
-            }, (chartSeries: LineChartSeries) => chartSeries.label)
-          }.width('100%')
+                .accessibilityText(`${chartSeries.label}，${this.selectedSeriesValue(chartSeries)}`)
+              }, (chartSeries: LineChartSeries) => chartSeries.label)
+            }
+          }
+          .width('100%')
+          .scrollable(ScrollDirection.Horizontal)
+          .scrollBar(BarState.Off)
+          .edgeEffect(EdgeEffect.None)
+          .accessibilityText('可左右滑动查看各API版本当前占比')
         }.width('100%')
     }
 

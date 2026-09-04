@@ -265,6 +265,7 @@ export struct SearchPage {
                     packageName: targetApp.pkg_name,
                     backgroundRefreshHandled: this.resultApp?.app_id === targetApp.app_id,
                     previewApp: targetApp,
+                    geometryId: appIconGeometryId(targetApp, 'search'),
                 });
                 this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, true);
             });
@@ -302,8 +303,7 @@ export struct SearchPage {
         Column({ space: 5 }) {
             Image(app.icon_url || $r('app.media.startIcon'))
                 .width(42).height(42).borderRadius(10).objectFit(ImageFit.Cover)
-                .geometryTransition(appIconGeometryId(app), { follow: true })
-                .transition(TransitionEffect.OPACITY.animation({ duration: 360, curve: Curve.Friction }))
+                .geometryTransition(appIconGeometryId(app, 'search'), { follow: true })
                 .alt($r('app.media.startIcon'))
                 .accessibilityText(`${app.name || '未知应用'}图标`)
             Text(app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
@@ -327,8 +327,7 @@ export struct SearchPage {
         Row({ space: 12 }) {
             Image(app.icon_url || $r('app.media.startIcon'))
                 .width(58).height(58).borderRadius(14).objectFit(ImageFit.Cover)
-                .geometryTransition(appIconGeometryId(app), { follow: true })
-                .transition(TransitionEffect.OPACITY.animation({ duration: 360, curve: Curve.Friction }))
+                .geometryTransition(appIconGeometryId(app, 'search'), { follow: true })
                 .alt($r('app.media.startIcon')).accessibilityText(`${app.name || '未知应用'}应用图标`)
             Column({ space: 4 }) {
                 Text(app.name || '未知应用').fontSize(17).fontWeight(FontWeight.Bold)
@@ -364,7 +363,7 @@ export struct SearchPage {
                         .onClick(() => { this.vibrate(); if (this.onClose) this.onClose(); })
                         .accessibilityText('返回应用详情')
                     Search({ value: this.input, placeholder: '应用名称 / 包名 / App ID / 应用市场链接' })
-                        .layoutWeight(1).height(48).enableKeyboardOnFocus(false).searchButton('搜索')
+                        .layoutWeight(1).height(48).defaultFocus(false).searchButton('搜索')
                         .backgroundColor($r('app.color.v3_surface_alt'))
                         .geometryTransition(this.geometryId, { follow: true })
                         .onChange((value: string) => this.input = value)

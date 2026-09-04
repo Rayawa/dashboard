@@ -4,6 +4,7 @@ import {
   SegmentButtonV2Items,
   TabSegmentButtonV2,
 } from '@kit.ArkUI';
+import { HdsMiniBarButton } from './HdsMiniBarButton';
 
 /** 固定在 HdsNavigation 标题栏中的概况/列表切换栏。 */
 @Component
@@ -17,6 +18,7 @@ export struct HdsTitleBarSegment {
   @Prop experimentalHeight: number = 52;
   onItemClicked?: (index: number) => void;
   @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
+  @State private measuredWidth: number = 0;
 
   private selectedIndex(): number {
     return this.selectedIndexes.length > 0 ? this.selectedIndexes[0] : 0;
@@ -32,6 +34,16 @@ export struct HdsTitleBarSegment {
     }
   }
 
+  private materialSelectedBackgroundColor(): ColorMetrics {
+    try {
+      return ColorMetrics.resourceColor($r('app.color.diff_content'));
+    } catch (error) {
+      console.warn('[Dashboard][component/HdsTitleBarSegment][WARN]',
+        `读取材质切换项背景色失败: ${JSON.stringify(error)}`);
+      return ColorMetrics.rgba(30, 111, 205);
+    }
+  }
+
   private buttonBackgroundColor(): ColorMetrics {
     if (this.immersiveTexture) return ColorMetrics.rgba(0, 0, 0, 0);
     try {
@@ -43,7 +55,8 @@ export struct HdsTitleBarSegment {
     }
   }
 
-  build() {
+  @Builder
+  private segmentContent(useImmersiveMaterial: boolean): void {
     Column() {
       TabSegmentButtonV2({
         items: this.items,
@@ -53,25 +66,51 @@ export struct HdsTitleBarSegment {
         },
         onItemClicked: this.onItemClicked,
         itemMaxFontScale: this.maxFontScale,
-        itemSelectedBackgroundColor: this.selectedBackgroundColor(),
+        itemSelectedBackgroundColor: useImmersiveMaterial ?
+          this.materialSelectedBackgroundColor() : this.selectedBackgroundColor(),
         itemMinHeight: LengthMetrics.vp(32),
-        buttonBackgroundColor: this.buttonBackgroundColor(),
+        buttonBackgroundColor: useImmersiveMaterial ?
+          ColorMetrics.rgba(0, 0, 0, 0) : this.buttonBackgroundColor(),
         buttonMinHeight: LengthMetrics.vp(40),
         buttonPadding: LengthMetrics.vp(4),
         enableStateAnimation: true,
       })
     }
-    .width(this.normalWidth)
+    .width('100%')
     .height(this.segmentHeight)
     .justifyContent(FlexAlign.Center)
-    .padding(4)
-    .borderRadius(this.segmentHeight / 2)
-    .clip(true)
-    .backgroundColor(this.immersiveTexture ? 0x18FFFFFF : Color.Transparent)
-    .backgroundBlurStyle(this.immersiveTexture ? BlurStyle.Thin : BlurStyle.NONE)
-    .borderWidth(0)
-    .shadow({ radius: 0, color: Color.Transparent })
-    .accessibilityText(this.selectedIndex() === 0 ?
-      '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
+  }
+
+  build() {
+    if (this.immersiveTexture) {
+      Stack({ alignContent: Alignment.Center }) {
+        if (this.measuredWidth > 0) {
+          HdsMiniBarButton({
+            barWidth: this.measuredWidth,
+            barHeight: this.experimentalHeight,
+          }) {
+            this.segmentContent(true)
+          }
+        }
+      }
+      .width(this.experimentalWidth)
+      .height(this.experimentalHeight)
+      .onAreaChange((_, area) => {
+        if (typeof area.width === 'number' && area.width > 0 && this.measuredWidth !== area.width) {
+          this.measuredWidth = area.width;
+        }
+      })
+      .margin({ top: -8 })
+      .accessibilityText(this.selectedIndex() === 0 ?
+        '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
+    } else {
+      Stack({ alignContent: Alignment.Center }) {
+        this.segmentContent(false)
+      }
+      .width(this.normalWidth)
+      .height(this.segmentHeight)
+      .accessibilityText(this.selectedIndex() === 0 ?
+        '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
+    }
   }
 }

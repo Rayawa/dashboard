@@ -10,6 +10,7 @@ import {
     APP_VERSION,
     DEFAULT_BUTTON_RIGHT,
     DEFAULT_HOLD_CHECK_ENABLED,
+    DEFAULT_IMMERSIVE_MATERIAL_LEVEL,
     DEFAULT_IMMERSIVE_TEXTURE,
     DEFAULT_VIBRATION_ENABLED,
     LEGACY_APP_SETTINGS_FILE_NAME,
@@ -20,6 +21,7 @@ import {
     STORAGE_KEY_FIRST_LAUNCH,
     STORAGE_KEY_HOLD_CHECK,
     STORAGE_KEY_IMMERSIVE,
+    STORAGE_KEY_IMMERSIVE_MATERIAL_LEVEL,
     STORAGE_KEY_LEGACY_MIGRATED,
     STORAGE_KEY_NOTICE_VERSION,
     STORAGE_KEY_SEARCH_HISTORY,
@@ -37,6 +39,7 @@ const KEY_VIBRATION = STORAGE_KEY_VIBRATION;
 const KEY_HOLD_CHECK = STORAGE_KEY_HOLD_CHECK;
 const KEY_BUTTON_RIGHT = STORAGE_KEY_BUTTON_RIGHT;
 const KEY_IMMERSIVE = STORAGE_KEY_IMMERSIVE;
+const KEY_IMMERSIVE_MATERIAL_LEVEL = STORAGE_KEY_IMMERSIVE_MATERIAL_LEVEL;
 const KEY_SEARCH_HISTORY = STORAGE_KEY_SEARCH_HISTORY;
 
 export interface AppSettings {
@@ -44,6 +47,7 @@ export interface AppSettings {
     holdCheckON: boolean;
     buttonPositionRIGHT: boolean;
     immersiveTextureON: boolean;
+    immersiveMaterialLevel: number;
 }
 
 // 所有持久化 key 的默认值；@StorageLink 装饰器的初始值必须与此保持一致
@@ -51,7 +55,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     vibrationON: DEFAULT_VIBRATION_ENABLED,
     holdCheckON: DEFAULT_HOLD_CHECK_ENABLED,
     buttonPositionRIGHT: DEFAULT_BUTTON_RIGHT,
-    immersiveTextureON: DEFAULT_IMMERSIVE_TEXTURE
+    immersiveTextureON: DEFAULT_IMMERSIVE_TEXTURE,
+    immersiveMaterialLevel: DEFAULT_IMMERSIVE_MATERIAL_LEVEL
 };
 
 // ===== 单例与一次性迁移 =====
@@ -236,12 +241,27 @@ export async function setImmersiveTexture(enabled: boolean): Promise<void> {
     AppStorage.setOrCreate(KEY_IMMERSIVE, enabled);
 }
 
+export async function getImmersiveMaterialLevel(): Promise<number> {
+    const s = await ensureReady();
+    const level = (await s.get(KEY_IMMERSIVE_MATERIAL_LEVEL,
+        DEFAULT_SETTINGS.immersiveMaterialLevel)) as number;
+    return level === 1 || level === 2 ? level : DEFAULT_SETTINGS.immersiveMaterialLevel;
+}
+
+export async function setImmersiveMaterialLevel(level: number): Promise<void> {
+    const normalized = level === 1 || level === 2 ? level : DEFAULT_SETTINGS.immersiveMaterialLevel;
+    const s = await ensureReady();
+    await s.set(KEY_IMMERSIVE_MATERIAL_LEVEL, normalized);
+    AppStorage.setOrCreate(KEY_IMMERSIVE_MATERIAL_LEVEL, normalized);
+}
+
 export async function getAllSettings(): Promise<AppSettings> {
     return {
         vibrationON: await getVibrationEnabled(),
         holdCheckON: await getHoldCheckEnabled(),
         buttonPositionRIGHT: await getButtonPosition(),
         immersiveTextureON: await getImmersiveTexture(),
+        immersiveMaterialLevel: await getImmersiveMaterialLevel(),
     };
 }
 
@@ -257,6 +277,9 @@ export async function updateSettings(settings: Partial<AppSettings>): Promise<vo
     }
     if (settings.immersiveTextureON !== undefined) {
         await setImmersiveTexture(settings.immersiveTextureON);
+    }
+    if (settings.immersiveMaterialLevel !== undefined) {
+        await setImmersiveMaterialLevel(settings.immersiveMaterialLevel);
     }
 }
 
@@ -304,6 +327,7 @@ export async function loadPersistedState(ctx?: common.Context): Promise<void> {
         AppStorage.setOrCreate(KEY_HOLD_CHECK, await getHoldCheckEnabled());
         AppStorage.setOrCreate(KEY_BUTTON_RIGHT, await getButtonPosition());
         AppStorage.setOrCreate(KEY_IMMERSIVE, await getImmersiveTexture());
+        AppStorage.setOrCreate(KEY_IMMERSIVE_MATERIAL_LEVEL, await getImmersiveMaterialLevel());
         AppStorage.setOrCreate(KEY_USERNAME, await getUsername());
     } catch (error) {
         console.error('[Dashboard][common/storage][ERROR]', `[storage] AppStorage 水合失败: ${JSON.stringify(error)}`);

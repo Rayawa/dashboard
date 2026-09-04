@@ -2,6 +2,7 @@ import { vibration } from '../common/vibration';
 import { common } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import {
+  setImmersiveMaterialLevel,
   setImmersiveTexture,
   setUsername,
   setVibrationEnabled
@@ -14,6 +15,7 @@ import { showToastSafely } from '../common/safeUi';
 export struct settings {
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
+    @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = 0;
     @StorageLink('username') username: string = '';
 
     @State handlePopupTrash: boolean = false;
@@ -80,6 +82,9 @@ export struct settings {
                 promptMsg: "开启沉浸式材质将增加应用功耗，\n如遇卡顿建议关闭。",
                 onToggle: async (val) => { await setImmersiveTexture(val); }
             })
+            if (this.immersiveTextureON) {
+                this.MaterialLevelSelector()
+            }
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ left: 16, right: 16 })
 
 
@@ -94,6 +99,70 @@ export struct settings {
         .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
         .accessibilityGroup(true)
         .accessibilityText('应用设置')
+    }
+
+    private materialLevelFromSlider(value: number): number {
+        // Slider 从左到右递增，而 MaterialLevel 的枚举值与视觉顺序相反。
+        return 2 - Math.round(value);
+    }
+
+    private materialLevelName(): string {
+        if (this.immersiveMaterialLevel === 2) return '流畅';
+        if (this.immersiveMaterialLevel === 1) return '轻柔';
+        return '精美';
+    }
+
+    @Builder
+    MaterialLevelSelector() {
+        Column({ space: 2 }) {
+            Slider({
+                value: 2 - this.immersiveMaterialLevel,
+                min: 0,
+                max: 2,
+                step: 1,
+                style: SliderStyle.InSet,
+            })
+                .width('100%')
+                .selectedColor($r('app.color.diff_content'))
+                .trackColor($r('app.color.v3_surface_alt'))
+                .blockColor($r('app.color.diff_content'))
+                .showSteps(true)
+                .showTips(false)
+                .onChange((value: number) => {
+                    const nextLevel = this.materialLevelFromSlider(value);
+                    if (nextLevel === this.immersiveMaterialLevel) return;
+                    this.immersiveMaterialLevel = nextLevel;
+                    if (this.vibrationON) vibration.dotVibration();
+                    setImmersiveMaterialLevel(nextLevel).catch((error: Error) => {
+                        console.error('[Dashboard][component/settings][ERROR]',
+                            `保存材质等级失败: ${error.message}`);
+                    });
+                })
+                .accessibilityText(`沉浸式材质等级，当前${this.materialLevelName()}，共三档`)
+            Row() {
+                this.MaterialLevelLabel('流畅', 2)
+                this.MaterialLevelLabel('轻柔', 1)
+                this.MaterialLevelLabel('精美', 0)
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.SpaceBetween)
+        }
+        .width('100%')
+        .padding({ left: 52, right: 16, bottom: 12 })
+        .accessibilityGroup(true)
+        .accessibilityText(`沉浸式材质等级，当前${this.materialLevelName()}`)
+    }
+
+    @Builder
+    MaterialLevelLabel(label: string, level: number) {
+        Text(label)
+            .fontSize(12)
+            .fontWeight(this.immersiveMaterialLevel === level ? FontWeight.Medium : FontWeight.Regular)
+            .fontColor(this.immersiveMaterialLevel === level ?
+                $r('app.color.diff_content') : $r('app.color.v3_text_secondary'))
+            .width(40)
+            .textAlign(TextAlign.Center)
+            .accessibilityText(`${label}材质${this.immersiveMaterialLevel === level ? '，已选择' : ''}`)
     }
 
     @Builder

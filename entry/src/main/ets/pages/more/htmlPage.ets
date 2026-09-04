@@ -17,6 +17,8 @@ export struct HTML {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink("vibrationON") vibrationON: boolean = true;
   @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
+  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
+    hdsMaterial.MaterialLevel.EXQUISITE;
   controller: webview.WebviewController = new webview.WebviewController();
   @State params: WebViewParam = new WebViewParam('', '');
   @State private topPlaceholderHeight: number = 100;
@@ -159,7 +161,7 @@ export struct HTML {
         },
         systemMaterialEffect: this.immersiveTextureON ? {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
-          materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+          materialLevel: this.immersiveMaterialLevel
         } : undefined
       },
       content: {

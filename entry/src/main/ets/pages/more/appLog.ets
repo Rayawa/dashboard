@@ -20,6 +20,8 @@ struct appLog {
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink("vibrationON") vibrationON: boolean = true;
     @StorageLink("immersiveTextureON") immersiveTextureON: boolean = false;
+    @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
+        hdsMaterial.MaterialLevel.EXQUISITE;
     private updateLogs: UpdateLog[] = [
         {
             version: "V3.0.0",
@@ -35,16 +37,17 @@ struct appLog {
                 "详情信息改为高密度标签与文字组合，并补齐按钮分享、碰一碰、隔空传送及图标卡片预览",
                 "应用列表新增鸿蒙应用、元服务、分类、标签、开发者筛选，宽屏表格自动扩展开发者列",
                 "搜索结果使用LazyForEach纵向加载并按设备宽度自适应列数，新增搜索历史、删除与推荐",
-                "评分、最低SDK和目标SDK改用可点选饼图；Harmony API历史将全部版本叠加在同一折线图中",
+                "目标SDK与最低SDK在中宽屏合并为共用图例，窄屏保留各自图例；点击灰色“其他”可动画展开全部SDK",
+                "Harmony API历史将全部版本叠加在同一折线图中，扩展配色并使用可横向浏览的当前值列表",
                 "折线图放大坐标文字并适配窄屏，支持触摸选点、双指缩放和单指横移",
-                "我的页面在宽屏按应用信息与功能列表四比六分栏，手机端自动改为纵向排列",
+                "首页与我的页面在宽屏按四比六分栏，左侧信息固定居中、右侧内容独立滚动；最近收录增加到12条，手机端保留原有纵向布局",
                 "清除缓存项恢复说明问号并显示缓存文件总大小",
                 "原生主页面和详情页补齐振动反馈，并按页面、应用详情子视图与滚动位置恢复跨设备接续；仅允许3.0.0及以上版本接续",
                 "全部子页面统一使用 Scroll、MINI 标题模式、TITLE_S 主标题和系统上下安全区忽略配置",
                 "S站、首页和应用详情改用顶部继续下拉刷新；应用详情标题栏不再显示教程或刷新按钮",
                 "统一所有API请求的User-Agent，修复S站子资源失败误报与网页显示比例问题",
                 "分享卡片使用S站 dashboard?app_id= 地址并附带32KB以内的应用AppIcon缩略图",
-                "恢复旧版教程正文与教程图片并按3.0.0架构更新，新增连续点击版本号10次进入的开发者信息页",
+                "教程按当前功能扩展为完整操作说明，补充图表、筛选、搜索收录、详情分享、离线缓存与跨设备接续；导航栏同步沉浸式材质设置",
                 "设备旋转改用遵循系统旋转锁定的AUTO_ROTATION_RESTRICTED模式",
                 "移除底部栏自动隐藏设置，恢复根导航渐变模糊与diff_content全局光效",
                 "整理 ETS 目录为 main、detail、more 与 charts 分层，并移除已退出编译流程的旧页面和旧分享入口",
@@ -479,7 +482,7 @@ struct appLog {
                 },
                 systemMaterialEffect: this.immersiveTextureON ? {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
-                    materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+                    materialLevel: this.immersiveMaterialLevel
                 } : undefined
             },
             content: {

@@ -224,76 +224,70 @@ export struct MyPage {
     }
 
     @Builder
-    private appInformation(): void {
-        Column({ space: 14 }) {
-            Column({ space: 8 }) {
-                Image($r('app.media.app_icon'))
-                    .width(100)
-                    .height(100)
-                    .borderRadius(22)
-                    .accessibilityText('Dashboard应用看板图标')
-                    .margin({ bottom: 10 })
-                Text('Dashboard应用看板')
-                    .fontSize(30)
-                    .fontWeight(800)
-                    .fontColor($r('app.color.diff_content'))
-                    .textAlign(TextAlign.Center)
-                    .accessibilityText('Dashboard应用看板')
-                Text('Harmony Dashboard')
-                    .fontSize(20)
-                    .fontWeight(600)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .textAlign(TextAlign.Center)
-                    .accessibilityText('Harmony Dashboard')
-            }
-            .width('100%')
-            .padding({ bottom: 10 })
-            .accessibilityGroup(true)
-            .accessibilityText('应用图标和名称')
-
-            Divider()
-                .color($r('app.color.border'))
-                .accessibilityText('应用名称与版本信息分隔线')
-
-            Column({ space: 5 }) {
-                Text(`版本 ${APP_VERSION}`)
-                    .fontSize(12)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .onClick(() => this.tapVersion())
-                    .accessibilityText(`版本${APP_VERSION}，连续点击十次打开开发者信息`)
-                Text('Designed & Developed by Ray Chen (Rayawa)')
-                    .fontSize(12)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .textAlign(TextAlign.Center)
-                    .accessibilityText('Designed and Developed by Ray Chen Rayawa')
-                Text('Copyright © 2026. All rights reserved.')
-                    .fontSize(12)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .textAlign(TextAlign.Center)
-                    .accessibilityText('版权所有2026')
-                Text('本应用备案域名：rayawa.top')
-                    .fontSize(12)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .textAlign(TextAlign.Center)
-                    .accessibilityText('本应用备案域名rayawa点top')
-                Text('京ICP备2025153453号')
-                    .fontSize(12)
-                    .fontColor($r('app.color.diff_content'))
-                    .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
-                    .onClick(() => {
-                        this.vibrate();
-                        this.openIcp();
-                    })
-                    .accessibilityText('京ICP备2025153453号，点击打开工信部备案页面')
-            }
-            .width('100%')
-            .accessibilityGroup(true)
-            .accessibilityText('版本版权和备案信息')
+    private appIdentity(): void {
+        Column({ space: 8 }) {
+            Image($r('app.media.app_icon'))
+                .width(100)
+                .height(100)
+                .borderRadius(22)
+                .accessibilityText('Dashboard应用看板图标')
+                .margin({ bottom: 10 })
+            Text('Dashboard应用看板')
+                .fontSize(30)
+                .fontWeight(800)
+                .fontColor($r('app.color.diff_content'))
+                .textAlign(TextAlign.Center)
+                .accessibilityText('Dashboard应用看板')
+            Text('Harmony Dashboard')
+                .fontSize(20)
+                .fontWeight(600)
+                .fontColor($r('app.color.v3_text_secondary'))
+                .textAlign(TextAlign.Center)
+                .accessibilityText('Harmony Dashboard')
         }
         .width('100%')
         .padding({ top: 18, bottom: 18, left: 12, right: 12 })
         .accessibilityGroup(true)
-        .accessibilityText('Dashboard应用信息')
+        .accessibilityText('Dashboard应用图标和名称')
+    }
+
+    @Builder
+    private versionInformation(): void {
+        Column({ space: 5 }) {
+            Text(`版本 ${APP_VERSION}`)
+                .fontSize(12)
+                .fontColor($r('app.color.v3_text_secondary'))
+                .onClick(() => this.tapVersion())
+                .accessibilityText(`版本${APP_VERSION}，连续点击十次打开开发者信息`)
+            Text('Designed & Developed by Ray Chen (Rayawa)')
+                .fontSize(12)
+                .fontColor($r('app.color.v3_text_secondary'))
+                .textAlign(TextAlign.Center)
+                .accessibilityText('Designed and Developed by Ray Chen Rayawa')
+            Text('Copyright © 2026. All rights reserved.')
+                .fontSize(12)
+                .fontColor($r('app.color.v3_text_secondary'))
+                .textAlign(TextAlign.Center)
+                .accessibilityText('版权所有2026')
+            Text('本应用备案域名：rayawa.top')
+                .fontSize(12)
+                .fontColor($r('app.color.v3_text_secondary'))
+                .textAlign(TextAlign.Center)
+                .accessibilityText('本应用备案域名rayawa点top')
+            Text('京ICP备2025153453号')
+                .fontSize(12)
+                .fontColor($r('app.color.diff_content'))
+                .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
+                .onClick(() => {
+                    this.vibrate();
+                    this.openIcp();
+                })
+                .accessibilityText('京ICP备2025153453号，点击打开工信部备案页面')
+        }
+        .width('100%')
+        .padding({ top: 14, bottom: 14 })
+        .accessibilityGroup(true)
+        .accessibilityText('版本版权和备案信息')
     }
 
     @Builder
@@ -340,7 +334,15 @@ export struct MyPage {
                 .padding({ left: 4 })
                 .accessibilityText('设置')
             settings()
+            Divider()
+                .margin({ top: 2, bottom: 2 })
+                .color($r('app.color.border'))
+                .accessibilityText('设置与更多栏目分隔线')
             this.actionSection('更多', this.moreItems())
+            Divider()
+                .margin({ top: 2, bottom: 2 })
+                .color($r('app.color.border'))
+                .accessibilityText('更多与帮助栏目分隔线')
             this.actionSection('帮助', this.helpItems())
         }
         .width('100%')
@@ -348,86 +350,122 @@ export struct MyPage {
         .accessibilityText('设置、更多与帮助列表')
     }
 
+    private restoreScrollPosition(): void {
+        if (this.restoredScroll) return;
+        this.restoredScroll = true;
+        const continuation = getContinuationState();
+        if (continuation.mainTab !== MAIN_TAB_MY || continuation.routeName !== CONTINUATION_ROUTE_MAIN ||
+            continuation.scrollDistance <= 0) return;
+        setTimeout((): void => {
+            try {
+                this.scroller.scrollTo({
+                    xOffset: 0,
+                    yOffset: continuation.scrollDistance,
+                    animation: { duration: 0 },
+                });
+            } catch (error) {
+                console.warn('[Dashboard][pages/main/MyPage][WARN]',
+                    `恢复滚动位置失败: ${JSON.stringify(error)}`);
+            }
+        }, 80);
+    }
+
+    private saveScrollPosition(): void {
+        try {
+            setContinuationView(MAIN_TAB_MY, this.scroller.currentOffset().yOffset);
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/MyPage][WARN]',
+                `保存滚动位置失败: ${JSON.stringify(error)}`);
+        }
+    }
+
     build() {
         Stack() {
-            Scroll(this.scroller) {
-                Column({ space: 14 }) {
-                    Blank().height(100).width('100%')
-                    if (this.contentWidth >= 840) {
-                        Row({ space: 16 }) {
-                            Column() {
-                                this.appInformation()
+            if (this.contentWidth >= 840) {
+                Column() {
+                    Row({ space: 16 }) {
+                        Column() {
+                            Blank()
+                                .height(100)
+                                .width('100%')
+                            Column({ space: 14 }) {
+                                this.appIdentity()
+                                Divider()
+                                    .color($r('app.color.border'))
+                                    .accessibilityText('应用名称与版本信息分隔线')
+                                this.versionInformation()
                             }
-                            .layoutWeight(4)
-                            .alignItems(HorizontalAlign.Start)
-
-                            Divider()
-                                .vertical(true)
-                                .height('100%')
-                                .color($r('app.color.border'))
-                                .accessibilityText('应用信息与功能列表分隔线')
-
-                            Column() {
-                                this.settingsAndLinks()
-                            }
-                            .layoutWeight(6)
-                            .alignItems(HorizontalAlign.Start)
+                            .layoutWeight(1)
+                            .width('100%')
+                            .justifyContent(FlexAlign.Center)
                         }
-                        .width('100%')
-                        .alignItems(VerticalAlign.Top)
+                        .layoutWeight(4)
+                        .height('100%')
+                        .padding({ left: 14, right: 14 })
                         .accessibilityGroup(true)
-                        .accessibilityText('左侧应用信息，右侧设置、更多与帮助列表')
-                    } else {
-                        this.appInformation()
+                        .accessibilityText('固定显示的应用名称和版本信息')
+
+                        Divider()
+                            .vertical(true)
+                            .height('100%')
+                            .color($r('app.color.border'))
+                            .accessibilityText('应用信息与功能列表分隔线')
+
+                        Scroll(this.scroller) {
+                            Column() {
+                                Blank().height(100).width('100%')
+                                this.settingsAndLinks()
+                                Blank().height(110).width('100%')
+                            }
+                            .width('100%')
+                            .padding({ left: 14, right: 14 })
+                            .onAppear(() => this.restoreScrollPosition())
+                        }
+                        .layoutWeight(6)
+                        .height('100%')
+                        .scrollBar(BarState.Off)
+                        .onDidScroll((): void => this.saveScrollPosition())
+                        .accessibilityText('可滚动的设置、更多与帮助列表')
+                    }
+                    .layoutWeight(1)
+                    .width('100%')
+                    .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
+                    .padding({ left: 14, right: 14 })
+                    .alignItems(VerticalAlign.Top)
+                    .accessibilityGroup(true)
+                    .accessibilityText('左侧固定应用信息，右侧可滚动功能列表')
+                }
+                .width('100%')
+                .height('100%')
+                .alignItems(HorizontalAlign.Center)
+                .backgroundColor($r('app.color.background'))
+            } else {
+                Scroll(this.scroller) {
+                    Column({ space: 14 }) {
+                        Blank().height(100).width('100%')
+                        this.appIdentity()
                         Divider()
                             .color($r('app.color.border'))
                             .accessibilityText('应用信息与功能列表分隔线')
                         this.settingsAndLinks()
+                        Divider()
+                            .color($r('app.color.border'))
+                            .accessibilityText('功能列表与版本信息分隔线')
+                        this.versionInformation()
+                        Blank().height(110).width('100%')
                     }
-
-                    Blank().height(110).width('100%')
+                    .width('100%')
+                    .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
+                    .padding({ left: 14, right: 14 })
+                    .onAppear(() => this.restoreScrollPosition())
                 }
                 .width('100%')
-                .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
-                .padding({ left: 14, right: 14 })
-                .onAreaChange((_oldValue: Area, newValue: Area): void => {
-                    this.contentWidth = Number(newValue.width);
-                })
-                .onAppear(() => {
-                    if (!this.restoredScroll) {
-                        this.restoredScroll = true;
-                        const continuation = getContinuationState();
-                        if (continuation.mainTab === MAIN_TAB_MY && continuation.routeName === CONTINUATION_ROUTE_MAIN &&
-                            continuation.scrollDistance > 0) {
-                            setTimeout((): void => {
-                                try {
-                                    this.scroller.scrollTo({
-                                        xOffset: 0,
-                                        yOffset: continuation.scrollDistance,
-                                        animation: { duration: 0 },
-                                    });
-                                } catch (error) {
-                                    console.warn('[Dashboard][pages/main/MyPage][WARN]',
-                                        `恢复滚动位置失败: ${JSON.stringify(error)}`);
-                                }
-                            }, 80);
-                        }
-                    }
-                })
+                .height('100%')
+                .scrollBar(BarState.Off)
+                .onDidScroll((): void => this.saveScrollPosition())
+                .backgroundColor($r('app.color.background'))
+                .accessibilityText('可滚动的我的页面')
             }
-            .width('100%')
-            .height('100%')
-            .scrollBar(BarState.Off)
-            .onDidScroll((): void => {
-                try {
-                    setContinuationView(MAIN_TAB_MY, this.scroller.currentOffset().yOffset);
-                } catch (error) {
-                    console.warn('[Dashboard][pages/main/MyPage][WARN]',
-                        `保存滚动位置失败: ${JSON.stringify(error)}`);
-                }
-            })
-            .backgroundColor($r('app.color.background'))
-            .accessibilityText('我的页面')
 
             if (this.showWarning) {
                 Column()
@@ -443,6 +481,9 @@ export struct MyPage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.background'))
+        .onAreaChange((_oldValue: Area, newValue: Area): void => {
+            this.contentWidth = Number(newValue.width);
+        })
         .accessibilityText('我的与关于页面')
         .bindSheet($$this.showContact, this.ContactSheet(), {
             title: { title: '联系我们' },
