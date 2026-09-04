@@ -40,6 +40,7 @@ export struct warn {
             this.isShow = false;
           }
         })
+        .accessibilityText(this.isFirstLaunch ? '重要提示顶部区域，首次使用时不能关闭' : '点击关闭重要提示')
         Column() {
           Text("重要提示").fontSize(24).fontColor($r('app.color.v3_accent_red')).fontWeight(FontWeight.Bold).margin({ bottom: 5 })
 
@@ -70,6 +71,7 @@ export struct warn {
                   showToastSafely(this.PromptAction, '打开链接失败', 1000, 'Warning');
                 }
               })
+              .accessibilityText('打开Dashboard项目总网页查看详细说明')
 
             Text("【架构限制】")
               .fontSize(15)
@@ -85,6 +87,7 @@ export struct warn {
             Text("数据存在滞后性，同步质量受限于用户网络稳定性，项目组不保证信息的即时性。").fontSize(13)
 
             Divider().color($r("app.color.border")).strokeWidth(0.5).margin({ top: 15, bottom: 15 })
+              .accessibilityText('重要提示内容分隔线')
 
             Text("【免责申明】")
               .fontSize(15)
@@ -144,6 +147,7 @@ export struct warn {
               this.isShow = false;
             }
           })
+          .accessibilityText('首次使用时不能从外部区域关闭重要提示')
           Text("* 点击外部区域或向下滑动关闭页面")
             .fontSize(14)
             .fontColor($r('app.color.v3_text_secondary'))
@@ -152,6 +156,7 @@ export struct warn {
               if (this.vibrationON) vibration.dotVibration();
               this.isShow = false
             })
+            .accessibilityText('点击外部区域或向下滑动关闭重要提示')
         }
       }
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])

@@ -1,4 +1,4 @@
-import { PromptAction } from '@kit.ArkUI';
+import { curves, PromptAction } from '@kit.ArkUI';
 import {
     CONTENT_MAX_WIDTH,
     CONTINUATION_ROUTE_MAIN,
@@ -95,41 +95,54 @@ struct HomeStatCard {
 @Component
 struct RecentAppCard {
     app: MarketApp = {} as MarketApp;
+    @Prop showSectionTitle: boolean = false;
     onOpen: (app: MarketApp) => void = () => {};
 
     build() {
-        Row({ space: 12 }) {
-            Image(this.app.icon_url || $r('app.media.startIcon'))
-                .width(48)
-                .height(48)
-                .borderRadius(12)
-                .objectFit(ImageFit.Cover)
-                .geometryTransition(appIconGeometryId(this.app), { follow: true })
-                .alt($r('app.media.startIcon'))
-                .accessibilityText(`${this.app.name || '未知应用'}图标`)
-            Column({ space: 4 }) {
-                Text(this.app.name || '未知应用')
-                    .fontSize(16)
-                    .fontWeight(FontWeight.Medium)
+        Column({ space: 12 }) {
+            if (this.showSectionTitle) {
+                Text('最近收录')
+                    .width('100%')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
                     .fontColor($r('app.color.v3_text_primary'))
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                Text(`${this.app.developer_name || '未知开发者'} · ${this.app.version || '未知版本'}`)
-                    .fontSize(12)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                Text(`收录于 ${formatDateTime(this.app.listed_at)}`)
-                    .fontSize(11)
-                    .fontColor($r('app.color.v3_text_secondary'))
+                    .accessibilityText('最近收录应用')
             }
-            .alignItems(HorizontalAlign.Start)
-            .layoutWeight(1)
-            Image($r('sys.symbol.chevron_right'))
-                .width(18)
-                .height(18)
-                .fillColor($r('app.color.v3_text_secondary'))
-                .accessibilityText('打开详情')
+            Row({ space: 12 }) {
+                Image(this.app.icon_url || $r('app.media.startIcon'))
+                    .width(48)
+                    .height(48)
+                    .borderRadius(12)
+                    .objectFit(ImageFit.Cover)
+                    .geometryTransition(appIconGeometryId(this.app), { follow: true })
+                    .transition(TransitionEffect.OPACITY.animation({ duration: 360, curve: Curve.Friction }))
+                    .alt($r('app.media.startIcon'))
+                    .accessibilityText(`${this.app.name || '未知应用'}图标`)
+                Column({ space: 4 }) {
+                    Text(this.app.name || '未知应用')
+                        .fontSize(16)
+                        .fontWeight(FontWeight.Medium)
+                        .fontColor($r('app.color.v3_text_primary'))
+                        .maxLines(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    Text(`${this.app.developer_name || '未知开发者'} · ${this.app.version || '未知版本'}`)
+                        .fontSize(12)
+                        .fontColor($r('app.color.v3_text_secondary'))
+                        .maxLines(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    Text(`收录于 ${formatDateTime(this.app.listed_at)}`)
+                        .fontSize(11)
+                        .fontColor($r('app.color.v3_text_secondary'))
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                Image($r('sys.symbol.chevron_right'))
+                    .width(18)
+                    .height(18)
+                    .fillColor($r('app.color.v3_text_secondary'))
+                    .accessibilityText('打开详情')
+            }
+            .width('100%')
         }
         .width('100%')
         .padding(14)
@@ -231,9 +244,13 @@ export struct HomePage {
     }
 
     private openDetail(app: MarketApp): void {
-        setDetailTarget({ appId: app.app_id, packageName: app.pkg_name, previewApp: app });
         try {
-            this.pageStack.pushPathByName('AppDetailPage', null);
+            this.getUIContext().animateTo({
+                curve: curves.interpolatingSpring(0, 1, 342, 38),
+            }, (): void => {
+                setDetailTarget({ appId: app.app_id, packageName: app.pkg_name, previewApp: app });
+                this.pageStack.pushPath({ name: 'AppDetailPage', param: null }, true);
+            });
         } catch (error) {
             console.error('[Dashboard][pages/main/HomePage][ERROR]', `打开应用详情失败: ${JSON.stringify(error)}`);
             showToastSafely(this.prompt, '暂时无法打开应用详情', 1800, 'HomePage');
@@ -346,13 +363,19 @@ export struct HomePage {
     }
 
     @Builder
-    private recentSection(): void {
+    private recentSection(showTitle: boolean = true): void {
         if (this.recentApps.length > 0) {
             Column({ space: 10 }) {
-                Text('最近收录').width('100%').fontSize(18).fontWeight(FontWeight.Bold)
-                    .fontColor($r('app.color.v3_text_primary')).accessibilityText('最近收录应用')
-                ForEach(this.recentApps, (app: MarketApp) => {
-                    RecentAppCard({ app, onOpen: (target: MarketApp) => this.openDetail(target) })
+                if (showTitle) {
+                    Text('最近收录').width('100%').fontSize(18).fontWeight(FontWeight.Bold)
+                        .fontColor($r('app.color.v3_text_primary')).accessibilityText('最近收录应用')
+                }
+                ForEach(this.recentApps, (app: MarketApp, index: number) => {
+                    RecentAppCard({
+                        app,
+                        showSectionTitle: !showTitle && index === 0,
+                        onOpen: (target: MarketApp) => this.openDetail(target),
+                    })
                 }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
             }.width('100%').accessibilityGroup(true).accessibilityText('最近收录的应用')
         }
@@ -437,7 +460,7 @@ export struct HomePage {
                 if (this.contentWidth >= 840) {
                     Row({ space: 16 }) {
                         Column() { this.dataAndStatus() }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-                        Column() { this.recentSection() }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+                        Column() { this.recentSection(false) }.layoutWeight(1).alignItems(HorizontalAlign.Start)
                     }.width('100%').alignItems(VerticalAlign.Top)
                         .accessibilityText('左侧市场数据和状态，右侧最近收录应用')
                 } else {

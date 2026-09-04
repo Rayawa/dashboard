@@ -86,4 +86,21 @@ export const CONTINUATION_MIN_VERSION_CODE: number = 30000000;
 // UA
 export const customUserAgent: string = `${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion}) API:${deviceInfo.sdkApiVersion} | ${deviceInfo.productModel}/${deviceInfo.productModelAlias}/${deviceInfo.softwareModel}/${deviceInfo.hardwareModel} | ${deviceInfo.deviceType}/${deviceInfo.marketName}/${deviceInfo.chipType}`;
 
+/**
+ * 所有原生 API 请求统一从这里取得请求头，避免不同接口遗漏应用 User-Agent。
+ */
+export function createApiRequestHeaders(hasJsonBody: boolean = false): Record<string, string> {
+    if (hasJsonBody) {
+        return {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': customUserAgent,
+        };
+    }
+    return {
+        'Accept': 'application/json',
+        'User-Agent': customUserAgent,
+    };
+}
+
 export const SUBMIT_PLATFORM: string = `ray_dashboard/${APP_VERSION}-${deviceInfo.deviceType}`;

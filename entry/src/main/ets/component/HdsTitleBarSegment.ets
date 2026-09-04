@@ -5,7 +5,7 @@ import {
   TabSegmentButtonV2,
 } from '@kit.ArkUI';
 
-/** 放在 HdsNavigation titleBar.bottomBuilder 内的固定二选一切换栏。 */
+/** 固定在 HdsNavigation 标题栏中的概况/列表切换栏。 */
 @Component
 export struct HdsTitleBarSegment {
   @Require items: SegmentButtonV2Items;
@@ -16,6 +16,7 @@ export struct HdsTitleBarSegment {
   @Prop experimentalWidth: Length = '100%';
   @Prop experimentalHeight: number = 52;
   onItemClicked?: (index: number) => void;
+  @StorageLink('immersiveTextureON') private immersiveTexture: boolean = false;
 
   private selectedIndex(): number {
     return this.selectedIndexes.length > 0 ? this.selectedIndexes[0] : 0;
@@ -31,7 +32,8 @@ export struct HdsTitleBarSegment {
     }
   }
 
-  private segmentBackgroundColor(): ColorMetrics {
+  private buttonBackgroundColor(): ColorMetrics {
+    if (this.immersiveTexture) return ColorMetrics.rgba(0, 0, 0, 0);
     try {
       return ColorMetrics.resourceColor($r('app.color.v3_surface_alt'));
     } catch (error) {
@@ -53,7 +55,7 @@ export struct HdsTitleBarSegment {
         itemMaxFontScale: this.maxFontScale,
         itemSelectedBackgroundColor: this.selectedBackgroundColor(),
         itemMinHeight: LengthMetrics.vp(32),
-        buttonBackgroundColor: this.segmentBackgroundColor(),
+        buttonBackgroundColor: this.buttonBackgroundColor(),
         buttonMinHeight: LengthMetrics.vp(40),
         buttonPadding: LengthMetrics.vp(4),
         enableStateAnimation: true,
@@ -62,6 +64,14 @@ export struct HdsTitleBarSegment {
     .width(this.normalWidth)
     .height(this.segmentHeight)
     .justifyContent(FlexAlign.Center)
-    .accessibilityText(this.selectedIndex() === 0 ? '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
+    .padding(4)
+    .borderRadius(this.segmentHeight / 2)
+    .clip(true)
+    .backgroundColor(this.immersiveTexture ? 0x18FFFFFF : Color.Transparent)
+    .backgroundBlurStyle(this.immersiveTexture ? BlurStyle.Thin : BlurStyle.NONE)
+    .borderWidth(0)
+    .shadow({ radius: 0, color: Color.Transparent })
+    .accessibilityText(this.selectedIndex() === 0 ?
+      '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
   }
 }
