@@ -41,12 +41,30 @@ struct DistributionPanel {
     private drawProgress: number = 1;
     private detailProgress: number = 1;
     private animationToken: number = 0;
+    private controlPressToken: number = 0;
+
+    private beginControlPress(key: string): void {
+        const token = ++this.controlPressToken;
+        this.pressedControl = key;
+        setTimeout((): void => {
+            if (this.controlPressToken === token && this.pressedControl === key) {
+                this.pressedControl = '';
+            }
+        }, 800);
+    }
+
+    private endControlPress(): void {
+        this.controlPressToken++;
+        this.pressedControl = '';
+    }
 
     private onChartChanged(): void {
+        this.endControlPress();
         this.selected = 0;
         setTimeout((): void => this.animatePie(), 0);
     }
     private onDisplayChanged(): void {
+        this.endControlPress();
         this.selected = 0;
         if (this.expanded) {
             setTimeout((): void => this.animateOtherExpansion(), 0);
@@ -386,12 +404,13 @@ struct DistributionPanel {
                         this.pressedControl === label,
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) this.pressedControl = label;
+                        if (event.type === TouchType.Down) this.beginControlPress(label);
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                            this.pressedControl = '';
+                            this.endControlPress();
                         }
                     })
                     .onClick(() => {
+                        this.endControlPress();
                         if (label === '其他') {
                             this.expandFromOther();
                             return;
@@ -432,12 +451,15 @@ struct DistributionPanel {
                             .visualEffect(pressVisualEffect(this.pressedControl === 'expand',
                                 hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
                             .onTouch((event: TouchEvent): void => {
-                                if (event.type === TouchType.Down) this.pressedControl = 'expand';
+                                if (event.type === TouchType.Down) this.beginControlPress('expand');
                                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                    this.pressedControl = '';
+                                    this.endControlPress();
                                 }
                             })
-                            .onClick(() => this.toggleExpansion())
+                            .onClick(() => {
+                                this.endControlPress();
+                                this.toggleExpansion();
+                            })
                             .accessibilityText(this.expanded ? `收起${this.chart.title}` : `展开${this.chart.title}全部SDK`)
                     }
                 }
@@ -587,6 +609,22 @@ export struct OverviewSection {
     private pendingLoads: number = 0;
     private reloadAfterCurrent: boolean = false;
     private restoredContinuationUi: boolean = false;
+    private controlPressToken: number = 0;
+
+    private beginControlPress(key: string): void {
+        const token = ++this.controlPressToken;
+        this.pressedControl = key;
+        setTimeout((): void => {
+            if (this.controlPressToken === token && this.pressedControl === key) {
+                this.pressedControl = '';
+            }
+        }, 800);
+    }
+
+    private endControlPress(): void {
+        this.controlPressToken++;
+        this.pressedControl = '';
+    }
 
     aboutToAppear(): void {
         if (this.restoredContinuationUi) return;
@@ -775,12 +813,13 @@ export struct OverviewSection {
                                 this.pressedControl === label,
                                 hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                             .onTouch((event: TouchEvent): void => {
-                                if (event.type === TouchType.Down) this.pressedControl = label;
+                                if (event.type === TouchType.Down) this.beginControlPress(label);
                                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                    this.pressedControl = '';
+                                    this.endControlPress();
                                 }
                             })
                             .onClick(() => {
+                                this.endControlPress();
                                 this.selectSdk(label);
                             })
                             .transition(TransitionEffect.OPACITY.combine(
@@ -821,12 +860,13 @@ export struct OverviewSection {
                         .visualEffect(pressVisualEffect(this.pressedControl === 'sdk-expand',
                             hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
                         .onTouch((event: TouchEvent): void => {
-                            if (event.type === TouchType.Down) this.pressedControl = 'sdk-expand';
+                            if (event.type === TouchType.Down) this.beginControlPress('sdk-expand');
                             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                                this.pressedControl = '';
+                                this.endControlPress();
                             }
                         })
                         .onClick(() => {
+                            this.endControlPress();
                             if (this.sdkExpanded) this.collapseSdk(); else this.expandSdk();
                         })
                         .accessibilityText(this.sdkExpanded ? '收起全部SDK版本' : '展开全部SDK版本')

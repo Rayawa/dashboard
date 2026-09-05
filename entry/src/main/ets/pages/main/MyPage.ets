@@ -372,7 +372,6 @@ export struct MyPage {
             .width('100%')
             .borderRadius(16)
             .backgroundColor($r('app.color.v3_surface'))
-            .border({ width: 1, color: $r('app.color.nd_card_border') })
             .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
             .clip(true)
             .accessibilityGroup(true)
