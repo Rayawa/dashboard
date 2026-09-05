@@ -153,6 +153,7 @@ export default class EntryAbility extends UIAbility {
         const searchText = want.parameters?.['searchText'] as string || '';
         const searchAutoRun = want.parameters?.['searchAutoRun'] as boolean | undefined;
         const openDetailOnSuccess = want.parameters?.['openDetailOnSuccess'] as boolean | undefined;
+        const recordSearchHistory = want.parameters?.['recordSearchHistory'] as boolean | undefined;
         if (detailAppId || detailPackage) {
             setDetailTarget({ appId: detailAppId || undefined, packageName: detailPackage || undefined });
         }
@@ -161,6 +162,7 @@ export default class EntryAbility extends UIAbility {
                 rawText: searchText,
                 autoRun: searchAutoRun ?? true,
                 openDetailOnSuccess: openDetailOnSuccess ?? false,
+                recordHistory: recordSearchHistory ?? false,
             });
         }
     }

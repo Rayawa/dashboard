@@ -28,6 +28,7 @@ import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
 import { popPathSafely } from '../../common/safeNavigation';
 import { contentEnterTransition } from '../../common/motion';
+import { pressVisualEffect } from '../../common/visualEffects';
 import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
 import type {
@@ -75,13 +76,8 @@ struct DetailTag {
         .border({ width: 1, color: $r('app.color.v3_chart_grid') })
         .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-            })
-            .buildEffect())
+        .visualEffect(pressVisualEffect(
+            this.pressed, hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.pressed = true;
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressed = false;
@@ -110,6 +106,7 @@ export struct AppDetailPage {
     @State private started: boolean = false;
     @State private downloadChartViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
     @State private ratingChartViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
+    @State private pressedAction: string = '';
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
         hdsMaterial.MaterialLevel.GENTLE;
@@ -439,19 +436,41 @@ export struct AppDetailPage {
                         .transition(contentEnterTransition(10))
 
                         Flex({ wrap: FlexWrap.Wrap }) {
-                            Button('在华为应用市场打开')
+                            Button('在华为应用市场打开', { stateEffect: false })
                                 .margin(4)
                                 .backgroundColor($r('app.color.diff_content'))
+                                .scale({ x: this.pressedAction === 'market' ? 0.97 : 1,
+                                    y: this.pressedAction === 'market' ? 0.97 : 1 })
+                                .animation({ duration: 120, curve: Curve.EaseOut })
+                                .visualEffect(pressVisualEffect(this.pressedAction === 'market',
+                                    hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                                .onTouch((event: TouchEvent): void => {
+                                    if (event.type === TouchType.Down) this.pressedAction = 'market';
+                                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                        this.pressedAction = '';
+                                    }
+                                })
                                 .onClick(() => {
                                     this.vibrate();
                                     this.openMarket();
                                 })
                                 .accessibilityText('在华为应用市场打开此应用')
                             if (this.app.privacy_url) {
-                                Button('隐私政策')
+                                Button('隐私政策', { stateEffect: false })
                                     .margin(4)
                                     .fontColor($r('app.color.v3_text_primary'))
                                     .backgroundColor($r('app.color.v3_surface_alt'))
+                                    .scale({ x: this.pressedAction === 'privacy' ? 0.97 : 1,
+                                        y: this.pressedAction === 'privacy' ? 0.97 : 1 })
+                                    .animation({ duration: 120, curve: Curve.EaseOut })
+                                    .visualEffect(pressVisualEffect(this.pressedAction === 'privacy',
+                                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                                    .onTouch((event: TouchEvent): void => {
+                                        if (event.type === TouchType.Down) this.pressedAction = 'privacy';
+                                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                            this.pressedAction = '';
+                                        }
+                                    })
                                     .onClick(() => {
                                         this.vibrate();
                                         this.openExternal(this.app!.privacy_url!, '无法打开应用隐私政策');

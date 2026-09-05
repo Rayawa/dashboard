@@ -4,6 +4,7 @@ import { pasteboard } from '@kit.BasicServicesKit';
 import { common, Want } from '@kit.AbilityKit';
 import { vibration } from '../common/vibration';
 import { showToastSafely } from '../common/safeUi';
+import { pressVisualEffect } from '../common/visualEffects';
 
 @Component
 export struct contact {
@@ -28,13 +29,8 @@ export struct contact {
         .borderRadius(16)
         .scale({ x: this.pressedItem === title ? 0.97 : 1, y: this.pressedItem === title ? 0.97 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-            })
-            .buildEffect())
+        .visualEffect(pressVisualEffect(
+            this.pressedItem === title, hdsEffect.PointLightIlluminatedType.BORDER, 6, 100))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.updatePressed(title, true);
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.updatePressed(title, false);
@@ -68,13 +64,8 @@ export struct contact {
             .scale({ x: this.pressedItem === 'sponsor' ? 0.97 : 1,
                 y: this.pressedItem === 'sponsor' ? 0.97 : 1 })
             .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                    options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-                })
-                .buildEffect())
+            .visualEffect(pressVisualEffect(
+                this.pressedItem === 'sponsor', hdsEffect.PointLightIlluminatedType.BORDER, 6, 100))
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.updatePressed('sponsor', true);
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {

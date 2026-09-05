@@ -11,7 +11,11 @@ import { getContinuationState, setContinuationView, setDetailTarget } from '../.
 import { fetchAppsPage, fetchMarketInfo } from '../../common/MarketApi';
 import { formatDateTime, formatExactCount } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
-import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
+import {
+    contentEnterTransition,
+    startStaggerEnterAnimation,
+} from '../../common/motion';
+import { pressVisualEffect } from '../../common/visualEffects';
 import { vibration } from '../../common/vibration';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
 
@@ -92,13 +96,7 @@ struct HomeStatCard {
         .shadow({ radius: 12, color: $r('app.color.v3_shadow'), offsetY: 3 })
         .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-            })
-            .buildEffect())
+        .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) {
                 this.pressed = true;
@@ -165,13 +163,7 @@ struct RecentAppCard {
         .border({ width: 1, color: $r('app.color.nd_card_border') })
         .scale({ x: this.pressed ? 0.975 : 1, y: this.pressed ? 0.975 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-            })
-            .buildEffect())
+        .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) {
                 this.pressed = true;
@@ -191,6 +183,7 @@ struct RecentAppCard {
 @Component
 export struct HomePage {
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
+    @Prop @Watch('onActiveChanged') active: boolean = false;
     onOpenAppDetail?: (target: AppRouteTarget) => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
@@ -205,10 +198,24 @@ export struct HomePage {
     @State private loaded: boolean = false;
     @State private recentApps: MarketApp[] = [];
     @State private contentWidth: number = 0;
-    @State private pageVisible: boolean = false;
+    @State private animStep: number = 0;
     @State private displayCardPressed: string = '';
     private restoredScroll: boolean = false;
     private reloadAfterCurrent: boolean = false;
+    private enterAnimationPlayed: boolean = false;
+
+    private onActiveChanged(): void {
+        if (this.active && this.loaded) this.startPageAnimationOnce();
+    }
+
+    private startPageAnimationOnce(): void {
+        if (this.enterAnimationPlayed) return;
+        this.enterAnimationPlayed = true;
+        this.animStep = 0;
+        startStaggerEnterAnimation(this.getUIContext(), 3, (step: number): void => {
+            this.animStep = step;
+        });
+    }
 
     private onScrollToTopVersionChanged(): void {
         if (this.scrollToTopVersion <= 0) {
@@ -237,6 +244,7 @@ export struct HomePage {
             this.reloadAfterCurrent = this.reloadAfterCurrent || force;
             return;
         }
+        const wasLoaded = this.loaded;
         this.loading = true;
         this.errorMessage = '';
         const recentPromise = this.loadRecentApps(force);
@@ -259,6 +267,9 @@ export struct HomePage {
         } finally {
             await recentPromise;
             this.loading = false;
+            if (!wasLoaded && this.loaded && this.active) {
+                this.startPageAnimationOnce();
+            }
             if (this.reloadAfterCurrent) {
                 this.reloadAfterCurrent = false;
                 setTimeout((): void => { this.load(true); }, 0);
@@ -344,20 +355,16 @@ export struct HomePage {
             .scale({ x: this.displayCardPressed === 'total' ? 0.985 : 1,
                 y: this.displayCardPressed === 'total' ? 0.985 : 1 })
             .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                    options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-                })
-                .buildEffect())
+            .visualEffect(pressVisualEffect(
+                this.displayCardPressed === 'total', hdsEffect.PointLightIlluminatedType.BORDER))
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.displayCardPressed = 'total';
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.displayCardPressed = '';
             })
             .accessibilityGroup(true)
             .accessibilityText(`应用总数${this.market.app_count.apps + this.market.app_count.atomic_services}，其中鸿蒙应用${this.market.app_count.apps}，元服务${this.market.app_count.atomic_services}`)
-            .transition(contentEnterTransition(10))
+            .opacity(this.animStep >= 1 ? 1 : 0)
+            .translate({ y: this.animStep >= 1 ? 0 : 20 })
         }
     }
 
@@ -374,7 +381,11 @@ export struct HomePage {
                 GridCol({ span: { xs: 2, sm: 4, md: 6 } }) { HomeStatCard({ stat }) }
                     .transition(contentEnterTransition(10))
             }, (stat: HomeStat) => stat.label)
-        }.width('100%').accessibilityText('开发者和专题数据概览')
+        }
+        .width('100%')
+        .opacity(this.animStep >= 1 ? 1 : 0)
+        .translate({ y: this.animStep >= 1 ? 0 : 20 })
+        .accessibilityText('开发者和专题数据概览')
     }
 
     @Builder
@@ -404,20 +415,16 @@ export struct HomePage {
             .scale({ x: this.displayCardPressed === 'status' ? 0.985 : 1,
                 y: this.displayCardPressed === 'status' ? 0.985 : 1 })
             .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                    options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-                })
-                .buildEffect())
+            .visualEffect(pressVisualEffect(
+                this.displayCardPressed === 'status', hdsEffect.PointLightIlluminatedType.BORDER))
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.displayCardPressed = 'status';
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.displayCardPressed = '';
             })
             .accessibilityGroup(true)
             .accessibilityText(this.market.sync_status.is_syncing_all ? '服务当前正在全量同步' : '服务当前状态正常')
-            .transition(contentEnterTransition(10))
+            .opacity(this.animStep >= 2 ? 1 : 0)
+            .translate({ y: this.animStep >= 2 ? 0 : 20 })
         }
     }
 
@@ -445,7 +452,12 @@ export struct HomePage {
                     })
                     .transition(contentEnterTransition(10))
                 }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
-            }.width('100%').accessibilityGroup(true).accessibilityText('最近收录的应用')
+            }
+            .width('100%')
+            .opacity(this.animStep >= (this.contentWidth >= 840 ? 1 : 3) ? 1 : 0)
+            .translate({ y: this.animStep >= (this.contentWidth >= 840 ? 1 : 3) ? 0 : 20 })
+            .accessibilityGroup(true)
+            .accessibilityText('最近收录的应用')
         }
     }
 
@@ -551,8 +563,7 @@ export struct HomePage {
     }
 
     private handleAppear(): void {
-        this.pageVisible = false;
-        runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
+        if (this.active && this.loaded) this.startPageAnimationOnce();
         if (!this.loaded) this.load(false);
         this.restoreScrollPosition();
     }
@@ -646,13 +657,10 @@ export struct HomePage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.background'))
-        .opacity(this.pageVisible ? 1 : 0.01)
-        .translate({ y: this.pageVisible ? 0 : 12 })
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })
         .onAppear(() => this.handleAppear())
-        .onDisAppear(() => { this.pageVisible = false; })
         .accessibilityText('首页')
     }
 }

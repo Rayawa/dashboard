@@ -17,6 +17,7 @@ import {
 } from '../../common/constants';
 import { curves, LengthMetrics } from '@kit.ArkUI';
 import { pageTransition } from '../../common/motion';
+import { pressVisualEffect } from '../../common/visualEffects';
 
 interface DeveloperField {
   label: string;
@@ -76,13 +77,8 @@ export struct DeveloperPage {
               .scale({ x: this.pressedField === field.label ? 0.99 : 1,
                 y: this.pressedField === field.label ? 0.99 : 1 })
               .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                  options: { color: $r('app.color.diff_content'), intensity: 5, height: 96 },
-                })
-                .buildEffect())
+              .visualEffect(pressVisualEffect(this.pressedField === field.label,
+                hdsEffect.PointLightIlluminatedType.BORDER, 5, 96))
               .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.pressedField = field.label;
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedField = '';

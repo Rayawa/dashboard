@@ -27,7 +27,7 @@ import URL from '../../common/url';
 import { showToastSafely } from '../../common/safeUi';
 import { EmptyPathParam } from '../../common/safeNavigation';
 import { vibration } from '../../common/vibration';
-import { runPageEnterAnimation } from '../../common/motion';
+import { startStaggerEnterAnimation } from '../../common/motion';
 
 interface MoreItem {
     title: string;
@@ -99,6 +99,7 @@ struct MoreRow {
 export struct MyPage {
     @Consume('pageStack') private pageStack: NavPathStack;
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
+    @Prop @Watch('onActiveChanged') active: boolean = false;
     onShowWarning?: () => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
@@ -106,9 +107,36 @@ export struct MyPage {
     @State private showContact: boolean = false;
     @State private versionTapCount: number = 0;
     @State private contentWidth: number = 0;
-    @State private pageVisible: boolean = false;
+    @State private animStep: number = 0;
     private versionTapTimer: number = -1;
     private restoredScroll: boolean = false;
+    private enterAnimationPlayed: boolean = false;
+
+    private onActiveChanged(): void {
+        if (this.active) this.startPageAnimationOnce();
+    }
+
+    private startPageAnimationOnce(): void {
+        if (this.enterAnimationPlayed) return;
+        this.enterAnimationPlayed = true;
+        this.animStep = 0;
+        startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
+            this.animStep = step;
+        });
+    }
+
+    private requiredStep(group: string): number {
+        if (this.contentWidth >= 840) {
+            if (group === 'identity' || group === 'settings') return 1;
+            if (group === 'information' || group === 'more') return 2;
+            return 3;
+        }
+        if (group === 'identity') return 1;
+        if (group === 'settings') return 2;
+        if (group === 'more') return 3;
+        if (group === 'help') return 4;
+        return 5;
+    }
 
     private onScrollToTopVersionChanged(): void {
         if (this.scrollToTopVersion <= 0) {
@@ -267,6 +295,8 @@ export struct MyPage {
         }
         .width('100%')
         .padding({ top: 18, bottom: 18, left: 12, right: 12 })
+        .opacity(this.animStep >= this.requiredStep('identity') ? 1 : 0)
+        .translate({ y: this.animStep >= this.requiredStep('identity') ? 0 : 20 })
         .accessibilityGroup(true)
         .accessibilityText('Dashboard应用图标和名称')
     }
@@ -309,6 +339,8 @@ export struct MyPage {
         }
         .width('100%')
         .padding({ top: 14 })
+        .opacity(this.animStep >= this.requiredStep('information') ? 1 : 0)
+        .translate({ y: this.animStep >= this.requiredStep('information') ? 0 : 20 })
         .accessibilityGroup(true)
         .accessibilityText('版本版权和备案信息')
     }
@@ -347,11 +379,13 @@ export struct MyPage {
             .accessibilityText(`${title}栏目`)
         }
         .width('100%')
+        .opacity(this.animStep >= this.requiredStep(title === '更多' ? 'more' : 'help') ? 1 : 0)
+        .translate({ y: this.animStep >= this.requiredStep(title === '更多' ? 'more' : 'help') ? 0 : 20 })
     }
 
     @Builder
-    private settingsAndLinks(): void {
-        Column({ space: LIST_SECTION_SPACING }) {
+    private settingsSection(): void {
+        Column({ space: 8 }) {
             Text('设置')
                 .fontSize(14)
                 .fontWeight(FontWeight.Bold)
@@ -360,12 +394,25 @@ export struct MyPage {
                 .padding({ left: LIST_SECTION_TITLE_START_PADDING })
                 .accessibilityText('设置')
             settings()
+        }
+        .width('100%')
+        .opacity(this.animStep >= this.requiredStep('settings') ? 1 : 0)
+        .translate({ y: this.animStep >= this.requiredStep('settings') ? 0 : 20 })
+        .accessibilityGroup(true)
+        .accessibilityText('设置')
+    }
+
+    @Builder
+    private settingsAndLinks(): void {
+        Column({ space: LIST_SECTION_SPACING }) {
+            this.settingsSection()
             Divider()
                 .margin({
                     top: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
                     bottom: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
                 })
                 .color($r('app.color.border'))
+                .opacity(this.animStep >= this.requiredStep('more') ? 1 : 0)
                 .accessibilityText('设置与更多栏目分隔线')
             this.actionSection('更多', this.moreItems())
             Divider()
@@ -374,11 +421,11 @@ export struct MyPage {
                     bottom: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
                 })
                 .color($r('app.color.border'))
+                .opacity(this.animStep >= this.requiredStep('help') ? 1 : 0)
                 .accessibilityText('更多与帮助栏目分隔线')
             this.actionSection('帮助', this.helpItems())
         }
         .width('100%')
-        .accessibilityGroup(true)
         .accessibilityText('设置、更多与帮助列表')
     }
 
@@ -424,6 +471,7 @@ export struct MyPage {
                                 this.appIdentity()
                                 Divider()
                                     .color($r('app.color.border'))
+                                    .opacity(this.animStep >= this.requiredStep('information') ? 1 : 0)
                                     .accessibilityText('应用名称与版本信息分隔线')
                                 this.versionInformation()
                             }
@@ -478,10 +526,12 @@ export struct MyPage {
                         this.appIdentity()
                         Divider()
                             .color($r('app.color.border'))
+                            .opacity(this.animStep >= this.requiredStep('settings') ? 1 : 0)
                             .accessibilityText('应用信息与功能列表分隔线')
                         this.settingsAndLinks()
                         Divider()
                             .color($r('app.color.border'))
+                            .opacity(this.animStep >= this.requiredStep('information') ? 1 : 0)
                             .accessibilityText('功能列表与版本信息分隔线')
                         this.versionInformation()
                         Blank().height(110).width('100%')
@@ -503,16 +553,12 @@ export struct MyPage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.background'))
-        .opacity(this.pageVisible ? 1 : 0.01)
-        .translate({ y: this.pageVisible ? 0 : 10 })
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })
         .onAppear(() => {
-            this.pageVisible = false;
-            runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
+            if (this.active) this.startPageAnimationOnce();
         })
-        .onDisAppear(() => { this.pageVisible = false; })
         .accessibilityText('我的与关于页面')
         .bindSheet($$this.showContact, this.ContactSheet(), {
             title: { title: '联系我们' },

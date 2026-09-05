@@ -42,6 +42,7 @@ import { common, Want } from '@kit.AbilityKit';
 import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { pageTransition } from '../../common/motion';
+import { pressVisualEffect } from '../../common/visualEffects';
 
 interface FriendWebParams {
   url: string;
@@ -246,13 +247,8 @@ struct friend {
           .alignItems(HorizontalAlign.Start).padding(15)
           .scale({ x: this.warningPressed ? 0.985 : 1, y: this.warningPressed ? 0.985 : 1 })
           .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-          .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-              sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-              illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-              options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-            })
-            .buildEffect())
+          .visualEffect(pressVisualEffect(
+            this.warningPressed, hdsEffect.PointLightIlluminatedType.BORDER))
           .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.warningPressed = true;
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.warningPressed = false;

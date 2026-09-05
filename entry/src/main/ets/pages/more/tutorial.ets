@@ -14,6 +14,7 @@ import { popPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
 import { pageTransition } from '../../common/motion';
+import { pressVisualEffect } from '../../common/visualEffects';
 import KnockShareGuideCard, { CardRes } from '../../component/KnockShareGuideCard';
 
 interface TutorialSection {
@@ -213,13 +214,8 @@ export struct tutorial {
     .scale({ x: this.pressedCard === section.title ? 0.985 : 1,
       y: this.pressedCard === section.title ? 0.985 : 1 })
     .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-    .visualEffect(new hdsEffect.HdsEffectBuilder()
-      .pointLight({
-        sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-        options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-      })
-      .buildEffect())
+    .visualEffect(pressVisualEffect(
+      this.pressedCard === section.title, hdsEffect.PointLightIlluminatedType.BORDER))
     .onTouch((event: TouchEvent): void => {
       if (event.type === TouchType.Down) this.pressedCard = section.title;
       else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedCard = '';
@@ -261,13 +257,8 @@ export struct tutorial {
               .scale({ x: this.pressedCard === 'project-link' ? 0.96 : 1,
                 y: this.pressedCard === 'project-link' ? 0.96 : 1 })
               .animation({ duration: 120, curve: Curve.EaseOut })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                  options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                })
-                .buildEffect())
+              .visualEffect(pressVisualEffect(this.pressedCard === 'project-link',
+                hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
               .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.pressedCard = 'project-link';
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedCard = '';
@@ -281,6 +272,15 @@ export struct tutorial {
           .borderRadius(16)
           .backgroundColor($r('app.color.v3_surface'))
           .border({ width: 1, color: $r('app.color.nd_card_border') })
+          .scale({ x: this.pressedCard === 'intro' ? 0.985 : 1,
+            y: this.pressedCard === 'intro' ? 0.985 : 1 })
+          .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+          .visualEffect(pressVisualEffect(
+            this.pressedCard === 'intro', hdsEffect.PointLightIlluminatedType.BORDER))
+          .onTouch((event: TouchEvent): void => {
+            if (event.type === TouchType.Down) this.pressedCard = 'intro';
+            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedCard = '';
+          })
           .accessibilityGroup(true)
 
           ForEach(this.sections(), (section: TutorialSection) => {
@@ -334,6 +334,15 @@ export struct tutorial {
           .borderRadius(16)
           .backgroundColor($r('app.color.v3_surface'))
           .border({ width: 1, color: $r('app.color.nd_card_border') })
+          .scale({ x: this.pressedCard === 'search-guide' ? 0.985 : 1,
+            y: this.pressedCard === 'search-guide' ? 0.985 : 1 })
+          .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+          .visualEffect(pressVisualEffect(
+            this.pressedCard === 'search-guide', hdsEffect.PointLightIlluminatedType.BORDER))
+          .onTouch((event: TouchEvent): void => {
+            if (event.type === TouchType.Down) this.pressedCard = 'search-guide';
+            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedCard = '';
+          })
           .accessibilityGroup(true)
           .accessibilityText('搜索投稿与查询教程')
 
@@ -371,6 +380,15 @@ export struct tutorial {
           .borderRadius(16)
           .backgroundColor($r('app.color.v3_surface'))
           .border({ width: 1, color: $r('app.color.nd_card_border') })
+          .scale({ x: this.pressedCard === 'share-guide' ? 0.985 : 1,
+            y: this.pressedCard === 'share-guide' ? 0.985 : 1 })
+          .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+          .visualEffect(pressVisualEffect(
+            this.pressedCard === 'share-guide', hdsEffect.PointLightIlluminatedType.BORDER))
+          .onTouch((event: TouchEvent): void => {
+            if (event.type === TouchType.Down) this.pressedCard = 'share-guide';
+            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedCard = '';
+          })
           .accessibilityGroup(true)
 
           Text('重要提示：应用展示的市场数据来自公开网络信息，仅供参考，不保证来源的即时性、完整性或准确性。')
@@ -381,6 +399,15 @@ export struct tutorial {
             .width('100%')
             .borderRadius(16)
             .backgroundColor($r('app.color.v3_warning_bg'))
+            .scale({ x: this.pressedCard === 'notice' ? 0.985 : 1,
+              y: this.pressedCard === 'notice' ? 0.985 : 1 })
+            .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+            .visualEffect(pressVisualEffect(
+              this.pressedCard === 'notice', hdsEffect.PointLightIlluminatedType.BORDER))
+            .onTouch((event: TouchEvent): void => {
+              if (event.type === TouchType.Down) this.pressedCard = 'notice';
+              else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedCard = '';
+            })
             .accessibilityText('应用数据来源重要提示')
 
           Blank().height(32)

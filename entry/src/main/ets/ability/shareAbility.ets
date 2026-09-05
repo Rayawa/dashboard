@@ -27,6 +27,7 @@ export default class ShareAbility extends ShareExtensionAbility {
                     searchText: content,
                     searchAutoRun: true,
                     openDetailOnSuccess: true,
+                    recordSearchHistory: false,
                 },
             });
         } catch (error) {

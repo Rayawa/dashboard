@@ -11,6 +11,7 @@ import { vibration } from '../../common/vibration';
 import { popPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { pageTransition } from '../../common/motion';
+import { pressVisualEffect } from '../../common/visualEffects';
 
 interface UpdateLog {
     version: string;
@@ -77,13 +78,7 @@ struct UpdateLogCard {
         .margin({ bottom: 16 })
         .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-            })
-            .buildEffect())
+        .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.pressed = true;
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressed = false;
