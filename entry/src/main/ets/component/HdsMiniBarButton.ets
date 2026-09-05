@@ -16,7 +16,6 @@ export struct HdsMiniBarButton {
   public onButtonClick: (() => void) | undefined = undefined;
   private controller: HdsTabsController = new HdsTabsController();
   @State private pressed: boolean = false;
-  @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
   @Builder
   private defaultContent(): void {
@@ -36,19 +35,16 @@ export struct HdsMiniBarButton {
     .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
     .visualEffect(new hdsEffect.HdsEffectBuilder()
       .pointLight({
-        sourceType: this.pointLight,
+        sourceType: hdsEffect.PointLightSourceType.BRIGHT,
         illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
         options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
       })
-      .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
       .buildEffect())
     .onTouch((event: TouchEvent): void => {
       if (event.type === TouchType.Down) {
         this.pressed = true;
-        this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
       } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
         this.pressed = false;
-        this.pointLight = hdsEffect.PointLightSourceType.NONE;
       }
     })
     .onClick(() => {

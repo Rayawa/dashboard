@@ -85,9 +85,6 @@ struct Dashboard {
     @State private sStationCommand: number = S_STATION_COMMAND_NONE;
     @State private sStationCommandVersion: number = 0;
     @State private sStationDetailOpen: boolean = false;
-    @State private appDetailShow: boolean = false;
-    @State private appDetailTarget: AppRouteTarget = {};
-    @State private mainContentAlpha: number = 1;
     private appsSegmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
         { text: '应用概况', accessibilityText: '应用概况' },
         { text: '应用列表', accessibilityText: '应用列表' },
@@ -229,32 +226,8 @@ struct Dashboard {
         }];
     }
 
-    private showAppDetail(target: AppRouteTarget): void {
-        this.appDetailTarget = target;
-        this.appDetailShow = true;
-        this.mainContentAlpha = 0;
-    }
-
-    private closeAppDetail(): void {
-        if (!this.appDetailShow) {
-            return;
-        }
-        vibration.backVibration();
-        this.getUIContext().animateTo({
-            duration: 350,
-            curve: Curve.Friction,
-        }, (): void => {
-            this.appDetailShow = false;
-            this.mainContentAlpha = 1;
-        });
-    }
-
-    @Builder
-    private AppDetailCover(): void {
-        AppDetailPage({
-            routeTarget: this.appDetailTarget,
-            onClose: (): void => this.closeAppDetail(),
-        })
+    private openAppDetail(target: AppRouteTarget): void {
+        pushPathSafely(this.pageStack, 'AppDetailPage', target, 'pages/Dashboard');
     }
 
     private async handlePageShow(): Promise<void> {
@@ -274,9 +247,17 @@ struct Dashboard {
         }
         const detail = AppStorage.get<AppRouteTarget>(APP_STATE_KEY_DETAIL_TARGET) ?? {};
         if (detail.appId || detail.packageName) {
-            this.appDetailTarget = detail;
-            this.appDetailShow = true;
-            this.mainContentAlpha = 0;
+            try {
+                if (this.pageStack.getIndexByName('AppDetailPage').length > 0) {
+                    this.pageStack.removeByName('AppDetailPage');
+                }
+                setTimeout((): void => {
+                    pushPathSafely(this.pageStack, 'AppDetailPage', detail, 'pages/Dashboard');
+                }, 0);
+            } catch (error) {
+                console.error('[Dashboard][pages/Dashboard][ERROR]',
+                    `恢复应用详情失败: ${JSON.stringify(error)}`);
+            }
         }
     }
 
@@ -285,10 +266,6 @@ struct Dashboard {
     }
 
     onBackPress(): boolean {
-        if (this.appDetailShow) {
-            this.closeAppDetail();
-            return true;
-        }
         if (this.appsSearchOpen) {
             vibration.backVibration();
             this.appsSearchCloseVersion++;
@@ -305,7 +282,9 @@ struct Dashboard {
 
     @Builder
     destinationBuilder(name: string, param: Object) {
-        if (name === 'AboutWebPage') {
+        if (name === 'AppDetailPage') {
+            AppDetailPage({ routeTarget: param as AppRouteTarget })
+        } else if (name === 'AboutWebPage') {
             AboutWebBuilder(param as AboutWebParams)
         } else if (name === 'AppLogPage') {
             AppLogBuilder()
@@ -351,7 +330,7 @@ struct Dashboard {
                     TabContent() {
                         HomePage({
                             scrollToTopVersion: this.mainActionIndex === MAIN_TAB_HOME ? this.mainActionVersion : 0,
-                            onOpenAppDetail: (target: AppRouteTarget): void => this.showAppDetail(target),
+                            onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[1].icon, this.tabs()[1].label))
@@ -371,7 +350,7 @@ struct Dashboard {
                             onSearchOpenChanged: (open: boolean): void => {
                                 this.appsSearchOpen = open;
                             },
-                            onOpenAppDetail: (target: AppRouteTarget): void => this.showAppDetail(target),
+                            onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[2].icon, this.tabs()[2].label))
@@ -432,7 +411,6 @@ struct Dashboard {
             .width('100%')
             .height('100%')
             .backgroundColor($r('app.color.background'))
-            .opacity(this.mainContentAlpha)
             .accessibilityGroup(true)
             .accessibilityText('Dashboard应用看板主界面')
         }
@@ -484,10 +462,10 @@ struct Dashboard {
                         },
                     },
                 },
-                systemMaterialEffect: this.selectedIndex !== MAIN_TAB_APPS ? {
+                systemMaterialEffect: {
                     materialType: hdsMaterial.MaterialType.IMMERSIVE,
                     materialLevel: this.immersiveMaterialLevel,
-                } : undefined,
+                },
             },
             content: {
                 title: {
@@ -511,12 +489,6 @@ struct Dashboard {
         .backgroundColor($r('app.color.background'))
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .accessibilityText('Dashboard应用导航')
-        .bindContentCover(this.appDetailShow, this.AppDetailCover(), {
-            modalTransition: ModalTransition.NONE,
-            onWillDismiss: (_action: DismissContentCoverAction): void => {
-                this.closeAppDetail();
-            },
-        })
         .bindSheet($$this.showWarning, this.WarningSheet(), {
             title: { title: '重要提示', subtitle: '使用前请阅读以下说明' },
             height: SheetSize.LARGE,

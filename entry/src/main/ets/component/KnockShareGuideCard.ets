@@ -119,12 +119,10 @@ export struct KnockShareSingleGuideCard {
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(new hdsEffect.HdsEffectBuilder()
             .pointLight({
-                sourceType: this.pressed ? hdsEffect.PointLightSourceType.BRIGHT :
-                    hdsEffect.PointLightSourceType.NONE,
+                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
                 illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                 options: { color: $r('app.color.diff_content'), intensity: 5, height: 96 },
             })
-            .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
             .buildEffect())
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.pressed = true;

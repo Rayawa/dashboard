@@ -25,6 +25,7 @@ export struct InteractiveLineChart {
     @Prop showTitle: boolean = true;
     @Prop chartHeight: number = 250;
     @Prop responsiveAxisFont: boolean = false;
+    @Prop enablePressEffect: boolean = true;
     @Prop @Watch('onViewportPropChanged') viewport: ChartViewportState = { zoom: 1, panRatio: 0 };
     onViewportChange?: (viewport: ChartViewportState) => void;
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
@@ -34,7 +35,7 @@ export struct InteractiveLineChart {
     @State private zoom: number = 1;
     @State private panOffset: number = 0;
     @State private pressed: boolean = false;
-    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
+    @State private pressedLegend: string = '';
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     private zoomAtGestureStart: number = 1;
     private panAtGestureStart: number = 0;
@@ -423,6 +424,22 @@ export struct InteractiveLineChart {
                 }
                 .width('100%').padding({ left: 8, right: 8, top: 7, bottom: 7 })
                 .borderRadius(10).backgroundColor($r('app.color.v3_surface_alt'))
+                .scale({ x: this.pressedLegend === chartSeries.label ? 0.98 : 1,
+                    y: this.pressedLegend === chartSeries.label ? 0.98 : 1 })
+                .animation({ duration: 120, curve: Curve.EaseOut })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                        sourceType: hdsEffect.PointLightSourceType.BRIGHT,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                    })
+                    .buildEffect())
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) this.pressedLegend = chartSeries.label;
+                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        this.pressedLegend = '';
+                    }
+                })
                 .accessibilityText(`${chartSeries.label}，${this.selectedSeriesValue(chartSeries)}`)
               }
             }, (chartSeries: LineChartSeries) => chartSeries.label)
@@ -441,16 +458,17 @@ export struct InteractiveLineChart {
             if (this.pointCount() > 0) {
                 Canvas(this.context)
                     .width('100%').height(this.chartHeight)
-                    .scale({ x: this.pressed ? 0.995 : 1, y: this.pressed ? 0.995 : 1 })
+                    .scale({ x: this.enablePressEffect && this.pressed ? 0.995 : 1,
+                        y: this.enablePressEffect && this.pressed ? 0.995 : 1 })
                     .animation({ duration: 120, curve: Curve.EaseOut })
                     .visualEffect(new hdsEffect.HdsEffectBuilder()
                         .pointLight({
-                            sourceType: this.pointLight,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                            sourceType: this.enablePressEffect ? hdsEffect.PointLightSourceType.BRIGHT :
+                                hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: this.enablePressEffect ? hdsEffect.PointLightIlluminatedType.BORDER :
+                                hdsEffect.PointLightIlluminatedType.NONE,
                             options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
                         })
-                        .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                            hdsEffect.PressShadowType.NONE)
                         .buildEffect())
                     .onReady(() => {
                         this.canvasReady = true;
@@ -466,12 +484,11 @@ export struct InteractiveLineChart {
                         }
                     })
                     .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) {
+                        if (this.enablePressEffect && event.type === TouchType.Down) {
                             this.pressed = true;
-                            this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
-                        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        } else if (this.enablePressEffect &&
+                            (event.type === TouchType.Up || event.type === TouchType.Cancel)) {
                             this.pressed = false;
-                            this.pointLight = hdsEffect.PointLightSourceType.NONE;
                         }
                         if (event.touches.length > 0 && (event.type === TouchType.Down || event.type === TouchType.Move)) {
                             this.selectAt(event.touches[0].x);

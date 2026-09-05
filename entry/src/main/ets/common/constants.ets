@@ -44,6 +44,15 @@ export const DEFAULT_NETWORK_TIMEOUT_MS = 10000;
 export const RESPONSIVE_BREAKPOINT_MEDIUM = '600vp';
 export const RESPONSIVE_BREAKPOINT_LARGE = '840vp';
 export const CONTENT_MAX_WIDTH = 1440;
+// 卡片列表页的统一布局基准，“我的”和“友情链接”共用。
+export const LIST_PAGE_HORIZONTAL_PADDING = 14;
+export const LIST_SECTION_SPACING = 14;
+export const LIST_SECTION_CONTENT_GAP = 8;
+export const LIST_SECTION_TITLE_START_PADDING = 4;
+export const LIST_ITEM_PREFIX_MARGIN = 8;
+export const LIST_ITEM_SUFFIX_MARGIN = 8;
+export const LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN = 16;
+export const LIST_SECTION_DIVIDER_VERTICAL_MARGIN = 2;
 export const CACHE_DIRECTORY_NAME = 'market_api_v3';
 export const CACHE_TTL_HOME_MS = 5 * 60 * 1000;
 export const CACHE_TTL_LIST_MS = 2 * 60 * 1000;

@@ -1,5 +1,5 @@
 import { common, Want } from '@kit.AbilityKit';
-import { curves, PromptAction, TextModifier } from '@kit.ArkUI';
+import { PromptAction, TextModifier } from '@kit.ArkUI';
 import { HdsListItemCard, IconSize, PrefixIcon, SuffixCustomBuilder } from '@kit.UIDesignKit';
 import { settings } from '../../component/settings';
 import { contact } from '../../component/contact';
@@ -7,6 +7,14 @@ import {
     APP_VERSION,
     CONTENT_MAX_WIDTH,
     CONTINUATION_ROUTE_MAIN,
+    LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
+    LIST_ITEM_PREFIX_MARGIN,
+    LIST_ITEM_SUFFIX_MARGIN,
+    LIST_PAGE_HORIZONTAL_PADDING,
+    LIST_SECTION_CONTENT_GAP,
+    LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+    LIST_SECTION_SPACING,
+    LIST_SECTION_TITLE_START_PADDING,
     mainPage,
     MAIN_TAB_MY,
     MEOW_CHANNEL_URL,
@@ -78,8 +86,8 @@ struct MoreRow {
             cardBackgroundColor: $r('app.color.v3_surface'),
             cardBorderRadius: 0,
             hoverBorderRadius: 12,
-            cardPrefixMargin: 8,
-            cardSuffixMargin: 12,
+            cardPrefixMargin: LIST_ITEM_PREFIX_MARGIN,
+            cardSuffixMargin: LIST_ITEM_SUFFIX_MARGIN,
             accessibilityOptions: {
                 accessibilityText: `进入${this.item.title}`,
             },
@@ -99,7 +107,6 @@ export struct MyPage {
     @State private versionTapCount: number = 0;
     @State private contentWidth: number = 0;
     @State private pageVisible: boolean = false;
-    @State private infoPressed: string = '';
     private versionTapTimer: number = -1;
     private restoredScroll: boolean = false;
 
@@ -238,7 +245,7 @@ export struct MyPage {
 
     @Builder
     private appIdentity(): void {
-        Column({ space: 8 }) {
+        Column({ space: LIST_SECTION_CONTENT_GAP }) {
             Image($r('app.media.app_icon'))
                 .width(100)
                 .height(100)
@@ -270,13 +277,6 @@ export struct MyPage {
             Text(`版本 ${APP_VERSION}`)
                 .fontSize(12)
                 .fontColor($r('app.color.v3_text_secondary'))
-                .scale({ x: this.infoPressed === 'version' ? 0.96 : 1,
-                    y: this.infoPressed === 'version' ? 0.96 : 1 })
-                .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-                .onTouch((event: TouchEvent): void => {
-                    if (event.type === TouchType.Down) this.infoPressed = 'version';
-                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.infoPressed = '';
-                })
                 .onClick(() => {
                     this.vibrate();
                     this.tapVersion();
@@ -301,13 +301,6 @@ export struct MyPage {
                 .fontSize(12)
                 .fontColor($r('app.color.diff_content'))
                 .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
-                .scale({ x: this.infoPressed === 'icp' ? 0.96 : 1,
-                    y: this.infoPressed === 'icp' ? 0.96 : 1 })
-                .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-                .onTouch((event: TouchEvent): void => {
-                    if (event.type === TouchType.Down) this.infoPressed = 'icp';
-                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.infoPressed = '';
-                })
                 .onClick(() => {
                     this.vibrate();
                     this.openIcp();
@@ -328,7 +321,7 @@ export struct MyPage {
                 .fontWeight(FontWeight.Bold)
                 .fontColor($r('app.color.diff_content'))
                 .width('100%')
-                .padding({ left: 4 })
+                .padding({ left: LIST_SECTION_TITLE_START_PADDING })
                 .accessibilityText(title)
             Column() {
                 ForEach(items, (item: MoreItem, index: number) => {
@@ -336,7 +329,10 @@ export struct MyPage {
                     if (index < items.length - 1) {
                         Divider()
                             .color($r('app.color.v3_chart_grid'))
-                            .margin({ left: 16, right: 16 })
+                            .margin({
+                                left: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
+                                right: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
+                            })
                             .accessibilityText(`${title}栏目分隔线`)
                     }
                 }, (item: MoreItem) => item.title)
@@ -355,22 +351,28 @@ export struct MyPage {
 
     @Builder
     private settingsAndLinks(): void {
-        Column({ space: 14 }) {
+        Column({ space: LIST_SECTION_SPACING }) {
             Text('设置')
                 .fontSize(14)
                 .fontWeight(FontWeight.Bold)
                 .fontColor($r('app.color.diff_content'))
                 .width('100%')
-                .padding({ left: 4 })
+                .padding({ left: LIST_SECTION_TITLE_START_PADDING })
                 .accessibilityText('设置')
             settings()
             Divider()
-                .margin({ top: 2, bottom: 2 })
+                .margin({
+                    top: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+                    bottom: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+                })
                 .color($r('app.color.border'))
                 .accessibilityText('设置与更多栏目分隔线')
             this.actionSection('更多', this.moreItems())
             Divider()
-                .margin({ top: 2, bottom: 2 })
+                .margin({
+                    top: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+                    bottom: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+                })
                 .color($r('app.color.border'))
                 .accessibilityText('更多与帮助栏目分隔线')
             this.actionSection('帮助', this.helpItems())
@@ -431,7 +433,7 @@ export struct MyPage {
                         }
                         .layoutWeight(4)
                         .height('100%')
-                        .padding({ left: 14, right: 14 })
+                        .padding({ left: LIST_PAGE_HORIZONTAL_PADDING, right: LIST_PAGE_HORIZONTAL_PADDING })
                         .accessibilityGroup(true)
                         .accessibilityText('固定显示的应用名称和版本信息')
 
@@ -448,7 +450,7 @@ export struct MyPage {
                                 Blank().height(110).width('100%')
                             }
                             .width('100%')
-                            .padding({ left: 14, right: 14 })
+                            .padding({ left: LIST_PAGE_HORIZONTAL_PADDING, right: LIST_PAGE_HORIZONTAL_PADDING })
                             .onAppear(() => this.restoreScrollPosition())
                         }
                         .layoutWeight(6)
@@ -460,7 +462,7 @@ export struct MyPage {
                     .layoutWeight(1)
                     .width('100%')
                     .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
-                    .padding({ left: 14, right: 14 })
+                    .padding({ left: LIST_PAGE_HORIZONTAL_PADDING, right: LIST_PAGE_HORIZONTAL_PADDING })
                     .alignItems(VerticalAlign.Top)
                     .accessibilityGroup(true)
                     .accessibilityText('左侧固定应用信息，右侧可滚动功能列表')
@@ -471,7 +473,7 @@ export struct MyPage {
                 .backgroundColor($r('app.color.background'))
             } else {
                 Scroll(this.scroller) {
-                    Column({ space: 14 }) {
+                    Column({ space: LIST_SECTION_SPACING }) {
                         Blank().height(100).width('100%')
                         this.appIdentity()
                         Divider()
@@ -486,7 +488,7 @@ export struct MyPage {
                     }
                     .width('100%')
                     .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
-                    .padding({ left: 14, right: 14 })
+                    .padding({ left: LIST_PAGE_HORIZONTAL_PADDING, right: LIST_PAGE_HORIZONTAL_PADDING })
                     .onAppear(() => this.restoreScrollPosition())
                 }
                 .width('100%')

@@ -11,7 +11,6 @@ import { getContinuationState, setContinuationView, setDetailTarget } from '../.
 import { fetchAppsPage, fetchMarketInfo } from '../../common/MarketApi';
 import { formatDateTime, formatExactCount } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
-import { APP_DETAIL_GEOMETRY_PAGE, appIconGeometryId } from '../../common/sharedTransition';
 import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
 import { vibration } from '../../common/vibration';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
@@ -69,7 +68,6 @@ struct RollingNumber {
 struct HomeStatCard {
     stat: HomeStat = { label: '', value: 0, color: $r('app.color.diff_content') };
     @State private pressed: boolean = false;
-    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
     build() {
         Column({ space: 8 }) {
@@ -96,19 +94,16 @@ struct HomeStatCard {
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(new hdsEffect.HdsEffectBuilder()
             .pointLight({
-                sourceType: this.pointLight,
+                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
                 illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                 options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
             })
-            .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
             .buildEffect())
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) {
                 this.pressed = true;
-                this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
             } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
                 this.pressed = false;
-                this.pointLight = hdsEffect.PointLightSourceType.NONE;
             }
         })
         .accessibilityGroup(true)
@@ -122,7 +117,6 @@ struct RecentAppCard {
     onOpen: (app: MarketApp) => void = () => {};
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     @State private pressed: boolean = false;
-    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
     build() {
         Row({ space: 12 }) {
@@ -169,25 +163,20 @@ struct RecentAppCard {
         .borderRadius(16)
         .backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .geometryTransition(appIconGeometryId(this.app, 'home'), { follow: true })
-        .transition(TransitionEffect.OPACITY.animation({ duration: 350, curve: Curve.Friction }))
         .scale({ x: this.pressed ? 0.975 : 1, y: this.pressed ? 0.975 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(new hdsEffect.HdsEffectBuilder()
             .pointLight({
-                sourceType: this.pointLight,
+                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
                 illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
                 options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
             })
-            .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
             .buildEffect())
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) {
                 this.pressed = true;
-                this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
             } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
                 this.pressed = false;
-                this.pointLight = hdsEffect.PointLightSourceType.NONE;
             }
         })
         .onClick(() => {
@@ -295,17 +284,10 @@ export struct HomePage {
             appId: app.app_id,
             packageName: app.pkg_name,
             previewApp: app,
-            geometryId: appIconGeometryId(app, 'home'),
-            geometryTarget: APP_DETAIL_GEOMETRY_PAGE,
         };
         try {
-            this.getUIContext().animateTo({
-                duration: 350,
-                curve: Curve.Friction,
-            }, (): void => {
-                setDetailTarget(target);
-                this.onOpenAppDetail?.(target);
-            });
+            setDetailTarget(target);
+            this.onOpenAppDetail?.(target);
         } catch (error) {
             console.error('[Dashboard][pages/main/HomePage][ERROR]', `打开应用详情失败: ${JSON.stringify(error)}`);
             showToastSafely(this.prompt, '暂时无法打开应用详情', 1800, 'HomePage');
@@ -364,13 +346,10 @@ export struct HomePage {
             .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
             .visualEffect(new hdsEffect.HdsEffectBuilder()
                 .pointLight({
-                    sourceType: this.displayCardPressed === 'total' ? hdsEffect.PointLightSourceType.BRIGHT :
-                        hdsEffect.PointLightSourceType.NONE,
+                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
                     illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                     options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
                 })
-                .pressShadow(this.displayCardPressed === 'total' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                    hdsEffect.PressShadowType.NONE)
                 .buildEffect())
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.displayCardPressed = 'total';
@@ -427,13 +406,10 @@ export struct HomePage {
             .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
             .visualEffect(new hdsEffect.HdsEffectBuilder()
                 .pointLight({
-                    sourceType: this.displayCardPressed === 'status' ? hdsEffect.PointLightSourceType.BRIGHT :
-                        hdsEffect.PointLightSourceType.NONE,
+                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
                     illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                     options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
                 })
-                .pressShadow(this.displayCardPressed === 'status' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                    hdsEffect.PressShadowType.NONE)
                 .buildEffect())
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.displayCardPressed = 'status';

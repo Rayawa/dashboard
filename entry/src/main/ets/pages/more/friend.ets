@@ -20,6 +20,14 @@ import {
   FANGZHOU_URL,
   GETRACE_URL,
   HapStoreURL,
+  LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
+  LIST_ITEM_PREFIX_MARGIN,
+  LIST_ITEM_SUFFIX_MARGIN,
+  LIST_PAGE_HORIZONTAL_PADDING,
+  LIST_SECTION_CONTENT_GAP,
+  LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+  LIST_SECTION_SPACING,
+  LIST_SECTION_TITLE_START_PADDING,
   NEXTStoreURL,
   OpenStoreURL,
   PAPER_TALK_URL,
@@ -164,8 +172,8 @@ struct friend {
       cardBackgroundColor: $r('app.color.v3_surface'),
       cardBorderRadius: 0,
       hoverBorderRadius: 12,
-      cardPrefixMargin: 8,
-      cardSuffixMargin: 12,
+      cardPrefixMargin: LIST_ITEM_PREFIX_MARGIN,
+      cardSuffixMargin: LIST_ITEM_SUFFIX_MARGIN,
       accessibilityOptions: {
         accessibilityText: site.opensExternal ? `直接打开外部链接${site.title}` : `预览${site.title}`,
       },
@@ -180,7 +188,10 @@ struct friend {
         if (index < sites.length - 1) {
           Divider()
             .color($r('app.color.v3_chart_grid'))
-            .margin({ left: 16, right: 16 })
+            .margin({
+              left: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
+              right: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
+            })
             .accessibilityText(`${label}分隔线`)
         }
       }, (item: LinkConfig) => item.title + item.url)
@@ -197,13 +208,13 @@ struct friend {
 
   @Builder
   private LinkSection(title: string, sites: LinkConfig[]): void {
-    Column({ space: 8 }) {
+    Column({ space: LIST_SECTION_CONTENT_GAP }) {
       Text(title)
         .fontSize(14)
         .fontWeight(FontWeight.Bold)
         .fontColor($r('app.color.diff_content'))
         .width('100%')
-        .padding({ left: 4 })
+        .padding({ left: LIST_SECTION_TITLE_START_PADDING })
         .accessibilityText(title)
       this.LinkList(sites, title)
     }
@@ -213,7 +224,7 @@ struct friend {
   build() {
     HdsNavDestination() {
       Scroll(){
-        Column({ space: 14 }) {
+        Column({ space: LIST_SECTION_SPACING }) {
           Blank().height(100)
           Column(){
             Text("重要提示：\n您正在访问友情链接")
@@ -237,13 +248,10 @@ struct friend {
           .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
           .visualEffect(new hdsEffect.HdsEffectBuilder()
             .pointLight({
-              sourceType: this.warningPressed ? hdsEffect.PointLightSourceType.BRIGHT :
-                hdsEffect.PointLightSourceType.NONE,
+              sourceType: hdsEffect.PointLightSourceType.BRIGHT,
               illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
               options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
             })
-            .pressShadow(this.warningPressed ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-              hdsEffect.PressShadowType.NONE)
             .buildEffect())
           .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.warningPressed = true;
@@ -251,28 +259,40 @@ struct friend {
           })
 
           Divider()
-            .margin({ top: 2, bottom: 2 })
+            .margin({
+              top: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+              bottom: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+            })
             .color($r("app.color.border"))
             .accessibilityText('重要提示与项目组站点分隔线')
 
           this.LinkSection('Harmony Gallery项目组站点矩阵', this.projectSites)
 
           Divider()
-            .margin({ top: 2, bottom: 2 })
+            .margin({
+              top: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+              bottom: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+            })
             .color($r("app.color.border"))
             .accessibilityText('项目组站点与友链应用分隔线')
 
           this.LinkSection('使用Harmony Dashboard数据的应用', this.friendApps)
 
           Divider()
-            .margin({ top: 2, bottom: 2 })
+            .margin({
+              top: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+              bottom: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+            })
             .color($r("app.color.border"))
             .accessibilityText('友链应用与友链站点分隔线')
 
           this.LinkSection('使用Harmony Dashboard数据的站点', this.friendSites)
 
           Divider()
-            .margin({ top: 2, bottom: 2 })
+            .margin({
+              top: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+              bottom: LIST_SECTION_DIVIDER_VERTICAL_MARGIN,
+            })
             .color($r("app.color.border"))
             .accessibilityText('友链站点与其他站点分隔线')
 
@@ -281,7 +301,11 @@ struct friend {
         }
         .width('100%')
         .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
-        .padding({ left: 14, right: 14, bottom: 30 })
+        .padding({
+          left: LIST_PAGE_HORIZONTAL_PADDING,
+          right: LIST_PAGE_HORIZONTAL_PADDING,
+          bottom: 30,
+        })
       }
       .height("100%")
       .width("100%")

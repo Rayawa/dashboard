@@ -7,7 +7,6 @@ import { formatCount, formatDateTime } from '../../common/format';
 import { clearSearchHistory, getSearchHistory, setSearchHistory } from '../../common/storage';
 import { parseInputSplitLinksPkgsAndAppIds } from '../../common/utils';
 import { showToastSafely } from '../../common/safeUi';
-import { APP_DETAIL_GEOMETRY_PAGE, appIconGeometryId } from '../../common/sharedTransition';
 import { contentEnterTransition } from '../../common/motion';
 import type {
     ApiDataResult, AppDetailPayload, AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo, SearchTarget,
@@ -15,7 +14,6 @@ import type {
 } from '../../common/types';
 import { vibration } from '../../common/vibration';
 
-export const SEARCH_SHARED_GEOMETRY_ID: string = 'apps_search_shared_element';
 const SEARCH_DISMISS_SWIPE_DISTANCE_VP: number = 96;
 
 interface NameSearchResult {
@@ -46,7 +44,6 @@ class SearchResultDataSource implements IDataSource {
 @Component
 export struct SearchPage {
     @Prop @Watch('onRequestVersionChanged') requestVersion: number = 0;
-    @Prop geometryId: string = SEARCH_SHARED_GEOMETRY_ID;
     onClose?: () => void;
     onOpenAppDetail?: (target: AppRouteTarget) => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
@@ -277,17 +274,10 @@ export struct SearchPage {
             packageName: targetApp.pkg_name,
             backgroundRefreshHandled: this.resultApp?.app_id === targetApp.app_id,
             previewApp: targetApp,
-            geometryId: appIconGeometryId(targetApp, 'search'),
-            geometryTarget: APP_DETAIL_GEOMETRY_PAGE,
         };
         try {
-            this.getUIContext().animateTo({
-                duration: 350,
-                curve: Curve.Friction,
-            }, (): void => {
-                setDetailTarget(target);
-                this.onOpenAppDetail?.(target);
-            });
+            setDetailTarget(target);
+            this.onOpenAppDetail?.(target);
         }
         catch (error) {
             console.error('[Dashboard][pages/main/SearchPage][ERROR]',
@@ -320,8 +310,19 @@ export struct SearchPage {
 
     @Builder
     private tagButton(value: string, prefix: string): void {
-        Button(value).height(36).margin({ right: 8, bottom: 8 }).fontSize(13)
+        Button(value, { stateEffect: false }).height(36).margin({ right: 8, bottom: 8 }).fontSize(13)
             .fontColor($r('app.color.diff_content')).backgroundColor($r('app.color.v3_surface_alt'))
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                    options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                })
+                .buildEffect())
+            .onTouch((event: TouchEvent): void => {
+                if (event.type === TouchType.Down) this.pressedControl = `tag-${value}`;
+                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedControl = '';
+            })
             .onClick(() => {
                 this.vibrate();
                 this.applySuggestion(value);
@@ -349,21 +350,16 @@ export struct SearchPage {
         .width('48%').height(104).padding({ top: 12, bottom: 10 }).borderRadius(14)
         .backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .geometryTransition(appIconGeometryId(app, 'search'), { follow: true })
-        .transition(TransitionEffect.OPACITY.animation({ duration: 350, curve: Curve.Friction }))
         .margin({ bottom: 10 })
         .scale({ x: this.pressedCardId === this.cardId(app) ? 0.97 : 1,
             y: this.pressedCardId === this.cardId(app) ? 0.97 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(new hdsEffect.HdsEffectBuilder()
             .pointLight({
-                sourceType: this.pressedCardId === this.cardId(app) ?
-                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
                 illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
                 options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
             })
-            .pressShadow(this.pressedCardId === this.cardId(app) ?
-                hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
             .buildEffect())
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.updateCardPress(app, true);
@@ -402,20 +398,15 @@ export struct SearchPage {
         .width('100%').height(96).padding(14).borderRadius(16)
         .backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .geometryTransition(appIconGeometryId(app, 'search'), { follow: true })
-        .transition(TransitionEffect.OPACITY.animation({ duration: 350, curve: Curve.Friction }))
         .scale({ x: this.pressedCardId === this.cardId(app) ? 0.975 : 1,
             y: this.pressedCardId === this.cardId(app) ? 0.975 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(new hdsEffect.HdsEffectBuilder()
             .pointLight({
-                sourceType: this.pressedCardId === this.cardId(app) ?
-                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
                 illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
                 options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
             })
-            .pressShadow(this.pressedCardId === this.cardId(app) ?
-                hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
             .buildEffect())
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.updateCardPress(app, true);
@@ -435,18 +426,16 @@ export struct SearchPage {
                             .fontColor([$r('app.color.v3_text_primary')])
                     }
                         .width(44).height(44).backgroundColor(Color.Transparent)
+                        .border({ width: 1, color: $r('app.color.border') })
                         .scale({ x: this.pressedControl === 'back' ? 0.94 : 1,
                             y: this.pressedControl === 'back' ? 0.94 : 1 })
                         .animation({ duration: 120, curve: Curve.EaseOut })
                         .visualEffect(new hdsEffect.HdsEffectBuilder()
                             .pointLight({
-                                sourceType: this.pressedControl === 'back' ?
-                                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
                                 illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
                                 options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
                             })
-                            .pressShadow(this.pressedControl === 'back' ?
-                                hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
                             .buildEffect())
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.pressedControl = 'back';
@@ -465,13 +454,10 @@ export struct SearchPage {
                         .animation({ duration: 120, curve: Curve.EaseOut })
                         .visualEffect(new hdsEffect.HdsEffectBuilder()
                             .pointLight({
-                                sourceType: this.pressedControl === 'search' ?
-                                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                                 options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
                             })
-                            .pressShadow(this.pressedControl === 'search' ?
-                                hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
                             .buildEffect())
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.pressedControl = 'search';
@@ -479,8 +465,6 @@ export struct SearchPage {
                                 this.pressedControl = '';
                             }
                         })
-                        .geometryTransition(this.geometryId, { follow: true })
-                        .transition(TransitionEffect.opacity(0.99))
                         .onChange((value: string) => this.input = value)
                         .onSubmit(() => { this.vibrate(); this.search(); })
                         .accessibilityText('搜索应用名称包名App ID或应用市场链接')
