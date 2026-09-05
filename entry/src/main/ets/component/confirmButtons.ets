@@ -10,7 +10,7 @@ import { showToastSafely } from '../common/safeUi';
 export struct confirmButtons {
     @Link isShow: boolean;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink('vibrationLevel') vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 1;
     @State countDown: number = 3;
     @State isConfirmEnabled: boolean = false;
     @State isExiting: boolean = false;

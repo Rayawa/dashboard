@@ -60,9 +60,9 @@ interface LinkConfig {
 struct friend {
   @Consume('pageStack') pageStack: NavPathStack;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.SMOOTH;
+    hdsMaterial.MaterialLevel.GENTLE;
   private isExiting: boolean = false;
   @State private warningPressed: boolean = false;
 

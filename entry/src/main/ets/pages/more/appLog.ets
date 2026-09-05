@@ -98,9 +98,9 @@ struct UpdateLogCard {
 struct appLog {
     @Consume('pageStack') pageStack: NavPathStack;
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink('vibrationLevel') vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-        hdsMaterial.MaterialLevel.SMOOTH;
+        hdsMaterial.MaterialLevel.GENTLE;
     private updateLogs: UpdateLog[] = [
         {
             version: "V3.0.0",

@@ -25,9 +25,9 @@ interface TutorialSection {
 @Component
 export struct tutorial {
   @Consume('pageStack') pageStack: NavPathStack;
-  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.SMOOTH;
+    hdsMaterial.MaterialLevel.GENTLE;
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   @State private pressedCard: string = '';
   private readonly cardSwiperResourcesPhone: CardRes[] = [{

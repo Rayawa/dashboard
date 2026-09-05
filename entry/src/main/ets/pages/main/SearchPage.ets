@@ -49,7 +49,7 @@ export struct SearchPage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private resultSource: SearchResultDataSource = new SearchResultDataSource();
     @StorageLink('username') private username: string = '';
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @StorageLink('statusBarHeight') private statusBarHeight: number = 38;
     @State private input: string = '';
     @State private loading: boolean = false;

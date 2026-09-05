@@ -36,7 +36,7 @@ export struct InteractiveLineChart {
     @State private panOffset: number = 0;
     @State private pressed: boolean = false;
     @State private pressedLegend: string = '';
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     private zoomAtGestureStart: number = 1;
     private panAtGestureStart: number = 0;
     private canvasReady: boolean = false;

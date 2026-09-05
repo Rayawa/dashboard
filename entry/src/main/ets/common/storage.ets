@@ -198,9 +198,10 @@ export async function getVibrationLevel(): Promise<number> {
         const level = (await s.get(KEY_VIBRATION_LEVEL, DEFAULT_SETTINGS.vibrationLevel)) as number;
         return level === 0 || level === 1 || level === 2 ? level : DEFAULT_SETTINGS.vibrationLevel;
     }
-    // 兼容旧版布尔开关：已有用户沿用旧选择；全新安装没有旧值时默认关闭。
+    // 兼容旧版布尔开关：已有用户沿用旧选择；全新安装没有旧值时使用新的默认值（灵动）。
+    const hasLegacySwitch = await s.has(LEGACY_KEY_VIBRATION_ENABLED);
     const legacyEnabled = (await s.get(LEGACY_KEY_VIBRATION_ENABLED, false)) as boolean;
-    const migratedLevel = legacyEnabled ? 2 : 0;
+    const migratedLevel = hasLegacySwitch ? (legacyEnabled ? 2 : 0) : DEFAULT_SETTINGS.vibrationLevel;
     await s.set(KEY_VIBRATION_LEVEL, migratedLevel);
     return migratedLevel;
 }

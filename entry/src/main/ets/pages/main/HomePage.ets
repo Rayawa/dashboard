@@ -115,7 +115,7 @@ struct HomeStatCard {
 struct RecentAppCard {
     app: MarketApp = {} as MarketApp;
     onOpen: (app: MarketApp) => void = () => {};
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @State private pressed: boolean = false;
 
     build() {
@@ -195,7 +195,7 @@ export struct HomePage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     @StorageLink('username') private username: string = '';
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @State private market: MarketInfo | undefined = undefined;
     @State private loading: boolean = false;
     @State private errorMessage: string = '';

@@ -17,8 +17,8 @@ import {
 
 @Component
 export struct settings {
-    @StorageLink('vibrationLevel') vibrationLevel: number = 0;
-    @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = 2;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 1;
+    @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = 1;
     @StorageLink('username') username: string = '';
 
     @State handlePopupTrash: boolean = false;

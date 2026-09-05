@@ -11,7 +11,7 @@ export struct warn {
   @Link isShow: boolean;
   @Prop requiresConfirmation: boolean = true;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 1;
 
   private vibrate(): void {
     if (this.vibrationLevel > 0) {

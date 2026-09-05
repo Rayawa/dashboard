@@ -208,7 +208,7 @@ export default struct KnockShareGuideCard {
     @Require cardSwiperResources: CardRes[];
     @Provide swiperIndex: number = 0;
     private indicatorController: IndicatorComponentController = new IndicatorComponentController();
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
 
     @Builder
     indicatorBuilder() {

@@ -31,12 +31,12 @@ export const APP_STATE_KEY_CONTINUATION_DETAIL_CHARTS = 'continuationDetailChart
 export const LOCAL_STORAGE_KEY_WINDOW_WIDTH = 'winWidth';
 export const LOCAL_STORAGE_KEY_WINDOW_HEIGHT = 'winHeight';
 
-// 0 = 关闭，1 = 灵动，2 = 硬朗；全新安装默认关闭振动。
-export const DEFAULT_VIBRATION_LEVEL = 0;
+// 0 = 关闭，1 = 灵动，2 = 硬朗；全新安装默认灵动振动。
+export const DEFAULT_VIBRATION_LEVEL = 1;
 export const DEFAULT_HOLD_CHECK_ENABLED = false;
 export const DEFAULT_BUTTON_RIGHT = false;
-// hdsMaterial.MaterialLevel.SMOOTH；保持为数字，避免存储层依赖 UI Design Kit。
-export const DEFAULT_IMMERSIVE_MATERIAL_LEVEL = 2;
+// hdsMaterial.MaterialLevel.GENTLE；保持为数字，避免存储层依赖 UI Design Kit。
+export const DEFAULT_IMMERSIVE_MATERIAL_LEVEL = 1;
 export const DEFAULT_WINDOW_WIDTH = 1260;
 export const DEFAULT_WINDOW_HEIGHT = 2224;
 export const DEFAULT_SCROLL_DISTANCE = 0;

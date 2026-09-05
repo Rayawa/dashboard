@@ -32,9 +32,9 @@ struct aboutWeb {
   @State loading: boolean = true;
   @State errorMessage: string = '';
   @State currentUrl: string = '';
-  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.SMOOTH;
+    hdsMaterial.MaterialLevel.GENTLE;
   private shareManager?: WebShareManager;
 
   aboutToAppear(): void {
