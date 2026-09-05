@@ -44,6 +44,22 @@ export struct InteractiveLineChart {
     private drawProgress: number = 1;
     private animationToken: number = 0;
     private animatedDataSignature: string = '';
+    private legendPressToken: number = 0;
+
+    private beginLegendPress(label: string): void {
+        const token = ++this.legendPressToken;
+        this.pressedLegend = label;
+        setTimeout((): void => {
+            if (this.legendPressToken === token && this.pressedLegend === label) {
+                this.pressedLegend = '';
+            }
+        }, 800);
+    }
+
+    private endLegendPress(): void {
+        this.legendPressToken++;
+        this.pressedLegend = '';
+    }
 
     private sourceSeries(): LineChartSeries[] {
         if (this.series.length > 0) return this.series;
@@ -432,11 +448,12 @@ export struct InteractiveLineChart {
                 .visualEffect(pressVisualEffect(this.pressedLegend === chartSeries.label,
                     hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .onTouch((event: TouchEvent): void => {
-                    if (event.type === TouchType.Down) this.pressedLegend = chartSeries.label;
+                    if (event.type === TouchType.Down) this.beginLegendPress(chartSeries.label);
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                        this.pressedLegend = '';
+                        this.endLegendPress();
                     }
                 })
+                .onClick((): void => this.endLegendPress())
                 .accessibilityText(`${chartSeries.label}，${this.selectedSeriesValue(chartSeries)}`)
               }
             }, (chartSeries: LineChartSeries) => chartSeries.label)

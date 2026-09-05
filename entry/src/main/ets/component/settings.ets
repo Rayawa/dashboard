@@ -157,8 +157,6 @@ export struct settings {
         .width('100%')
         .backgroundColor($r('app.color.v3_surface'))
         .borderRadius(16)
-        .borderWidth(0.5)
-        .borderColor($r('app.color.border'))
         .shadow({
             radius: 8,
             color: $r('app.color.v3_shadow'),

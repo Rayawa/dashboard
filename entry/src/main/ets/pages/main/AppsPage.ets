@@ -376,8 +376,6 @@ export struct AppsPage {
                 .transition(TransitionEffect.OPACITY)
                 .scale({ x: this.searchPressed ? 0.985 : 1, y: this.searchPressed ? 0.985 : 1 })
                 .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-                .visualEffect(pressVisualEffect(
-                    this.searchPressed, hdsEffect.PointLightIlluminatedType.BORDER, 6, 100))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) {
                         this.searchPressed = true;
@@ -446,8 +444,6 @@ export struct AppsPage {
                     .scale({ x: this.pressedControl === 'filter-text' ? 0.97 : 1,
                         y: this.pressedControl === 'filter-text' ? 0.97 : 1 })
                     .animation({ duration: 120, curve: Curve.EaseOut })
-                    .visualEffect(pressVisualEffect(this.pressedControl === 'filter-text',
-                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'filter-text';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -661,8 +657,6 @@ export struct AppsPage {
                 .scale({ x: this.pressedControl === 'jump-page' ? 0.97 : 1,
                     y: this.pressedControl === 'jump-page' ? 0.97 : 1 })
                 .animation({ duration: 120, curve: Curve.EaseOut })
-                .visualEffect(pressVisualEffect(this.pressedControl === 'jump-page',
-                    hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.pressedControl = 'jump-page';
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
