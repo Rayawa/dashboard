@@ -1,8 +1,9 @@
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import {
+  hdsEffect,
   HdsNavDestination,
   HdsNavDestinationTitleMode,
   ScrollEffectType,
@@ -28,6 +29,7 @@ export struct tutorial {
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
     hdsMaterial.MaterialLevel.SMOOTH;
   private prompt: PromptAction = this.getUIContext().getPromptAction();
+  @State private pressedCard: string = '';
   private readonly cardSwiperResourcesPhone: CardRes[] = [{
     text: '对方手机需支持相应的 HarmonyOS 分享能力。',
     rawfilePrefix: 'knock_share_guide/knock_share_guide_phone_',
@@ -43,7 +45,11 @@ export struct tutorial {
         description: 'S站会直接显示在应用里，适合阅读站内文章、查看动态，或者继续上次没有看完的内容。',
         items: [
           '登录状态、Cookie 和浏览记录会保留下来，下次打开通常不需要重新登录。',
-          '页面顶部下拉即可刷新；加载过程中会显示进度，遇到网络问题也会给出提示。',
+          '应用启动时会提前加载S站，首次切换到这里时通常可以直接浏览。',
+          '网页使用独立滚动区域，应用详情等悬浮窗口会直接显示在当前视图中。',
+          '打开站内应用详情后，可以使用系统返回键或侧滑返回关闭详情窗口。',
+          '加载过程中会显示进度，遇到网络问题也会给出提示。',
+          '标题栏右上角可以分享当前网页，也支持通过碰一碰或隔空传送发送当前页面。',
           '再次点一下已经选中的“S站”标签，就能回到 S站首页。',
           '页面滚动位置会被记录，从其他栏目切回来时可以继续阅读。',
           '网页内链接仍在当前页面打开，系统能够处理的外部链接则会交给对应应用。',
@@ -113,10 +119,11 @@ export struct tutorial {
       },
       {
         title: '分享应用',
-        description: '应用详情右上角提供分享入口，可以把带应用图标的 S站详情卡片发送给其他设备或应用。',
+        description: 'S站与应用详情右上角都提供分享入口，可以把当前网页或应用详情发送给其他设备与应用。',
         items: [
-          '普通系统分享、碰一碰和隔空传送都从详情页发起，分享内容指向同一款应用。',
-          '分享前需要先等详情加载完成，避免发送缺少名称或图标的卡片。',
+          '在S站分享时，应用会实时读取当前网页地址，普通系统分享、碰一碰和隔空传送都会发送这个页面。',
+          '在应用详情页分享时，分享内容会指向同一款应用，并附带应用图标。',
+          '分享应用详情前需要先等待资料加载完成，避免发送缺少名称或图标的卡片。',
           '碰一碰需要双方设备和系统版本支持对应能力，并按系统提示靠近设备。',
           '隔空传送时选择附近设备，接收方确认后即可打开详情链接。',
           '从应用市场把链接分享给本应用时，则用于查询、更新或提交收录，不是转发详情卡片。',
@@ -203,6 +210,23 @@ export struct tutorial {
     .borderRadius(16)
     .backgroundColor($r('app.color.v3_surface'))
     .border({ width: 1, color: $r('app.color.nd_card_border') })
+    .scale({ x: this.pressedCard === section.title ? 0.985 : 1,
+      y: this.pressedCard === section.title ? 0.985 : 1 })
+    .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+    .visualEffect(new hdsEffect.HdsEffectBuilder()
+      .pointLight({
+        sourceType: this.pressedCard === section.title ? hdsEffect.PointLightSourceType.BRIGHT :
+          hdsEffect.PointLightSourceType.NONE,
+        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+        options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+      })
+      .pressShadow(this.pressedCard === section.title ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+        hdsEffect.PressShadowType.NONE)
+      .buildEffect())
+    .onTouch((event: TouchEvent): void => {
+      if (event.type === TouchType.Down) this.pressedCard = section.title;
+      else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedCard = '';
+    })
     .accessibilityGroup(true)
     .accessibilityText(`${section.title}使用说明`)
   }
@@ -235,7 +259,25 @@ export struct tutorial {
               .fontSize(14)
               .fontColor($r('app.color.diff_content'))
               .decoration({ type: TextDecorationType.Underline, color: $r('app.color.diff_content') })
-              .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.96 })
+              .padding({ left: 4, right: 4, top: 3, bottom: 3 })
+              .borderRadius(8)
+              .scale({ x: this.pressedCard === 'project-link' ? 0.96 : 1,
+                y: this.pressedCard === 'project-link' ? 0.96 : 1 })
+              .animation({ duration: 120, curve: Curve.EaseOut })
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: this.pressedCard === 'project-link' ? hdsEffect.PointLightSourceType.BRIGHT :
+                    hdsEffect.PointLightSourceType.NONE,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                  options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                })
+                .pressShadow(this.pressedCard === 'project-link' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                  hdsEffect.PressShadowType.NONE)
+                .buildEffect())
+              .onTouch((event: TouchEvent): void => {
+                if (event.type === TouchType.Down) this.pressedCard = 'project-link';
+                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedCard = '';
+              })
               .onClick(() => this.openProjectSite())
               .accessibilityText('打开Dashboard项目网站')
           }
@@ -313,11 +355,11 @@ export struct tutorial {
               .fontColor($r('app.color.v3_text_primary'))
               .width('100%')
               .accessibilityText('所有入口统一进入原生应用详情模板')
-            Text('碰一碰与隔空传送可以在应用详情页使用。')
+            Text('碰一碰与隔空传送可以在S站和应用详情页使用。')
               .fontSize(13)
               .fontColor($r('app.color.v3_text_secondary'))
             KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone })
-            Text('使用隔空传送时，先在应用详情页打开分享，再选择附近设备，即可发送带应用图标的 S站详情卡片。')
+            Text('使用隔空传送时，可在S站发送当前网页，也可在应用详情页发送带应用图标的详情卡片。')
               .fontSize(13)
               .lineHeight(20)
               .fontColor($r('app.color.v3_text_secondary'))

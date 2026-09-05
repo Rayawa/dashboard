@@ -2,13 +2,14 @@ import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { CONTINUATION_ROUTE_MAIN, MAIN_TAB_APPS } from '../../common/constants';
 import {
-    getContinuationState, hasPendingSearchTarget, setContinuationView, setDetailTarget,
+    getContinuationState, hasPendingSearchTarget, setContinuationAppsListState, setContinuationView, setDetailTarget,
 } from '../../common/appState';
+import type { AppsListContinuationState } from '../../common/appState';
 import { fetchAppsPage } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
-import { appIconGeometryId } from '../../common/sharedTransition';
+import { APP_DETAIL_GEOMETRY_ICON, appIconGeometryId } from '../../common/sharedTransition';
 import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
 import { vibration } from '../../common/vibration';
 import { OverviewSection } from '../../component/charts/OverviewSection';
@@ -46,7 +47,7 @@ struct AppTableRow {
                         .alt($r('app.media.startIcon'))
                         .accessibilityText(`${this.app.name || '未知应用'}图标`)
                         .geometryTransition(appIconGeometryId(this.app, 'apps'), { follow: true })
-                        .transition(TransitionEffect.OPACITY)
+                        .transition(TransitionEffect.OPACITY.animation({ duration: 350, curve: Curve.Friction }))
                 }
                     .width(34).height(34).borderRadius(8).clip(true)
                 Column({ space: 2 }) {
@@ -83,11 +84,14 @@ struct AppTableRow {
         .backgroundColor(this.index % 2 === 0 ? $r('app.color.v3_surface_alt') : $r('app.color.v3_surface'))
         .scale({ x: this.pressed ? 0.99 : 1, y: this.pressed ? 0.99 : 1 })
         .animation({ curve: Curve.EaseOut, duration: 120 })
-        .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-            sourceType: this.pointLight,
-            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-            options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-        }).buildEffect())
+        .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+                sourceType: this.pointLight,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+            })
+            .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+            .buildEffect())
         .onTouch((event: TouchEvent) => {
             if (event.type === TouchType.Down) {
                 this.pressed = true;
@@ -108,13 +112,13 @@ struct AppTableRow {
 
 @Component
 export struct AppsPage {
-    @Consume('pageStack') private pageStack: NavPathStack;
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     @Prop @Watch('onSearchCommandVersionChanged') searchCommandVersion: number = 0;
     @Prop @Watch('onRequestVersionChanged') requestVersion: number = 0;
     @Prop @Watch('onSearchCloseVersionChanged') searchCloseVersion: number = 0;
     onSearchVisibilityChanged?: (visible: boolean) => void;
     onSearchOpenChanged?: (open: boolean) => void;
+    onOpenAppDetail?: (target: AppRouteTarget) => void;
     @Link selectedIndexes: number[];
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private pageScroller: Scroller = new Scroller();
@@ -136,7 +140,6 @@ export struct AppsPage {
     @State private filterText: string = '';
     @State private appliedFilterText: string = '';
     @State private tableViewportWidth: number = 0;
-    @State private transitionEffect: TransitionEffect = TransitionEffect.IDENTITY;
     @State private pageVisible: boolean = false;
     @State private searchPressed: boolean = false;
     @State private searchPointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
@@ -145,6 +148,38 @@ export struct AppsPage {
     private restoredView: boolean = false;
     private reloadAfterCurrent: boolean = false;
     private reloadForce: boolean = false;
+
+    private validIndex(value: number, count: number): number {
+        const index = Number(value);
+        return Number.isInteger(index) && index >= 0 && index < count ? index : 0;
+    }
+
+    private restoreContinuationListState(): void {
+        const state = getContinuationState().appsListState;
+        const restoredPage = Number(state.page);
+        this.page = Number.isInteger(restoredPage) && restoredPage > 0 ? restoredPage : 1;
+        this.pageSizeIndex = this.validIndex(state.pageSizeIndex, this.pageSizeChoices().length);
+        this.typeIndex = this.validIndex(state.typeIndex, this.typeOptions().length);
+        this.filterIndex = this.validIndex(state.filterIndex, this.filterChoices().length);
+        this.filterText = typeof state.filterText === 'string' ? state.filterText : '';
+        this.appliedFilterText = typeof state.appliedFilterText === 'string' ? state.appliedFilterText : '';
+        this.sortIndex = this.validIndex(state.sortIndex, this.sortChoices().length);
+        this.descending = state.descending !== false;
+    }
+
+    private recordListState(): void {
+        const state: AppsListContinuationState = {
+            page: this.page,
+            pageSizeIndex: this.pageSizeIndex,
+            typeIndex: this.typeIndex,
+            filterIndex: this.filterIndex,
+            filterText: this.filterText,
+            appliedFilterText: this.appliedFilterText,
+            sortIndex: this.sortIndex,
+            descending: this.descending,
+        };
+        setContinuationAppsListState(state);
+    }
 
     private onScrollToTopVersionChanged(): void {
         if (this.scrollToTopVersion <= 0) return;
@@ -284,6 +319,7 @@ export struct AppsPage {
         this.vibrate();
         this.appliedFilterText = this.filterText.trim();
         this.page = 1;
+        this.recordListState();
         this.load(false);
     }
     private clearFilter(): void {
@@ -292,6 +328,7 @@ export struct AppsPage {
         this.filterText = '';
         this.appliedFilterText = '';
         this.page = 1;
+        this.recordListState();
         this.load(false);
     }
     private jump(): void {
@@ -302,6 +339,7 @@ export struct AppsPage {
             return;
         }
         this.page = target;
+        this.recordListState();
         this.load(false);
     }
     private openDetail(app: MarketApp): void {
@@ -310,16 +348,15 @@ export struct AppsPage {
             packageName: app.pkg_name,
             previewApp: app,
             geometryId: appIconGeometryId(app, 'apps'),
+            geometryTarget: APP_DETAIL_GEOMETRY_ICON,
         };
-        this.transitionEffect = TransitionEffect.OPACITY
-            .combine(TransitionEffect.scale({ x: 0.9, y: 0.9 }))
-            .animation({ curve: curves.interpolatingSpring(0, 1, 195, 23) });
         try {
             this.getUIContext().animateTo({
-                curve: curves.interpolatingSpring(0, 1, 328, 36),
+                duration: 350,
+                curve: Curve.Friction,
             }, (): void => {
                 setDetailTarget(target);
-                this.pageStack.pushPath({ name: 'AppDetailPage', param: target }, false);
+                this.onOpenAppDetail?.(target);
             });
         }
         catch (error) {
@@ -356,11 +393,15 @@ export struct AppsPage {
                 .transition(TransitionEffect.OPACITY)
                 .scale({ x: this.searchPressed ? 0.985 : 1, y: this.searchPressed ? 0.985 : 1 })
                 .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-                .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-                    sourceType: this.searchPointLight,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                    options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-                }).buildEffect())
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                        sourceType: this.searchPointLight,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                        options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+                    })
+                    .pressShadow(this.searchPressed ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                        hdsEffect.PressShadowType.NONE)
+                    .buildEffect())
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) {
                         this.searchPressed = true;
@@ -388,6 +429,7 @@ export struct AppsPage {
                         this.vibrate();
                         this.typeIndex = index;
                         this.page = 1;
+                        this.recordListState();
                         this.load(false);
                     })
                     .accessibilityText('筛选全部类型鸿蒙应用或元服务')
@@ -397,11 +439,15 @@ export struct AppsPage {
                     .onSelect((index: number) => {
                         this.vibrate();
                         this.filterIndex = index;
+                        this.recordListState();
                     })
                     .accessibilityText('选择筛选字段')
                 TextInput({ text: this.filterText, placeholder: '输入筛选内容' }).height(42).margin(4)
                     .constraintSize({ minWidth: 170, maxWidth: 280 }).backgroundColor($r('app.color.v3_surface'))
-                    .onChange((value: string) => this.filterText = value).onSubmit(() => {
+                    .onChange((value: string) => {
+                        this.filterText = value;
+                        this.recordListState();
+                    }).onSubmit(() => {
                         this.vibrate();
                         this.applyFilter();
                     })
@@ -422,6 +468,7 @@ export struct AppsPage {
                         this.vibrate();
                         this.sortIndex = index;
                         this.page = 1;
+                        this.recordListState();
                         this.load(false);
                     })
                     .accessibilityText('选择应用列表排序字段')
@@ -431,6 +478,7 @@ export struct AppsPage {
                         this.vibrate();
                         this.pageSizeIndex = index;
                         this.page = 1;
+                        this.recordListState();
                         this.load(false);
                     })
                     .accessibilityText(`选择每页显示数量，当前每页${this.pageSize()}条`)
@@ -440,6 +488,7 @@ export struct AppsPage {
                         this.vibrate();
                         this.descending = !this.descending;
                         this.page = 1;
+                        this.recordListState();
                         this.load(false);
                     })
                     .accessibilityText(this.descending ? '当前降序，点击改为升序' : '当前升序，点击改为降序')
@@ -501,13 +550,23 @@ export struct AppsPage {
         Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
             Button('上一页').margin(4).enabled(this.page > 1 && !this.loading)
                 .backgroundColor($r('app.color.v3_surface_alt')).fontColor($r('app.color.v3_text_primary'))
-                .onClick(() => { this.vibrate(); this.page--; this.load(false); }).accessibilityText('上一页')
+                .onClick(() => {
+                    this.vibrate();
+                    this.page--;
+                    this.recordListState();
+                    this.load(false);
+                }).accessibilityText('上一页')
             Text(`第 ${this.page} / ${this.totalPages()} 页`).fontSize(13)
                 .fontColor($r('app.color.v3_text_secondary')).margin(8)
                 .accessibilityText(`第${this.page}页，共${this.totalPages()}页`)
             Button('下一页').margin(4).enabled(this.page < this.totalPages() && !this.loading)
                 .backgroundColor($r('app.color.diff_content'))
-                .onClick(() => { this.vibrate(); this.page++; this.load(false); }).accessibilityText('下一页')
+                .onClick(() => {
+                    this.vibrate();
+                    this.page++;
+                    this.recordListState();
+                    this.load(false);
+                }).accessibilityText('下一页')
             TextInput({ text: this.jumpText, placeholder: '页码' }).type(InputType.Number)
                 .width(84).height(40).margin(4).backgroundColor($r('app.color.v3_surface'))
                 .onChange((value: string) => this.jumpText = value).onSubmit(() => {
@@ -590,6 +649,7 @@ export struct AppsPage {
                     requestVersion: this.requestVersion,
                     geometryId: SEARCH_SHARED_GEOMETRY_ID,
                     onClose: (): void => this.closeSearch(),
+                    onOpenAppDetail: (target: AppRouteTarget): void => this.onOpenAppDetail?.(target),
                 })
                 .width('100%').height('100%').zIndex(100)
                 .transition(TransitionEffect.OPACITY)
@@ -598,12 +658,12 @@ export struct AppsPage {
         .width('100%').height('100%').backgroundColor($r('app.color.background'))
         .opacity(this.pageVisible ? 1 : 0.01)
         .translate({ y: this.pageVisible ? 0 : 10 })
-        .transition(this.transitionEffect)
         .onAppear(() => {
             this.pageVisible = false;
             runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
             if (!this.restoredView) {
                 this.restoredView = true;
+                this.restoreContinuationListState();
                 const continuation = getContinuationState();
                 this.selectedIndexes = [continuation.appsViewIndex === 1 ? 1 : 0];
             }

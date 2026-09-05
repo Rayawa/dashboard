@@ -1,10 +1,13 @@
+import { common } from '@kit.AbilityKit';
 import { webview } from '@kit.ArkWeb';
 import {
     customUserAgent,
     CONTINUATION_ROUTE_MAIN,
     MAIN_TAB_S_STATION,
     SBaseURL,
+    S_STATION_COMMAND_BACK,
     S_STATION_COMMAND_HOME,
+    S_STATION_COMMAND_SHARE,
     S_STATION_COMMAND_SCROLL_TOP,
 } from '../../common/constants';
 import {
@@ -15,13 +18,28 @@ import {
 } from '../../common/appState';
 import { vibration } from '../../common/vibration';
 import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
+import { WebShareManager } from '../../common/shareControl';
+import type { WebShareData } from '../../common/shareControl';
+
+class SStationWebBridge {
+    private onDetailOpenChanged: (open: boolean) => void;
+
+    constructor(onDetailOpenChanged: (open: boolean) => void) {
+        this.onDetailOpenChanged = onDetailOpenChanged;
+    }
+
+    setAppDetailOpen(open: boolean): void {
+        this.onDetailOpenChanged(open);
+    }
+}
 
 @Component
 export struct SStationPage {
     private controller: webview.WebviewController = new webview.WebviewController();
-    private scroller: Scroller = new Scroller();
     @Prop command: number = 0;
     @Prop @Watch('onCommandVersionChanged') commandVersion: number = 0;
+    @Prop @Watch('onActiveChanged') active: boolean = false;
+    onDetailOpenChanged?: (open: boolean) => void;
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     @State private progress: number = 0;
     @State private loading: boolean = true;
@@ -31,6 +49,10 @@ export struct SStationPage {
     @State private pageVisible: boolean = false;
     private pendingScrollDistance: number = 0;
     private restoredScroll: boolean = false;
+    private shareManager?: WebShareManager;
+    private webBridge: SStationWebBridge = new SStationWebBridge((open: boolean): void => {
+        this.onDetailOpenChanged?.(open);
+    });
 
     aboutToAppear(): void {
         this.pageVisible = false;
@@ -56,7 +78,7 @@ export struct SStationPage {
         this.restoredScroll = true;
         setTimeout((): void => {
             try {
-                this.scroller.scrollTo({ xOffset: 0, yOffset: this.pendingScrollDistance, animation: { duration: 0 } });
+                this.controller.scrollTo(0, this.pendingScrollDistance, 0);
             } catch (error) {
                 console.warn('[Dashboard][pages/main/SStationPage][WARN]',
                     `恢复S站滚动位置失败: ${JSON.stringify(error)}`);
@@ -64,19 +86,139 @@ export struct SStationPage {
         }, 80);
     }
 
+    private installAppDetailObserver(): void {
+        const script = `(() => {
+            const notifyNative = () => {
+                const modal = document.getElementById('appDetailModal');
+                const open = !!modal && !modal.classList.contains('hidden');
+                window.dashboardNative?.setAppDetailOpen(open);
+            };
+            if (window.__dashboardNativeDetailObserver) {
+                notifyNative();
+                return;
+            }
+            const install = () => {
+                const modal = document.getElementById('appDetailModal');
+                if (!modal) {
+                    notifyNative();
+                    return;
+                }
+                const observer = new MutationObserver(notifyNative);
+                observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+                window.__dashboardNativeDetailObserver = observer;
+                window.addEventListener('popstate', () => {
+                    const params = new URLSearchParams(window.location.search);
+                    if (!params.has('app_id') && !params.has('pkg_name') &&
+                        !modal.classList.contains('hidden')) {
+                        modal.classList.add('hidden');
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                    notifyNative();
+                });
+                notifyNative();
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', install, { once: true });
+            } else {
+                install();
+            }
+        })();`;
+        this.controller.runJavaScript(script).catch((error: Error): void => {
+            console.warn('[Dashboard][pages/main/SStationPage][WARN]', `安装详情弹窗监听失败: ${error.message}`);
+        });
+    }
+
+    private closeCurrentAppDetail(): void {
+        try {
+            if (this.controller.accessBackward()) {
+                this.controller.backward();
+                return;
+            }
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                `S站详情返回历史失败，尝试直接关闭弹窗: ${JSON.stringify(error)}`);
+        }
+        const script = `(() => {
+            const modal = document.getElementById('appDetailModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+                const url = new URL(window.location.href);
+                url.searchParams.delete('app_id');
+                url.searchParams.delete('pkg_name');
+                window.history.replaceState({}, '', url);
+            }
+            window.dashboardNative?.setAppDetailOpen(false);
+        })();`;
+        this.controller.runJavaScript(script).catch((error: Error): void => {
+            console.warn('[Dashboard][pages/main/SStationPage][WARN]', `直接关闭S站详情弹窗失败: ${error.message}`);
+        });
+    }
+
+    private liveShareData(): WebShareData {
+        let url = this.currentUrl || SBaseURL.toString();
+        try {
+            const liveUrl = this.controller.getUrl();
+            if (liveUrl && liveUrl !== 'about:blank') {
+                url = liveUrl;
+                this.currentUrl = liveUrl;
+                setContinuationPageUrl(liveUrl);
+            }
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                `读取S站实时分享地址失败，使用已记录地址: ${JSON.stringify(error)}`);
+        }
+        return {
+            url,
+            title: 'S站｜Dashboard应用看板',
+            description: url,
+        };
+    }
+
+    private syncShareData(): void {
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+        const data = this.liveShareData();
+        this.shareManager = WebShareManager.getInstance(context);
+        this.shareManager.updateShareData(
+            data.url,
+            data.title,
+            data.description,
+            (): WebShareData => this.liveShareData(),
+        );
+        this.shareManager.enablePassiveShare();
+    }
+
+    private showShare(): void {
+        this.syncShareData();
+        this.shareManager?.showSystemShare();
+    }
+
+    private onActiveChanged(): void {
+        if (this.active) {
+            this.syncShareData();
+            return;
+        }
+        this.shareManager?.clearShareDataProvider();
+        this.shareManager?.disablePassiveShare();
+    }
+
     private onCommandVersionChanged(): void {
         if (this.commandVersion <= 0) {
             return;
         }
         try {
-            if (this.command === S_STATION_COMMAND_SCROLL_TOP) {
-                this.scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 300 } });
+            if (this.command === S_STATION_COMMAND_BACK) {
+                this.closeCurrentAppDetail();
+            } else if (this.command === S_STATION_COMMAND_SCROLL_TOP) {
+                this.controller.scrollTo(0, 0, 300);
+            } else if (this.command === S_STATION_COMMAND_SHARE) {
+                this.showShare();
             } else if (this.command === S_STATION_COMMAND_HOME) {
                 this.errorMessage = '';
                 this.loading = true;
                 this.currentUrl = SBaseURL.toString();
                 setContinuationPageUrl(this.currentUrl);
-                this.scroller.scrollTo({ xOffset: 0, yOffset: 0, animation: { duration: 0 } });
+                this.controller.scrollTo(0, 0, 0);
                 this.controller.loadUrl(this.currentUrl);
                 setContinuationScrollDistance(0);
             }
@@ -87,90 +229,96 @@ export struct SStationPage {
 
     build() {
         Stack({ alignContent: Alignment.Top }) {
-            Scroll(this.scroller) {
-                Column() {
-                    Blank()
-                        .height(100)
-                        .width('100%')
-                        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-                        .accessibilityText('S站标题栏安全区域')
-                    Web({
-                        src: this.initialUrl,
+            Column() {
+                Blank()
+                    .height(100)
+                    .width('100%')
+                    .accessibilityText('S站标题栏安全区域')
+                Web({
+                    src: this.initialUrl,
+                    controller: this.controller,
+                    renderMode: RenderMode.SYNC_RENDER,
+                })
+                    .id('HmDashboard_SStation')
+                    .width('100%')
+                    .layoutWeight(1)
+                    .layoutMode(WebLayoutMode.NONE)
+                    .overScrollMode(OverScrollMode.NEVER)
+                    .backgroundColor($r('app.color.s_station_placeholder'))
+                    .javaScriptProxy({
+                        object: this.webBridge,
+                        name: 'dashboardNative',
+                        methodList: ['setAppDetailOpen'],
                         controller: this.controller,
-                        renderMode: RenderMode.SYNC_RENDER,
                     })
-                        .id('HmDashboard_SStation')
-                        .width('100%')
-                        .layoutMode(WebLayoutMode.FIT_CONTENT)
-                        .overScrollMode(OverScrollMode.NEVER)
-                        .backgroundColor($r('app.color.s_station_placeholder'))
-                        .onControllerAttached(() => {
-                            try {
-                                this.controller.setCustomUserAgent(customUserAgent);
-                            } catch (error) {
-                                console.warn('[Dashboard][pages/main/SStationPage][WARN]',
-                                    `初始化ArkWeb失败: ${JSON.stringify(error)}`);
-                            }
-                        })
-                        .onNavigationEntryCommitted((event) => {
-                            if (event?.url && event.url !== 'about:blank') {
-                                this.currentUrl = event.url;
-                                setContinuationPageUrl(event.url);
-                            }
-                        })
-                        .onPageBegin((event) => {
-                            this.loading = true;
-                            this.errorMessage = '';
-                            if (event?.url && event.url !== 'about:blank') {
-                                this.currentUrl = event.url;
-                                setContinuationPageUrl(event.url);
-                            }
-                        })
-                        .onPageEnd((event) => {
-                            this.loading = false;
-                            this.errorMessage = '';
-                            if (event?.url && event.url !== 'about:blank') {
-                                this.currentUrl = event.url;
-                                setContinuationPageUrl(event.url);
-                                this.restoreScrollPosition();
-                            }
-                        })
-                        .onErrorReceive((event) => {
-                            if (!event) {
-                                return;
-                            }
-                            try {
-                                if (!event.request.isMainFrame()) {
-                                    return;
-                                }
-                            } catch (error) {
-                                console.warn('[Dashboard][pages/main/SStationPage][WARN]',
-                                    `无法判断网页错误来源，忽略本次错误提示: ${JSON.stringify(error)}`);
-                                return;
-                            }
-                            this.loading = false;
-                            this.errorMessage = '网页主页面加载失败，请检查网络连接后重试';
+                    .onControllerAttached(() => {
+                        try {
+                            this.controller.setCustomUserAgent(customUserAgent);
+                        } catch (error) {
                             console.warn('[Dashboard][pages/main/SStationPage][WARN]',
-                                `S站主页面加载失败: ${JSON.stringify(event.error)}`);
-                        })
-                        .onProgressChange((event) => {
-                            this.progress = event.newProgress;
-                        })
-                        .metaViewport(true)
-                        .domStorageAccess(true)
-                        .darkMode(WebDarkMode.Auto)
-                        .forceDarkAccess(true)
-                        .accessibilityText('S站网页内容')
-                }
-                .width('100%')
-                .backgroundColor($r('app.color.s_station_placeholder'))
-              }
-              .width('100%').height('100%').scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
-              .onDidScroll((): void => {
-                  setMainTab(MAIN_TAB_S_STATION);
-                  setContinuationScrollDistance(this.scroller.currentOffset().yOffset);
-              })
-              .accessibilityText('可滚动的S站网页视图')
+                                `初始化ArkWeb失败: ${JSON.stringify(error)}`);
+                        }
+                    })
+                    .onNavigationEntryCommitted((event) => {
+                        if (event?.url && event.url !== 'about:blank') {
+                            this.currentUrl = event.url;
+                            setContinuationPageUrl(event.url);
+                        }
+                    })
+                    .onPageBegin((event) => {
+                        this.loading = true;
+                        this.errorMessage = '';
+                        if (event?.url && event.url !== 'about:blank') {
+                            this.currentUrl = event.url;
+                            setContinuationPageUrl(event.url);
+                        }
+                    })
+                    .onPageEnd((event) => {
+                        this.loading = false;
+                        this.errorMessage = '';
+                        if (event?.url && event.url !== 'about:blank') {
+                            this.currentUrl = event.url;
+                            setContinuationPageUrl(event.url);
+                            this.restoreScrollPosition();
+                        }
+                        this.installAppDetailObserver();
+                        if (this.active) this.syncShareData();
+                    })
+                    .onErrorReceive((event) => {
+                        if (!event) {
+                            return;
+                        }
+                        try {
+                            if (!event.request.isMainFrame()) {
+                                return;
+                            }
+                        } catch (error) {
+                            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                                `无法判断网页错误来源，忽略本次错误提示: ${JSON.stringify(error)}`);
+                            return;
+                        }
+                        this.loading = false;
+                        this.errorMessage = '网页主页面加载失败，请检查网络连接后重试';
+                        console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                            `S站主页面加载失败: ${JSON.stringify(event.error)}`);
+                    })
+                    .onProgressChange((event) => {
+                        this.progress = event.newProgress;
+                    })
+                    .onScroll((event) => {
+                        if (!this.active) return;
+                        setMainTab(MAIN_TAB_S_STATION);
+                        setContinuationScrollDistance(event.yOffset);
+                    })
+                    .domStorageAccess(true)
+                    .darkMode(WebDarkMode.Auto)
+                    .forceDarkAccess(true)
+                    .accessibilityText('S站网页内容')
+            }
+            .width('100%')
+            .height('100%')
+            .backgroundColor($r('app.color.s_station_placeholder'))
+            .accessibilityText('使用内部滚动的S站网页视图')
 
             if (this.loading) {
                 Progress({ value: this.progress, total: 100 })
@@ -227,4 +375,5 @@ export struct SStationPage {
         .accessibilityGroup(true)
         .accessibilityText('S站页面')
     }
+
 }

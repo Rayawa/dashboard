@@ -25,6 +25,9 @@ export const APP_STATE_KEY_APPS_VIEW = 'appsDetailViewIndex';
 export const APP_STATE_KEY_CONTINUATION_ROUTE = 'continuationRoute';
 export const APP_STATE_KEY_CONTINUATION_DETAIL_ID = 'continuationDetailAppId';
 export const APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE = 'continuationDetailPackage';
+export const APP_STATE_KEY_CONTINUATION_APPS_LIST = 'continuationAppsList';
+export const APP_STATE_KEY_CONTINUATION_OVERVIEW = 'continuationOverview';
+export const APP_STATE_KEY_CONTINUATION_DETAIL_CHARTS = 'continuationDetailCharts';
 export const LOCAL_STORAGE_KEY_WINDOW_WIDTH = 'winWidth';
 export const LOCAL_STORAGE_KEY_WINDOW_HEIGHT = 'winHeight';
 
@@ -54,8 +57,10 @@ export const MAIN_TAB_APPS = 2;
 export const MAIN_TAB_MY = 3;
 export const MAIN_TAB_DEFAULT = MAIN_TAB_HOME;
 export const S_STATION_COMMAND_NONE = 0;
+export const S_STATION_COMMAND_SHARE = 1;
 export const S_STATION_COMMAND_SCROLL_TOP = 2;
 export const S_STATION_COMMAND_HOME = 3;
+export const S_STATION_COMMAND_BACK = 4;
 export const CONTINUATION_ROUTE_MAIN = 'main';
 export const CONTINUATION_ROUTE_DETAIL = 'detail';
 
@@ -67,11 +72,20 @@ export const SBaseURL = new URL("https://ddns.shenjack.top:10003/");
 export const S_SITE_PUBLIC_BASE_URL = 'https://shenjack.top:10003/';
 
 // 友情链接
-export const HapStoreURL = new URL("https://hdc.osbdf.com/");
+export const PROJECT_HOME_URL = new URL("https://dashboard.rayawa.top/");
+export const S_DASHBOARD_URL = new URL("dashboard", SBaseURL);
+export const EGUI_URL = new URL("https://shenjack.top:10003/egui/");
+export const T_DASHBOARD_URL = new URL("dashboard", TBaseURL);
+export const GETRACE_URL = new URL("https://appgallery.huawei.com/app/detail?id=cn.biandangroup.getrace");
+export const SUBSCRIPTION_URL = new URL("https://appgallery.huawei.com/app/detail?id=com.xxtstudio.accountDL");
+export const SUBSCRIPTION_ATOMIC_URL = new URL("https://appgallery.huawei.com/app/detail?id=com.atomicservice.6917600885144283966");
+export const PAPER_TALK_URL = new URL("https://appgallery.huawei.com/app/detail?id=com.my.papertalk");
+export const HapStoreURL = new URL("https://sydxky.cn/");
 export const AGstatisticsURL = new URL("https://appgallery.info/index.html");
-export const dztapURL = new URL("https://dztap.com/app.html");
+export const dztapURL = new URL("https://home.dztap.com/index");
 export const OpenStoreURL = new URL("https://next.betahub.tech/");
 export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
+export const FANGZHOU_URL = new URL("https://fangzhou.club/");
 
 // dev
 export const APP_VERSION: string = "3.0.0";

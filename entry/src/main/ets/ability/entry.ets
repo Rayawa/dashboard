@@ -1,4 +1,5 @@
 import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { webview } from '@kit.ArkWeb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { loadPersistedState } from '../common/storage';
@@ -10,13 +11,22 @@ import {
     DEFAULT_WINDOW_WIDTH,
     LOCAL_STORAGE_KEY_WINDOW_HEIGHT,
     LOCAL_STORAGE_KEY_WINDOW_WIDTH,
+    SBaseURL,
 } from '../common/constants';
 import {
+    defaultAppsListState,
+    defaultDetailChartsState,
+    defaultOverviewState,
     getContinuationState,
     setContinuationState,
     setDetailTarget,
     setMainTab,
     setSearchTarget,
+} from '../common/appState';
+import type {
+    AppsListContinuationState,
+    DetailChartsContinuationState,
+    OverviewContinuationState,
 } from '../common/appState';
 import { initializeCache } from '../common/CacheService';
 
@@ -28,8 +38,13 @@ export default class EntryAbility extends UIAbility {
     private startupTask: Promise<void> = Promise.resolve();
 
     onContinue(wantParam: Record<string, Object>): AbilityConstant.OnContinueResult {
-        const targetVersion = Number(wantParam['version'] ?? 0);
-        if (targetVersion < CONTINUATION_MIN_VERSION_CODE) {
+        // `version` is supplied by the distributed framework, but it can be absent for
+        // some continuation entry points. An absent value means "unknown", not version 0.
+        // Only reject a target when the framework supplied a valid, positive old version.
+        const rawTargetVersion = wantParam['version'];
+        const targetVersion = Number(rawTargetVersion);
+        if (rawTargetVersion !== undefined && targetVersion > 0 &&
+            targetVersion < CONTINUATION_MIN_VERSION_CODE) {
             console.warn('[Dashboard][ability/entry][WARN]',
                 `目标设备应用版本过低，拒绝接续: ${targetVersion} < ${CONTINUATION_MIN_VERSION_CODE}`);
             return AbilityConstant.OnContinueResult.MISMATCH;
@@ -43,6 +58,9 @@ export default class EntryAbility extends UIAbility {
         wantParam['detailAppId'] = current.detailAppId;
         wantParam['detailPackage'] = current.detailPackageName;
         wantParam['appsViewIndex'] = current.appsViewIndex;
+        wantParam['appsListState'] = current.appsListState;
+        wantParam['overviewState'] = current.overviewState;
+        wantParam['detailChartsState'] = current.detailChartsState;
         return AbilityConstant.OnContinueResult.AGREE;
     }
     private restoreContinuationParams(want: Want, launchParam?: AbilityConstant.LaunchParam): void {
@@ -55,6 +73,10 @@ export default class EntryAbility extends UIAbility {
             const detailAppId = want.parameters?.['detailAppId'] as string || '';
             const detailPackageName = want.parameters?.['detailPackage'] as string || '';
             const appsViewIndex = want.parameters?.['appsViewIndex'] as number || 0;
+            const appsListState = want.parameters?.['appsListState'] as AppsListContinuationState | undefined;
+            const overviewState = want.parameters?.['overviewState'] as OverviewContinuationState | undefined;
+            const detailChartsState =
+                want.parameters?.['detailChartsState'] as DetailChartsContinuationState | undefined;
             setContinuationState({
                 pageUrl: want.parameters?.['targetUrl'] as string || '',
                 scrollDistance: want.parameters?.['scrollOffset'] as number || 0,
@@ -63,6 +85,9 @@ export default class EntryAbility extends UIAbility {
                 detailAppId,
                 detailPackageName,
                 appsViewIndex,
+                appsListState: appsListState ?? defaultAppsListState(),
+                overviewState: overviewState ?? defaultOverviewState(),
+                detailChartsState: detailChartsState ?? defaultDetailChartsState(),
             });
             setMainTab(mainTab ?? 1);
             if (routeName === CONTINUATION_ROUTE_DETAIL && (detailAppId || detailPackageName)) {
@@ -74,7 +99,17 @@ export default class EntryAbility extends UIAbility {
         }
     }
 
+    private prepareSStation(): void {
+        try {
+            webview.WebviewController.initializeWebEngine();
+            webview.WebviewController.prepareForPageLoad(SBaseURL.toString(), true, 2);
+        } catch (error) {
+            console.warn('[Dashboard][ability/entry][WARN]', `S站预热失败，将在页面创建时正常加载: ${JSON.stringify(error)}`);
+        }
+    }
+
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+        this.prepareSStation();
         this.restoreContinuationParams(want, launchParam);
         if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
             try {

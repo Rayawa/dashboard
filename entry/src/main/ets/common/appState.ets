@@ -5,6 +5,9 @@ import {
     APP_STATE_KEY_APPS_VIEW,
     APP_STATE_KEY_CONTINUATION_DETAIL_ID,
     APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE,
+    APP_STATE_KEY_CONTINUATION_APPS_LIST,
+    APP_STATE_KEY_CONTINUATION_OVERVIEW,
+    APP_STATE_KEY_CONTINUATION_DETAIL_CHARTS,
     APP_STATE_KEY_CONTINUATION_ROUTE,
     APP_STATE_KEY_SEARCH_TARGET,
     APP_STATE_KEY_SCROLL_DISTANCE,
@@ -13,7 +16,32 @@ import {
     MAIN_TAB_DEFAULT,
     MAIN_TAB_APPS,
 } from './constants';
-import type { AppRouteTarget, SearchTarget } from './types';
+import type { AppRouteTarget, ChartViewportState, SearchTarget } from './types';
+
+export interface AppsListContinuationState {
+    page: number;
+    pageSizeIndex: number;
+    typeIndex: number;
+    filterIndex: number;
+    filterText: string;
+    appliedFilterText: string;
+    sortIndex: number;
+    descending: boolean;
+}
+
+export interface OverviewContinuationState {
+    sdkExpanded: boolean;
+    targetSdkExpanded: boolean;
+    minSdkExpanded: boolean;
+    sdkOtherHidden: boolean;
+    apiHistoryViewport: ChartViewportState;
+}
+
+export interface DetailChartsContinuationState {
+    targetKey: string;
+    downloadViewport: ChartViewportState;
+    ratingViewport: ChartViewportState;
+}
 
 export interface ContinuationState {
     pageUrl: string;
@@ -23,6 +51,40 @@ export interface ContinuationState {
     detailAppId: string;
     detailPackageName: string;
     appsViewIndex: number;
+    appsListState: AppsListContinuationState;
+    overviewState: OverviewContinuationState;
+    detailChartsState: DetailChartsContinuationState;
+}
+
+export function defaultAppsListState(): AppsListContinuationState {
+    return {
+        page: 1,
+        pageSizeIndex: 0,
+        typeIndex: 0,
+        filterIndex: 0,
+        filterText: '',
+        appliedFilterText: '',
+        sortIndex: 0,
+        descending: true,
+    };
+}
+
+export function defaultOverviewState(): OverviewContinuationState {
+    return {
+        sdkExpanded: false,
+        targetSdkExpanded: false,
+        minSdkExpanded: false,
+        sdkOtherHidden: false,
+        apiHistoryViewport: { zoom: 1, panRatio: 0 },
+    };
+}
+
+export function defaultDetailChartsState(): DetailChartsContinuationState {
+    return {
+        targetKey: '',
+        downloadViewport: { zoom: 1, panRatio: 0 },
+        ratingViewport: { zoom: 1, panRatio: 0 },
+    };
 }
 
 /**
@@ -38,6 +100,13 @@ export function getContinuationState(): ContinuationState {
         detailAppId: AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_DETAIL_ID) ?? '',
         detailPackageName: AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE) ?? '',
         appsViewIndex: AppStorage.get<number>(APP_STATE_KEY_APPS_VIEW) ?? 0,
+        appsListState: AppStorage.get<AppsListContinuationState>(APP_STATE_KEY_CONTINUATION_APPS_LIST) ??
+            defaultAppsListState(),
+        overviewState: AppStorage.get<OverviewContinuationState>(APP_STATE_KEY_CONTINUATION_OVERVIEW) ??
+            defaultOverviewState(),
+        detailChartsState:
+            AppStorage.get<DetailChartsContinuationState>(APP_STATE_KEY_CONTINUATION_DETAIL_CHARTS) ??
+                defaultDetailChartsState(),
     };
 }
 
@@ -49,6 +118,9 @@ export function setContinuationState(state: ContinuationState): void {
     AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_DETAIL_ID, state.detailAppId);
     AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE, state.detailPackageName);
     AppStorage.setOrCreate(APP_STATE_KEY_APPS_VIEW, state.appsViewIndex);
+    AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_APPS_LIST, state.appsListState);
+    AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_OVERVIEW, state.overviewState);
+    AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_DETAIL_CHARTS, state.detailChartsState);
 }
 
 export function setContinuationView(
@@ -68,7 +140,26 @@ export function setContinuationView(
         detailAppId: detail.appId ?? '',
         detailPackageName: detail.packageName ?? '',
         appsViewIndex: AppStorage.get<number>(APP_STATE_KEY_APPS_VIEW) ?? 0,
+        appsListState: AppStorage.get<AppsListContinuationState>(APP_STATE_KEY_CONTINUATION_APPS_LIST) ??
+            defaultAppsListState(),
+        overviewState: AppStorage.get<OverviewContinuationState>(APP_STATE_KEY_CONTINUATION_OVERVIEW) ??
+            defaultOverviewState(),
+        detailChartsState:
+            AppStorage.get<DetailChartsContinuationState>(APP_STATE_KEY_CONTINUATION_DETAIL_CHARTS) ??
+                defaultDetailChartsState(),
     });
+}
+
+export function setContinuationAppsListState(state: AppsListContinuationState): void {
+    AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_APPS_LIST, state);
+}
+
+export function setContinuationOverviewState(state: OverviewContinuationState): void {
+    AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_OVERVIEW, state);
+}
+
+export function setContinuationDetailChartsState(state: DetailChartsContinuationState): void {
+    AppStorage.setOrCreate(APP_STATE_KEY_CONTINUATION_DETAIL_CHARTS, state);
 }
 
 export function setContinuationPageUrl(pageUrl: string): void {

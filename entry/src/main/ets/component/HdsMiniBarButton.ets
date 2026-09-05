@@ -31,13 +31,17 @@ export struct HdsMiniBarButton {
     .width('100%')
     .height('100%')
     .borderRadius(this.barHeight / 2)
+    .clip(true)
     .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
     .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-    .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-      sourceType: this.pointLight,
-      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-      options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
-    }).buildEffect())
+    .visualEffect(new hdsEffect.HdsEffectBuilder()
+      .pointLight({
+        sourceType: this.pointLight,
+        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+        options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
+      })
+      .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+      .buildEffect())
     .onTouch((event: TouchEvent): void => {
       if (event.type === TouchType.Down) {
         this.pressed = true;

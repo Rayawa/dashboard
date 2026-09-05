@@ -20,6 +20,18 @@ export struct settings {
     @State cacheSize: string = '计算中…';
     @State showUsernameHelp: boolean = false;
     @State private contentWidth: number = 0;
+    private vibrationPrefixItem: PrefixIcon = new PrefixIcon({
+        iconSize: IconSize.SYSTEM_ICON,
+        iconValue: { image: $r('app.media.vibrate') },
+    });
+    private materialPrefixItem: PrefixIcon = new PrefixIcon({
+        iconSize: IconSize.SYSTEM_ICON,
+        iconValue: { image: $r('app.media.immersive') },
+    });
+    private usernamePrefixItem: PrefixIcon = new PrefixIcon({
+        iconSize: IconSize.SYSTEM_ICON,
+        iconValue: { image: $r('app.media.user') },
+    });
 
     aboutToAppear(): void {
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -97,10 +109,7 @@ export struct settings {
     @Builder
     VibrationLevelItem() {
         HdsListItemCard({
-            prefixItem: new PrefixIcon({
-                iconSize: IconSize.SYSTEM_ICON,
-                iconValue: { image: $r('app.media.vibrate') },
-            }),
+            prefixItem: this.vibrationPrefixItem,
             textItem: {
                 customBuilder: () => {
                     this.VibrationLevelContent()
@@ -194,10 +203,7 @@ export struct settings {
     @Builder
     MaterialLevelItem() {
         HdsListItemCard({
-            prefixItem: new PrefixIcon({
-                iconSize: IconSize.SYSTEM_ICON,
-                iconValue: { image: $r('app.media.immersive') },
-            }),
+            prefixItem: this.materialPrefixItem,
             textItem: {
                 customBuilder: () => {
                     this.MaterialLevelContent()
@@ -280,10 +286,7 @@ export struct settings {
     @Builder
     UsernameItem() {
         HdsListItemCard({
-            prefixItem: new PrefixIcon({
-                iconSize: IconSize.SYSTEM_ICON,
-                iconValue: { image: $r('app.media.user') },
-            }),
+            prefixItem: this.usernamePrefixItem,
             textItem: {
                 customBuilder: () => {
                     this.UsernameContent()

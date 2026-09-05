@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
+import type { ChartViewportState } from '../../common/types';
 
 export interface LineChartPoint {
     label: string;
@@ -24,6 +25,8 @@ export struct InteractiveLineChart {
     @Prop showTitle: boolean = true;
     @Prop chartHeight: number = 250;
     @Prop responsiveAxisFont: boolean = false;
+    @Prop @Watch('onViewportPropChanged') viewport: ChartViewportState = { zoom: 1, panRatio: 0 };
+    onViewportChange?: (viewport: ChartViewportState) => void;
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
     private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
     @State private canvasWidth: number = 320;
@@ -38,6 +41,7 @@ export struct InteractiveLineChart {
     private canvasReady: boolean = false;
     private drawProgress: number = 1;
     private animationToken: number = 0;
+    private animatedDataSignature: string = '';
 
     private sourceSeries(): LineChartSeries[] {
         if (this.series.length > 0) return this.series;
@@ -54,11 +58,54 @@ export struct InteractiveLineChart {
         return source.length > 0 ? source[0].points : [];
     }
 
+    private dataSignature(): string {
+        const parts: string[] = [];
+        for (const chartSeries of this.sourceSeries()) {
+            parts.push(chartSeries.label);
+            for (const point of chartSeries.points) {
+                parts.push(point.label, String(point.value));
+            }
+        }
+        return parts.join('\u0001');
+    }
+
     private onDataChanged(): void {
+        if (this.dataSignature() === this.animatedDataSignature) {
+            this.draw();
+            return;
+        }
         this.selected = Math.max(0, this.pointCount() - 1);
-        this.zoom = 1;
-        this.panOffset = 0;
+        this.applyViewportState(false);
         setTimeout((): void => this.startEntranceAnimation(), 0);
+    }
+
+    private onViewportPropChanged(): void {
+        this.applyViewportState();
+    }
+
+    private viewportZoom(): number {
+        const value = Number(this.viewport.zoom);
+        return value >= 1 ? Math.min(4, value) : 1;
+    }
+
+    private viewportPanRatio(): number {
+        const value = Number(this.viewport.panRatio);
+        return value >= 0 ? Math.min(1, value) : 0;
+    }
+
+    private applyViewportState(redraw: boolean = true): void {
+        this.zoom = this.viewportZoom();
+        this.panOffset = this.clampPan(this.maxPan(this.zoom) * this.viewportPanRatio(), this.zoom);
+        if (redraw) this.draw();
+    }
+
+    private emitViewport(): void {
+        if (!this.onViewportChange) return;
+        const maximum = this.maxPan();
+        this.onViewportChange({
+            zoom: this.zoom,
+            panRatio: maximum > 0 ? this.panOffset / maximum : 0,
+        });
     }
 
     private startEntranceAnimation(): void {
@@ -66,6 +113,12 @@ export struct InteractiveLineChart {
             this.draw();
             return;
         }
+        const signature = this.dataSignature();
+        if (signature === this.animatedDataSignature) {
+            this.draw();
+            return;
+        }
+        this.animatedDataSignature = signature;
         const token = ++this.animationToken;
         const startedAt = Date.now();
         this.drawProgress = 0;
@@ -171,8 +224,8 @@ export struct InteractiveLineChart {
 
     private summaryColumns(): number {
         if (this.canvasWidth < 600) return 2;
-        if (this.canvasWidth < 840) return 3;
-        return 4;
+        if (this.canvasWidth < 840) return 4;
+        return 6;
     }
 
     private maxPan(zoom: number = this.zoom): number {
@@ -390,20 +443,25 @@ export struct InteractiveLineChart {
                     .width('100%').height(this.chartHeight)
                     .scale({ x: this.pressed ? 0.995 : 1, y: this.pressed ? 0.995 : 1 })
                     .animation({ duration: 120, curve: Curve.EaseOut })
-                    .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-                        sourceType: this.pointLight,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                        options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
-                    }).buildEffect())
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pointLight,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                            options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
+                        })
+                        .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                            hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
                     .onReady(() => {
                         this.canvasReady = true;
+                        this.applyViewportState(false);
                         this.startEntranceAnimation();
                     })
                     .onAreaChange((_oldArea: Area, newArea: Area): void => {
                         const width = Number(newArea.width);
                         if (width > 0) {
                             this.canvasWidth = width;
-                            this.panOffset = this.clampPan(this.panOffset);
+                            this.applyViewportState(false);
                             setTimeout((): void => this.draw(), 0);
                         }
                     })
@@ -428,7 +486,8 @@ export struct InteractiveLineChart {
                             .onActionUpdate((event: GestureEvent): void => {
                                 this.panOffset = this.clampPan(this.panAtGestureStart - event.offsetX);
                                 this.draw();
-                            }),
+                            })
+                            .onActionEnd((): void => this.emitViewport()),
                         PinchGesture({ fingers: 2, distance: 4 })
                             .onActionStart((): void => {
                                 this.zoomAtGestureStart = this.zoom;
@@ -442,6 +501,7 @@ export struct InteractiveLineChart {
                                 this.panOffset = this.clampPan(this.maxPan(nextZoom) * ratio, nextZoom);
                                 this.draw();
                             })
+                            .onActionEnd((): void => this.emitViewport())
                     ))
                     .accessibilityText(`${this.title}折线图，点一下可查看对应日期，需要时可放大或左右拖动`)
                 if (this.sourceSeries().length > 1) {

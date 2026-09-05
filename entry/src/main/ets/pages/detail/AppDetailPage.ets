@@ -1,9 +1,10 @@
 import { common, Want } from '@kit.AbilityKit';
 import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import {
+    hdsEffect,
     hdsMaterial,
-    HdsNavDestination,
-    HdsNavDestinationTitleMode,
+    HdsNavigation,
+    HdsNavigationTitleMode,
     ScrollEffectType,
     TitleSize,
 } from '@kit.UIDesignKit';
@@ -19,12 +20,14 @@ import {
     consumeDetailTarget,
     getContinuationState,
     peekDetailTarget,
+    setContinuationDetailChartsState,
     setContinuationView,
 } from '../../common/appState';
 import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
-import { contentEnterTransition, pageTransition } from '../../common/motion';
+import { contentEnterTransition } from '../../common/motion';
+import { APP_DETAIL_GEOMETRY_ICON, APP_DETAIL_GEOMETRY_PAGE } from '../../common/sharedTransition';
 import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
 import type {
@@ -34,6 +37,7 @@ import type {
     AppRatingHistory,
     AppRouteTarget,
     BaseAPIResponse,
+    ChartViewportState,
     MarketApp,
     ScreenshotInfo,
 } from '../../common/types';
@@ -48,6 +52,7 @@ interface DetailField {
 @Component
 struct DetailTag {
     field: DetailField = { label: '', value: '-' };
+    @State private pressed: boolean = false;
 
     build() {
         Row({ space: 7 }) {
@@ -68,6 +73,21 @@ struct DetailTag {
         .borderRadius(14)
         .backgroundColor($r('app.color.v3_surface_alt'))
         .border({ width: 1, color: $r('app.color.v3_chart_grid') })
+        .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+        .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+                sourceType: this.pressed ? hdsEffect.PointLightSourceType.BRIGHT :
+                    hdsEffect.PointLightSourceType.NONE,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+            })
+            .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+            .buildEffect())
+        .onTouch((event: TouchEvent): void => {
+            if (event.type === TouchType.Down) this.pressed = true;
+            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressed = false;
+        })
         .accessibilityGroup(true)
         .accessibilityText(`${this.field.label}，${this.field.value}`)
     }
@@ -76,10 +96,11 @@ struct DetailTag {
 
 @Component
 export struct AppDetailPage {
-    @Consume('pageStack') private pageStack: NavPathStack;
     routeTarget: AppRouteTarget = {};
+    onClose?: () => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
+    private detailPageStack: NavPathStack = new NavPathStack();
     private shareManager?: WebShareManager;
     private target: AppRouteTarget = {};
     @State private app: MarketApp | undefined = undefined;
@@ -90,6 +111,9 @@ export struct AppDetailPage {
     @State private fromCache: boolean = false;
     @State private errorMessage: string = '';
     @State private started: boolean = false;
+    @State private downloadChartViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
+    @State private ratingChartViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
+    @State private pressedCard: string = '';
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
         hdsMaterial.MaterialLevel.SMOOTH;
@@ -104,6 +128,37 @@ export struct AppDetailPage {
         const fallbackTarget = peekDetailTarget();
         this.target = (this.routeTarget.appId || this.routeTarget.packageName) ? this.routeTarget : fallbackTarget;
         this.app = this.target.previewApp;
+        const chartState = getContinuationState().detailChartsState;
+        if (chartState.targetKey === this.detailTargetKey()) {
+            this.downloadChartViewport = chartState.downloadViewport ?? { zoom: 1, panRatio: 0 };
+            this.ratingChartViewport = chartState.ratingViewport ?? { zoom: 1, panRatio: 0 };
+        } else {
+            this.downloadChartViewport = { zoom: 1, panRatio: 0 };
+            this.ratingChartViewport = { zoom: 1, panRatio: 0 };
+            this.syncDetailChartState();
+        }
+    }
+
+    private detailTargetKey(): string {
+        return this.target.appId || this.target.packageName || '';
+    }
+
+    private syncDetailChartState(): void {
+        setContinuationDetailChartsState({
+            targetKey: this.detailTargetKey(),
+            downloadViewport: this.downloadChartViewport,
+            ratingViewport: this.ratingChartViewport,
+        });
+    }
+
+    private updateDownloadChartViewport(viewport: ChartViewportState): void {
+        this.downloadChartViewport = viewport;
+        this.syncDetailChartState();
+    }
+
+    private updateRatingChartViewport(viewport: ChartViewportState): void {
+        this.ratingChartViewport = viewport;
+        this.syncDetailChartState();
     }
 
     private shareUrl(): string {
@@ -138,19 +193,9 @@ export struct AppDetailPage {
     }
 
     private closePage(): void {
-        vibration.backVibration();
         const continuation = getContinuationState();
         setContinuationView(continuation.mainTab, 0);
-        try {
-            this.getUIContext().animateTo({
-                curve: curves.interpolatingSpring(0, 1, 342, 38),
-            }, (): void => {
-                this.pageStack.pop(false);
-            });
-        } catch (error) {
-            console.error('[Dashboard][pages/detail/AppDetailPage][ERROR]', `关闭详情页失败: ${JSON.stringify(error)}`);
-            showToastSafely(this.prompt, '暂时无法返回，请重试', 1600, 'AppDetailPage');
-        }
+        this.onClose?.();
     }
 
     private request(force: boolean): Promise<ApiDataResult<BaseAPIResponse<AppDetailPayload>>> {
@@ -296,7 +341,7 @@ export struct AppDetailPage {
     }
 
     build() {
-        HdsNavDestination() {
+        HdsNavigation(this.detailPageStack) {
           Stack() {
             Refresh({ refreshing: $$this.refreshing }) {
               Scroll(this.scroller) {
@@ -363,8 +408,9 @@ export struct AppDetailPage {
                                 .objectFit(ImageFit.Cover)
                                 .alt($r('app.media.startIcon'))
                                 .accessibilityText(`${this.app.name}应用图标`)
-                                .geometryTransition(this.target.geometryId ?? 'app_detail_shared_element')
-                                .transition(TransitionEffect.OPACITY)
+                                .geometryTransition(this.target.geometryTarget === APP_DETAIL_GEOMETRY_ICON ?
+                                    (this.target.geometryId ?? '') : '')
+                                .transition(TransitionEffect.opacity(0.99))
                             Column({ space: 5 }) {
                                 Text(this.app.name || '未知应用')
                                     .fontSize(24)
@@ -393,6 +439,25 @@ export struct AppDetailPage {
                         .borderRadius(18)
                         .backgroundColor($r('app.color.v3_surface'))
                         .border({ width: 1, color: $r('app.color.nd_card_border') })
+                        .scale({ x: this.pressedCard === 'summary' ? 0.985 : 1,
+                            y: this.pressedCard === 'summary' ? 0.985 : 1 })
+                        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+                        .visualEffect(new hdsEffect.HdsEffectBuilder()
+                            .pointLight({
+                                sourceType: this.pressedCard === 'summary' ? hdsEffect.PointLightSourceType.BRIGHT :
+                                    hdsEffect.PointLightSourceType.NONE,
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+                            })
+                            .pressShadow(this.pressedCard === 'summary' ?
+                                hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                            .buildEffect())
+                        .onTouch((event: TouchEvent): void => {
+                            if (event.type === TouchType.Down) this.pressedCard = 'summary';
+                            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                this.pressedCard = '';
+                            }
+                        })
                         .accessibilityGroup(true)
                         .accessibilityText(`${this.app.name}应用概要`)
                         .transition(contentEnterTransition(10))
@@ -432,6 +497,25 @@ export struct AppDetailPage {
                         .borderRadius(16)
                         .backgroundColor($r('app.color.v3_surface'))
                         .border({ width: 1, color: $r('app.color.nd_card_border') })
+                        .scale({ x: this.pressedCard === 'fields' ? 0.985 : 1,
+                            y: this.pressedCard === 'fields' ? 0.985 : 1 })
+                        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+                        .visualEffect(new hdsEffect.HdsEffectBuilder()
+                            .pointLight({
+                                sourceType: this.pressedCard === 'fields' ? hdsEffect.PointLightSourceType.BRIGHT :
+                                    hdsEffect.PointLightSourceType.NONE,
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+                            })
+                            .pressShadow(this.pressedCard === 'fields' ?
+                                hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                            .buildEffect())
+                        .onTouch((event: TouchEvent): void => {
+                            if (event.type === TouchType.Down) this.pressedCard = 'fields';
+                            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                this.pressedCard = '';
+                            }
+                        })
                         .accessibilityText('以标签形式展示的应用详细字段')
                         .transition(contentEnterTransition(10))
 
@@ -463,6 +547,25 @@ export struct AppDetailPage {
                             .padding(18)
                             .borderRadius(18)
                             .backgroundColor($r('app.color.v3_surface'))
+                            .scale({ x: this.pressedCard === 'screenshots' ? 0.985 : 1,
+                                y: this.pressedCard === 'screenshots' ? 0.985 : 1 })
+                            .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+                            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                                .pointLight({
+                                    sourceType: this.pressedCard === 'screenshots' ?
+                                        hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                    options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+                                })
+                                .pressShadow(this.pressedCard === 'screenshots' ?
+                                    hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                                .buildEffect())
+                            .onTouch((event: TouchEvent): void => {
+                                if (event.type === TouchType.Down) this.pressedCard = 'screenshots';
+                                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                    this.pressedCard = '';
+                                }
+                            })
                             .accessibilityGroup(true)
                             .accessibilityText('应用截图区域')
                             .transition(contentEnterTransition(10))
@@ -473,6 +576,9 @@ export struct AppDetailPage {
                             unit: '次',
                             points: this.downloadPoints(),
                             lineColor: $r('app.color.diff_content'),
+                            viewport: this.downloadChartViewport,
+                            onViewportChange: (viewport: ChartViewportState): void =>
+                                this.updateDownloadChartViewport(viewport),
                         })
                         .transition(contentEnterTransition(10))
 
@@ -481,6 +587,9 @@ export struct AppDetailPage {
                             unit: '分',
                             points: this.ratingPoints(),
                             lineColor: $r('app.color.v3_accent_orange'),
+                            viewport: this.ratingChartViewport,
+                            onViewportChange: (viewport: ChartViewportState): void =>
+                                this.updateRatingChartViewport(viewport),
                         })
                         .transition(contentEnterTransition(10))
 
@@ -518,6 +627,25 @@ export struct AppDetailPage {
                         .borderRadius(18)
                         .backgroundColor($r('app.color.v3_surface'))
                         .border({ width: 1, color: $r('app.color.nd_card_border') })
+                        .scale({ x: this.pressedCard === 'description' ? 0.985 : 1,
+                            y: this.pressedCard === 'description' ? 0.985 : 1 })
+                        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+                        .visualEffect(new hdsEffect.HdsEffectBuilder()
+                            .pointLight({
+                                sourceType: this.pressedCard === 'description' ?
+                                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+                            })
+                            .pressShadow(this.pressedCard === 'description' ?
+                                hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                            .buildEffect())
+                        .onTouch((event: TouchEvent): void => {
+                            if (event.type === TouchType.Down) this.pressedCard = 'description';
+                            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                this.pressedCard = '';
+                            }
+                        })
                         .accessibilityGroup(true)
                         .accessibilityText('应用介绍和新版特性')
                         .transition(contentEnterTransition(10))
@@ -594,7 +722,12 @@ export struct AppDetailPage {
           .height('100%')
           .clip(true)
           .backgroundColor($r('app.color.background'))
-          .transition(TransitionEffect.OPACITY)
+          .geometryTransition(this.target.geometryTarget === APP_DETAIL_GEOMETRY_PAGE ?
+              (this.target.geometryId ?? '') : '')
+          .transition(TransitionEffect.asymmetric(
+              TransitionEffect.opacity(0.99),
+              TransitionEffect.OPACITY,
+          ))
         }
         .titleBar({
             style: {
@@ -659,14 +792,13 @@ export struct AppDetailPage {
                 },
             },
         })
-        .titleMode(HdsNavDestinationTitleMode.MINI)
-        .transition(pageTransition())
-        .systemTransition(NavigationSystemTransitionType.NONE)
+        .titleMode(HdsNavigationTitleMode.MINI)
+        .width('100%')
+        .height('100%')
+        .clip(true)
+        .backgroundColor($r('app.color.background'))
+        .mode(NavigationMode.Stack)
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
-        .onBackPressed(() => {
-            this.closePage();
-            return true;
-        })
         .accessibilityText('应用详情导航页')
     }
 }

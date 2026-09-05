@@ -1,9 +1,8 @@
 import { common, Want } from '@kit.AbilityKit';
 import { curves, PromptAction, TextModifier } from '@kit.ArkUI';
-import { HdsListItemCard, IconSize, PrefixIcon, SuffixArrow } from '@kit.UIDesignKit';
+import { HdsListItemCard, IconSize, PrefixIcon, SuffixArrow, SuffixCustomBuilder } from '@kit.UIDesignKit';
 import { settings } from '../../component/settings';
 import { contact } from '../../component/contact';
-import { warn } from '../../component/warn';
 import {
     APP_VERSION,
     CONTENT_MAX_WIDTH,
@@ -25,6 +24,7 @@ import { runPageEnterAnimation } from '../../common/motion';
 interface MoreItem {
     title: string;
     icon: Resource;
+    opensExternal?: boolean;
     action: () => void;
 }
 
@@ -32,6 +32,15 @@ interface MoreItem {
 struct MoreRow {
     item: MoreItem = { title: '', icon: $r('app.media.info'), action: () => {} };
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+
+    @Builder
+    private ExternalSuffix(): void {
+        Image($r('app.media.share'))
+            .width(20)
+            .height(20)
+            .objectFit(ImageFit.Contain)
+            .accessibilityText('直接打开外部链接')
+    }
 
     build() {
         HdsListItemCard({
@@ -47,7 +56,9 @@ struct MoreRow {
                         .fontColor($r('app.color.v3_text_primary')),
                 },
             },
-            suffixItem: new SuffixArrow({ color: $r('sys.color.icon_secondary') }),
+            suffixItem: this.item.opensExternal ? new SuffixCustomBuilder(() => {
+                this.ExternalSuffix()
+            }) : new SuffixArrow({ color: $r('sys.color.icon_secondary') }),
             onClick: () => {
                 if (this.vibrationLevel > 0) vibration.dotVibration();
                 this.item.action();
@@ -69,10 +80,10 @@ struct MoreRow {
 export struct MyPage {
     @Consume('pageStack') private pageStack: NavPathStack;
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
+    onShowWarning?: () => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
-    @State private showWarning: boolean = false;
     @State private showContact: boolean = false;
     @State private versionTapCount: number = 0;
     @State private contentWidth: number = 0;
@@ -124,11 +135,13 @@ export struct MyPage {
             {
                 title: '项目网站首页',
                 icon: $r('app.media.app_icon'),
+                opensExternal: true,
                 action: () => this.openExternal(mainPage.toString(), '网站首页'),
             },
             {
                 title: '订阅MeoW频道',
                 icon: $r('app.media.MeoW'),
+                opensExternal: true,
                 action: () => this.openExternal(MEOW_CHANNEL_URL.toString(), 'MeoW频道'),
             },
             {
@@ -152,7 +165,9 @@ export struct MyPage {
             {
                 title: '重要提示',
                 icon: $r('app.media.attention'),
-                action: () => this.showWarning = true,
+                action: () => {
+                    if (this.onShowWarning) this.onShowWarning();
+                },
             },
             {
                 title: '查看教程',
@@ -471,19 +486,6 @@ export struct MyPage {
                 .accessibilityText('可滚动的我的页面')
             }
 
-            if (this.showWarning) {
-                Column()
-                    .width('100%')
-                    .height('100%')
-                    .backgroundColor($r('app.color.v3_scrim'))
-                    .backgroundBlurStyle(BlurStyle.BACKGROUND_THIN)
-                    .onClick(() => {
-                        this.vibrate();
-                        this.showWarning = false;
-                    })
-                    .accessibilityText('点击关闭重要提示')
-                warn({ isShow: this.showWarning })
-            }
         }
         .width('100%')
         .height('100%')

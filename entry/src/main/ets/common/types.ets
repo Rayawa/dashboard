@@ -143,6 +143,15 @@ export interface PageInfo<T> {
     total_pages: number;
 }
 
+/**
+ * 折线图可跨不同画布宽度恢复的视口状态。
+ * panRatio 使用可平移范围中的相对位置，避免跨设备接续后因屏幕宽度变化而错位。
+ */
+export interface ChartViewportState {
+    zoom: number;
+    panRatio: number;
+}
+
 export interface RatingDistribution {
     star_1: number;
     star_2: number;
@@ -192,6 +201,7 @@ export interface AppRouteTarget {
     backgroundRefreshHandled?: boolean;
     previewApp?: MarketApp;
     geometryId?: string;
+    geometryTarget?: string;
 }
 
 export class WebViewParam {
