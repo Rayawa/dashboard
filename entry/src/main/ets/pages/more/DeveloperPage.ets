@@ -1,5 +1,6 @@
 import { deviceInfo } from '@kit.BasicServicesKit';
 import {
+  hdsEffect,
   hdsMaterial,
   HdsNavDestination,
   HdsNavDestinationTitleMode,
@@ -14,7 +15,7 @@ import {
   CONTINUATION_MIN_VERSION,
   customUserAgent,
 } from '../../common/constants';
-import { LengthMetrics } from '@kit.ArkUI';
+import { curves, LengthMetrics } from '@kit.ArkUI';
 import { pageTransition } from '../../common/motion';
 
 interface DeveloperField {
@@ -26,6 +27,7 @@ interface DeveloperField {
 export struct DeveloperPage {
   @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
     hdsMaterial.MaterialLevel.SMOOTH;
+  @State private pressedField: string = '';
   private fields(): DeveloperField[] {
     return [
       { label: '应用版本', value: APP_VERSION },
@@ -71,6 +73,23 @@ export struct DeveloperPage {
               }
               .width('100%')
               .padding(14)
+              .scale({ x: this.pressedField === field.label ? 0.99 : 1,
+                y: this.pressedField === field.label ? 0.99 : 1 })
+              .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: this.pressedField === field.label ? hdsEffect.PointLightSourceType.BRIGHT :
+                    hdsEffect.PointLightSourceType.NONE,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                  options: { color: $r('app.color.diff_content'), intensity: 5, height: 96 },
+                })
+                .pressShadow(this.pressedField === field.label ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                  hdsEffect.PressShadowType.NONE)
+                .buildEffect())
+              .onTouch((event: TouchEvent): void => {
+                if (event.type === TouchType.Down) this.pressedField = field.label;
+                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedField = '';
+              })
               .accessibilityGroup(true)
               .accessibilityText(`${field.label}，${field.value || '未知'}`)
               if (index < this.fields().length - 1) {

@@ -1,9 +1,10 @@
 import { common } from '@kit.AbilityKit';
 import { hdsEffect } from '@kit.UIDesignKit';
+import { getContinuationState, setContinuationOverviewState } from '../../common/appState';
 import { fetchApiHistory, fetchRatingDistribution, fetchSdkDistribution } from '../../common/MarketApi';
 import { formatCount } from '../../common/format';
 import { vibration } from '../../common/vibration';
-import type { BaseAPIResponse, RatingDistribution } from '../../common/types';
+import type { BaseAPIResponse, ChartViewportState, RatingDistribution } from '../../common/types';
 import { InteractiveLineChart } from './InteractiveLineChart';
 import type { LineChartPoint, LineChartSeries } from './InteractiveLineChart';
 
@@ -25,21 +26,20 @@ struct DistributionPanel {
     @Prop showExpandAction: boolean = false;
     @Prop chartCaption: string = '';
     @Prop reserveCaptionSpace: boolean = false;
-    @Prop @Watch('onOtherHiddenChanged') otherHidden: boolean = false;
     onExpand?: () => void;
     onCollapse?: () => void;
     onSelect?: (label: string) => void;
-    onToggleOther?: (hidden: boolean) => void;
     @State private selected: number = 0;
     @State private canvasSize: number = 220;
-    @State private localOtherHidden: boolean = false;
     @State private pressed: boolean = false;
+    @State private pressedControl: string = '';
     @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
     private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
     private canvasReady: boolean = false;
     private drawProgress: number = 1;
+    private detailProgress: number = 1;
     private animationToken: number = 0;
 
     private onChartChanged(): void {
@@ -48,13 +48,14 @@ struct DistributionPanel {
     }
     private onDisplayChanged(): void {
         this.selected = 0;
-        setTimeout((): void => this.animatePie(), 0);
+        if (this.expanded) {
+            setTimeout((): void => this.animateOtherExpansion(), 0);
+        } else {
+            setTimeout((): void => this.animateOtherCollapse(), 0);
+        }
     }
     private onSelectedLabelChanged(): void {
         setTimeout((): void => this.draw(), 0);
-    }
-    private onOtherHiddenChanged(): void {
-        setTimeout((): void => this.animatePie(), 0);
     }
     private animatePie(): void {
         if (!this.canvasReady || this.chart.total <= 0) {
@@ -64,10 +65,49 @@ struct DistributionPanel {
         const token = ++this.animationToken;
         const startedAt = Date.now();
         this.drawProgress = 0;
+        this.detailProgress = this.expanded ? 1 : 0;
         const tick = (): void => {
             if (token !== this.animationToken) return;
             const elapsed = Math.min(1, (Date.now() - startedAt) / 700);
             this.drawProgress = 1 - Math.pow(1 - elapsed, 3);
+            this.draw();
+            if (elapsed < 1) setTimeout(tick, 16);
+        };
+        tick();
+    }
+    private animateOtherExpansion(): void {
+        this.drawProgress = 1;
+        if (!this.canvasReady || !this.hasOverflow()) {
+            this.detailProgress = 1;
+            this.draw();
+            return;
+        }
+        const token = ++this.animationToken;
+        const startedAt = Date.now();
+        this.detailProgress = 0;
+        const tick = (): void => {
+            if (token !== this.animationToken) return;
+            const elapsed = Math.min(1, (Date.now() - startedAt) / 520);
+            this.detailProgress = 1 - Math.pow(1 - elapsed, 3);
+            this.draw();
+            if (elapsed < 1) setTimeout(tick, 16);
+        };
+        tick();
+    }
+    private animateOtherCollapse(): void {
+        this.drawProgress = 1;
+        if (!this.canvasReady || !this.hasOverflow()) {
+            this.detailProgress = 0;
+            this.draw();
+            return;
+        }
+        const token = ++this.animationToken;
+        const startedAt = Date.now();
+        this.detailProgress = 1;
+        const tick = (): void => {
+            if (token !== this.animationToken) return;
+            const elapsed = Math.min(1, (Date.now() - startedAt) / 420);
+            this.detailProgress = Math.pow(1 - elapsed, 3);
             this.draw();
             if (elapsed < 1) setTimeout(tick, 16);
         };
@@ -121,32 +161,33 @@ struct DistributionPanel {
             return total;
         });
     }
-    private isOtherHidden(): boolean {
-        return this.onToggleOther !== undefined ? this.otherHidden : this.localOtherHidden;
+    private expandedValues(): number[] {
+        return this.sourceLabels().map((label: string): number => {
+            const index = this.chart.labels.indexOf(label);
+            return index >= 0 ? (this.chart.values[index] ?? 0) : 0;
+        });
     }
     private visibleValues(): number[] {
-        const labels = this.displayLabels();
-        return this.displayValues().map((value: number, index: number): number =>
-            labels[index] === '其他' && this.isOtherHidden() ? 0 : value);
+        return this.displayValues();
     }
     private visibleTotal(): number {
         return this.visibleValues().reduce((sum: number, value: number) => sum + value, 0);
     }
-    private toggleOtherVisibility(): void {
-        const hidden = !this.isOtherHidden();
-        if (this.vibrationLevel > 0) vibration.dotVibration();
+    private expandFromOther(): void {
+        if (this.expanded || !this.onExpand) return;
         this.selected = 0;
-        if (this.onToggleOther) {
-            this.onToggleOther(hidden);
-        } else {
-            this.localOtherHidden = hidden;
-            this.animatePie();
-        }
+        this.onExpand();
     }
     private colorAt(index: number): Resource {
         const colors = this.colors();
         const label = this.displayLabels()[index] ?? '';
         if (label === '其他') return $r('app.color.nd_text_sub');
+        const sharedIndex = this.colorLabels.indexOf(label);
+        return colors[(sharedIndex >= 0 ? sharedIndex : index) % colors.length];
+    }
+    private expandedColorAt(index: number): Resource {
+        const colors = this.colors();
+        const label = this.sourceLabels()[index] ?? '';
         const sharedIndex = this.colorLabels.indexOf(label);
         return colors[(sharedIndex >= 0 ? sharedIndex : index) % colors.length];
     }
@@ -184,6 +225,27 @@ struct DistributionPanel {
         }
     }
 
+    private drawSector(center: number, radius: number, startAngle: number, endAngle: number,
+        color: Resource, surfaceColor: number, highlighted: boolean): void {
+        if (endAngle <= startAngle) return;
+        this.context.beginPath();
+        this.context.moveTo(center, center);
+        this.context.arc(center, center, radius, startAngle, endAngle);
+        this.context.closePath();
+        this.context.fillStyle = this.resolvedColor(color);
+        this.context.fill();
+        this.context.strokeStyle = surfaceColor;
+        this.context.lineWidth = 2;
+        this.context.stroke();
+        if (highlighted) {
+            this.context.beginPath();
+            this.context.arc(center, center, radius + 4, startAngle, endAngle);
+            this.context.strokeStyle = this.resolvedColor(color);
+            this.context.lineWidth = 4;
+            this.context.stroke();
+        }
+    }
+
     private draw(): void {
         const size = this.canvasSize;
         this.context.clearRect(0, 0, size, size);
@@ -194,26 +256,43 @@ struct DistributionPanel {
         const radius = Math.max(20, center - 12);
         let startAngle = -Math.PI / 2;
         const surfaceColor = this.resolvedColor($r('app.color.v3_surface'));
+        const animatingDetail = this.hasOverflow() &&
+            ((this.expanded && this.detailProgress < 1) || (!this.expanded && this.detailProgress > 0));
+        if (animatingDetail) {
+            const detailValues = this.expandedValues();
+            const detailTotal = detailValues.reduce((sum: number, value: number) => sum + value, 0);
+            if (detailTotal <= 0) return;
+            for (let index = 0; index < Math.min(COLLAPSED_SDK_COUNT, detailValues.length); index++) {
+                if (detailValues[index] <= 0) continue;
+                const endAngle = startAngle + Math.PI * 2 * detailValues[index] / detailTotal;
+                this.drawSector(center, radius, startAngle, endAngle, this.expandedColorAt(index), surfaceColor,
+                    index === this.selectedIndex());
+                startAngle = endAngle;
+            }
+            let tailTotal = 0;
+            for (let index = COLLAPSED_SDK_COUNT; index < detailValues.length; index++) {
+                tailTotal += Math.max(0, detailValues[index]);
+            }
+            const tailStartAngle = startAngle;
+            const tailEndAngle = tailStartAngle + Math.PI * 2 * tailTotal / detailTotal;
+            this.drawSector(center, radius, tailStartAngle, tailEndAngle, $r('app.color.nd_text_sub'),
+                surfaceColor, false);
+            const revealEndAngle = tailStartAngle + (tailEndAngle - tailStartAngle) * this.detailProgress;
+            for (let index = COLLAPSED_SDK_COUNT; index < detailValues.length; index++) {
+                if (detailValues[index] <= 0) continue;
+                const finalEndAngle = startAngle + Math.PI * 2 * detailValues[index] / detailTotal;
+                this.drawSector(center, radius, startAngle, Math.min(finalEndAngle, revealEndAngle),
+                    this.expandedColorAt(index), surfaceColor, index === this.selectedIndex());
+                startAngle = finalEndAngle;
+            }
+            return;
+        }
         for (let index = 0; index < values.length; index++) {
             if (values[index] <= 0) continue;
             const sweep = Math.PI * 2 * values[index] / visibleTotal * this.drawProgress;
             const endAngle = startAngle + sweep;
-            this.context.beginPath();
-            this.context.moveTo(center, center);
-            this.context.arc(center, center, radius, startAngle, endAngle);
-            this.context.closePath();
-            this.context.fillStyle = this.resolvedColor(this.colorAt(index));
-            this.context.fill();
-            this.context.strokeStyle = surfaceColor;
-            this.context.lineWidth = 2;
-            this.context.stroke();
-            if (index === this.selectedIndex() && this.drawProgress >= 1) {
-                this.context.beginPath();
-                this.context.arc(center, center, radius + 4, startAngle, endAngle);
-                this.context.strokeStyle = this.resolvedColor(this.colorAt(index));
-                this.context.lineWidth = 4;
-                this.context.stroke();
-            }
+            this.drawSector(center, radius, startAngle, endAngle, this.colorAt(index), surfaceColor,
+                index === this.selectedIndex() && this.drawProgress >= 1);
             startAngle = endAngle;
         }
     }
@@ -236,7 +315,7 @@ struct DistributionPanel {
             accumulated += Math.PI * 2 * values[index] / visibleTotal;
             if (angle <= accumulated) {
                 if (labels[index] === '其他') {
-                    this.toggleOtherVisibility();
+                    this.expandFromOther();
                     return;
                 }
                 if (!this.onSelect && index !== this.selectedIndex() && this.vibrationLevel > 0) vibration.dotVibration();
@@ -258,11 +337,15 @@ struct DistributionPanel {
             .width(this.canvasSize).height(this.canvasSize).align(Alignment.Center)
             .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
             .animation({ duration: 120, curve: Curve.EaseOut })
-            .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-                sourceType: this.pointLight,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
-            }).buildEffect())
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                    sourceType: this.pointLight,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                    options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
+                })
+                .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                    hdsEffect.PressShadowType.NONE)
+                .buildEffect())
             .onReady((): void => {
                 this.canvasReady = true;
                 this.animatePie();
@@ -292,17 +375,8 @@ struct DistributionPanel {
                             .backgroundColor(this.colorAt(index))
                         Column({ space: 1 }) {
                             if (label === '其他') {
-                                Row({ space: 3 }) {
-                                    Text(label).fontSize(13).fontWeight(FontWeight.Medium)
-                                        .fontColor($r('app.color.v3_text_primary')).maxLines(1)
-                                        .decoration({ type: TextDecorationType.Underline,
-                                            color: $r('app.color.v3_text_primary') })
-                                    SymbolGlyph(this.isOtherHidden() ?
-                                        $r('sys.symbol.eye') : $r('sys.symbol.eye_slash'))
-                                        .fontSize(12)
-                                        .fontColor([$r('app.color.v3_text_secondary')])
-                                        .accessibilityText(this.isOtherHidden() ? '显示其他' : '隐藏其他')
-                                }
+                                Text('其他（点击展开）').fontSize(13).fontWeight(FontWeight.Medium)
+                                    .fontColor($r('app.color.v3_text_primary')).maxLines(1)
                             } else {
                                 Text(label).fontSize(13).fontWeight(FontWeight.Medium)
                                     .fontColor($r('app.color.v3_text_primary')).maxLines(1)
@@ -314,10 +388,28 @@ struct DistributionPanel {
                     .width('100%').padding({ left: 6, right: 6, top: 5, bottom: 5 }).borderRadius(8)
                     .backgroundColor(index === this.selectedIndex() ?
                         $r('app.color.v3_surface_alt') : Color.Transparent)
-                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.97 })
+                    .scale({ x: this.pressedControl === label ? 0.97 : 1,
+                        y: this.pressedControl === label ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pressedControl === label ? hdsEffect.PointLightSourceType.BRIGHT :
+                                hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                        })
+                        .pressShadow(this.pressedControl === label ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                            hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.pressedControl = label;
+                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressedControl = '';
+                        }
+                    })
                     .onClick(() => {
                         if (label === '其他') {
-                            this.toggleOtherVisibility();
+                            this.expandFromOther();
                             return;
                         }
                         if (!this.onSelect && this.vibrationLevel > 0) vibration.dotVibration();
@@ -328,7 +420,7 @@ struct DistributionPanel {
                     .transition(TransitionEffect.OPACITY.combine(
                         TransitionEffect.scale({ x: 0.94, y: 0.94 })))
                     .accessibilityText(label === '其他' ?
-                        `其他，${this.legendText(index)}，${this.isOtherHidden() ? '点击显示' : '点击隐藏'}` :
+                        `其他，${this.legendText(index)}，点击展开全部` :
                         `${label}，${this.legendText(index)}`)
                 }
             }, (label: string) => `${this.chart.title}-${label}`)
@@ -338,7 +430,7 @@ struct DistributionPanel {
     }
 
     build() {
-        Column({ space: 8 }) {
+        Column({ space: (this.chartCaption.length > 0 || this.reserveCaptionSpace) ? 2 : 8 }) {
             if (this.showTitle) {
                 Row() {
                     Text(this.chart.title).fontSize(18).fontWeight(FontWeight.Bold)
@@ -348,7 +440,27 @@ struct DistributionPanel {
                         Text(this.expanded ? '收起' : '展开全部')
                             .fontSize(13)
                             .fontColor($r('app.color.diff_content'))
-                            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.94 })
+                            .padding({ left: 6, right: 6, top: 4, bottom: 4 })
+                            .borderRadius(8)
+                            .scale({ x: this.pressedControl === 'expand' ? 0.94 : 1,
+                                y: this.pressedControl === 'expand' ? 0.94 : 1 })
+                            .animation({ duration: 120, curve: Curve.EaseOut })
+                            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                                .pointLight({
+                                    sourceType: this.pressedControl === 'expand' ?
+                                        hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                    options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                                })
+                                .pressShadow(this.pressedControl === 'expand' ?
+                                    hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                                .buildEffect())
+                            .onTouch((event: TouchEvent): void => {
+                                if (event.type === TouchType.Down) this.pressedControl = 'expand';
+                                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                    this.pressedControl = '';
+                                }
+                            })
                             .onClick(() => this.toggleExpansion())
                             .accessibilityText(this.expanded ? `收起${this.chart.title}` : `展开${this.chart.title}全部SDK`)
                     }
@@ -411,6 +523,8 @@ struct DistributionPanel {
 struct ApiHistoryChart {
     @Prop history: HistoryPoint[] = [];
     @Prop apiKeys: string[] = [];
+    @Prop viewport: ChartViewportState = { zoom: 1, panRatio: 0 };
+    onViewportChange?: (viewport: ChartViewportState) => void;
 
     private palette(): Resource[] {
         return [
@@ -462,6 +576,10 @@ struct ApiHistoryChart {
                 showTitle: false,
                 chartHeight: 280,
                 responsiveAxisFont: true,
+                viewport: this.viewport,
+                onViewportChange: (viewport: ChartViewportState): void => {
+                    if (this.onViewportChange) this.onViewportChange(viewport);
+                },
             })
         }
         .width('100%').accessibilityText('Harmony API版本占比历史')
@@ -486,9 +604,38 @@ export struct OverviewSection {
     @State private minSdkExpanded: boolean = false;
     @State private selectedSdkLabel: string = '';
     @State private sdkOtherHidden: boolean = false;
+    @State private apiHistoryViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
+    @State private pressedControl: string = '';
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     private pendingLoads: number = 0;
     private reloadAfterCurrent: boolean = false;
+    private restoredContinuationUi: boolean = false;
+
+    aboutToAppear(): void {
+        if (this.restoredContinuationUi) return;
+        this.restoredContinuationUi = true;
+        const state = getContinuationState().overviewState;
+        this.sdkExpanded = state.sdkExpanded === true;
+        this.targetSdkExpanded = state.targetSdkExpanded === true;
+        this.minSdkExpanded = state.minSdkExpanded === true;
+        this.sdkOtherHidden = state.sdkOtherHidden === true;
+        this.apiHistoryViewport = state.apiHistoryViewport ?? { zoom: 1, panRatio: 0 };
+    }
+
+    private syncContinuationUi(): void {
+        setContinuationOverviewState({
+            sdkExpanded: this.sdkExpanded,
+            targetSdkExpanded: this.targetSdkExpanded,
+            minSdkExpanded: this.minSdkExpanded,
+            sdkOtherHidden: this.sdkOtherHidden,
+            apiHistoryViewport: this.apiHistoryViewport,
+        });
+    }
+
+    private updateApiHistoryViewport(viewport: ChartViewportState): void {
+        this.apiHistoryViewport = viewport;
+        this.syncContinuationUi();
+    }
 
     private onRefreshVersionChanged(): void { if (this.refreshVersion > 0) this.load(true); }
     private distribution(title: string, source: number[][]): DistributionChart {
@@ -544,24 +691,21 @@ export struct OverviewSection {
     }
     private selectSdk(label: string): void {
         if (label === '其他') {
-            if (this.vibrationLevel > 0) vibration.dotVibration();
-            this.setSdkOtherHidden(!this.sdkOtherHidden);
+            this.expandSdk();
             return;
         }
         if (label !== this.activeSdkLabel() && this.vibrationLevel > 0) vibration.dotVibration();
         this.selectedSdkLabel = label;
-    }
-    private setSdkOtherHidden(hidden: boolean): void {
-        this.getUIContext().animateTo({ duration: 300, curve: Curve.Friction }, (): void => {
-            this.sdkOtherHidden = hidden;
-        });
     }
     private expandSdk(): void {
         if (this.sdkExpanded) return;
         if (this.vibrationLevel > 0) vibration.dotVibration();
         this.getUIContext().animateTo({ duration: 360, curve: Curve.Friction }, (): void => {
             this.sdkExpanded = true;
+            this.targetSdkExpanded = true;
+            this.minSdkExpanded = true;
             this.selectedSdkLabel = this.sdkLabels()[0] ?? '';
+            this.syncContinuationUi();
         });
     }
     private collapseSdk(): void {
@@ -573,6 +717,9 @@ export struct OverviewSection {
                 this.selectedSdkLabel = collapsedLabels[0] ?? '';
             }
             this.sdkExpanded = false;
+            this.targetSdkExpanded = false;
+            this.minSdkExpanded = false;
+            this.syncContinuationUi();
         });
     }
     private expandTargetSdk(): void {
@@ -580,6 +727,8 @@ export struct OverviewSection {
         if (this.vibrationLevel > 0) vibration.dotVibration();
         this.getUIContext().animateTo({ duration: 360, curve: Curve.Friction }, (): void => {
             this.targetSdkExpanded = true;
+            this.sdkExpanded = true;
+            this.syncContinuationUi();
         });
     }
     private collapseTargetSdk(): void {
@@ -587,6 +736,8 @@ export struct OverviewSection {
         if (this.vibrationLevel > 0) vibration.dotVibration();
         this.getUIContext().animateTo({ duration: 300, curve: Curve.Friction }, (): void => {
             this.targetSdkExpanded = false;
+            this.sdkExpanded = this.minSdkExpanded;
+            this.syncContinuationUi();
         });
     }
     private expandMinSdk(): void {
@@ -594,6 +745,8 @@ export struct OverviewSection {
         if (this.vibrationLevel > 0) vibration.dotVibration();
         this.getUIContext().animateTo({ duration: 360, curve: Curve.Friction }, (): void => {
             this.minSdkExpanded = true;
+            this.sdkExpanded = true;
+            this.syncContinuationUi();
         });
     }
     private collapseMinSdk(): void {
@@ -601,6 +754,8 @@ export struct OverviewSection {
         if (this.vibrationLevel > 0) vibration.dotVibration();
         this.getUIContext().animateTo({ duration: 300, curve: Curve.Friction }, (): void => {
             this.minSdkExpanded = false;
+            this.sdkExpanded = this.targetSdkExpanded;
+            this.syncContinuationUi();
         });
     }
 
@@ -618,24 +773,13 @@ export struct OverviewSection {
                                         this.sdkColors()[this.sdkLabels().indexOf(label) % this.sdkColors().length])
                                 Column({ space: 1 }) {
                                     if (label === '其他') {
-                                        Row({ space: 3 }) {
-                                            Text(label).fontSize(13).fontWeight(FontWeight.Medium)
-                                                .fontColor($r('app.color.v3_text_primary')).maxLines(1)
-                                                .decoration({ type: TextDecorationType.Underline,
-                                                    color: $r('app.color.v3_text_primary') })
-                                            SymbolGlyph(this.sdkOtherHidden ?
-                                                $r('sys.symbol.eye') : $r('sys.symbol.eye_slash'))
-                                                .fontSize(12)
-                                                .fontColor([$r('app.color.v3_text_secondary')])
-                                                .accessibilityText(this.sdkOtherHidden ? '显示其他' : '隐藏其他')
-                                        }
+                                        Text('其他（点击展开）').fontSize(13).fontWeight(FontWeight.Medium)
+                                            .fontColor($r('app.color.v3_text_primary')).maxLines(1)
                                     } else {
                                         Text(label).fontSize(13).fontWeight(FontWeight.Medium)
                                             .fontColor($r('app.color.v3_text_primary')).maxLines(1)
                                     }
-                                    Text(label === '其他' ?
-                                        (this.sdkOtherHidden ? '已隐藏，点击显示' : '点击隐藏') :
-                                        `目标 ${this.sdkPercent(this.targetSdkChart, label)} · 最低 ${this.sdkPercent(this.minSdkChart, label)}`)
+                                    Text(`目标 ${this.sdkPercent(this.targetSdkChart, label)} · 最低 ${this.sdkPercent(this.minSdkChart, label)}`)
                                         .fontSize(10).fontColor($r('app.color.v3_text_secondary')).maxLines(1)
                                 }
                                 .layoutWeight(1)
@@ -646,14 +790,32 @@ export struct OverviewSection {
                             .borderRadius(8)
                             .backgroundColor(label === this.activeSdkLabel() ?
                                 $r('app.color.v3_surface_alt') : Color.Transparent)
-                            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.97 })
+                            .scale({ x: this.pressedControl === label ? 0.97 : 1,
+                                y: this.pressedControl === label ? 0.97 : 1 })
+                            .animation({ duration: 120, curve: Curve.EaseOut })
+                            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                                .pointLight({
+                                    sourceType: this.pressedControl === label ? hdsEffect.PointLightSourceType.BRIGHT :
+                                        hdsEffect.PointLightSourceType.NONE,
+                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                    options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                                })
+                                .pressShadow(this.pressedControl === label ?
+                                    hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                                .buildEffect())
+                            .onTouch((event: TouchEvent): void => {
+                                if (event.type === TouchType.Down) this.pressedControl = label;
+                                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                    this.pressedControl = '';
+                                }
+                            })
                             .onClick(() => {
                                 this.selectSdk(label);
                             })
                             .transition(TransitionEffect.OPACITY.combine(
                                 TransitionEffect.scale({ x: 0.94, y: 0.94 })))
                             .accessibilityText(label === '其他' ?
-                                `其他SDK，${this.sdkOtherHidden ? '已隐藏，点击显示' : '点击隐藏'}` :
+                                '其他SDK，点击展开全部SDK版本' :
                                 `${label}，目标占比${this.sdkPercent(this.targetSdkChart, label)}，最低占比${this.sdkPercent(this.minSdkChart, label)}`)
                         }
                     }, (label: string) => `sdk-shared-${label}`)
@@ -680,7 +842,27 @@ export struct OverviewSection {
                     Text(this.sdkExpanded ? '收起' : '展开全部')
                         .fontSize(13)
                         .fontColor($r('app.color.diff_content'))
-                        .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.94 })
+                        .padding({ left: 6, right: 6, top: 4, bottom: 4 })
+                        .borderRadius(8)
+                        .scale({ x: this.pressedControl === 'sdk-expand' ? 0.94 : 1,
+                            y: this.pressedControl === 'sdk-expand' ? 0.94 : 1 })
+                        .animation({ duration: 120, curve: Curve.EaseOut })
+                        .visualEffect(new hdsEffect.HdsEffectBuilder()
+                            .pointLight({
+                                sourceType: this.pressedControl === 'sdk-expand' ?
+                                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                            })
+                            .pressShadow(this.pressedControl === 'sdk-expand' ?
+                                hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                            .buildEffect())
+                        .onTouch((event: TouchEvent): void => {
+                            if (event.type === TouchType.Down) this.pressedControl = 'sdk-expand';
+                            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                this.pressedControl = '';
+                            }
+                        })
                         .onClick(() => {
                             if (this.sdkExpanded) this.collapseSdk(); else this.expandSdk();
                         })
@@ -694,20 +876,18 @@ export struct OverviewSection {
                     DistributionPanel({ chart: this.targetSdkChart, showLegend: false, collapsible: true,
                         expanded: this.sdkExpanded, colorLabels: this.sdkLabels(), embedded: true,
                         showTitle: false, chartCaption: '目标 SDK',
-                        otherHidden: this.sdkOtherHidden,
                         selectedLabel: this.activeSdkLabel(),
                         onSelect: (label: string): void => this.selectSdk(label),
-                        onToggleOther: (hidden: boolean): void => this.setSdkOtherHidden(hidden) })
+                        onExpand: (): void => this.expandSdk() })
                 }
                 .layoutWeight(1)
                 Column() {
                     DistributionPanel({ chart: this.minSdkChart, showLegend: false, collapsible: true,
                         expanded: this.sdkExpanded, colorLabels: this.sdkLabels(), embedded: true,
                         showTitle: false, chartCaption: '最低 SDK',
-                        otherHidden: this.sdkOtherHidden,
                         selectedLabel: this.activeSdkLabel(),
                         onSelect: (label: string): void => this.selectSdk(label),
-                        onToggleOther: (hidden: boolean): void => this.setSdkOtherHidden(hidden) })
+                        onExpand: (): void => this.expandSdk() })
                 }
                 .layoutWeight(1)
             }
@@ -752,7 +932,7 @@ export struct OverviewSection {
             if (!response.success || !response.data) throw new Error('评分接口未返回有效数据');
             const rating = response.data;
             const values = [rating.star_5, rating.star_4, rating.star_3, rating.star_2, rating.star_1];
-            this.ratingChart = { title: '应用评分分布', labels: ['5 星', '4 星', '3 星', '2 星', '1 星'],
+            this.ratingChart = { title: '应用评分分布', labels: ['5 星', '4 星', '3 星', '2 星', '1 星与无评分'],
                 values, total: values.reduce((sum: number, value: number) => sum + value, 0) };
             this.fromCache = this.fromCache || result.stale;
         }).catch((error: Error) => this.failed('评分分布', error)).finally(() => this.finish());
@@ -828,7 +1008,12 @@ export struct OverviewSection {
                 .width('100%')
                 .accessibilityText('各自使用独立图例的目标SDK、最低SDK与评分分布图表')
             }
-            ApiHistoryChart({ history: this.history, apiKeys: this.apiKeys })
+            ApiHistoryChart({
+                history: this.history,
+                apiKeys: this.apiKeys,
+                viewport: this.apiHistoryViewport,
+                onViewportChange: (viewport: ChartViewportState): void => this.updateApiHistoryViewport(viewport),
+            })
         }
         .width('100%')
         .onAreaChange((_oldArea: Area, area: Area): void => {

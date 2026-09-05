@@ -1,5 +1,6 @@
 import { vibration } from '../common/vibration';
-import { PromptAction } from '@kit.ArkUI';
+import { curves, PromptAction } from '@kit.ArkUI';
+import { hdsEffect } from '@kit.UIDesignKit';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { setFirstLaunch, getFirstLaunch } from '../common/storage';
@@ -15,6 +16,7 @@ export struct confirmButtons {
     @State isConfirmEnabled: boolean = false;
     @State isExiting: boolean = false;
     @State isProcessing: boolean = false;
+    @State private pressedButton: string = '';
     private timerId: number = -1;
 
     aboutToAppear(): void {
@@ -99,14 +101,32 @@ export struct confirmButtons {
     private readonly BORDER_RADIUS: number = 22;
 
     build() {
-        Row() {
-            Button(this.isExiting ? "退出中..." : "取消并退出", { type: ButtonType.Normal })
-                .margin(2)
-                .width('35%')
+        Row({ space: 8 }) {
+            Button(this.isExiting ? "退出中..." : "取消并退出", { type: ButtonType.Normal, stateEffect: false })
+                .layoutWeight(1)
                 .height(this.BUTTON_HEIGHT)
-                .backgroundColor($r('app.color.v3_accent_green'))
+                .fontColor($r('app.color.v3_text_primary'))
+                .backgroundColor($r('app.color.v3_surface_alt'))
                 .borderRadius(this.BORDER_RADIUS)
-                .clickEffect({ level: ClickEffectLevel.LIGHT, scale: this.BUTTON_CLICK_SCALE })
+                .scale({ x: this.pressedButton === 'cancel' ? this.BUTTON_CLICK_SCALE : 1,
+                    y: this.pressedButton === 'cancel' ? this.BUTTON_CLICK_SCALE : 1 })
+                .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                        sourceType: this.pressedButton === 'cancel' ? hdsEffect.PointLightSourceType.BRIGHT :
+                            hdsEffect.PointLightSourceType.NONE,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                        options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
+                    })
+                    .pressShadow(this.pressedButton === 'cancel' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                        hdsEffect.PressShadowType.NONE)
+                    .buildEffect())
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) this.pressedButton = 'cancel';
+                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        this.pressedButton = '';
+                    }
+                })
                 .onClick(() => {
                     if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleCancel();
@@ -115,14 +135,31 @@ export struct confirmButtons {
 
             Button(
                 this.isProcessing ? "处理中..." : (this.isConfirmEnabled ? "确定且不再显示" : `确定(${this.countDown}s)`),
-                { type: ButtonType.Normal }
+                { type: ButtonType.Normal, stateEffect: false }
             )
-                .margin(2)
-                .width('45%')
+                .layoutWeight(1.35)
                 .height(this.BUTTON_HEIGHT)
                 .backgroundColor(this.isConfirmEnabled ? $r('app.color.v3_accent_red') : $r('app.color.v3_text_secondary'))
                 .borderRadius(this.BORDER_RADIUS)
-                .clickEffect({ level: ClickEffectLevel.LIGHT, scale: this.BUTTON_CLICK_SCALE })
+                .scale({ x: this.pressedButton === 'confirm' ? this.BUTTON_CLICK_SCALE : 1,
+                    y: this.pressedButton === 'confirm' ? this.BUTTON_CLICK_SCALE : 1 })
+                .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                        sourceType: this.pressedButton === 'confirm' ? hdsEffect.PointLightSourceType.BRIGHT :
+                            hdsEffect.PointLightSourceType.NONE,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                        options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
+                    })
+                    .pressShadow(this.pressedButton === 'confirm' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                        hdsEffect.PressShadowType.NONE)
+                    .buildEffect())
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) this.pressedButton = 'confirm';
+                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        this.pressedButton = '';
+                    }
+                })
                 .onClick(() => {
                     if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleConfirm();
@@ -130,8 +167,7 @@ export struct confirmButtons {
                 .accessibilityText(this.isConfirmEnabled ? '同意重要提示且不再显示' : `请等待${this.countDown}秒后同意`)
         }
         .width("100%")
-        .justifyContent(FlexAlign.SpaceEvenly)
-        .margin({ top: 15 })
+        .margin({ top: 2 })
         .accessibilityGroup(true)
         .accessibilityText('重要提示确认按钮');
     }

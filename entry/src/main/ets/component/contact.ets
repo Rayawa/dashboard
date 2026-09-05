@@ -28,12 +28,16 @@ export struct contact {
         .borderRadius(16)
         .scale({ x: this.pressedItem === title ? 0.97 : 1, y: this.pressedItem === title ? 0.97 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-            sourceType: this.pressedItem === title ?
-                hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-            options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-        }).buildEffect())
+        .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+                sourceType: this.pressedItem === title ?
+                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+            })
+            .pressShadow(this.pressedItem === title ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                hdsEffect.PressShadowType.NONE)
+            .buildEffect())
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.updatePressed(title, true);
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.updatePressed(title, false);
@@ -67,12 +71,16 @@ export struct contact {
             .scale({ x: this.pressedItem === 'sponsor' ? 0.97 : 1,
                 y: this.pressedItem === 'sponsor' ? 0.97 : 1 })
             .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-            .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-                sourceType: this.pressedItem === 'sponsor' ?
-                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-            }).buildEffect())
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                    sourceType: this.pressedItem === 'sponsor' ?
+                        hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                    options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
+                })
+                .pressShadow(this.pressedItem === 'sponsor' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                    hdsEffect.PressShadowType.NONE)
+                .buildEffect())
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.updatePressed('sponsor', true);
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {

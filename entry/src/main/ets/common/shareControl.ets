@@ -8,6 +8,12 @@ import { window } from '@kit.ArkUI';
 const TAG = 'WebShareManager';
 const SHARE_THUMBNAIL_MAX_BYTES = 32 * 1024;
 
+export interface WebShareData {
+  url: string;
+  title: string;
+  description: string;
+}
+
 export class WebShareManager {
   private static instance: WebShareManager;
   private context: common.UIAbilityContext;
@@ -17,17 +23,37 @@ export class WebShareManager {
   private currentTitle: string = '应用看板链接分享';
   private currentDescription: string = '';
   private currentThumbnail?: Uint8Array;
+  private currentDataProvider?: () => WebShareData;
 
   private constructor(context: common.UIAbilityContext) {
     this.context = context;
   }
 
-  public updateShareData(url: string, title: string = '应用看板链接分享', description: string = ''): void {
+  public updateShareData(url: string, title: string = '应用看板链接分享', description: string = '',
+    dataProvider?: () => WebShareData): void {
     this.currentUrl = url;
     this.currentTitle = title;
     this.currentDescription = description || url;
+    this.currentDataProvider = dataProvider;
     this.loadDefaultThumbnail();
     Logger.info(TAG, `URL 缓存已更新: ${url}`);
+  }
+
+  public clearShareDataProvider(): void {
+    this.currentDataProvider = undefined;
+  }
+
+  private refreshShareData(): void {
+    if (!this.currentDataProvider) return;
+    try {
+      const data = this.currentDataProvider();
+      if (!data.url || data.url === 'about:blank') return;
+      this.currentUrl = data.url;
+      this.currentTitle = data.title || '应用看板链接分享';
+      this.currentDescription = data.description || data.url;
+    } catch (error) {
+      Logger.warn(TAG, `实时分享数据读取失败: ${(error as BusinessError).message}`);
+    }
   }
 
   private async loadDefaultThumbnail(): Promise<void> {
@@ -56,6 +82,7 @@ export class WebShareManager {
    */
   public async showSystemShare(url?: string): Promise<void> {
     try {
+      this.refreshShareData();
       const finalUrl = url || this.currentUrl;
 
       if (!finalUrl || finalUrl === "about:blank") {
@@ -144,6 +171,7 @@ export class WebShareManager {
    * 内部统一执行被动分享逻辑 (碰一碰、隔空传送)
    */
   private async executePassiveShare(target: harmonyShare.SharableTarget): Promise<void> {
+    this.refreshShareData();
     if (!this.currentUrl || this.currentUrl === "about:blank") {
       Logger.error(TAG, "Passive share failed: No URL cached");
       return;

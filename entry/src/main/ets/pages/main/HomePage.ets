@@ -11,7 +11,7 @@ import { getContinuationState, setContinuationView, setDetailTarget } from '../.
 import { fetchAppsPage, fetchMarketInfo } from '../../common/MarketApi';
 import { formatDateTime, formatExactCount } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
-import { appIconGeometryId } from '../../common/sharedTransition';
+import { APP_DETAIL_GEOMETRY_PAGE, appIconGeometryId } from '../../common/sharedTransition';
 import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
 import { vibration } from '../../common/vibration';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
@@ -37,7 +37,7 @@ struct RollingNumber {
         this.displayedValue = 0;
         setTimeout((): void => {
             if (token !== this.animationToken) return;
-            this.getUIContext().animateTo({ duration: 850, curve: Curve.EaseOut }, (): void => {
+            this.getUIContext().animateTo({ duration: 1000, curve: Curve.EaseOut }, (): void => {
                 this.displayedValue = target;
             });
         }, 60);
@@ -68,6 +68,8 @@ struct RollingNumber {
 @Component
 struct HomeStatCard {
     stat: HomeStat = { label: '', value: 0, color: $r('app.color.diff_content') };
+    @State private pressed: boolean = false;
+    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
     build() {
         Column({ space: 8 }) {
@@ -90,6 +92,25 @@ struct HomeStatCard {
         .backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
         .shadow({ radius: 12, color: $r('app.color.v3_shadow'), offsetY: 3 })
+        .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+        .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+                sourceType: this.pointLight,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+            })
+            .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+            .buildEffect())
+        .onTouch((event: TouchEvent): void => {
+            if (event.type === TouchType.Down) {
+                this.pressed = true;
+                this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressed = false;
+                this.pointLight = hdsEffect.PointLightSourceType.NONE;
+            }
+        })
         .accessibilityGroup(true)
         .accessibilityText(`${this.stat.label}，${this.stat.value}`)
     }
@@ -114,8 +135,6 @@ struct RecentAppCard {
                     .clip(true)
                     .alt($r('app.media.startIcon'))
                     .accessibilityText(`${this.app.name || '未知应用'}图标`)
-                    .geometryTransition(appIconGeometryId(this.app, 'home'), { follow: true })
-                    .transition(TransitionEffect.OPACITY)
             }
                 .width(48)
                 .height(48)
@@ -150,13 +169,18 @@ struct RecentAppCard {
         .borderRadius(16)
         .backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
+        .geometryTransition(appIconGeometryId(this.app, 'home'), { follow: true })
+        .transition(TransitionEffect.OPACITY.animation({ duration: 350, curve: Curve.Friction }))
         .scale({ x: this.pressed ? 0.975 : 1, y: this.pressed ? 0.975 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder().pointLight({
-            sourceType: this.pointLight,
-            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-            options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-        }).buildEffect())
+        .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+                sourceType: this.pointLight,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+            })
+            .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+            .buildEffect())
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) {
                 this.pressed = true;
@@ -177,8 +201,8 @@ struct RecentAppCard {
 
 @Component
 export struct HomePage {
-    @Consume('pageStack') private pageStack: NavPathStack;
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
+    onOpenAppDetail?: (target: AppRouteTarget) => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     @StorageLink('username') private username: string = '';
@@ -192,8 +216,8 @@ export struct HomePage {
     @State private loaded: boolean = false;
     @State private recentApps: MarketApp[] = [];
     @State private contentWidth: number = 0;
-    @State private transitionEffect: TransitionEffect = TransitionEffect.IDENTITY;
     @State private pageVisible: boolean = false;
+    @State private displayCardPressed: string = '';
     private restoredScroll: boolean = false;
     private reloadAfterCurrent: boolean = false;
 
@@ -272,16 +296,15 @@ export struct HomePage {
             packageName: app.pkg_name,
             previewApp: app,
             geometryId: appIconGeometryId(app, 'home'),
+            geometryTarget: APP_DETAIL_GEOMETRY_PAGE,
         };
-        this.transitionEffect = TransitionEffect.OPACITY
-            .combine(TransitionEffect.scale({ x: 0.9, y: 0.9 }))
-            .animation({ curve: curves.interpolatingSpring(0, 1, 195, 23) });
         try {
             this.getUIContext().animateTo({
-                curve: curves.interpolatingSpring(0, 1, 328, 36),
+                duration: 350,
+                curve: Curve.Friction,
             }, (): void => {
                 setDetailTarget(target);
-                this.pageStack.pushPath({ name: 'AppDetailPage', param: target }, false);
+                this.onOpenAppDetail?.(target);
             });
         } catch (error) {
             console.error('[Dashboard][pages/main/HomePage][ERROR]', `打开应用详情失败: ${JSON.stringify(error)}`);
@@ -336,6 +359,23 @@ export struct HomePage {
             }
             .width('100%').padding(18).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
             .border({ width: 1, color: $r('app.color.nd_card_border') })
+            .scale({ x: this.displayCardPressed === 'total' ? 0.985 : 1,
+                y: this.displayCardPressed === 'total' ? 0.985 : 1 })
+            .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                    sourceType: this.displayCardPressed === 'total' ? hdsEffect.PointLightSourceType.BRIGHT :
+                        hdsEffect.PointLightSourceType.NONE,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                    options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+                })
+                .pressShadow(this.displayCardPressed === 'total' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                    hdsEffect.PressShadowType.NONE)
+                .buildEffect())
+            .onTouch((event: TouchEvent): void => {
+                if (event.type === TouchType.Down) this.displayCardPressed = 'total';
+                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.displayCardPressed = '';
+            })
             .accessibilityGroup(true)
             .accessibilityText(`应用总数${this.market.app_count.apps + this.market.app_count.atomic_services}，其中鸿蒙应用${this.market.app_count.apps}，元服务${this.market.app_count.atomic_services}`)
             .transition(contentEnterTransition(10))
@@ -382,6 +422,23 @@ export struct HomePage {
             }
             .width('100%').padding(18).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
             .border({ width: 1, color: $r('app.color.nd_card_border') })
+            .scale({ x: this.displayCardPressed === 'status' ? 0.985 : 1,
+                y: this.displayCardPressed === 'status' ? 0.985 : 1 })
+            .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                    sourceType: this.displayCardPressed === 'status' ? hdsEffect.PointLightSourceType.BRIGHT :
+                        hdsEffect.PointLightSourceType.NONE,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                    options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
+                })
+                .pressShadow(this.displayCardPressed === 'status' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                    hdsEffect.PressShadowType.NONE)
+                .buildEffect())
+            .onTouch((event: TouchEvent): void => {
+                if (event.type === TouchType.Down) this.displayCardPressed = 'status';
+                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.displayCardPressed = '';
+            })
             .accessibilityGroup(true)
             .accessibilityText(this.market.sync_status.is_syncing_all ? '服务当前正在全量同步' : '服务当前状态正常')
             .transition(contentEnterTransition(10))
@@ -615,7 +672,6 @@ export struct HomePage {
         .backgroundColor($r('app.color.background'))
         .opacity(this.pageVisible ? 1 : 0.01)
         .translate({ y: this.pageVisible ? 0 : 12 })
-        .transition(this.transitionEffect)
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })

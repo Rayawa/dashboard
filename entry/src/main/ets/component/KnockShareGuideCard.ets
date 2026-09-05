@@ -3,7 +3,8 @@
  */
 
 import { image } from '@kit.ImageKit';
-import { LengthMetrics } from '@kit.ArkUI';
+import { curves, LengthMetrics } from '@kit.ArkUI';
+import { hdsEffect } from '@kit.UIDesignKit';
 import { resourceManager } from '@kit.LocalizationKit';
 import { Logger } from '../utils/Logger';
 import { vibration } from '../common/vibration';
@@ -28,6 +29,7 @@ export struct KnockShareSingleGuideCard {
     @Require minHeight: number;
     @Require hasIndicator: boolean;
     @State animReady: boolean = false;
+    @State private pressed: boolean = false;
     private animFrames: ImageFrameInfo[] = [];
     private staticFrame: ImageFrameInfo[] = [];
 
@@ -113,6 +115,21 @@ export struct KnockShareSingleGuideCard {
         .borderWidth(1)
         .borderColor(this.getColor($r("sys.color.icon_primary"), 0.05))
         .clip(true)
+        .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
+        .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+                sourceType: this.pressed ? hdsEffect.PointLightSourceType.BRIGHT :
+                    hdsEffect.PointLightSourceType.NONE,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                options: { color: $r('app.color.diff_content'), intensity: 5, height: 96 },
+            })
+            .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+            .buildEffect())
+        .onTouch((event: TouchEvent): void => {
+            if (event.type === TouchType.Down) this.pressed = true;
+            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressed = false;
+        })
         .height("auto")
         .margin({ left: 16, right: 16 })
         .accessibilityGroup(true)
