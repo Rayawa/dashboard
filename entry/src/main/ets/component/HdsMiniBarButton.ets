@@ -10,7 +10,7 @@ import { curves } from '@kit.ArkUI';
 export struct HdsMiniBarButton {
   @Prop barWidth: number = 240;
   @Prop barHeight: number = 52;
-  @StorageLink('immersiveMaterialLevel') materialLevel: number = 2;
+  @StorageLink('immersiveMaterialLevel') materialLevel: number = 1;
   @Prop materialType: number = 100;
   @BuilderParam buttonContent: () => void = this.defaultContent;
   public onButtonClick: (() => void) | undefined = undefined;

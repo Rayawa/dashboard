@@ -16,9 +16,9 @@ import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation'
 @Component
 export struct HTML {
   @Consume('pageStack') pageStack: NavPathStack;
-  @StorageLink('vibrationLevel') vibrationLevel: number = 0;
+  @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.SMOOTH;
+    hdsMaterial.MaterialLevel.GENTLE;
   controller: webview.WebviewController = new webview.WebviewController();
   @State params: WebViewParam = new WebViewParam('', '');
   @State private topPlaceholderHeight: number = 100;

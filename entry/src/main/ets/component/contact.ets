@@ -8,7 +8,7 @@ import { showToastSafely } from '../common/safeUi';
 @Component
 export struct contact {
     private PromptAction: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink('vibrationLevel') vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') vibrationLevel: number = 1;
     @State private pressedItem: string = '';
 
     private updatePressed(item: string, pressed: boolean): void {

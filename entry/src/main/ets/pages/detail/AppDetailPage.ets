@@ -110,9 +110,9 @@ export struct AppDetailPage {
     @State private started: boolean = false;
     @State private downloadChartViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
     @State private ratingChartViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-        hdsMaterial.MaterialLevel.SMOOTH;
+        hdsMaterial.MaterialLevel.GENTLE;
 
     private vibrate(): void {
         if (this.vibrationLevel > 0) {

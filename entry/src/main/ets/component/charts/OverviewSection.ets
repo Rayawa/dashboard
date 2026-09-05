@@ -33,7 +33,7 @@ struct DistributionPanel {
     @State private canvasSize: number = 220;
     @State private pressed: boolean = false;
     @State private pressedControl: string = '';
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
     private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
     private canvasReady: boolean = false;
@@ -595,7 +595,7 @@ export struct OverviewSection {
     @State private sdkOtherHidden: boolean = false;
     @State private apiHistoryViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
     @State private pressedControl: string = '';
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     private pendingLoads: number = 0;
     private reloadAfterCurrent: boolean = false;
     private restoredContinuationUi: boolean = false;

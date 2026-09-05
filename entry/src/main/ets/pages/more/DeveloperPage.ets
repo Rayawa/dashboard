@@ -26,7 +26,7 @@ interface DeveloperField {
 @Component
 export struct DeveloperPage {
   @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.SMOOTH;
+    hdsMaterial.MaterialLevel.GENTLE;
   @State private pressedField: string = '';
   private fields(): DeveloperField[] {
     return [

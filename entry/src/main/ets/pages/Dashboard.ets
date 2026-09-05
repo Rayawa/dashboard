@@ -69,9 +69,9 @@ struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
     private tabsController: HdsTabsController = new HdsTabsController();
     private prompt: PromptAction = this.getUIContext().getPromptAction();
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-        hdsMaterial.MaterialLevel.SMOOTH;
+        hdsMaterial.MaterialLevel.GENTLE;
     @State private selectedIndex: number = MAIN_TAB_DEFAULT;
     @State private searchRequestVersion: number = 0;
     @State private showWarning: boolean = false;

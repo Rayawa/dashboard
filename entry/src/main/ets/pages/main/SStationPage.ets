@@ -41,7 +41,7 @@ export struct SStationPage {
     @Prop @Watch('onCommandVersionChanged') commandVersion: number = 0;
     @Prop @Watch('onActiveChanged') active: boolean = false;
     onDetailOpenChanged?: (open: boolean) => void;
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @State private progress: number = 0;
     @State private loading: boolean = true;
     @State private errorMessage: string = '';

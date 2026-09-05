@@ -39,7 +39,7 @@ interface MoreItem {
 @Component
 struct MoreRow {
     item: MoreItem = { title: '', icon: $r('app.media.info'), action: () => {} };
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
 
     @Builder
     private RightSuffix(): void {
@@ -102,7 +102,7 @@ export struct MyPage {
     onShowWarning?: () => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @State private showContact: boolean = false;
     @State private versionTapCount: number = 0;
     @State private contentWidth: number = 0;
@@ -308,7 +308,7 @@ export struct MyPage {
                 .accessibilityText('京ICP备2025153453号，点击打开工信部备案页面')
         }
         .width('100%')
-        .padding({ top: 14, bottom: 14 })
+        .padding({ top: 14 })
         .accessibilityGroup(true)
         .accessibilityText('版本版权和备案信息')
     }

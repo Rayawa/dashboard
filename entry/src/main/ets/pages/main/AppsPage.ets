@@ -25,7 +25,7 @@ struct AppTableRow {
     @Prop tableWidth: number = 924;
     @Prop developerWidth: number = 150;
     onOpen: (app: MarketApp) => void = () => {};
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @State private pressed: boolean = false;
     @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
@@ -139,7 +139,7 @@ export struct AppsPage {
     @State private searchPressed: boolean = false;
     @State private searchPointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
     @State private pressedControl: string = '';
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     private restoredScroll: boolean = false;
     private restoredView: boolean = false;
     private reloadAfterCurrent: boolean = false;
