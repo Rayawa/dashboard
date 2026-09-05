@@ -36,6 +36,7 @@ class SStationWebBridge {
 @Component
 export struct SStationPage {
     private controller: webview.WebviewController = new webview.WebviewController();
+    private scroller: Scroller = new Scroller();
     @Prop command: number = 0;
     @Prop @Watch('onCommandVersionChanged') commandVersion: number = 0;
     @Prop @Watch('onActiveChanged') active: boolean = false;
@@ -78,7 +79,11 @@ export struct SStationPage {
         this.restoredScroll = true;
         setTimeout((): void => {
             try {
-                this.controller.scrollTo(0, this.pendingScrollDistance, 0);
+                this.scroller.scrollTo({
+                    xOffset: 0,
+                    yOffset: this.pendingScrollDistance,
+                    animation: { duration: 0, curve: Curve.Linear },
+                });
             } catch (error) {
                 console.warn('[Dashboard][pages/main/SStationPage][WARN]',
                     `恢复S站滚动位置失败: ${JSON.stringify(error)}`);
@@ -210,7 +215,11 @@ export struct SStationPage {
             if (this.command === S_STATION_COMMAND_BACK) {
                 this.closeCurrentAppDetail();
             } else if (this.command === S_STATION_COMMAND_SCROLL_TOP) {
-                this.controller.scrollTo(0, 0, 300);
+                this.scroller.scrollTo({
+                    xOffset: 0,
+                    yOffset: 0,
+                    animation: { duration: 300, curve: Curve.Ease },
+                });
             } else if (this.command === S_STATION_COMMAND_SHARE) {
                 this.showShare();
             } else if (this.command === S_STATION_COMMAND_HOME) {
@@ -218,7 +227,7 @@ export struct SStationPage {
                 this.loading = true;
                 this.currentUrl = SBaseURL.toString();
                 setContinuationPageUrl(this.currentUrl);
-                this.controller.scrollTo(0, 0, 0);
+                this.scroller.scrollTo({ xOffset: 0, yOffset: 0 });
                 this.controller.loadUrl(this.currentUrl);
                 setContinuationScrollDistance(0);
             }
@@ -229,20 +238,24 @@ export struct SStationPage {
 
     build() {
         Stack({ alignContent: Alignment.Top }) {
-            Column() {
-                Blank()
-                    .height(100)
-                    .width('100%')
-                    .accessibilityText('S站标题栏安全区域')
-                Web({
-                    src: this.initialUrl,
-                    controller: this.controller,
-                    renderMode: RenderMode.SYNC_RENDER,
-                })
+            Scroll(this.scroller) {
+                Column() {
+                    Blank()
+                        .height(100)
+                        .width('100%')
+                        .accessibilityText('S站标题栏安全区域')
+                    Web({
+                        src: this.initialUrl,
+                        controller: this.controller,
+                        renderMode: RenderMode.SYNC_RENDER,
+                    })
                     .id('HmDashboard_SStation')
                     .width('100%')
-                    .layoutWeight(1)
-                    .layoutMode(WebLayoutMode.NONE)
+                    .layoutMode(WebLayoutMode.FIT_CONTENT)
+                    .nestedScroll({
+                        scrollForward: NestedScrollMode.SELF_FIRST,
+                        scrollBackward: NestedScrollMode.SELF_FIRST,
+                    })
                     .overScrollMode(OverScrollMode.NEVER)
                     .backgroundColor($r('app.color.s_station_placeholder'))
                     .javaScriptProxy({
@@ -305,19 +318,22 @@ export struct SStationPage {
                     .onProgressChange((event) => {
                         this.progress = event.newProgress;
                     })
-                    .onScroll((event) => {
-                        if (!this.active) return;
-                        setMainTab(MAIN_TAB_S_STATION);
-                        setContinuationScrollDistance(event.yOffset);
-                    })
                     .domStorageAccess(true)
                     .darkMode(WebDarkMode.Auto)
                     .forceDarkAccess(true)
+                    .metaViewport(true)
                     .accessibilityText('S站网页内容')
+                }
+                .width('100%')
             }
+            .onDidScroll((): void => {
+                if (!this.active) return;
+                setMainTab(MAIN_TAB_S_STATION);
+                setContinuationScrollDistance(this.scroller.currentOffset().yOffset);
+            })
             .width('100%')
             .height('100%')
-            .backgroundColor($r('app.color.s_station_placeholder'))
+            .backgroundColor($r('app.color.backcolor'))
             .accessibilityText('使用内部滚动的S站网页视图')
 
             if (this.loading) {
@@ -369,7 +385,7 @@ export struct SStationPage {
         }
         .width('100%')
         .height('100%')
-        .backgroundColor($r('app.color.s_station_placeholder'))
+        .backgroundColor($r('app.color.backcolor'))
         .opacity(this.pageVisible ? 1 : 0.01)
         .translate({ y: this.pageVisible ? 0 : 10 })
         .accessibilityGroup(true)

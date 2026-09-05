@@ -387,7 +387,7 @@ export struct AppsPage {
     private commonHeader(): void {
         Column() {
             Search({ placeholder: '搜索应用名称、包名、App ID 或链接' })
-                .width('100%').height(48).defaultFocus(false)
+                .width('100%').height(48).defaultFocus(false).enableKeyboardOnFocus(false)
                 .backgroundColor($r('app.color.v3_surface_alt'))
                 .geometryTransition(SEARCH_SHARED_GEOMETRY_ID, { follow: true })
                 .transition(TransitionEffect.OPACITY)

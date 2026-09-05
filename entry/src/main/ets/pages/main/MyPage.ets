@@ -1,6 +1,6 @@
 import { common, Want } from '@kit.AbilityKit';
 import { curves, PromptAction, TextModifier } from '@kit.ArkUI';
-import { HdsListItemCard, IconSize, PrefixIcon, SuffixArrow, SuffixCustomBuilder } from '@kit.UIDesignKit';
+import { HdsListItemCard, IconSize, PrefixIcon, SuffixCustomBuilder } from '@kit.UIDesignKit';
 import { settings } from '../../component/settings';
 import { contact } from '../../component/contact';
 import {
@@ -34,6 +34,15 @@ struct MoreRow {
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
 
     @Builder
+    private RightSuffix(): void {
+        Image($r('app.media.right'))
+            .width(20)
+            .height(20)
+            .objectFit(ImageFit.Contain)
+            .accessibilityText('进入')
+    }
+
+    @Builder
     private ExternalSuffix(): void {
         Image($r('app.media.share'))
             .width(20)
@@ -58,7 +67,9 @@ struct MoreRow {
             },
             suffixItem: this.item.opensExternal ? new SuffixCustomBuilder(() => {
                 this.ExternalSuffix()
-            }) : new SuffixArrow({ color: $r('sys.color.icon_secondary') }),
+            }) : new SuffixCustomBuilder(() => {
+                this.RightSuffix()
+            }),
             onClick: () => {
                 if (this.vibrationLevel > 0) vibration.dotVibration();
                 this.item.action();
