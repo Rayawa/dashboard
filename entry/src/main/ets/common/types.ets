@@ -200,8 +200,6 @@ export interface AppRouteTarget {
     packageName?: string;
     backgroundRefreshHandled?: boolean;
     previewApp?: MarketApp;
-    geometryId?: string;
-    geometryTarget?: string;
 }
 
 export class WebViewParam {

@@ -1,5 +1,4 @@
-import { curves, PromptAction } from '@kit.ArkUI';
-import { hdsEffect } from '@kit.UIDesignKit';
+import { PromptAction } from '@kit.ArkUI';
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { vibration } from '../common/vibration';
@@ -13,7 +12,6 @@ export struct warn {
   @Prop requiresConfirmation: boolean = true;
   private PromptAction: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink('vibrationLevel') vibrationLevel: number = 0;
-  @State private pressedItem: string = '';
 
   private vibrate(): void {
     if (this.vibrationLevel > 0) {
@@ -73,23 +71,6 @@ export struct warn {
         .alignItems(HorizontalAlign.Start)
         .borderRadius(14)
         .backgroundColor($r('app.color.v3_warning_bg'))
-        .scale({ x: this.pressedItem === 'warning' ? 0.985 : 1,
-          y: this.pressedItem === 'warning' ? 0.985 : 1 })
-        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-          .pointLight({
-            sourceType: this.pressedItem === 'warning' ? hdsEffect.PointLightSourceType.BRIGHT :
-              hdsEffect.PointLightSourceType.NONE,
-            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-            options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
-          })
-          .pressShadow(this.pressedItem === 'warning' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-            hdsEffect.PressShadowType.NONE)
-          .buildEffect())
-        .onTouch((event: TouchEvent): void => {
-          if (event.type === TouchType.Down) this.pressedItem = 'warning';
-          else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedItem = '';
-        })
 
         Row() {
           Text('查看项目总网页')
@@ -106,23 +87,6 @@ export struct warn {
         .padding({ left: 14, right: 14 })
         .borderRadius(14)
         .backgroundColor($r('app.color.v3_surface_alt'))
-        .scale({ x: this.pressedItem === 'project' ? 0.98 : 1,
-          y: this.pressedItem === 'project' ? 0.98 : 1 })
-        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-          .pointLight({
-            sourceType: this.pressedItem === 'project' ? hdsEffect.PointLightSourceType.BRIGHT :
-              hdsEffect.PointLightSourceType.NONE,
-            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-            options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
-          })
-          .pressShadow(this.pressedItem === 'project' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-            hdsEffect.PressShadowType.NONE)
-          .buildEffect())
-        .onTouch((event: TouchEvent): void => {
-          if (event.type === TouchType.Down) this.pressedItem = 'project';
-          else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedItem = '';
-        })
         .onClick(() => this.openProjectPage())
         .accessibilityText('打开Dashboard项目总网页查看详细说明')
 

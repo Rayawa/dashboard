@@ -215,13 +215,10 @@ export struct tutorial {
     .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
     .visualEffect(new hdsEffect.HdsEffectBuilder()
       .pointLight({
-        sourceType: this.pressedCard === section.title ? hdsEffect.PointLightSourceType.BRIGHT :
-          hdsEffect.PointLightSourceType.NONE,
+        sourceType: hdsEffect.PointLightSourceType.BRIGHT,
         illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
         options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
       })
-      .pressShadow(this.pressedCard === section.title ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-        hdsEffect.PressShadowType.NONE)
       .buildEffect())
     .onTouch((event: TouchEvent): void => {
       if (event.type === TouchType.Down) this.pressedCard = section.title;
@@ -266,13 +263,10 @@ export struct tutorial {
               .animation({ duration: 120, curve: Curve.EaseOut })
               .visualEffect(new hdsEffect.HdsEffectBuilder()
                 .pointLight({
-                  sourceType: this.pressedCard === 'project-link' ? hdsEffect.PointLightSourceType.BRIGHT :
-                    hdsEffect.PointLightSourceType.NONE,
+                  sourceType: hdsEffect.PointLightSourceType.BRIGHT,
                   illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
                   options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
                 })
-                .pressShadow(this.pressedCard === 'project-link' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                  hdsEffect.PressShadowType.NONE)
                 .buildEffect())
               .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.pressedCard = 'project-link';

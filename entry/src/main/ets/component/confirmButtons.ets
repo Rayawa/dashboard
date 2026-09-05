@@ -1,6 +1,5 @@
 import { vibration } from '../common/vibration';
-import { curves, PromptAction } from '@kit.ArkUI';
-import { hdsEffect } from '@kit.UIDesignKit';
+import { PromptAction } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { setFirstLaunch, getFirstLaunch } from '../common/storage';
@@ -16,7 +15,6 @@ export struct confirmButtons {
     @State isConfirmEnabled: boolean = false;
     @State isExiting: boolean = false;
     @State isProcessing: boolean = false;
-    @State private pressedButton: string = '';
     private timerId: number = -1;
 
     aboutToAppear(): void {
@@ -97,7 +95,6 @@ export struct confirmButtons {
     }
 
     private readonly BUTTON_HEIGHT: number = 44;
-    private readonly BUTTON_CLICK_SCALE: number = 0.96;
     private readonly BORDER_RADIUS: number = 22;
 
     build() {
@@ -108,25 +105,6 @@ export struct confirmButtons {
                 .fontColor($r('app.color.v3_text_primary'))
                 .backgroundColor($r('app.color.v3_surface_alt'))
                 .borderRadius(this.BORDER_RADIUS)
-                .scale({ x: this.pressedButton === 'cancel' ? this.BUTTON_CLICK_SCALE : 1,
-                    y: this.pressedButton === 'cancel' ? this.BUTTON_CLICK_SCALE : 1 })
-                .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                        sourceType: this.pressedButton === 'cancel' ? hdsEffect.PointLightSourceType.BRIGHT :
-                            hdsEffect.PointLightSourceType.NONE,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                        options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
-                    })
-                    .pressShadow(this.pressedButton === 'cancel' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                        hdsEffect.PressShadowType.NONE)
-                    .buildEffect())
-                .onTouch((event: TouchEvent): void => {
-                    if (event.type === TouchType.Down) this.pressedButton = 'cancel';
-                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                        this.pressedButton = '';
-                    }
-                })
                 .onClick(() => {
                     if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleCancel();
@@ -141,25 +119,6 @@ export struct confirmButtons {
                 .height(this.BUTTON_HEIGHT)
                 .backgroundColor(this.isConfirmEnabled ? $r('app.color.v3_accent_red') : $r('app.color.v3_text_secondary'))
                 .borderRadius(this.BORDER_RADIUS)
-                .scale({ x: this.pressedButton === 'confirm' ? this.BUTTON_CLICK_SCALE : 1,
-                    y: this.pressedButton === 'confirm' ? this.BUTTON_CLICK_SCALE : 1 })
-                .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                        sourceType: this.pressedButton === 'confirm' ? hdsEffect.PointLightSourceType.BRIGHT :
-                            hdsEffect.PointLightSourceType.NONE,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                        options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
-                    })
-                    .pressShadow(this.pressedButton === 'confirm' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                        hdsEffect.PressShadowType.NONE)
-                    .buildEffect())
-                .onTouch((event: TouchEvent): void => {
-                    if (event.type === TouchType.Down) this.pressedButton = 'confirm';
-                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                        this.pressedButton = '';
-                    }
-                })
                 .onClick(() => {
                     if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleConfirm();

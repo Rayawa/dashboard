@@ -3,8 +3,7 @@ import { curves, UIContext } from '@kit.ArkUI';
 /**
  * Dashboard 的统一动效节奏。
  *
- * 交互反馈保持短促，页面/组件进出使用无明显回弹的弹簧；共享元素仍由
- * geometryTransition 接管尺寸与位置，避免两套位移动画相互竞争。
+ * 交互反馈保持短促，页面/组件进出使用无明显回弹的弹簧。
  */
 export const CONTENT_ENTER_DURATION_MS: number = 280;
 export const PAGE_TRANSITION_DURATION_MS: number = 300;

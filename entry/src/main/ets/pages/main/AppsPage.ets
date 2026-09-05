@@ -9,11 +9,10 @@ import { fetchAppsPage } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
-import { APP_DETAIL_GEOMETRY_ICON, appIconGeometryId } from '../../common/sharedTransition';
 import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
 import { vibration } from '../../common/vibration';
 import { OverviewSection } from '../../component/charts/OverviewSection';
-import { SEARCH_SHARED_GEOMETRY_ID, SearchPage } from './SearchPage';
+import { SearchPage } from './SearchPage';
 
 interface SortChoice { label: string; field: string; }
 interface FilterChoice { label: string; field: string; }
@@ -46,8 +45,6 @@ struct AppTableRow {
                         .borderRadius(8).clip(true)
                         .alt($r('app.media.startIcon'))
                         .accessibilityText(`${this.app.name || '未知应用'}图标`)
-                        .geometryTransition(appIconGeometryId(this.app, 'apps'), { follow: true })
-                        .transition(TransitionEffect.OPACITY.animation({ duration: 350, curve: Curve.Friction }))
                 }
                     .width(34).height(34).borderRadius(8).clip(true)
                 Column({ space: 2 }) {
@@ -87,7 +84,7 @@ struct AppTableRow {
         .visualEffect(new hdsEffect.HdsEffectBuilder()
             .pointLight({
                 sourceType: this.pointLight,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                 options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
             })
             .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
@@ -116,7 +113,6 @@ export struct AppsPage {
     @Prop @Watch('onSearchCommandVersionChanged') searchCommandVersion: number = 0;
     @Prop @Watch('onRequestVersionChanged') requestVersion: number = 0;
     @Prop @Watch('onSearchCloseVersionChanged') searchCloseVersion: number = 0;
-    onSearchVisibilityChanged?: (visible: boolean) => void;
     onSearchOpenChanged?: (open: boolean) => void;
     onOpenAppDetail?: (target: AppRouteTarget) => void;
     @Link selectedIndexes: number[];
@@ -124,7 +120,6 @@ export struct AppsPage {
     private pageScroller: Scroller = new Scroller();
     @State private searchExpanded: boolean = false;
     @State private searchPullRefreshing: boolean = false;
-    @State private titleSearchVisible: boolean = false;
     @State private apps: MarketApp[] = [];
     @State private page: number = 1;
     @State private total: number = 0;
@@ -143,6 +138,7 @@ export struct AppsPage {
     @State private pageVisible: boolean = false;
     @State private searchPressed: boolean = false;
     @State private searchPointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
+    @State private pressedControl: string = '';
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     private restoredScroll: boolean = false;
     private restoredView: boolean = false;
@@ -205,8 +201,6 @@ export struct AppsPage {
             console.warn('[Dashboard][pages/main/AppsPage][WARN]',
                 `打开搜索页前清除焦点失败: ${JSON.stringify(error)}`);
         }
-        this.titleSearchVisible = false;
-        if (this.onSearchVisibilityChanged) this.onSearchVisibilityChanged(false);
         this.getUIContext().animateTo({
             curve: curves.interpolatingSpring(0, 1, 342, 38),
         }, (): void => {
@@ -225,18 +219,7 @@ export struct AppsPage {
         }, (): void => {
             this.searchExpanded = false;
             if (this.onSearchOpenChanged) this.onSearchOpenChanged(false);
-            this.updateTitleSearch(this.pageScroller);
         });
-    }
-    private safeOffset(scroller: Scroller): number {
-        try { return scroller.currentOffset().yOffset; } catch (_error) { return 0; }
-    }
-    private updateTitleSearch(scroller: Scroller): void {
-        const offset = this.safeOffset(scroller);
-        const visible = offset > 10;
-        if (visible === this.titleSearchVisible) return;
-        this.titleSearchVisible = visible;
-        if (this.onSearchVisibilityChanged) this.onSearchVisibilityChanged(visible);
     }
     private vibrate(): void { if (this.vibrationLevel > 0) vibration.dotVibration(); }
     private sortChoices(): SortChoice[] {
@@ -347,17 +330,10 @@ export struct AppsPage {
             appId: app.app_id,
             packageName: app.pkg_name,
             previewApp: app,
-            geometryId: appIconGeometryId(app, 'apps'),
-            geometryTarget: APP_DETAIL_GEOMETRY_ICON,
         };
         try {
-            this.getUIContext().animateTo({
-                duration: 350,
-                curve: Curve.Friction,
-            }, (): void => {
-                setDetailTarget(target);
-                this.onOpenAppDetail?.(target);
-            });
+            setDetailTarget(target);
+            this.onOpenAppDetail?.(target);
         }
         catch (error) {
             console.error('[Dashboard][pages/main/AppsPage][ERROR]',
@@ -368,7 +344,6 @@ export struct AppsPage {
     private recordScroll(scroller: Scroller): void {
         try {
             const offset = scroller.currentOffset().yOffset;
-            this.updateTitleSearch(scroller);
             setContinuationView(MAIN_TAB_APPS, offset);
         } catch (error) {
             console.warn('[Dashboard][pages/main/AppsPage][WARN]', `保存滚动位置失败: ${JSON.stringify(error)}`);
@@ -389,14 +364,12 @@ export struct AppsPage {
             Search({ placeholder: '搜索应用名称、包名、App ID 或链接' })
                 .width('100%').height(48).defaultFocus(false).enableKeyboardOnFocus(false)
                 .backgroundColor($r('app.color.v3_surface_alt'))
-                .geometryTransition(SEARCH_SHARED_GEOMETRY_ID, { follow: true })
-                .transition(TransitionEffect.OPACITY)
                 .scale({ x: this.searchPressed ? 0.985 : 1, y: this.searchPressed ? 0.985 : 1 })
                 .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
                 .visualEffect(new hdsEffect.HdsEffectBuilder()
                     .pointLight({
                         sourceType: this.searchPointLight,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                         options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
                     })
                     .pressShadow(this.searchPressed ? hdsEffect.PressShadowType.BLEND_GRADIENT :
@@ -425,6 +398,22 @@ export struct AppsPage {
                 Select(this.typeOptions()).selected(this.typeIndex)
                     .value(['全部类型', '鸿蒙应用', '元服务'][this.typeIndex]).height(42).margin(4)
                     .backgroundColor($r('app.color.v3_surface'))
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pressedControl === 'type' ? hdsEffect.PointLightSourceType.BRIGHT :
+                                hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                        })
+                        .pressShadow(this.pressedControl === 'type' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                            hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.pressedControl = 'type';
+                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressedControl = '';
+                        }
+                    })
                     .onSelect((index: number) => {
                         this.vibrate();
                         this.typeIndex = index;
@@ -436,6 +425,22 @@ export struct AppsPage {
                 Select(this.filterOptions()).selected(this.filterIndex)
                     .value(this.filterChoices()[this.filterIndex].label).height(42).margin(4)
                     .backgroundColor($r('app.color.v3_surface'))
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pressedControl === 'filter-kind' ? hdsEffect.PointLightSourceType.BRIGHT :
+                                hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                        })
+                        .pressShadow(this.pressedControl === 'filter-kind' ?
+                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.pressedControl = 'filter-kind';
+                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressedControl = '';
+                        }
+                    })
                     .onSelect((index: number) => {
                         this.vibrate();
                         this.filterIndex = index;
@@ -444,6 +449,22 @@ export struct AppsPage {
                     .accessibilityText('选择筛选字段')
                 TextInput({ text: this.filterText, placeholder: '输入筛选内容' }).height(42).margin(4)
                     .constraintSize({ minWidth: 170, maxWidth: 280 }).backgroundColor($r('app.color.v3_surface'))
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pressedControl === 'filter-text' ? hdsEffect.PointLightSourceType.BRIGHT :
+                                hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                        })
+                        .pressShadow(this.pressedControl === 'filter-text' ?
+                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.pressedControl = 'filter-text';
+                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressedControl = '';
+                        }
+                    })
                     .onChange((value: string) => {
                         this.filterText = value;
                         this.recordListState();
@@ -452,18 +473,67 @@ export struct AppsPage {
                         this.applyFilter();
                     })
                     .accessibilityText(`按${this.filterChoices()[this.filterIndex].label}输入筛选内容`)
-                Button('筛选').height(42).margin(4).backgroundColor($r('app.color.diff_content'))
+                Button('筛选', { stateEffect: false }).height(42).margin(4)
+                    .backgroundColor($r('app.color.diff_content'))
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pressedControl === 'apply-filter' ?
+                                hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                        })
+                        .pressShadow(this.pressedControl === 'apply-filter' ?
+                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.pressedControl = 'apply-filter';
+                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressedControl = '';
+                        }
+                    })
                     .onClick(() => { this.vibrate(); this.applyFilter(); }).accessibilityText('应用筛选条件')
-                Button('清除').height(42).margin(4).fontColor($r('app.color.diff_content'))
+                Button('清除', { stateEffect: false }).height(42).margin(4).fontColor($r('app.color.diff_content'))
                     .backgroundColor($r('app.color.v3_surface')).onClick(() => {
                         this.vibrate();
                         this.clearFilter();
+                    })
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pressedControl === 'clear-filter' ?
+                                hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                        })
+                        .pressShadow(this.pressedControl === 'clear-filter' ?
+                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.pressedControl = 'clear-filter';
+                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressedControl = '';
+                        }
                     })
                     .accessibilityText('清除全部筛选条件')
             }.width('100%')
             Flex({ wrap: FlexWrap.Wrap }) {
                 Select(this.sortOptions()).selected(this.sortIndex).value(this.sortChoices()[this.sortIndex].label)
                     .height(42).margin(4).backgroundColor($r('app.color.v3_surface'))
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pressedControl === 'sort' ? hdsEffect.PointLightSourceType.BRIGHT :
+                                hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                        })
+                        .pressShadow(this.pressedControl === 'sort' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                            hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.pressedControl = 'sort';
+                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressedControl = '';
+                        }
+                    })
                     .onSelect((index: number) => {
                         this.vibrate();
                         this.sortIndex = index;
@@ -474,6 +544,22 @@ export struct AppsPage {
                     .accessibilityText('选择应用列表排序字段')
                 Select(this.pageSizeOptions()).selected(this.pageSizeIndex).value(`每页 ${this.pageSize()} 条`)
                     .height(42).margin(4).backgroundColor($r('app.color.v3_surface'))
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pressedControl === 'page-size' ? hdsEffect.PointLightSourceType.BRIGHT :
+                                hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                        })
+                        .pressShadow(this.pressedControl === 'page-size' ?
+                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.pressedControl = 'page-size';
+                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressedControl = '';
+                        }
+                    })
                     .onSelect((index: number) => {
                         this.vibrate();
                         this.pageSizeIndex = index;
@@ -482,8 +568,24 @@ export struct AppsPage {
                         this.load(false);
                     })
                     .accessibilityText(`选择每页显示数量，当前每页${this.pageSize()}条`)
-                Button(this.descending ? '降序 ↓' : '升序 ↑').height(42).margin(4)
+                Button(this.descending ? '降序 ↓' : '升序 ↑', { stateEffect: false }).height(42).margin(4)
                     .fontColor($r('app.color.diff_content')).backgroundColor($r('app.color.v3_surface'))
+                    .visualEffect(new hdsEffect.HdsEffectBuilder()
+                        .pointLight({
+                            sourceType: this.pressedControl === 'sort-direction' ?
+                                hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                        })
+                        .pressShadow(this.pressedControl === 'sort-direction' ?
+                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                        .buildEffect())
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.pressedControl = 'sort-direction';
+                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            this.pressedControl = '';
+                        }
+                    })
                     .onClick(() => {
                         this.vibrate();
                         this.descending = !this.descending;
@@ -548,8 +650,24 @@ export struct AppsPage {
     @Builder
     private pagination(): void {
         Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
-            Button('上一页').margin(4).enabled(this.page > 1 && !this.loading)
+            Button('上一页', { stateEffect: false }).margin(4).enabled(this.page > 1 && !this.loading)
                 .backgroundColor($r('app.color.v3_surface_alt')).fontColor($r('app.color.v3_text_primary'))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                        sourceType: this.pressedControl === 'previous-page' ?
+                            hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                    })
+                    .pressShadow(this.pressedControl === 'previous-page' ?
+                        hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                    .buildEffect())
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) this.pressedControl = 'previous-page';
+                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        this.pressedControl = '';
+                    }
+                })
                 .onClick(() => {
                     this.vibrate();
                     this.page--;
@@ -559,8 +677,24 @@ export struct AppsPage {
             Text(`第 ${this.page} / ${this.totalPages()} 页`).fontSize(13)
                 .fontColor($r('app.color.v3_text_secondary')).margin(8)
                 .accessibilityText(`第${this.page}页，共${this.totalPages()}页`)
-            Button('下一页').margin(4).enabled(this.page < this.totalPages() && !this.loading)
+            Button('下一页', { stateEffect: false }).margin(4).enabled(this.page < this.totalPages() && !this.loading)
                 .backgroundColor($r('app.color.diff_content'))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                        sourceType: this.pressedControl === 'next-page' ? hdsEffect.PointLightSourceType.BRIGHT :
+                            hdsEffect.PointLightSourceType.NONE,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                    })
+                    .pressShadow(this.pressedControl === 'next-page' ?
+                        hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                    .buildEffect())
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) this.pressedControl = 'next-page';
+                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        this.pressedControl = '';
+                    }
+                })
                 .onClick(() => {
                     this.vibrate();
                     this.page++;
@@ -569,12 +703,45 @@ export struct AppsPage {
                 }).accessibilityText('下一页')
             TextInput({ text: this.jumpText, placeholder: '页码' }).type(InputType.Number)
                 .width(84).height(40).margin(4).backgroundColor($r('app.color.v3_surface'))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                        sourceType: this.pressedControl === 'jump-page' ? hdsEffect.PointLightSourceType.BRIGHT :
+                            hdsEffect.PointLightSourceType.NONE,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                    })
+                    .pressShadow(this.pressedControl === 'jump-page' ?
+                        hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
+                    .buildEffect())
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) this.pressedControl = 'jump-page';
+                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        this.pressedControl = '';
+                    }
+                })
                 .onChange((value: string) => this.jumpText = value).onSubmit(() => {
                     this.vibrate();
                     this.jump();
                 })
                 .accessibilityText('输入要跳转的页码')
-            Button('跳转').margin(4).height(40).backgroundColor($r('app.color.v3_accent_cyan'))
+            Button('跳转', { stateEffect: false }).margin(4).height(40)
+                .backgroundColor($r('app.color.v3_accent_cyan'))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                        sourceType: this.pressedControl === 'jump' ? hdsEffect.PointLightSourceType.BRIGHT :
+                            hdsEffect.PointLightSourceType.NONE,
+                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
+                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
+                    })
+                    .pressShadow(this.pressedControl === 'jump' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
+                        hdsEffect.PressShadowType.NONE)
+                    .buildEffect())
+                .onTouch((event: TouchEvent): void => {
+                    if (event.type === TouchType.Down) this.pressedControl = 'jump';
+                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        this.pressedControl = '';
+                    }
+                })
                 .onClick(() => { this.vibrate(); this.jump(); }).accessibilityText('跳转到指定页')
         }.width('100%').padding({ bottom: 110 }).accessibilityText('应用列表分页控件')
     }
@@ -647,7 +814,6 @@ export struct AppsPage {
             if (this.searchExpanded) {
                 SearchPage({
                     requestVersion: this.requestVersion,
-                    geometryId: SEARCH_SHARED_GEOMETRY_ID,
                     onClose: (): void => this.closeSearch(),
                     onOpenAppDetail: (target: AppRouteTarget): void => this.onOpenAppDetail?.(target),
                 })

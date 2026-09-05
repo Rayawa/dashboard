@@ -33,7 +33,6 @@ struct DistributionPanel {
     @State private canvasSize: number = 220;
     @State private pressed: boolean = false;
     @State private pressedControl: string = '';
-    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
     @StorageLink('vibrationLevel') private vibrationLevel: number = 0;
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
     private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
@@ -339,12 +338,10 @@ struct DistributionPanel {
             .animation({ duration: 120, curve: Curve.EaseOut })
             .visualEffect(new hdsEffect.HdsEffectBuilder()
                 .pointLight({
-                    sourceType: this.pointLight,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                     options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
                 })
-                .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                    hdsEffect.PressShadowType.NONE)
                 .buildEffect())
             .onReady((): void => {
                 this.canvasReady = true;
@@ -353,10 +350,8 @@ struct DistributionPanel {
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) {
                     this.pressed = true;
-                    this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
                 } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
                     this.pressed = false;
-                    this.pointLight = hdsEffect.PointLightSourceType.NONE;
                 }
                 if (event.type === TouchType.Down && event.touches.length > 0) {
                     this.selectAt(event.touches[0].x, event.touches[0].y);
@@ -393,13 +388,10 @@ struct DistributionPanel {
                     .animation({ duration: 120, curve: Curve.EaseOut })
                     .visualEffect(new hdsEffect.HdsEffectBuilder()
                         .pointLight({
-                            sourceType: this.pressedControl === label ? hdsEffect.PointLightSourceType.BRIGHT :
-                                hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                            sourceType: hdsEffect.PointLightSourceType.BRIGHT,
+                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                             options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
                         })
-                        .pressShadow(this.pressedControl === label ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                            hdsEffect.PressShadowType.NONE)
                         .buildEffect())
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = label;
@@ -447,13 +439,10 @@ struct DistributionPanel {
                             .animation({ duration: 120, curve: Curve.EaseOut })
                             .visualEffect(new hdsEffect.HdsEffectBuilder()
                                 .pointLight({
-                                    sourceType: this.pressedControl === 'expand' ?
-                                        hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
+                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                                     options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
                                 })
-                                .pressShadow(this.pressedControl === 'expand' ?
-                                    hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
                                 .buildEffect())
                             .onTouch((event: TouchEvent): void => {
                                 if (event.type === TouchType.Down) this.pressedControl = 'expand';
@@ -795,13 +784,10 @@ export struct OverviewSection {
                             .animation({ duration: 120, curve: Curve.EaseOut })
                             .visualEffect(new hdsEffect.HdsEffectBuilder()
                                 .pointLight({
-                                    sourceType: this.pressedControl === label ? hdsEffect.PointLightSourceType.BRIGHT :
-                                        hdsEffect.PointLightSourceType.NONE,
-                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
+                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                                     options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
                                 })
-                                .pressShadow(this.pressedControl === label ?
-                                    hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
                                 .buildEffect())
                             .onTouch((event: TouchEvent): void => {
                                 if (event.type === TouchType.Down) this.pressedControl = label;
@@ -849,13 +835,10 @@ export struct OverviewSection {
                         .animation({ duration: 120, curve: Curve.EaseOut })
                         .visualEffect(new hdsEffect.HdsEffectBuilder()
                             .pointLight({
-                                sourceType: this.pressedControl === 'sdk-expand' ?
-                                    hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
+                                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
+                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
                                 options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
                             })
-                            .pressShadow(this.pressedControl === 'sdk-expand' ?
-                                hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
                             .buildEffect())
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.pressedControl = 'sdk-expand';
