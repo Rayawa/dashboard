@@ -132,7 +132,9 @@ struct Dashboard {
     }
 
     private preventWarningDismiss(): void {
-        this.vibrate();
+        // 首次启动时，重要提示不能通过侧滑或返回关闭；用长振动与提示一同反馈。
+        // 普通的短振动仍由各常规交互使用，避免两种反馈混淆。
+        vibration.waveVibration();
         showToastSafely(this.prompt, '请先阅读并同意重要提示！', 1000, 'Warning');
     }
 
@@ -266,6 +268,11 @@ struct Dashboard {
     }
 
     onBackPress(): boolean {
+        // 首启重要提示展示时，系统返回键和边缘侧滑都应保持在当前页。
+        if (this.showWarning && this.warningRequiresConfirmation) {
+            this.preventWarningDismiss();
+            return true;
+        }
         if (this.appsSearchOpen) {
             vibration.backVibration();
             this.appsSearchCloseVersion++;
@@ -329,19 +336,17 @@ struct Dashboard {
 
                     TabContent() {
                         HomePage({
+                            active: this.selectedIndex === MAIN_TAB_HOME,
                             scrollToTopVersion: this.mainActionIndex === MAIN_TAB_HOME ? this.mainActionVersion : 0,
                             onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[1].icon, this.tabs()[1].label))
-                    .opacity(this.selectedIndex === MAIN_TAB_HOME ? 1 : 0.92)
-                    .scale({ x: this.selectedIndex === MAIN_TAB_HOME ? 1 : 0.985,
-                        y: this.selectedIndex === MAIN_TAB_HOME ? 1 : 0.985 })
-                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
                     .accessibilityText('首页标签页')
 
                     TabContent() {
                         AppsPage({
+                            active: this.selectedIndex === MAIN_TAB_APPS,
                             selectedIndexes: $appsViewIndexes,
                             scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
                             requestVersion: this.searchRequestVersion,
@@ -354,14 +359,11 @@ struct Dashboard {
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[2].icon, this.tabs()[2].label))
-                    .opacity(this.selectedIndex === MAIN_TAB_APPS ? 1 : 0.92)
-                    .scale({ x: this.selectedIndex === MAIN_TAB_APPS ? 1 : 0.985,
-                        y: this.selectedIndex === MAIN_TAB_APPS ? 1 : 0.985 })
-                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
                     .accessibilityText('应用详情标签页')
 
                     TabContent() {
                         MyPage({
+                            active: this.selectedIndex === MAIN_TAB_MY,
                             scrollToTopVersion: this.mainActionIndex === MAIN_TAB_MY ? this.mainActionVersion : 0,
                             onShowWarning: (): void => {
                                 this.warningRequiresConfirmation = false;
@@ -370,10 +372,6 @@ struct Dashboard {
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.tabs()[3].icon, this.tabs()[3].label))
-                    .opacity(this.selectedIndex === MAIN_TAB_MY ? 1 : 0.92)
-                    .scale({ x: this.selectedIndex === MAIN_TAB_MY ? 1 : 0.985,
-                        y: this.selectedIndex === MAIN_TAB_MY ? 1 : 0.985 })
-                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
                     .accessibilityText('我的标签页')
                 }
                 .barPosition(BarPosition.End)

@@ -1,6 +1,7 @@
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { hdsEffect, HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
 import { curves } from '@kit.ArkUI';
+import { pressVisualEffect } from '../common/visualEffects';
 
 /**
  * 基于 HdsTabs 迷你栏材质的通用按钮承载层。
@@ -33,13 +34,8 @@ export struct HdsMiniBarButton {
     .clip(true)
     .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
     .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-    .visualEffect(new hdsEffect.HdsEffectBuilder()
-      .pointLight({
-        sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-        options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
-      })
-      .buildEffect())
+    .visualEffect(pressVisualEffect(
+      this.pressed, hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 6, 96))
     .onTouch((event: TouchEvent): void => {
       if (event.type === TouchType.Down) {
         this.pressed = true;

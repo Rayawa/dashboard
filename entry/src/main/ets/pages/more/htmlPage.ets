@@ -41,6 +41,9 @@ export struct HTML {
           { text: '撤销', color: $r('app.color.v3_accent_red') }
         ]
       });
+      if (result.index === 0 || result.index === 1) {
+        if (this.vibrationLevel > 0) vibration.dotVibration();
+      }
       if (result.index === 1) {
         try {
           await setFirstLaunch(true);

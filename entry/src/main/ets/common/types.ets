@@ -216,4 +216,5 @@ export interface SearchTarget extends AppRouteTarget {
     rawText?: string;
     autoRun?: boolean;
     openDetailOnSuccess?: boolean;
+    recordHistory?: boolean;
 }

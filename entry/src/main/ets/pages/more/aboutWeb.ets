@@ -25,6 +25,7 @@ export interface AboutWebParams {
 struct aboutWeb {
   @Consume('pageStack') pageStack: NavPathStack;
   private controller: webview.WebviewController = new webview.WebviewController();
+  private scroller: Scroller = new Scroller();
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   @Prop url: string = '';
   @Prop title: string = '';
@@ -126,13 +127,17 @@ struct aboutWeb {
   build() {
     HdsNavDestination() {
       Stack({ alignContent: Alignment.Top }) {
-        Scroll() {
+        Scroll(this.scroller) {
           Column() {
-            Blank().height(100).width('100%')
             Web({ src: this.url, controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
             .id('HmDashboard_ApiDocs')
             .width('100%')
             .layoutMode(WebLayoutMode.FIT_CONTENT)
+            .nestedScroll({
+              scrollForward: NestedScrollMode.SELF_FIRST,
+              scrollBackward: NestedScrollMode.SELF_FIRST,
+            })
+            .overScrollMode(OverScrollMode.NEVER)
             .backgroundColor($r('app.color.backcolor'))
             .onControllerAttached(() => {
               try {
@@ -170,6 +175,7 @@ struct aboutWeb {
             .domStorageAccess(true)
             .darkMode(WebDarkMode.Auto)
             .forceDarkAccess(true)
+            .metaViewport(true)
             .accessibilityText(`${this.title || 'API文档'}网页内容`)
           }
           .width('100%')

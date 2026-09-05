@@ -9,10 +9,14 @@ import { fetchAppsPage } from '../../common/MarketApi';
 import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
-import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
+import {
+    contentEnterTransition,
+    startStaggerEnterAnimation,
+} from '../../common/motion';
+import { pressVisualEffect } from '../../common/visualEffects';
 import { vibration } from '../../common/vibration';
 import { OverviewSection } from '../../component/charts/OverviewSection';
-import { SearchPage } from './SearchPage';
+import { SEARCH_SHARED_GEOMETRY_ID, SearchPage } from './SearchPage';
 
 interface SortChoice { label: string; field: string; }
 interface FilterChoice { label: string; field: string; }
@@ -27,7 +31,6 @@ struct AppTableRow {
     onOpen: (app: MarketApp) => void = () => {};
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @State private pressed: boolean = false;
-    @State private pointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
 
     private rating(): string {
         const value = Number(this.app.average_rating ?? 0);
@@ -81,21 +84,11 @@ struct AppTableRow {
         .backgroundColor(this.index % 2 === 0 ? $r('app.color.v3_surface_alt') : $r('app.color.v3_surface'))
         .scale({ x: this.pressed ? 0.99 : 1, y: this.pressed ? 0.99 : 1 })
         .animation({ curve: Curve.EaseOut, duration: 120 })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-                sourceType: this.pointLight,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-            })
-            .pressShadow(this.pressed ? hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-            .buildEffect())
         .onTouch((event: TouchEvent) => {
             if (event.type === TouchType.Down) {
                 this.pressed = true;
-                this.pointLight = hdsEffect.PointLightSourceType.BRIGHT;
             } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
                 this.pressed = false;
-                this.pointLight = hdsEffect.PointLightSourceType.NONE;
             }
         })
         .onClick(() => {
@@ -113,6 +106,7 @@ export struct AppsPage {
     @Prop @Watch('onSearchCommandVersionChanged') searchCommandVersion: number = 0;
     @Prop @Watch('onRequestVersionChanged') requestVersion: number = 0;
     @Prop @Watch('onSearchCloseVersionChanged') searchCloseVersion: number = 0;
+    @Prop @Watch('onActiveChanged') active: boolean = false;
     onSearchOpenChanged?: (open: boolean) => void;
     onOpenAppDetail?: (target: AppRouteTarget) => void;
     @Link selectedIndexes: number[];
@@ -135,15 +129,28 @@ export struct AppsPage {
     @State private filterText: string = '';
     @State private appliedFilterText: string = '';
     @State private tableViewportWidth: number = 0;
-    @State private pageVisible: boolean = false;
+    @State private animStep: number = 0;
     @State private searchPressed: boolean = false;
-    @State private searchPointLight: hdsEffect.PointLightSourceType = hdsEffect.PointLightSourceType.NONE;
     @State private pressedControl: string = '';
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     private restoredScroll: boolean = false;
     private restoredView: boolean = false;
     private reloadAfterCurrent: boolean = false;
     private reloadForce: boolean = false;
+    private enterAnimationPlayed: boolean = false;
+
+    private onActiveChanged(): void {
+        if (this.active) this.startPageAnimationOnce();
+    }
+
+    private startPageAnimationOnce(): void {
+        if (this.enterAnimationPlayed) return;
+        this.enterAnimationPlayed = true;
+        this.animStep = 0;
+        startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
+            this.animStep = step;
+        });
+    }
 
     private validIndex(value: number, count: number): number {
         const index = Number(value);
@@ -364,30 +371,26 @@ export struct AppsPage {
             Search({ placeholder: '搜索应用名称、包名、App ID 或链接' })
                 .width('100%').height(48).defaultFocus(false).enableKeyboardOnFocus(false)
                 .backgroundColor($r('app.color.v3_surface_alt'))
+                .border({ width: 1, color: $r('app.color.nd_card_border') })
+                .geometryTransition(SEARCH_SHARED_GEOMETRY_ID, { follow: true })
+                .transition(TransitionEffect.OPACITY)
                 .scale({ x: this.searchPressed ? 0.985 : 1, y: this.searchPressed ? 0.985 : 1 })
                 .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                        sourceType: this.searchPointLight,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                        options: { color: $r('app.color.diff_content'), intensity: 6, height: 100 },
-                    })
-                    .pressShadow(this.searchPressed ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                        hdsEffect.PressShadowType.NONE)
-                    .buildEffect())
+                .visualEffect(pressVisualEffect(
+                    this.searchPressed, hdsEffect.PointLightIlluminatedType.BORDER, 6, 100))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) {
                         this.searchPressed = true;
-                        this.searchPointLight = hdsEffect.PointLightSourceType.BRIGHT;
                     } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
                         this.searchPressed = false;
-                        this.searchPointLight = hdsEffect.PointLightSourceType.NONE;
                     }
                 })
                 .onClick(() => this.openSearch())
                 .accessibilityText('打开应用搜索')
         }
         .width('100%')
+        .opacity(this.animStep >= 1 ? 1 : 0)
+        .translate({ y: this.animStep >= 1 ? 0 : 20 })
         .accessibilityText('应用搜索入口')
     }
 
@@ -398,16 +401,11 @@ export struct AppsPage {
                 Select(this.typeOptions()).selected(this.typeIndex)
                     .value(['全部类型', '鸿蒙应用', '元服务'][this.typeIndex]).height(42).margin(4)
                     .backgroundColor($r('app.color.v3_surface'))
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: this.pressedControl === 'type' ? hdsEffect.PointLightSourceType.BRIGHT :
-                                hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                        })
-                        .pressShadow(this.pressedControl === 'type' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                            hdsEffect.PressShadowType.NONE)
-                        .buildEffect())
+                    .scale({ x: this.pressedControl === 'type' ? 0.97 : 1,
+                        y: this.pressedControl === 'type' ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(pressVisualEffect(
+                        this.pressedControl === 'type', hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'type';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -425,16 +423,11 @@ export struct AppsPage {
                 Select(this.filterOptions()).selected(this.filterIndex)
                     .value(this.filterChoices()[this.filterIndex].label).height(42).margin(4)
                     .backgroundColor($r('app.color.v3_surface'))
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: this.pressedControl === 'filter-kind' ? hdsEffect.PointLightSourceType.BRIGHT :
-                                hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                        })
-                        .pressShadow(this.pressedControl === 'filter-kind' ?
-                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                        .buildEffect())
+                    .scale({ x: this.pressedControl === 'filter-kind' ? 0.97 : 1,
+                        y: this.pressedControl === 'filter-kind' ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(pressVisualEffect(this.pressedControl === 'filter-kind',
+                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'filter-kind';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -449,16 +442,12 @@ export struct AppsPage {
                     .accessibilityText('选择筛选字段')
                 TextInput({ text: this.filterText, placeholder: '输入筛选内容' }).height(42).margin(4)
                     .constraintSize({ minWidth: 170, maxWidth: 280 }).backgroundColor($r('app.color.v3_surface'))
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: this.pressedControl === 'filter-text' ? hdsEffect.PointLightSourceType.BRIGHT :
-                                hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                        })
-                        .pressShadow(this.pressedControl === 'filter-text' ?
-                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                        .buildEffect())
+                    .border({ width: 1, color: $r('app.color.nd_card_border') })
+                    .scale({ x: this.pressedControl === 'filter-text' ? 0.97 : 1,
+                        y: this.pressedControl === 'filter-text' ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(pressVisualEffect(this.pressedControl === 'filter-text',
+                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'filter-text';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -475,16 +464,11 @@ export struct AppsPage {
                     .accessibilityText(`按${this.filterChoices()[this.filterIndex].label}输入筛选内容`)
                 Button('筛选', { stateEffect: false }).height(42).margin(4)
                     .backgroundColor($r('app.color.diff_content'))
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: this.pressedControl === 'apply-filter' ?
-                                hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                        })
-                        .pressShadow(this.pressedControl === 'apply-filter' ?
-                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                        .buildEffect())
+                    .scale({ x: this.pressedControl === 'apply-filter' ? 0.97 : 1,
+                        y: this.pressedControl === 'apply-filter' ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(pressVisualEffect(this.pressedControl === 'apply-filter',
+                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'apply-filter';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -497,16 +481,11 @@ export struct AppsPage {
                         this.vibrate();
                         this.clearFilter();
                     })
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: this.pressedControl === 'clear-filter' ?
-                                hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                        })
-                        .pressShadow(this.pressedControl === 'clear-filter' ?
-                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                        .buildEffect())
+                    .scale({ x: this.pressedControl === 'clear-filter' ? 0.97 : 1,
+                        y: this.pressedControl === 'clear-filter' ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(pressVisualEffect(this.pressedControl === 'clear-filter',
+                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'clear-filter';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -518,16 +497,11 @@ export struct AppsPage {
             Flex({ wrap: FlexWrap.Wrap }) {
                 Select(this.sortOptions()).selected(this.sortIndex).value(this.sortChoices()[this.sortIndex].label)
                     .height(42).margin(4).backgroundColor($r('app.color.v3_surface'))
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: this.pressedControl === 'sort' ? hdsEffect.PointLightSourceType.BRIGHT :
-                                hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                        })
-                        .pressShadow(this.pressedControl === 'sort' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                            hdsEffect.PressShadowType.NONE)
-                        .buildEffect())
+                    .scale({ x: this.pressedControl === 'sort' ? 0.97 : 1,
+                        y: this.pressedControl === 'sort' ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(pressVisualEffect(
+                        this.pressedControl === 'sort', hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'sort';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -544,16 +518,11 @@ export struct AppsPage {
                     .accessibilityText('选择应用列表排序字段')
                 Select(this.pageSizeOptions()).selected(this.pageSizeIndex).value(`每页 ${this.pageSize()} 条`)
                     .height(42).margin(4).backgroundColor($r('app.color.v3_surface'))
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: this.pressedControl === 'page-size' ? hdsEffect.PointLightSourceType.BRIGHT :
-                                hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                        })
-                        .pressShadow(this.pressedControl === 'page-size' ?
-                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                        .buildEffect())
+                    .scale({ x: this.pressedControl === 'page-size' ? 0.97 : 1,
+                        y: this.pressedControl === 'page-size' ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(pressVisualEffect(this.pressedControl === 'page-size',
+                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'page-size';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -570,16 +539,11 @@ export struct AppsPage {
                     .accessibilityText(`选择每页显示数量，当前每页${this.pageSize()}条`)
                 Button(this.descending ? '降序 ↓' : '升序 ↑', { stateEffect: false }).height(42).margin(4)
                     .fontColor($r('app.color.diff_content')).backgroundColor($r('app.color.v3_surface'))
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: this.pressedControl === 'sort-direction' ?
-                                hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                        })
-                        .pressShadow(this.pressedControl === 'sort-direction' ?
-                            hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                        .buildEffect())
+                    .scale({ x: this.pressedControl === 'sort-direction' ? 0.97 : 1,
+                        y: this.pressedControl === 'sort-direction' ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .visualEffect(pressVisualEffect(this.pressedControl === 'sort-direction',
+                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'sort-direction';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -652,16 +616,11 @@ export struct AppsPage {
         Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
             Button('上一页', { stateEffect: false }).margin(4).enabled(this.page > 1 && !this.loading)
                 .backgroundColor($r('app.color.v3_surface_alt')).fontColor($r('app.color.v3_text_primary'))
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                        sourceType: this.pressedControl === 'previous-page' ?
-                            hdsEffect.PointLightSourceType.BRIGHT : hdsEffect.PointLightSourceType.NONE,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                    })
-                    .pressShadow(this.pressedControl === 'previous-page' ?
-                        hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                    .buildEffect())
+                .scale({ x: this.pressedControl === 'previous-page' ? 0.97 : 1,
+                    y: this.pressedControl === 'previous-page' ? 0.97 : 1 })
+                .animation({ duration: 120, curve: Curve.EaseOut })
+                .visualEffect(pressVisualEffect(this.pressedControl === 'previous-page',
+                    hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.pressedControl = 'previous-page';
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -679,16 +638,11 @@ export struct AppsPage {
                 .accessibilityText(`第${this.page}页，共${this.totalPages()}页`)
             Button('下一页', { stateEffect: false }).margin(4).enabled(this.page < this.totalPages() && !this.loading)
                 .backgroundColor($r('app.color.diff_content'))
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                        sourceType: this.pressedControl === 'next-page' ? hdsEffect.PointLightSourceType.BRIGHT :
-                            hdsEffect.PointLightSourceType.NONE,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                    })
-                    .pressShadow(this.pressedControl === 'next-page' ?
-                        hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                    .buildEffect())
+                .scale({ x: this.pressedControl === 'next-page' ? 0.97 : 1,
+                    y: this.pressedControl === 'next-page' ? 0.97 : 1 })
+                .animation({ duration: 120, curve: Curve.EaseOut })
+                .visualEffect(pressVisualEffect(this.pressedControl === 'next-page',
+                    hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.pressedControl = 'next-page';
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -703,16 +657,12 @@ export struct AppsPage {
                 }).accessibilityText('下一页')
             TextInput({ text: this.jumpText, placeholder: '页码' }).type(InputType.Number)
                 .width(84).height(40).margin(4).backgroundColor($r('app.color.v3_surface'))
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                        sourceType: this.pressedControl === 'jump-page' ? hdsEffect.PointLightSourceType.BRIGHT :
-                            hdsEffect.PointLightSourceType.NONE,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                    })
-                    .pressShadow(this.pressedControl === 'jump-page' ?
-                        hdsEffect.PressShadowType.BLEND_GRADIENT : hdsEffect.PressShadowType.NONE)
-                    .buildEffect())
+                .border({ width: 1, color: $r('app.color.nd_card_border') })
+                .scale({ x: this.pressedControl === 'jump-page' ? 0.97 : 1,
+                    y: this.pressedControl === 'jump-page' ? 0.97 : 1 })
+                .animation({ duration: 120, curve: Curve.EaseOut })
+                .visualEffect(pressVisualEffect(this.pressedControl === 'jump-page',
+                    hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.pressedControl = 'jump-page';
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -726,16 +676,11 @@ export struct AppsPage {
                 .accessibilityText('输入要跳转的页码')
             Button('跳转', { stateEffect: false }).margin(4).height(40)
                 .backgroundColor($r('app.color.v3_accent_cyan'))
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                        sourceType: this.pressedControl === 'jump' ? hdsEffect.PointLightSourceType.BRIGHT :
-                            hdsEffect.PointLightSourceType.NONE,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                    })
-                    .pressShadow(this.pressedControl === 'jump' ? hdsEffect.PressShadowType.BLEND_GRADIENT :
-                        hdsEffect.PressShadowType.NONE)
-                    .buildEffect())
+                .scale({ x: this.pressedControl === 'jump' ? 0.97 : 1,
+                    y: this.pressedControl === 'jump' ? 0.97 : 1 })
+                .animation({ duration: 120, curve: Curve.EaseOut })
+                .visualEffect(pressVisualEffect(this.pressedControl === 'jump',
+                    hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.pressedControl = 'jump';
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -757,11 +702,10 @@ export struct AppsPage {
                         }
                         if (this.selectedIndexes[0] === 0) {
                             Column({ space: 12 }) {
-                                OverviewSection()
+                                OverviewSection({ enterStep: this.animStep })
                                 Blank().height(110).width('100%')
                             }
                             .width('100%')
-                            .transition(contentEnterTransition(10))
                         } else {
                             Column({ space: 12 }) {
                                 Text(`共 ${formatCount(this.total)} 条应用数据`).fontSize(13)
@@ -782,7 +726,8 @@ export struct AppsPage {
                                 this.pagination()
                             }
                             .width('100%')
-                            .transition(contentEnterTransition(10))
+                            .opacity(this.animStep >= 1 ? 1 : 0)
+                            .translate({ y: this.animStep >= 1 ? 0 : 20 })
                             .onAppear(() => {
                                 if (!this.loaded) this.load(false);
                             })
@@ -814,6 +759,7 @@ export struct AppsPage {
             if (this.searchExpanded) {
                 SearchPage({
                     requestVersion: this.requestVersion,
+                    geometryId: SEARCH_SHARED_GEOMETRY_ID,
                     onClose: (): void => this.closeSearch(),
                     onOpenAppDetail: (target: AppRouteTarget): void => this.onOpenAppDetail?.(target),
                 })
@@ -822,20 +768,16 @@ export struct AppsPage {
             }
         }
         .width('100%').height('100%').backgroundColor($r('app.color.background'))
-        .opacity(this.pageVisible ? 1 : 0.01)
-        .translate({ y: this.pageVisible ? 0 : 10 })
         .onAppear(() => {
-            this.pageVisible = false;
-            runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
             if (!this.restoredView) {
                 this.restoredView = true;
                 this.restoreContinuationListState();
                 const continuation = getContinuationState();
                 this.selectedIndexes = [continuation.appsViewIndex === 1 ? 1 : 0];
             }
+            if (this.active) this.startPageAnimationOnce();
             if (this.requestVersion > 0 && hasPendingSearchTarget()) this.openSearch(false);
         })
-        .onDisAppear(() => { this.pageVisible = false; })
         .accessibilityText('应用概况与应用列表页面')
     }
 }

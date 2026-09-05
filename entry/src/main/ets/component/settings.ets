@@ -63,11 +63,17 @@ export struct settings {
                 primaryButton: {
                     value: '取消',
                     action: () => {
+                        if (this.vibrationLevel > 0) {
+                            vibration.dotVibration();
+                        }
                     }
                 },
                 secondaryButton: {
                     value: '继续',
                     action: async () => {
+                        if (this.vibrationLevel > 0) {
+                            vibration.dotVibration();
+                        }
                         const context =
                             this.getUIContext().getHostContext() as common.UIAbilityContext;
 
@@ -89,7 +95,7 @@ export struct settings {
                             showToastSafely(
                                 prompt,
                                 '部分缓存文件正在使用，请稍后重试',
-                                2200,
+                                2190,
                                 'Settings'
                             );
                         }
@@ -108,7 +114,7 @@ export struct settings {
             showToastSafely(
                 prompt,
                 '暂时无法打开清除缓存窗口，请稍后重试',
-                2000,
+                1900,
                 'Settings'
             );
         }
@@ -225,7 +231,7 @@ export struct settings {
                     step: 1,
                     style: SliderStyle.InSet,
                 })
-                    .width(200)
+                    .width(190)
                     .selectedColor($r('app.color.diff_content'))
                     .trackColor($r('app.color.v3_surface_alt'))
                     .blockBorderColor($r('app.color.v3_surface'))
@@ -255,10 +261,10 @@ export struct settings {
                     this.VibrationLevelLabel('灵动', 1)
                     this.VibrationLevelLabel('硬朗', 2)
                 }
-                .width(200)
+                .width(190)
                 .justifyContent(FlexAlign.SpaceBetween)
             }
-            .width(200)
+            .width(190)
             .margin({
                 top: this.isNarrowSettings() ? 4 : 0
             })
@@ -347,7 +353,7 @@ export struct settings {
                     step: 1,
                     style: SliderStyle.InSet,
                 })
-                    .width(200)
+                    .width(190)
                     .selectedColor($r('app.color.diff_content'))
                     .trackColor($r('app.color.v3_surface_alt'))
                     .blockBorderColor($r('app.color.v3_surface'))
@@ -379,10 +385,10 @@ export struct settings {
                     this.MaterialLevelLabel('轻柔', 1)
                     this.MaterialLevelLabel('精美', 0)
                 }
-                .width(200)
+                .width(190)
                 .justifyContent(FlexAlign.SpaceBetween)
             }
-            .width(200)
+            .width(190)
             .margin({
                 top: this.isNarrowSettings() ? 4 : 0
             })

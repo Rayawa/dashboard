@@ -7,13 +7,19 @@ import { formatCount, formatDateTime } from '../../common/format';
 import { clearSearchHistory, getSearchHistory, setSearchHistory } from '../../common/storage';
 import { parseInputSplitLinksPkgsAndAppIds } from '../../common/utils';
 import { showToastSafely } from '../../common/safeUi';
-import { contentEnterTransition } from '../../common/motion';
+import {
+    cancelStaggerEnterAnimation,
+    contentEnterTransition,
+    startStaggerEnterAnimation,
+} from '../../common/motion';
+import { pressVisualEffect } from '../../common/visualEffects';
 import type {
     ApiDataResult, AppDetailPayload, AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo, SearchTarget,
     SubmitAppBody,
 } from '../../common/types';
 import { vibration } from '../../common/vibration';
 
+export const SEARCH_SHARED_GEOMETRY_ID: string = 'apps_search_shared_element';
 const SEARCH_DISMISS_SWIPE_DISTANCE_VP: number = 96;
 
 interface NameSearchResult {
@@ -44,6 +50,7 @@ class SearchResultDataSource implements IDataSource {
 @Component
 export struct SearchPage {
     @Prop @Watch('onRequestVersionChanged') requestVersion: number = 0;
+    @Prop geometryId: string = SEARCH_SHARED_GEOMETRY_ID;
     onClose?: () => void;
     onOpenAppDetail?: (target: AppRouteTarget) => void;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
@@ -65,9 +72,21 @@ export struct SearchPage {
         TransitionEffect.OPACITY.animation({ duration: 180, curve: Curve.EaseOut });
     @State private pressedCardId: string = '';
     @State private pressedControl: string = '';
+    @State private animStep: number = 0;
     private activeTarget: AppRouteTarget = {};
     private openDetailAfterSearch: boolean = false;
     private backgroundUpdateToken: number = 0;
+    private enterTimers: number[] = [];
+
+    private updatePageAnimation(visible: boolean): void {
+        cancelStaggerEnterAnimation(this.enterTimers);
+        this.enterTimers = [];
+        this.animStep = 0;
+        if (!visible) return;
+        this.enterTimers = startStaggerEnterAnimation(this.getUIContext(), 1, (step: number): void => {
+            this.animStep = step;
+        });
+    }
 
     private clearInitialFocus(): void {
         try {
@@ -112,7 +131,7 @@ export struct SearchPage {
         this.input = raw;
         this.openDetailAfterSearch = target.openDetailOnSuccess === true;
         if (target.autoRun !== false) {
-            setTimeout((): void => { this.search(); }, 0);
+            setTimeout((): void => { this.search(target.recordHistory === true); }, 0);
         }
     }
     private targetFromInput(): AppRouteTarget {
@@ -206,7 +225,7 @@ export struct SearchPage {
     private isMissingApplication(error: Error): boolean {
         return error.message.includes('404') || error.message.includes('未找到');
     }
-    private async search(): Promise<void> {
+    private async search(recordHistory: boolean = true): Promise<void> {
         const raw = this.input.trim();
         if (!raw || this.loading) {
             if (!raw) showToastSafely(this.prompt, '请输入应用信息', 1500, 'V3Search');
@@ -218,7 +237,9 @@ export struct SearchPage {
         this.setResults([]);
         this.resultApp = undefined;
         this.status = '正在查找应用…';
-        await this.remember(raw);
+        if (recordHistory) {
+            await this.remember(raw);
+        }
         try {
             const target = this.targetFromInput();
             if (!target.appId && !target.packageName) {
@@ -312,13 +333,11 @@ export struct SearchPage {
     private tagButton(value: string, prefix: string): void {
         Button(value, { stateEffect: false }).height(36).margin({ right: 8, bottom: 8 }).fontSize(13)
             .fontColor($r('app.color.diff_content')).backgroundColor($r('app.color.v3_surface_alt'))
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                    options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                })
-                .buildEffect())
+            .scale({ x: this.pressedControl === `tag-${value}` ? 0.97 : 1,
+                y: this.pressedControl === `tag-${value}` ? 0.97 : 1 })
+            .animation({ duration: 120, curve: Curve.EaseOut })
+            .visualEffect(pressVisualEffect(
+                this.pressedControl === `tag-${value}`, hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.pressedControl = `tag-${value}`;
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedControl = '';
@@ -354,13 +373,8 @@ export struct SearchPage {
         .scale({ x: this.pressedCardId === this.cardId(app) ? 0.97 : 1,
             y: this.pressedCardId === this.cardId(app) ? 0.97 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-            })
-            .buildEffect())
+        .visualEffect(pressVisualEffect(this.pressedCardId === this.cardId(app),
+            hdsEffect.PointLightIlluminatedType.BORDER))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.updateCardPress(app, true);
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.updateCardPress(app, false);
@@ -401,13 +415,8 @@ export struct SearchPage {
         .scale({ x: this.pressedCardId === this.cardId(app) ? 0.975 : 1,
             y: this.pressedCardId === this.cardId(app) ? 0.975 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                options: { color: $r('app.color.diff_content'), intensity: 6, height: 110 },
-            })
-            .buildEffect())
+        .visualEffect(pressVisualEffect(this.pressedCardId === this.cardId(app),
+            hdsEffect.PointLightIlluminatedType.BORDER_CONTENT))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.updateCardPress(app, true);
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.updateCardPress(app, false);
@@ -430,13 +439,8 @@ export struct SearchPage {
                         .scale({ x: this.pressedControl === 'back' ? 0.94 : 1,
                             y: this.pressedControl === 'back' ? 0.94 : 1 })
                         .animation({ duration: 120, curve: Curve.EaseOut })
-                        .visualEffect(new hdsEffect.HdsEffectBuilder()
-                            .pointLight({
-                                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
-                                options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                            })
-                            .buildEffect())
+                        .visualEffect(pressVisualEffect(this.pressedControl === 'back',
+                            hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.pressedControl = 'back';
                             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -452,19 +456,16 @@ export struct SearchPage {
                         .scale({ x: this.pressedControl === 'search' ? 0.985 : 1,
                             y: this.pressedControl === 'search' ? 0.985 : 1 })
                         .animation({ duration: 120, curve: Curve.EaseOut })
-                        .visualEffect(new hdsEffect.HdsEffectBuilder()
-                            .pointLight({
-                                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                                options: { color: $r('app.color.diff_content'), intensity: 6, height: 96 },
-                            })
-                            .buildEffect())
+                        .visualEffect(pressVisualEffect(this.pressedControl === 'search',
+                            hdsEffect.PointLightIlluminatedType.BORDER, 6, 96))
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.pressedControl = 'search';
                             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
                                 this.pressedControl = '';
                             }
                         })
+                        .geometryTransition(this.geometryId, { follow: true })
+                        .transition(TransitionEffect.opacity(0.99))
                         .onChange((value: string) => this.input = value)
                         .onSubmit(() => { this.vibrate(); this.search(); })
                         .accessibilityText('搜索应用名称包名App ID或应用市场链接')
@@ -473,6 +474,8 @@ export struct SearchPage {
             .width('100%')
             .backgroundColor($r('app.color.background'))
             .zIndex(2)
+            .opacity(this.animStep >= 1 ? 1 : 0)
+            .translate({ y: this.animStep >= 1 ? 0 : 20 })
             .accessibilityText('搜索栏区域')
 
             if (this.loading || this.errorMessage.length > 0 || this.resultCount > 0) {
@@ -518,8 +521,11 @@ export struct SearchPage {
                             }.width('100%')
                         }.width('100%')
                     }
-                }.width('100%').padding({ left: 24, right: 24, bottom: 40 })
-                    .transition(contentEnterTransition(10))
+                }
+                .width('100%')
+                .padding({ left: 24, right: 24, bottom: 40 })
+                .opacity(this.animStep >= 1 ? 1 : 0)
+                .translate({ y: this.animStep >= 1 ? 0 : 20 })
             } else if (this.resultCount > 0) {
                 Grid() {
                     LazyForEach(this.resultSource, (app: MarketApp) => {
@@ -548,12 +554,14 @@ export struct SearchPage {
                 })
         )
         .onAppear(() => {
+            this.updatePageAnimation(true);
             this.clearInitialFocus();
             setTimeout((): void => this.clearInitialFocus(), 0);
             getSearchHistory().then((history: string[]) => { this.history = history; }).catch(() => {});
             this.loadRecommendations();
             this.consumePendingTarget();
         })
+        .onDisAppear(() => this.updatePageAnimation(false))
         .accessibilityText('应用搜索界面')
     }
 }

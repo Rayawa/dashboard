@@ -3,6 +3,7 @@ import { hdsEffect } from '@kit.UIDesignKit';
 import { getContinuationState, setContinuationOverviewState } from '../../common/appState';
 import { fetchApiHistory, fetchRatingDistribution, fetchSdkDistribution } from '../../common/MarketApi';
 import { formatCount } from '../../common/format';
+import { pressVisualEffect } from '../../common/visualEffects';
 import { vibration } from '../../common/vibration';
 import type { BaseAPIResponse, ChartViewportState, RatingDistribution } from '../../common/types';
 import { InteractiveLineChart } from './InteractiveLineChart';
@@ -336,13 +337,7 @@ struct DistributionPanel {
             .width(this.canvasSize).height(this.canvasSize).align(Alignment.Center)
             .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
             .animation({ duration: 120, curve: Curve.EaseOut })
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                    options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
-                })
-                .buildEffect())
+            .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER, 4, 100))
             .onReady((): void => {
                 this.canvasReady = true;
                 this.animatePie();
@@ -381,18 +376,15 @@ struct DistributionPanel {
                         }.alignItems(HorizontalAlign.Start).layoutWeight(1)
                     }
                     .width('100%').padding({ left: 6, right: 6, top: 5, bottom: 5 }).borderRadius(8)
+                    .border({ width: 1, color: $r('app.color.nd_card_border') })
                     .backgroundColor(index === this.selectedIndex() ?
                         $r('app.color.v3_surface_alt') : Color.Transparent)
                     .scale({ x: this.pressedControl === label ? 0.97 : 1,
                         y: this.pressedControl === label ? 0.97 : 1 })
                     .animation({ duration: 120, curve: Curve.EaseOut })
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                            illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                            options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                        })
-                        .buildEffect())
+                    .visualEffect(pressVisualEffect(
+                        this.pressedControl === label,
+                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = label;
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -437,13 +429,8 @@ struct DistributionPanel {
                             .scale({ x: this.pressedControl === 'expand' ? 0.94 : 1,
                                 y: this.pressedControl === 'expand' ? 0.94 : 1 })
                             .animation({ duration: 120, curve: Curve.EaseOut })
-                            .visualEffect(new hdsEffect.HdsEffectBuilder()
-                                .pointLight({
-                                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                                    options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                                })
-                                .buildEffect())
+                            .visualEffect(pressVisualEffect(this.pressedControl === 'expand',
+                                hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
                             .onTouch((event: TouchEvent): void => {
                                 if (event.type === TouchType.Down) this.pressedControl = 'expand';
                                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -578,6 +565,7 @@ struct ApiHistoryChart {
 @Component
 export struct OverviewSection {
     @Prop @Watch('onRefreshVersionChanged') refreshVersion: number = 0;
+    @Prop enterStep: number = 0;
     onRefreshCompleted?: () => void;
     @State private loading: boolean = false;
     @State private loaded: boolean = false;
@@ -777,18 +765,15 @@ export struct OverviewSection {
                             .width('100%')
                             .padding({ left: 6, right: 6, top: 5, bottom: 5 })
                             .borderRadius(8)
+                            .border({ width: 1, color: $r('app.color.nd_card_border') })
                             .backgroundColor(label === this.activeSdkLabel() ?
                                 $r('app.color.v3_surface_alt') : Color.Transparent)
                             .scale({ x: this.pressedControl === label ? 0.97 : 1,
                                 y: this.pressedControl === label ? 0.97 : 1 })
                             .animation({ duration: 120, curve: Curve.EaseOut })
-                            .visualEffect(new hdsEffect.HdsEffectBuilder()
-                                .pointLight({
-                                    sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                                    options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                                })
-                                .buildEffect())
+                            .visualEffect(pressVisualEffect(
+                                this.pressedControl === label,
+                                hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                             .onTouch((event: TouchEvent): void => {
                                 if (event.type === TouchType.Down) this.pressedControl = label;
                                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -833,13 +818,8 @@ export struct OverviewSection {
                         .scale({ x: this.pressedControl === 'sdk-expand' ? 0.94 : 1,
                             y: this.pressedControl === 'sdk-expand' ? 0.94 : 1 })
                         .animation({ duration: 120, curve: Curve.EaseOut })
-                        .visualEffect(new hdsEffect.HdsEffectBuilder()
-                            .pointLight({
-                                sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                                options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                            })
-                            .buildEffect())
+                        .visualEffect(pressVisualEffect(this.pressedControl === 'sdk-expand',
+                            hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.pressedControl = 'sdk-expand';
                             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -968,34 +948,68 @@ export struct OverviewSection {
                 }
                 .width('100%')
                 .alignItems(VerticalAlign.Top)
+                .opacity(this.enterStep >= 2 ? 1 : 0)
+                .translate({ y: this.enterStep >= 2 ? 0 : 20 })
                 .accessibilityText('共用图例的SDK组合图表与评分分布图表')
             } else if (this.contentWidth >= 600) {
                 Column({ space: 12 }) {
-                    this.combinedSdkPanel()
-                    DistributionPanel({ chart: this.ratingChart, horizontalLegend: true })
+                    Column() {
+                        this.combinedSdkPanel()
+                    }
+                    .width('100%')
+                    .opacity(this.enterStep >= 2 ? 1 : 0)
+                    .translate({ y: this.enterStep >= 2 ? 0 : 20 })
+                    Column() {
+                        DistributionPanel({ chart: this.ratingChart, horizontalLegend: true })
+                    }
+                    .width('100%')
+                    .opacity(this.enterStep >= 3 ? 1 : 0)
+                    .translate({ y: this.enterStep >= 3 ? 0 : 20 })
                 }
                 .width('100%')
                 .accessibilityText('共用图例的双列SDK分布和横向评分分布')
             } else {
                 Column({ space: 12 }) {
-                    DistributionPanel({ chart: this.targetSdkChart, collapsible: true,
-                        expanded: this.targetSdkExpanded, colorLabels: this.sdkLabels(), showExpandAction: true,
-                        onExpand: (): void => this.expandTargetSdk(),
-                        onCollapse: (): void => this.collapseTargetSdk() })
-                    DistributionPanel({ chart: this.minSdkChart, collapsible: true,
-                        expanded: this.minSdkExpanded, colorLabels: this.sdkLabels(), showExpandAction: true,
-                        onExpand: (): void => this.expandMinSdk(),
-                        onCollapse: (): void => this.collapseMinSdk() })
-                    DistributionPanel({ chart: this.ratingChart })
+                    Column() {
+                        DistributionPanel({ chart: this.targetSdkChart, collapsible: true,
+                            expanded: this.targetSdkExpanded, colorLabels: this.sdkLabels(), showExpandAction: true,
+                            onExpand: (): void => this.expandTargetSdk(),
+                            onCollapse: (): void => this.collapseTargetSdk() })
+                    }
+                    .width('100%')
+                    .opacity(this.enterStep >= 2 ? 1 : 0)
+                    .translate({ y: this.enterStep >= 2 ? 0 : 20 })
+                    Column() {
+                        DistributionPanel({ chart: this.minSdkChart, collapsible: true,
+                            expanded: this.minSdkExpanded, colorLabels: this.sdkLabels(), showExpandAction: true,
+                            onExpand: (): void => this.expandMinSdk(),
+                            onCollapse: (): void => this.collapseMinSdk() })
+                    }
+                    .width('100%')
+                    .opacity(this.enterStep >= 3 ? 1 : 0)
+                    .translate({ y: this.enterStep >= 3 ? 0 : 20 })
+                    Column() {
+                        DistributionPanel({ chart: this.ratingChart })
+                    }
+                    .width('100%')
+                    .opacity(this.enterStep >= 4 ? 1 : 0)
+                    .translate({ y: this.enterStep >= 4 ? 0 : 20 })
                 }
                 .width('100%')
                 .accessibilityText('各自使用独立图例的目标SDK、最低SDK与评分分布图表')
             }
-            ApiHistoryChart({
-                history: this.history,
-                apiKeys: this.apiKeys,
-                viewport: this.apiHistoryViewport,
-                onViewportChange: (viewport: ChartViewportState): void => this.updateApiHistoryViewport(viewport),
+            Column() {
+                ApiHistoryChart({
+                    history: this.history,
+                    apiKeys: this.apiKeys,
+                    viewport: this.apiHistoryViewport,
+                    onViewportChange: (viewport: ChartViewportState): void => this.updateApiHistoryViewport(viewport),
+                })
+            }
+            .width('100%')
+            .opacity(this.enterStep >= (this.contentWidth >= 840 ? 3 : this.contentWidth >= 600 ? 4 : 5) ? 1 : 0)
+            .translate({
+                y: this.enterStep >= (this.contentWidth >= 840 ? 3 : this.contentWidth >= 600 ? 4 : 5) ? 0 : 20,
             })
         }
         .width('100%')

@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
+import { pressVisualEffect } from '../../common/visualEffects';
 import type { ChartViewportState } from '../../common/types';
 
 export interface LineChartPoint {
@@ -424,16 +425,12 @@ export struct InteractiveLineChart {
                 }
                 .width('100%').padding({ left: 8, right: 8, top: 7, bottom: 7 })
                 .borderRadius(10).backgroundColor($r('app.color.v3_surface_alt'))
+                .border({ width: 1, color: $r('app.color.nd_card_border') })
                 .scale({ x: this.pressedLegend === chartSeries.label ? 0.98 : 1,
                     y: this.pressedLegend === chartSeries.label ? 0.98 : 1 })
                 .animation({ duration: 120, curve: Curve.EaseOut })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                        sourceType: hdsEffect.PointLightSourceType.BRIGHT,
-                        illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER,
-                        options: { color: $r('app.color.diff_content'), intensity: 5, height: 84 },
-                    })
-                    .buildEffect())
+                .visualEffect(pressVisualEffect(this.pressedLegend === chartSeries.label,
+                    hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.pressedLegend = chartSeries.label;
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -461,15 +458,9 @@ export struct InteractiveLineChart {
                     .scale({ x: this.enablePressEffect && this.pressed ? 0.995 : 1,
                         y: this.enablePressEffect && this.pressed ? 0.995 : 1 })
                     .animation({ duration: 120, curve: Curve.EaseOut })
-                    .visualEffect(new hdsEffect.HdsEffectBuilder()
-                        .pointLight({
-                            sourceType: this.enablePressEffect ? hdsEffect.PointLightSourceType.BRIGHT :
-                                hdsEffect.PointLightSourceType.NONE,
-                            illuminatedType: this.enablePressEffect ? hdsEffect.PointLightIlluminatedType.BORDER :
-                                hdsEffect.PointLightIlluminatedType.NONE,
-                            options: { color: $r('app.color.diff_content'), intensity: 4, height: 100 },
-                        })
-                        .buildEffect())
+                    .visualEffect(pressVisualEffect(this.enablePressEffect && this.pressed,
+                        this.enablePressEffect ? hdsEffect.PointLightIlluminatedType.BORDER :
+                            hdsEffect.PointLightIlluminatedType.NONE, 4, 100))
                     .onReady(() => {
                         this.canvasReady = true;
                         this.applyViewportState(false);

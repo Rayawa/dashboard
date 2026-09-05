@@ -333,7 +333,7 @@ export struct SStationPage {
             })
             .width('100%')
             .height('100%')
-            .backgroundColor($r('app.color.backcolor'))
+            .backgroundColor($r('app.color.s_station_placeholder'))
             .accessibilityText('使用内部滚动的S站网页视图')
 
             if (this.loading) {

@@ -71,6 +71,7 @@ export class vibration {
   }
 
   static waveVibration(): void {
+    // 用于首次启动时拦截关闭重要提示等需要明显提醒的场景。
     vibration.startPresetVibration(5, 100);
   }
 
