@@ -457,7 +457,8 @@ export struct SearchPage {
                         .onClick(() => { this.vibrate(); if (this.onClose) this.onClose(); })
                         .accessibilityText('关闭应用搜索并返回应用页面')
                     Search({ value: this.input, placeholder: '应用名称 / 包名 / App ID / 应用市场链接' })
-                        .layoutWeight(1).height(48).defaultFocus(false).searchButton('搜索')
+                        .layoutWeight(1).height(48).defaultFocus(false).enableKeyboardOnFocus(false)
+                        .searchButton('搜索')
                         .backgroundColor($r('app.color.v3_surface_alt'))
                         .scale({ x: this.pressedControl === 'search' ? 0.985 : 1,
                             y: this.pressedControl === 'search' ? 0.985 : 1 })

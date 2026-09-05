@@ -407,7 +407,7 @@ struct Dashboard {
                 .barFloatingStyle({
                     barBottomMargin: 28,
                     lightColor: $r('app.color.diff_content'),
-                    gradientMask: { maskColor: $r('app.color.mask_color'), maskHeight: 92 },
+                    gradientMask: { maskColor: Color.Transparent, maskHeight: 92 },
                     systemMaterialEffect: {
                         materialType: hdsMaterial.MaterialType.IMMERSIVE,
                         materialLevel: this.immersiveMaterialLevel,
@@ -458,7 +458,7 @@ struct Dashboard {
                 },
                 originalStyle: {
                     backgroundStyle: {
-                        backgroundColor: $r('sys.color.ohos_id_color_background'),
+                        backgroundColor: Color.Transparent,
                     },
                     contentStyle: {
                         titleStyle: {
@@ -472,7 +472,7 @@ struct Dashboard {
                 },
                 scrollEffectStyle: {
                     backgroundStyle: {
-                        backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
+                        backgroundColor: Color.Transparent,
                     },
                     contentStyle: {
                         titleStyle: {

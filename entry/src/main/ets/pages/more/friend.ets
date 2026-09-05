@@ -4,9 +4,9 @@ import {
   HdsNavDestination,
   HdsNavDestinationTitleMode,
   IconSize,
+  PrefixCustomBuilder,
   PrefixIcon,
   ScrollEffectType,
-  SuffixArrow,
   SuffixCustomBuilder,
   TitleSize
 } from '@kit.UIDesignKit';
@@ -14,6 +14,7 @@ import { vibration } from '../../common/vibration';
 import { curves, LengthMetrics, PromptAction, TextModifier } from '@kit.ArkUI';
 import {
   AGstatisticsURL,
+  CONTENT_MAX_WIDTH,
   dztapURL,
   EGUI_URL,
   FANGZHOU_URL,
@@ -23,7 +24,7 @@ import {
   OpenStoreURL,
   PAPER_TALK_URL,
   PROJECT_HOME_URL,
-  S_DASHBOARD_URL,
+  SBaseURL,
   SUBSCRIPTION_ATOMIC_URL,
   SUBSCRIPTION_URL,
   T_DASHBOARD_URL,
@@ -44,6 +45,7 @@ interface LinkConfig {
   url: string;
   title: string;
   opensExternal: boolean;
+  roundedIcon?: boolean;
 }
 
 @Component
@@ -73,10 +75,14 @@ struct friend {
   }
 
   @State private projectSites: LinkConfig[] = [
-    { icon: $r('app.media.app_icon'), url: PROJECT_HOME_URL.toString(), title: '项目网站首页', opensExternal: false },
-    { icon: $r('app.media.app_icon'), url: S_DASHBOARD_URL.toString(), title: 'S站', opensExternal: false },
-    { icon: $r('app.media.app_icon'), url: EGUI_URL.toString(), title: 'Egui', opensExternal: true },
-    { icon: $r('app.media.app_icon'), url: T_DASHBOARD_URL.toString(), title: 'T站', opensExternal: false },
+    { icon: $r('app.media.app_icon'), url: PROJECT_HOME_URL.toString(), title: '项目网站首页', opensExternal: false,
+      roundedIcon: true },
+    { icon: $r('app.media.app_icon'), url: SBaseURL.toString(), title: 'S站', opensExternal: false,
+      roundedIcon: true },
+    { icon: $r('app.media.app_icon'), url: EGUI_URL.toString(), title: 'Egui', opensExternal: true,
+      roundedIcon: true },
+    { icon: $r('app.media.app_icon'), url: T_DASHBOARD_URL.toString(), title: 'T站', opensExternal: false,
+      roundedIcon: true },
   ];
   @State private friendApps: LinkConfig[] = [
     { icon: $r('app.media.jide'), url: GETRACE_URL.toString(), title: '迹得', opensExternal: true },
@@ -98,6 +104,24 @@ struct friend {
   ];
 
   @Builder
+  private RoundedPrefixIcon(icon: Resource): void {
+    Image(icon)
+      .width(24)
+      .height(24)
+      .borderRadius(6)
+      .objectFit(ImageFit.Cover)
+  }
+
+  @Builder
+  private RightSuffix(): void {
+    Image($r('app.media.right'))
+      .width(20)
+      .height(20)
+      .objectFit(ImageFit.Contain)
+      .accessibilityText('进入')
+  }
+
+  @Builder
   private ExternalSuffix(): void {
     Image($r('app.media.share'))
       .width(20)
@@ -108,7 +132,9 @@ struct friend {
 
   @Builder linkListItem(site: LinkConfig) {
     HdsListItemCard({
-      prefixItem: new PrefixIcon({
+      prefixItem: site.roundedIcon ? new PrefixCustomBuilder(() => {
+        this.RoundedPrefixIcon(site.icon)
+      }) : new PrefixIcon({
         iconSize: IconSize.SYSTEM_ICON,
         iconValue: { image: site.icon },
       }),
@@ -122,7 +148,9 @@ struct friend {
       },
       suffixItem: site.opensExternal ? new SuffixCustomBuilder(() => {
         this.ExternalSuffix()
-      }) : new SuffixArrow({ color: $r('sys.color.icon_secondary') }),
+      }) : new SuffixCustomBuilder(() => {
+        this.RightSuffix()
+      }),
       onClick: () => {
         if (site.opensExternal) {
           this.openExternal(site);
@@ -166,10 +194,26 @@ struct friend {
     .accessibilityGroup(true)
     .accessibilityText(label)
   }
+
+  @Builder
+  private LinkSection(title: string, sites: LinkConfig[]): void {
+    Column({ space: 8 }) {
+      Text(title)
+        .fontSize(14)
+        .fontWeight(FontWeight.Bold)
+        .fontColor($r('app.color.diff_content'))
+        .width('100%')
+        .padding({ left: 4 })
+        .accessibilityText(title)
+      this.LinkList(sites, title)
+    }
+    .width('100%')
+  }
+
   build() {
     HdsNavDestination() {
       Scroll(){
-        Column() {
+        Column({ space: 14 }) {
           Blank().height(100)
           Column(){
             Text("重要提示：\n您正在访问友情链接")
@@ -207,40 +251,41 @@ struct friend {
           })
 
           Divider()
-            .margin({ top: 20, bottom: 20 })
+            .margin({ top: 2, bottom: 2 })
             .color($r("app.color.border"))
+            .accessibilityText('重要提示与项目组站点分隔线')
 
-          Text("Harmony Gallery项目组站点矩阵").margin({ left: 4, bottom: 5 }).fontWeight(600).fontSize(14).width("100%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          this.LinkList(this.projectSites, 'Harmony Gallery项目组站点矩阵')
+          this.LinkSection('Harmony Gallery项目组站点矩阵', this.projectSites)
 
           Divider()
-            .margin({ top: 20, bottom: 20 })
+            .margin({ top: 2, bottom: 2 })
             .color($r("app.color.border"))
+            .accessibilityText('项目组站点与友链应用分隔线')
 
-          Text("使用Harmony Dashboard数据的应用").margin({ left: 4, bottom: 5 }).fontWeight(600).fontSize(14).width("100%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          this.LinkList(this.friendApps, '使用Harmony Dashboard数据的应用')
+          this.LinkSection('使用Harmony Dashboard数据的应用', this.friendApps)
 
           Divider()
-            .margin({ top: 20, bottom: 20 })
+            .margin({ top: 2, bottom: 2 })
             .color($r("app.color.border"))
+            .accessibilityText('友链应用与友链站点分隔线')
 
-          Text("使用Harmony Dashboard数据的站点").margin({ left: 4, bottom: 5 }).fontWeight(600).fontSize(14).width("100%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          this.LinkList(this.friendSites, '使用Harmony Dashboard数据的站点')
+          this.LinkSection('使用Harmony Dashboard数据的站点', this.friendSites)
 
           Divider()
-            .margin({ top: 20, bottom: 20 })
+            .margin({ top: 2, bottom: 2 })
             .color($r("app.color.border"))
+            .accessibilityText('友链站点与其他站点分隔线')
 
-          Text("其他站点").margin({ left: 4, bottom: 5 }).fontWeight(600).fontSize(14).width("100%").textAlign(TextAlign.Start).fontColor($r('app.color.diff_content'))
-          this.LinkList(this.otherSites, '其他站点')
+          this.LinkSection('其他站点', this.otherSites)
+          Blank().height(20).width('100%')
         }
         .width('100%')
-        .constraintSize({ maxWidth: 900 })
+        .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
         .padding({ left: 14, right: 14, bottom: 30 })
       }
       .height("100%")
       .width("100%")
-      .backgroundColor($r("app.color.backcolor"))
+      .backgroundColor($r("app.color.background"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
