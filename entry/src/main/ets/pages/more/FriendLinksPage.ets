@@ -43,8 +43,8 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
 import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
-import { pageTransition } from '../../common/motion';
-import { pressVisualEffect } from '../../common/visualEffects';
+import { cancelStaggerEnterAnimation, pageTransition, startStaggerEnterAnimation } from '../../common/motion';
+import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { WebPageParams } from '../web/WebPage';
 
 interface LinkConfig {
@@ -64,6 +64,23 @@ struct FriendLinksPage {
     hdsMaterial.MaterialLevel.GENTLE;
   private isExiting: boolean = false;
   @State private warningPressed: boolean = false;
+  @State private animStep: number = 0;
+  private enterAnimationPlayed: boolean = false;
+  private enterAnimationTimers: number[] = [];
+
+  private startPageAnimationOnce(): void {
+    if (this.enterAnimationPlayed) return;
+    this.enterAnimationPlayed = true;
+    this.animStep = 0;
+    this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
+      this.animStep = step;
+    });
+  }
+
+  aboutToDisappear(): void {
+    cancelStaggerEnterAnimation(this.enterAnimationTimers);
+    this.enterAnimationTimers = [];
+  }
 
   private async openExternal(site: LinkConfig): Promise<void> {
     if (this.vibrationLevel > 0) vibration.dotVibration();
@@ -209,7 +226,7 @@ struct FriendLinksPage {
   }
 
   @Builder
-  private linkSection(title: string, sites: LinkConfig[]): void {
+  private linkSection(title: string, sites: LinkConfig[], enterStep: number): void {
     Column({ space: LIST_SECTION_CONTENT_GAP }) {
       Text(title)
         .fontSize(14)
@@ -221,6 +238,8 @@ struct FriendLinksPage {
       this.linkList(sites, title)
     }
     .width('100%')
+    .opacity(this.animStep >= enterStep ? 1 : 0)
+    .translate({ y: this.animStep >= enterStep ? 0 : 20 })
   }
 
   build() {
@@ -250,10 +269,13 @@ struct FriendLinksPage {
           .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
           .visualEffect(pressVisualEffect(
             this.warningPressed, hdsEffect.PointLightIlluminatedType.BORDER))
+          .compositingFilter(pressLightFieldFilter(this.warningPressed))
           .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.warningPressed = true;
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.warningPressed = false;
           })
+          .opacity(this.animStep >= 1 ? 1 : 0)
+          .translate({ y: this.animStep >= 1 ? 0 : 20 })
 
           Divider()
             .margin({
@@ -263,7 +285,7 @@ struct FriendLinksPage {
             .color($r("app.color.border"))
             .accessibilityText('重要提示与项目组站点分隔线')
 
-          this.linkSection('Harmony Gallery项目组站点矩阵', this.projectSites)
+          this.linkSection('Harmony Gallery项目组站点矩阵', this.projectSites, 2)
 
           Divider()
             .margin({
@@ -273,7 +295,7 @@ struct FriendLinksPage {
             .color($r("app.color.border"))
             .accessibilityText('项目组站点与友链应用分隔线')
 
-          this.linkSection('使用Harmony Dashboard数据的应用', this.friendApps)
+          this.linkSection('使用Harmony Dashboard数据的应用', this.friendApps, 3)
 
           Divider()
             .margin({
@@ -283,7 +305,7 @@ struct FriendLinksPage {
             .color($r("app.color.border"))
             .accessibilityText('友链应用与友链站点分隔线')
 
-          this.linkSection('使用Harmony Dashboard数据的站点', this.friendSites)
+          this.linkSection('使用Harmony Dashboard数据的站点', this.friendSites, 4)
 
           Divider()
             .margin({
@@ -293,7 +315,7 @@ struct FriendLinksPage {
             .color($r("app.color.border"))
             .accessibilityText('友链站点与其他站点分隔线')
 
-          this.linkSection('其他站点', this.otherSites)
+          this.linkSection('其他站点', this.otherSites, 5)
           Blank().height(20).width('100%')
         }
         .width('100%')
@@ -308,6 +330,7 @@ struct FriendLinksPage {
       .width("100%")
       .backgroundColor($r("app.color.background"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      .onAppear((): void => this.startPageAnimationOnce())
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
     .transition(pageTransition())

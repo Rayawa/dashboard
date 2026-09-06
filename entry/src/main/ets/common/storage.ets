@@ -11,6 +11,7 @@ import {
     DEFAULT_BUTTON_RIGHT,
     DEFAULT_HOLD_CHECK_ENABLED,
     DEFAULT_IMMERSIVE_MATERIAL_LEVEL,
+    DEFAULT_LIGHT_FIELD_LEVEL,
     DEFAULT_VIBRATION_LEVEL,
     LEGACY_APP_SETTINGS_FILE_NAME,
     LEGACY_PROFILE_FILE_NAME,
@@ -20,6 +21,7 @@ import {
     STORAGE_KEY_FIRST_LAUNCH,
     STORAGE_KEY_HOLD_CHECK,
     STORAGE_KEY_IMMERSIVE_MATERIAL_LEVEL,
+    STORAGE_KEY_LIGHT_FIELD_LEVEL,
     STORAGE_KEY_LEGACY_MIGRATED,
     STORAGE_KEY_NOTICE_VERSION,
     STORAGE_KEY_SEARCH_HISTORY,
@@ -34,6 +36,7 @@ const KEY_USERNAME = STORAGE_KEY_USERNAME;
 const KEY_FIRST_LAUNCH = STORAGE_KEY_FIRST_LAUNCH;
 const KEY_NOTICE_VERSION = STORAGE_KEY_NOTICE_VERSION;
 const KEY_VIBRATION_LEVEL = STORAGE_KEY_VIBRATION_LEVEL;
+const KEY_LIGHT_FIELD_LEVEL = STORAGE_KEY_LIGHT_FIELD_LEVEL;
 const LEGACY_KEY_VIBRATION_ENABLED = 'vibrationON';
 const KEY_HOLD_CHECK = STORAGE_KEY_HOLD_CHECK;
 const KEY_BUTTON_RIGHT = STORAGE_KEY_BUTTON_RIGHT;
@@ -42,6 +45,7 @@ const KEY_SEARCH_HISTORY = STORAGE_KEY_SEARCH_HISTORY;
 
 export interface AppSettings {
     vibrationLevel: number;
+    lightFieldLevel: number;
     holdCheckON: boolean;
     buttonPositionRIGHT: boolean;
     immersiveMaterialLevel: number;
@@ -50,6 +54,7 @@ export interface AppSettings {
 // 所有持久化 key 的默认值；@StorageLink 装饰器的初始值必须与此保持一致
 const DEFAULT_SETTINGS: AppSettings = {
     vibrationLevel: DEFAULT_VIBRATION_LEVEL,
+    lightFieldLevel: DEFAULT_LIGHT_FIELD_LEVEL,
     holdCheckON: DEFAULT_HOLD_CHECK_ENABLED,
     buttonPositionRIGHT: DEFAULT_BUTTON_RIGHT,
     immersiveMaterialLevel: DEFAULT_IMMERSIVE_MATERIAL_LEVEL
@@ -214,6 +219,30 @@ export async function setVibrationLevel(level: number): Promise<void> {
     AppStorage.setOrCreate(KEY_VIBRATION_LEVEL, normalized);
 }
 
+function normalizeLightFieldLevel(level: number): number {
+    const normalized = level === 0 || level === 1 || level === 2 ?
+        level : DEFAULT_SETTINGS.lightFieldLevel;
+    // 高亮档依赖 API 24 的 HDR 合成滤镜；低版本即使读到旧数据也安全回落到明亮。
+    return normalized === 2 && deviceInfo.sdkApiVersion < 24 ? DEFAULT_SETTINGS.lightFieldLevel : normalized;
+}
+
+export async function getLightFieldLevel(): Promise<number> {
+    const s = await ensureReady();
+    const stored = (await s.get(KEY_LIGHT_FIELD_LEVEL, DEFAULT_SETTINGS.lightFieldLevel)) as number;
+    const normalized = normalizeLightFieldLevel(stored);
+    if (normalized !== stored) {
+        await s.set(KEY_LIGHT_FIELD_LEVEL, normalized);
+    }
+    return normalized;
+}
+
+export async function setLightFieldLevel(level: number): Promise<void> {
+    const normalized = normalizeLightFieldLevel(level);
+    const s = await ensureReady();
+    await s.set(KEY_LIGHT_FIELD_LEVEL, normalized);
+    AppStorage.setOrCreate(KEY_LIGHT_FIELD_LEVEL, normalized);
+}
+
 export async function getHoldCheckEnabled(): Promise<boolean> {
     const s = await ensureReady();
     return (await s.get(KEY_HOLD_CHECK, DEFAULT_SETTINGS.holdCheckON)) as boolean;
@@ -255,6 +284,7 @@ export async function setImmersiveMaterialLevel(level: number): Promise<void> {
 export async function getAllSettings(): Promise<AppSettings> {
     return {
         vibrationLevel: await getVibrationLevel(),
+        lightFieldLevel: await getLightFieldLevel(),
         holdCheckON: await getHoldCheckEnabled(),
         buttonPositionRIGHT: await getButtonPosition(),
         immersiveMaterialLevel: await getImmersiveMaterialLevel(),
@@ -264,6 +294,9 @@ export async function getAllSettings(): Promise<AppSettings> {
 export async function updateSettings(settings: Partial<AppSettings>): Promise<void> {
     if (settings.vibrationLevel !== undefined) {
         await setVibrationLevel(settings.vibrationLevel);
+    }
+    if (settings.lightFieldLevel !== undefined) {
+        await setLightFieldLevel(settings.lightFieldLevel);
     }
     if (settings.holdCheckON !== undefined) {
         await setHoldCheckEnabled(settings.holdCheckON);
@@ -317,6 +350,7 @@ export async function loadPersistedState(ctx?: common.Context): Promise<void> {
     try {
         await ensureReady(ctx);
         AppStorage.setOrCreate(KEY_VIBRATION_LEVEL, await getVibrationLevel());
+        AppStorage.setOrCreate(KEY_LIGHT_FIELD_LEVEL, await getLightFieldLevel());
         AppStorage.setOrCreate(KEY_HOLD_CHECK, await getHoldCheckEnabled());
         AppStorage.setOrCreate(KEY_BUTTON_RIGHT, await getButtonPosition());
         AppStorage.setOrCreate(KEY_IMMERSIVE_MATERIAL_LEVEL, await getImmersiveMaterialLevel());

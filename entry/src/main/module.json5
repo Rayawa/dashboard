@@ -78,6 +78,9 @@
         "name": "ohos.permission.INTERNET"
       },
       {
+        "name": "ohos.permission.HDR_BRIGHTNESS"
+      },
+      {
         "name": "ohos.permission.DETECT_GESTURE",
         "reason": "$string:GENSTURE_distributed_permission_reason",
         "usedScene": {

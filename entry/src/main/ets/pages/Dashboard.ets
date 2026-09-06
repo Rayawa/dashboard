@@ -1,5 +1,4 @@
 import {
-  BottomBuilderShowType,
   BlurStrategy,
   HdsNavigation,
   HdsNavigationTitleMode,
@@ -91,13 +90,13 @@ struct Dashboard {
     @State private sStationCommandVersion: number = 0;
     @State private sStationDetailOpen: boolean = false;
     private appsSegmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
-        { text: '应用概况', accessibilityText: '应用概况' },
-        { text: '应用列表', accessibilityText: '应用列表' },
+        { text: '概况', accessibilityText: '概况' },
+        { text: '总表', accessibilityText: '总表' },
     ]);
     private readonly mainTabs: MainTab[] = [
         { label: 'S站', icon: $r('sys.media.wifi_router_fill') },
         { label: '首页', icon: $r('sys.media.return_home_fill') },
-        { label: '应用详情', icon: $r('sys.media.rectangle_filled_and_line_horizontal_and_rectangle') },
+        { label: '详情', icon: $r('sys.media.rectangle_filled_and_line_horizontal_and_rectangle') },
         { label: '我的', icon: $r('sys.media.person_badge_waveform') },
     ];
 
@@ -109,19 +108,19 @@ struct Dashboard {
                 selectedIndexes: $appsViewIndexes,
                 maxFontScale: 2,
                 segmentHeight: 48,
-                normalWidth: '100%',
-                experimentalWidth: '100%',
+                normalWidth: '50%',
+                experimentalWidth: '50%',
                 experimentalHeight: 52,
                 onItemClicked: (index: number): void => {
                     this.vibrate();
                     setAppsViewIndex(index);
                 },
             })
+            .align(Alignment.Center)
+            .margin({ top: 8 })
         }
         .width('100%')
         .height('100%')
-        .padding({ left: 16, right: 16 })
-        .constraintSize({ maxWidth: 532 })
         .justifyContent(FlexAlign.Center)
     }
 
@@ -359,7 +358,7 @@ struct Dashboard {
                         })
                     }
                     .tabBar(new BottomTabBarStyle(this.mainTabs[2].icon, this.mainTabs[2].label))
-                    .accessibilityText('应用详情标签页')
+                    .accessibilityText('详情标签页')
 
                     TabContent() {
                         MyPage({
@@ -375,7 +374,7 @@ struct Dashboard {
                     .accessibilityText('我的标签页')
                 }
                 .barPosition(BarPosition.End)
-                .barWidth(280)
+                .barWidth(250)
                 .cachedMaxCount(4, TabsCacheMode.CACHE_LATEST_SWITCHED)
                 .scrollable(false)
                 .vertical(false)
@@ -402,7 +401,7 @@ struct Dashboard {
                         vibration.dotVibration();
                     }
                 })
-                .accessibilityText('主界面四个标签页，依次为S站、首页、应用详情和我的')
+                .accessibilityText('主界面四个标签页，依次为S站、首页、详情和我的')
                 .onAppear((): void => this.preloadSStation())
 
             }
@@ -473,12 +472,8 @@ struct Dashboard {
                 menu: {
                     value: this.titleMenuItems(),
                 },
-                bottomBuilder: this.selectedIndex === MAIN_TAB_APPS && !this.appsSearchOpen ? {
-                    builder: (): void => {
-                        this.appsTitleSegment();
-                    },
-                    height: 52,
-                    showType: BottomBuilderShowType.DIRECTLY_SHOW,
+                stackBuilder: this.selectedIndex === MAIN_TAB_APPS && !this.appsSearchOpen ? (): void => {
+                    this.appsTitleSegment();
                 } : undefined,
             },
         })
@@ -497,13 +492,13 @@ struct Dashboard {
             maskColor: $r('app.color.v3_scrim'),
             blurStyle: BlurStyle.COMPONENT_ULTRA_THICK,
             scrollSizeMode: ScrollSizeMode.CONTINUOUS,
-            onWillDismiss: (action: DismissSheetAction): void => {
-                if (this.warningRequiresConfirmation) {
+            // 仅首次强制阅读时拦截关闭。普通查看让系统直接完成交互式下拉关闭，
+            // 避免在手势动画末尾再次调用 dismiss() 导致 sheet 先回弹再退出。
+            onWillDismiss: this.warningRequiresConfirmation ? (_action: DismissSheetAction): void => {
                     this.preventWarningDismiss();
-                    return;
-                }
-                this.vibrate();
-                action.dismiss();
+            } : undefined,
+            onWillDisappear: (): void => {
+                if (!this.warningRequiresConfirmation) this.vibrate();
             },
         })
     }

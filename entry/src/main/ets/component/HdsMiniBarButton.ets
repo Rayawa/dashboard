@@ -1,7 +1,7 @@
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { hdsEffect, HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
 import { curves } from '@kit.ArkUI';
-import { pressVisualEffect } from '../common/visualEffects';
+import { pressLightFieldFilter, pressVisualEffect } from '../common/visualEffects';
 
 /**
  * 基于 HdsTabs 迷你栏材质的通用按钮承载层。
@@ -36,6 +36,7 @@ export struct HdsMiniBarButton {
     .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
     .visualEffect(pressVisualEffect(
       this.pressed, hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 6, 96))
+    .compositingFilter(pressLightFieldFilter(this.pressed))
     .onTouch((event: TouchEvent): void => {
       if (event.type === TouchType.Down) {
         this.pressed = true;
@@ -48,7 +49,7 @@ export struct HdsMiniBarButton {
         this.onButtonClick();
       }
     })
-    .accessibilityText('切换应用概况和应用列表')
+    .accessibilityText('切换概况和总表')
   }
 
   build() {
@@ -100,6 +101,6 @@ export struct HdsMiniBarButton {
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .backgroundColor(Color.Transparent)
-    .accessibilityText('应用概况和应用列表分段控件')
+    .accessibilityText('概况和总表分段控件')
   }
 }

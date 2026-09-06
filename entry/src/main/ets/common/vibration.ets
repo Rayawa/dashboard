@@ -9,6 +9,23 @@ const EFFECT_HARD = 'haptic.effect.hard';
 
 export class vibration {
   private static lastBackVibrationAt: number = 0;
+
+  /**
+   * 查询本机振动器列表。空列表表示当前设备没有振动硬件。
+   * getVibratorInfoSync 从 API 19 起提供，项目当前兼容 API 23。
+   */
+  static isSupported(): boolean {
+    try {
+      return vibrator.getVibratorInfoSync().length > 0;
+    } catch (error) {
+      const businessError = error as BusinessError;
+      console.warn('[Dashboard][common/vibration][WARN]',
+        `Failed to query vibrator info. Code: ${businessError.code}, message: ${businessError.message}`,
+      );
+      return false;
+    }
+  }
+
   private static currentEffectId(): string | undefined {
     const level = AppStorage.get<number>(STORAGE_KEY_VIBRATION_LEVEL) ?? DEFAULT_VIBRATION_LEVEL;
     if (level === VIBRATION_LEVEL_OFF) return undefined;

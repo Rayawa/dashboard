@@ -10,8 +10,8 @@ import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { popPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
-import { pageTransition } from '../../common/motion';
-import { pressVisualEffect } from '../../common/visualEffects';
+import { cancelStaggerEnterAnimation, pageTransition, startStaggerEnterAnimation } from '../../common/motion';
+import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 
 interface UpdateLog {
     version: string;
@@ -24,6 +24,8 @@ interface UpdateLog {
 @Component
 struct UpdateLogCard {
     log: UpdateLog = { version: '', date: '', type: 'release', items: [] };
+    @Prop animStep: number = 0;
+    @Prop enterStep: number = 1;
     @State private pressed: boolean = false;
 
     build() {
@@ -79,10 +81,13 @@ struct UpdateLogCard {
         .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER))
+        .compositingFilter(pressLightFieldFilter(this.pressed))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.pressed = true;
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressed = false;
         })
+        .opacity(this.animStep >= this.enterStep ? 1 : 0)
+        .translate({ y: this.animStep >= this.enterStep ? 0 : 20 })
         .accessibilityGroup(true)
         .accessibilityText(`${this.log.version}，${this.log.date}，更新日志`)
     }
@@ -96,6 +101,9 @@ struct AppLogPage {
     @StorageLink('vibrationLevel') vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
         hdsMaterial.MaterialLevel.GENTLE;
+    @State private animStep: number = 0;
+    private enterAnimationPlayed: boolean = false;
+    private enterAnimationTimers: number[] = [];
     private updateLogs: UpdateLog[] = [
         {
             version: "V3.0.0",
@@ -103,7 +111,7 @@ struct AppLogPage {
             type: "release",
             isRelease: true,
             items: [
-                "全面调整主界面，新增S站、首页、应用详情与我的四个标签页，并将搜索入口整合到应用详情页",
+                "全面调整主界面，新增S站、首页、详情与我的四个标签页，并将搜索入口整合到详情栏目",
                 "新增原生应用看板，可直接查看应用总数、最近收录、应用分布与历史变化等信息",
                 "新增统一的原生应用详情页，从搜索、应用列表、分享链接等入口均可快速查看应用信息",
                 "优化应用详情的内容排版，并增加按钮分享与应用图标卡片预览",
@@ -377,6 +385,20 @@ struct AppLogPage {
         this.updateFilteredLogs();
     }
 
+    private startPageAnimationOnce(): void {
+        if (this.enterAnimationPlayed) return;
+        this.enterAnimationPlayed = true;
+        this.animStep = 0;
+        this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
+            this.animStep = step;
+        });
+    }
+
+    aboutToDisappear(): void {
+        cancelStaggerEnterAnimation(this.enterAnimationTimers);
+        this.enterAnimationTimers = [];
+    }
+
     toggleFilter(type: "beta" | "rc" | "release"): void {
                 if(this.vibrationLevel > 0) vibration.dotVibration()
         switch (type) {
@@ -399,8 +421,8 @@ struct AppLogPage {
                 Column() {
                     Blank().height(100).width('100%')
                     Column() {
-                        ForEach(this.filteredLogs, (log: UpdateLog) => {
-                            UpdateLogCard({ log })
+                        ForEach(this.filteredLogs, (log: UpdateLog, index: number) => {
+                            UpdateLogCard({ log, animStep: this.animStep, enterStep: Math.min(index + 1, 5) })
                         })
                     }
                     .width("100%")
@@ -433,6 +455,7 @@ struct AppLogPage {
             .height("100%")
             .backgroundColor($r("app.color.backcolor"))
             .accessibilityText('可滚动的应用更新日志')
+            .onAppear((): void => this.startPageAnimationOnce())
         }
         .onBackPressed(() => {
             if(this.vibrationLevel > 0) vibration.backVibration()

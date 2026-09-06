@@ -6,7 +6,7 @@ import {
 } from '@kit.ArkUI';
 import { HdsMiniBarButton } from './HdsMiniBarButton';
 
-/** 固定在 HdsNavigation 标题栏中的概况/列表切换栏。 */
+/** 固定在 HdsNavigation 标题栏中的概况/总表切换栏。 */
 @Component
 export struct HdsTitleBarSegment {
   @Require items: SegmentButtonV2Items;
@@ -87,6 +87,6 @@ export struct HdsTitleBarSegment {
     })
     .margin({ top: -8 })
     .accessibilityText(this.selectedIndex() === 0 ?
-      '当前显示应用概况，可切换到应用列表' : '当前显示应用列表，可切换到应用概况')
+      '当前显示概况，可切换到总表' : '当前显示总表，可切换到概况')
   }
 }

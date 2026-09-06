@@ -258,7 +258,6 @@ export struct SStationPage {
                     Blank()
                         .height(100)
                         .width('100%')
-                        .accessibilityText('S站标题栏安全区域')
                     Web({
                         src: this.initialUrl,
                         controller: this.controller,
@@ -338,6 +337,9 @@ export struct SStationPage {
                     .forceDarkAccess(true)
                     .metaViewport(true)
                     .accessibilityText('S站网页内容')
+                    Blank()
+                        .height(50)
+                        .width('100%')
                 }
                 .width('100%')
             }

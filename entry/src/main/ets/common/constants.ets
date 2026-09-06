@@ -12,6 +12,7 @@ export const STORAGE_KEY_USERNAME = 'username';
 export const STORAGE_KEY_FIRST_LAUNCH = 'isFirstLaunch';
 export const STORAGE_KEY_NOTICE_VERSION = 'importantNoticeVersion';
 export const STORAGE_KEY_VIBRATION_LEVEL = 'vibrationLevel';
+export const STORAGE_KEY_LIGHT_FIELD_LEVEL = 'lightFieldLevel';
 export const STORAGE_KEY_HOLD_CHECK = 'holdCheckON';
 export const STORAGE_KEY_BUTTON_RIGHT = 'buttonPositionRIGHT';
 export const STORAGE_KEY_IMMERSIVE_MATERIAL_LEVEL = 'immersiveMaterialLevel';
@@ -33,6 +34,8 @@ export const LOCAL_STORAGE_KEY_WINDOW_HEIGHT = 'winHeight';
 
 // 0 = 关闭，1 = 灵动，2 = 硬朗；全新安装默认灵动振动。
 export const DEFAULT_VIBRATION_LEVEL = 1;
+// 0 = 暗淡，1 = 明亮，2 = 高亮；当前应用光场即“明亮”档。
+export const DEFAULT_LIGHT_FIELD_LEVEL = 1;
 export const DEFAULT_HOLD_CHECK_ENABLED = false;
 export const DEFAULT_BUTTON_RIGHT = false;
 // hdsMaterial.MaterialLevel.GENTLE；保持为数字，避免存储层依赖 UI Design Kit。

@@ -14,7 +14,7 @@ import {
     contentEnterTransition,
     startStaggerEnterAnimation,
 } from '../../common/motion';
-import { pressVisualEffect } from '../../common/visualEffects';
+import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { vibration } from '../../common/vibration';
 import { OverviewSection } from '../../component/charts/OverviewSection';
 import { SearchPage } from './SearchPage';
@@ -427,6 +427,7 @@ export struct AppsPage {
                     .animation({ duration: 120, curve: Curve.EaseOut })
                     .visualEffect(pressVisualEffect(
                         this.pressedControl === 'type', hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                    .compositingFilter(pressLightFieldFilter(this.pressedControl === 'type'))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'type';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -449,6 +450,7 @@ export struct AppsPage {
                     .animation({ duration: 120, curve: Curve.EaseOut })
                     .visualEffect(pressVisualEffect(this.pressedControl === 'filter-kind',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                    .compositingFilter(pressLightFieldFilter(this.pressedControl === 'filter-kind'))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'filter-kind';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -488,6 +490,7 @@ export struct AppsPage {
                     .animation({ duration: 120, curve: Curve.EaseOut })
                     .visualEffect(pressVisualEffect(this.pressedControl === 'apply-filter',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                    .compositingFilter(pressLightFieldFilter(this.pressedControl === 'apply-filter'))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'apply-filter';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -505,6 +508,7 @@ export struct AppsPage {
                     .animation({ duration: 120, curve: Curve.EaseOut })
                     .visualEffect(pressVisualEffect(this.pressedControl === 'clear-filter',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                    .compositingFilter(pressLightFieldFilter(this.pressedControl === 'clear-filter'))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'clear-filter';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -521,6 +525,7 @@ export struct AppsPage {
                     .animation({ duration: 120, curve: Curve.EaseOut })
                     .visualEffect(pressVisualEffect(
                         this.pressedControl === 'sort', hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                    .compositingFilter(pressLightFieldFilter(this.pressedControl === 'sort'))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'sort';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -542,6 +547,7 @@ export struct AppsPage {
                     .animation({ duration: 120, curve: Curve.EaseOut })
                     .visualEffect(pressVisualEffect(this.pressedControl === 'page-size',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                    .compositingFilter(pressLightFieldFilter(this.pressedControl === 'page-size'))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'page-size';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -563,6 +569,7 @@ export struct AppsPage {
                     .animation({ duration: 120, curve: Curve.EaseOut })
                     .visualEffect(pressVisualEffect(this.pressedControl === 'sort-direction',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                    .compositingFilter(pressLightFieldFilter(this.pressedControl === 'sort-direction'))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.pressedControl = 'sort-direction';
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -640,6 +647,7 @@ export struct AppsPage {
                 .animation({ duration: 120, curve: Curve.EaseOut })
                 .visualEffect(pressVisualEffect(this.pressedControl === 'previous-page',
                     hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                .compositingFilter(pressLightFieldFilter(this.pressedControl === 'previous-page'))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.pressedControl = 'previous-page';
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -662,6 +670,7 @@ export struct AppsPage {
                 .animation({ duration: 120, curve: Curve.EaseOut })
                 .visualEffect(pressVisualEffect(this.pressedControl === 'next-page',
                     hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                .compositingFilter(pressLightFieldFilter(this.pressedControl === 'next-page'))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.pressedControl = 'next-page';
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -698,6 +707,7 @@ export struct AppsPage {
                 .animation({ duration: 120, curve: Curve.EaseOut })
                 .visualEffect(pressVisualEffect(this.pressedControl === 'jump',
                     hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                .compositingFilter(pressLightFieldFilter(this.pressedControl === 'jump'))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.pressedControl = 'jump';
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -713,7 +723,7 @@ export struct AppsPage {
             Refresh({ refreshing: $$this.searchPullRefreshing, builder: this.searchPullHint() }) {
                 Scroll(this.pageScroller) {
                     Column({ space: 12 }) {
-                        Blank().height(148).width('100%')
+                        Blank().height(100).width('100%')
                         if (!this.searchExpanded) {
                             this.commonHeader()
                         }
@@ -800,6 +810,6 @@ export struct AppsPage {
             if (this.active) this.startPageAnimationOnce();
             if (this.requestVersion > 0 && hasPendingSearchTarget()) this.openSearch(false);
         })
-        .accessibilityText('应用概况与应用列表页面')
+        .accessibilityText('概况与总表页面')
     }
 }
