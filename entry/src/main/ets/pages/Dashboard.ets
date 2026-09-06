@@ -219,14 +219,8 @@ struct Dashboard {
                 },
             }];
         }
-        return [{
-            content: {
-                label: '打开教程',
-                icon: $r('sys.symbol.questionmark_circle'),
-                isEnabled: true,
-                action: (): void => this.openTutorial(),
-            },
-        }];
+        // “我的”页内已有教程入口，标题栏不再重复展示。
+        return [];
     }
 
     private openAppDetail(target: AppRouteTarget): void {

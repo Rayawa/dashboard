@@ -282,12 +282,18 @@ export async function setImmersiveMaterialLevel(level: number): Promise<void> {
 }
 
 export async function getAllSettings(): Promise<AppSettings> {
+    // 首次读取可能落到 Preferences；各 key 相互独立，可并行等待以缩短启动水合时间。
+    const vibrationLevelPromise = getVibrationLevel();
+    const lightFieldLevelPromise = getLightFieldLevel();
+    const holdCheckPromise = getHoldCheckEnabled();
+    const buttonPositionPromise = getButtonPosition();
+    const immersiveMaterialPromise = getImmersiveMaterialLevel();
     return {
-        vibrationLevel: await getVibrationLevel(),
-        lightFieldLevel: await getLightFieldLevel(),
-        holdCheckON: await getHoldCheckEnabled(),
-        buttonPositionRIGHT: await getButtonPosition(),
-        immersiveMaterialLevel: await getImmersiveMaterialLevel(),
+        vibrationLevel: await vibrationLevelPromise,
+        lightFieldLevel: await lightFieldLevelPromise,
+        holdCheckON: await holdCheckPromise,
+        buttonPositionRIGHT: await buttonPositionPromise,
+        immersiveMaterialLevel: await immersiveMaterialPromise,
     };
 }
 
@@ -349,12 +355,16 @@ export async function resetAllSettings(): Promise<void> {
 export async function loadPersistedState(ctx?: common.Context): Promise<void> {
     try {
         await ensureReady(ctx);
-        AppStorage.setOrCreate(KEY_VIBRATION_LEVEL, await getVibrationLevel());
-        AppStorage.setOrCreate(KEY_LIGHT_FIELD_LEVEL, await getLightFieldLevel());
-        AppStorage.setOrCreate(KEY_HOLD_CHECK, await getHoldCheckEnabled());
-        AppStorage.setOrCreate(KEY_BUTTON_RIGHT, await getButtonPosition());
-        AppStorage.setOrCreate(KEY_IMMERSIVE_MATERIAL_LEVEL, await getImmersiveMaterialLevel());
-        AppStorage.setOrCreate(KEY_USERNAME, await getUsername());
+        const settingsPromise = getAllSettings();
+        const usernamePromise = getUsername();
+        const settings = await settingsPromise;
+        const username = await usernamePromise;
+        AppStorage.setOrCreate(KEY_VIBRATION_LEVEL, settings.vibrationLevel);
+        AppStorage.setOrCreate(KEY_LIGHT_FIELD_LEVEL, settings.lightFieldLevel);
+        AppStorage.setOrCreate(KEY_HOLD_CHECK, settings.holdCheckON);
+        AppStorage.setOrCreate(KEY_BUTTON_RIGHT, settings.buttonPositionRIGHT);
+        AppStorage.setOrCreate(KEY_IMMERSIVE_MATERIAL_LEVEL, settings.immersiveMaterialLevel);
+        AppStorage.setOrCreate(KEY_USERNAME, username);
     } catch (error) {
         console.error('[Dashboard][common/storage][ERROR]', `[storage] AppStorage 水合失败: ${JSON.stringify(error)}`);
     }

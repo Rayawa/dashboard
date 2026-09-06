@@ -353,7 +353,7 @@ struct FriendLinksPage {
           blurEffectiveEndOffset: LengthMetrics.vp(20),
         },
         originalStyle: {
-          backgroundStyle: { backgroundColor: $r("sys.color.ohos_id_color_background") },
+          backgroundStyle: { backgroundColor: Color.Transparent },
           contentStyle: {
             titleStyle: { mainTitleColor: $r("sys.color.font_primary"), subTitleColor: $r("sys.color.font_secondary") },
             menuStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
@@ -361,7 +361,7 @@ struct FriendLinksPage {
           },
         },
         scrollEffectStyle: {
-          backgroundStyle: { backgroundColor: $r("sys.color.ohos_id_color_background_transparent") },
+          backgroundStyle: { backgroundColor: Color.Transparent },
           contentStyle: {
             titleStyle: { mainTitleColor: $r("sys.color.font_primary"), subTitleColor: $r("sys.color.font_secondary") },
             menuStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },

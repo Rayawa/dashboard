@@ -28,6 +28,7 @@ export class WebShareManager {
   private currentTitle: string = '应用看板链接分享';
   private currentDescription: string = '';
   private currentThumbnail?: Uint8Array;
+  private thumbnailPromise?: Promise<void>;
   private currentDataProvider?: () => WebShareData;
 
   private constructor(context: common.UIAbilityContext) {
@@ -70,6 +71,19 @@ export class WebShareManager {
 
   private async loadDefaultThumbnail(): Promise<void> {
     if (this.currentThumbnail) return;
+    if (this.thumbnailPromise) {
+      await this.thumbnailPromise;
+      return;
+    }
+    this.thumbnailPromise = this.readDefaultThumbnail();
+    try {
+      await this.thumbnailPromise;
+    } finally {
+      this.thumbnailPromise = undefined;
+    }
+  }
+
+  private async readDefaultThumbnail(): Promise<void> {
     try {
       const thumbnail = await this.context.resourceManager.getMediaContent($r('app.media.share_icon').id);
       if (thumbnail.length >= SHARE_THUMBNAIL_MAX_BYTES) {
@@ -104,7 +118,7 @@ export class WebShareManager {
 
       await this.loadDefaultThumbnail();
 
-      let shareData: systemShare.SharedData = new systemShare.SharedData({
+      const shareData: systemShare.SharedData = new systemShare.SharedData({
         utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
         content: finalUrl,
         title: this.currentTitle,
@@ -112,7 +126,7 @@ export class WebShareManager {
         thumbnail: this.currentThumbnail
       });
 
-      let controller: systemShare.ShareController = new systemShare.ShareController(shareData);
+      const controller: systemShare.ShareController = new systemShare.ShareController(shareData);
       await controller.show(this.context, {
         previewMode: systemShare.SharePreviewMode.DETAIL,
         selectionMode: systemShare.SelectionMode.SINGLE,

@@ -1,5 +1,4 @@
 import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
-import { webview } from '@kit.ArkWeb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { loadPersistedState } from '../common/storage';
@@ -11,7 +10,6 @@ import {
     DEFAULT_WINDOW_WIDTH,
     LOCAL_STORAGE_KEY_WINDOW_HEIGHT,
     LOCAL_STORAGE_KEY_WINDOW_WIDTH,
-    SBaseURL,
 } from '../common/constants';
 import {
     defaultAppsListState,
@@ -104,17 +102,7 @@ export default class EntryAbility extends UIAbility {
         }
     }
 
-    private prepareSStation(): void {
-        try {
-            webview.WebviewController.initializeWebEngine();
-            webview.WebviewController.prepareForPageLoad(SBaseURL.toString(), true, 2);
-        } catch (error) {
-            console.warn('[Dashboard][ability/entry][WARN]', `S站预热失败，将在页面创建时正常加载: ${JSON.stringify(error)}`);
-        }
-    }
-
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-        this.prepareSStation();
         this.restoreContinuationParams(want, launchParam);
         if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
             try {

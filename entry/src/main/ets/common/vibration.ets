@@ -9,14 +9,18 @@ const EFFECT_HARD = 'haptic.effect.hard';
 
 export class vibration {
   private static lastBackVibrationAt: number = 0;
+  private static hardwareSupported?: boolean;
+  private static effectSupport: Map<string, boolean> = new Map();
 
   /**
    * 查询本机振动器列表。空列表表示当前设备没有振动硬件。
    * getVibratorInfoSync 从 API 19 起提供，项目当前兼容 API 23。
    */
   static isSupported(): boolean {
+    if (vibration.hardwareSupported !== undefined) return vibration.hardwareSupported;
     try {
-      return vibrator.getVibratorInfoSync().length > 0;
+      vibration.hardwareSupported = vibrator.getVibratorInfoSync().length > 0;
+      return vibration.hardwareSupported;
     } catch (error) {
       const businessError = error as BusinessError;
       console.warn('[Dashboard][common/vibration][WARN]',
@@ -33,41 +37,48 @@ export class vibration {
   }
 
   private static startPresetVibrationWithEffect(effectId: string, count: number, intensity: number): void {
-    vibrator.isSupportEffect(effectId, (err: BusinessError, state: boolean) => {
-      if (err) {
-        console.error('[Dashboard][common/vibration][ERROR]',
-          `Failed to query effect ${effectId}. Code: ${err.code}, message: ${err.message}`,
-        );
-        return;
-      }
-      if (!state) {
-        console.warn('[Dashboard][common/vibration][WARN]', `Vibration effect is unsupported: ${effectId}`);
-        return;
-      }
+    let supported = vibration.effectSupport.get(effectId);
+    if (supported === undefined) {
       try {
-        vibrator.startVibration(
-          {
-            type: 'preset',
-            effectId,
-            count,
-            intensity,
-          },
-          { usage: 'touch' },
-          (error: BusinessError) => {
-            if (error) {
-              console.error('[Dashboard][common/vibration][ERROR]',
-                `Failed to start ${effectId}. Code: ${error.code}, message: ${error.message}`,
-              );
-            }
-          },
-        );
+        supported = vibrator.isSupportEffectSync(effectId);
+        vibration.effectSupport.set(effectId, supported);
       } catch (error) {
         const businessError = error as BusinessError;
         console.error('[Dashboard][common/vibration][ERROR]',
-          `Failed to start ${effectId}. Code: ${businessError.code}, message: ${businessError.message}`,
+          `Failed to query effect ${effectId}. Code: ${businessError.code}, message: ${businessError.message}`,
         );
+        return;
       }
-    });
+      if (!supported) {
+        console.warn('[Dashboard][common/vibration][WARN]', `Vibration effect is unsupported: ${effectId}`);
+        return;
+      }
+    } else if (!supported) {
+      return;
+    }
+    try {
+      vibrator.startVibration(
+        {
+          type: 'preset',
+          effectId,
+          count,
+          intensity,
+        },
+        { usage: 'touch' },
+        (error: BusinessError) => {
+          if (error) {
+            console.error('[Dashboard][common/vibration][ERROR]',
+              `Failed to start ${effectId}. Code: ${error.code}, message: ${error.message}`,
+            );
+          }
+        },
+      );
+    } catch (error) {
+      const businessError = error as BusinessError;
+      console.error('[Dashboard][common/vibration][ERROR]',
+        `Failed to start ${effectId}. Code: ${businessError.code}, message: ${businessError.message}`,
+      );
+    }
   }
 
   private static startPresetVibration(count: number, intensity: number): void {

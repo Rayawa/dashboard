@@ -122,7 +122,7 @@ export struct DeveloperPage {
         },
         originalStyle: {
           backgroundStyle: {
-            backgroundColor: $r('sys.color.ohos_id_color_background'),
+            backgroundColor: Color.Transparent,
           },
           contentStyle: {
             titleStyle: {
@@ -136,7 +136,7 @@ export struct DeveloperPage {
         },
         scrollEffectStyle: {
           backgroundStyle: {
-            backgroundColor: $r('sys.color.ohos_id_color_background_transparent'),
+            backgroundColor: Color.Transparent,
           },
           contentStyle: {
             titleStyle: {

@@ -159,7 +159,7 @@ struct RecentAppCard {
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
-            Image($r('sys.symbol.chevron_right'))
+            Image($r('app.media.right'))
                 .width(18)
                 .height(18)
                 .fillColor($r('app.color.v3_text_secondary'))

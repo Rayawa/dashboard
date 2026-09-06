@@ -88,6 +88,10 @@ class DiskStorage {
         }
         try {
             const value = await this._preference.get(key, defaultValue);
+            // Preferences is the source of truth only on the first read. Every write in
+            // this app goes through this wrapper, so retaining the value avoids repeated
+            // storage IPC while keeping subsequent set/remove operations coherent.
+            this._cache.set(key, value);
             return value;
         } catch (e) {
             throw new Error("DiskStorage: Failed to get value");
