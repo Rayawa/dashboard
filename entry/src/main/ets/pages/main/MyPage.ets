@@ -2,7 +2,6 @@ import { common, Want } from '@kit.AbilityKit';
 import { PromptAction, TextModifier } from '@kit.ArkUI';
 import { HdsListItemCard, IconSize, PrefixIcon, SuffixCustomBuilder } from '@kit.UIDesignKit';
 import { SettingsPanel } from '../../component/SettingsPanel';
-import { ContactPanel } from '../../component/ContactPanel';
 import {
     APP_VERSION,
     CONTENT_MAX_WIDTH,
@@ -110,7 +109,6 @@ export struct MyPage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
-    @State private showContact: boolean = false;
     @State private versionTapCount: number = 0;
     @State private contentWidth: number = 0;
     @State private animStep: number = 0;
@@ -148,8 +146,8 @@ export struct MyPage {
 
     private requiredStep(group: string): number {
         if (this.contentWidth >= 840) {
-            if (group === 'identity' || group === 'settings') return 1;
-            if (group === 'information' || group === 'more') return 2;
+            if (group === 'identity' || group === 'information' || group === 'settings') return 1;
+            if (group === 'more') return 2;
             return 3;
         }
         if (group === 'identity') return 1;
@@ -221,8 +219,14 @@ export struct MyPage {
             },
             {
                 title: '友情链接',
-                icon: $r('app.media.sponsor'),
+                icon: $r('app.media.link'),
                 action: () => this.pushPage(ROUTE_FRIEND_LINKS),
+            },
+            {
+                title: '赞助我们',
+                icon: $r('app.media.sponsor'),
+                opensExternal: true,
+                action: () => this.openExternal('https://afdian.com/a/shenjack', '爱发电赞助页面'),
             },
         ];
     }
@@ -245,11 +249,6 @@ export struct MyPage {
                 title: '更新日志',
                 icon: $r('app.media.app_log'),
                 action: () => this.pushPage(ROUTE_APP_LOG),
-            },
-            {
-                title: '联系我们',
-                icon: $r('app.media.contact'),
-                action: () => this.showContact = true,
             },
             {
                 title: '隐私政策',
@@ -581,27 +580,5 @@ export struct MyPage {
             if (this.active) this.startPageAnimationOnce();
         })
         .accessibilityText('我的与关于页面')
-        .bindSheet($$this.showContact, this.contactSheet(), {
-            title: { title: '联系我们' },
-            height: SheetSize.FIT_CONTENT,
-            // 平板默认可能采用跟手样式，默认允许与底层页面交互；显式禁用以由遮罩承接点击。
-            // 未注册 onWillDismiss 时，点击遮罩会按系统默认行为关闭半模态页面。
-            enableOutsideInteractive: false,
-            onWillDisappear: () => {
-                this.vibrate();
-                this.showContact = false;
-            },
-        })
-    }
-
-    @Builder
-    private contactSheet(): void {
-        Column() {
-            ContactPanel()
-        }
-        .width('100%')
-        .padding({ top: 8, bottom: 20 })
-        .accessibilityGroup(true)
-        .accessibilityText('联系我们内容')
     }
 }

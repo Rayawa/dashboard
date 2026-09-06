@@ -28,7 +28,7 @@ import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
 import { popPathSafely } from '../../common/safeNavigation';
 import { contentEnterTransition } from '../../common/motion';
-import { pressVisualEffect } from '../../common/visualEffects';
+import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
 import type {
@@ -78,6 +78,7 @@ struct DetailTag {
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(pressVisualEffect(
             this.pressed, hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+        .compositingFilter(pressLightFieldFilter(this.pressed))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.pressed = true;
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressed = false;
@@ -468,6 +469,7 @@ export struct AppDetailPage {
                                 .animation({ duration: 120, curve: Curve.EaseOut })
                                 .visualEffect(pressVisualEffect(this.pressedAction === 'market',
                                     hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                                .compositingFilter(pressLightFieldFilter(this.pressedAction === 'market'))
                                 .onTouch((event: TouchEvent): void => {
                                     if (event.type === TouchType.Down) this.pressedAction = 'market';
                                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -489,6 +491,7 @@ export struct AppDetailPage {
                                     .animation({ duration: 120, curve: Curve.EaseOut })
                                     .visualEffect(pressVisualEffect(this.pressedAction === 'privacy',
                                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                                    .compositingFilter(pressLightFieldFilter(this.pressedAction === 'privacy'))
                                     .onTouch((event: TouchEvent): void => {
                                         if (event.type === TouchType.Down) this.pressedAction = 'privacy';
                                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {

@@ -12,7 +12,7 @@ import {
     contentEnterTransition,
     startStaggerEnterAnimation,
 } from '../../common/motion';
-import { pressVisualEffect } from '../../common/visualEffects';
+import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import type {
     ApiDataResult, AppDetailPayload, AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo, SearchTarget,
     SubmitAppBody,
@@ -343,6 +343,7 @@ export struct SearchPage {
             .animation({ duration: 120, curve: Curve.EaseOut })
             .visualEffect(pressVisualEffect(
                 this.pressedControl === `tag-${value}`, hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
+            .compositingFilter(pressLightFieldFilter(this.pressedControl === `tag-${value}`))
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.pressedControl = `tag-${value}`;
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedControl = '';
@@ -380,6 +381,7 @@ export struct SearchPage {
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(pressVisualEffect(this.pressedCardId === this.cardId(app),
             hdsEffect.PointLightIlluminatedType.BORDER))
+        .compositingFilter(pressLightFieldFilter(this.pressedCardId === this.cardId(app)))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.updateCardPress(app, true);
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.updateCardPress(app, false);
@@ -422,6 +424,7 @@ export struct SearchPage {
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(pressVisualEffect(this.pressedCardId === this.cardId(app),
             hdsEffect.PointLightIlluminatedType.BORDER_CONTENT))
+        .compositingFilter(pressLightFieldFilter(this.pressedCardId === this.cardId(app)))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.updateCardPress(app, true);
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.updateCardPress(app, false);
@@ -446,6 +449,7 @@ export struct SearchPage {
                         .animation({ duration: 120, curve: Curve.EaseOut })
                         .visualEffect(pressVisualEffect(this.pressedControl === 'back',
                             hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                        .compositingFilter(pressLightFieldFilter(this.pressedControl === 'back'))
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.pressedControl = 'back';
                             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -463,6 +467,7 @@ export struct SearchPage {
                         .animation({ duration: 120, curve: Curve.EaseOut })
                         .visualEffect(pressVisualEffect(this.pressedControl === 'search',
                             hdsEffect.PointLightIlluminatedType.BORDER, 6, 96))
+                        .compositingFilter(pressLightFieldFilter(this.pressedControl === 'search'))
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.pressedControl = 'search';
                             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {

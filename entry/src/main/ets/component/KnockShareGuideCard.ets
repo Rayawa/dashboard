@@ -8,7 +8,7 @@ import { hdsEffect } from '@kit.UIDesignKit';
 import { resourceManager } from '@kit.LocalizationKit';
 import { Logger } from '../utils/Logger';
 import { vibration } from '../common/vibration';
-import { pressVisualEffect } from '../common/visualEffects';
+import { pressLightFieldFilter, pressVisualEffect } from '../common/visualEffects';
 
 const GUIDE_CARD_MULTIPLE_MIN_HEIGHT = 90;
 const GUIDE_CARD_SINGLE_MIN_HEIGHT = 80;
@@ -128,6 +128,7 @@ export struct KnockShareSingleGuideCard {
         .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER, 5, 96))
+        .compositingFilter(pressLightFieldFilter(this.pressed))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) this.pressed = true;
             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressed = false;

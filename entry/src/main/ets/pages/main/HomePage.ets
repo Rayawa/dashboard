@@ -16,7 +16,7 @@ import {
     contentEnterTransition,
     startStaggerEnterAnimation,
 } from '../../common/motion';
-import { pressVisualEffect } from '../../common/visualEffects';
+import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { vibration } from '../../common/vibration';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
 
@@ -105,6 +105,7 @@ struct HomeStatCard {
         .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER))
+        .compositingFilter(pressLightFieldFilter(this.pressed))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) {
                 this.pressed = true;
@@ -172,6 +173,7 @@ struct RecentAppCard {
         .scale({ x: this.pressed ? 0.975 : 1, y: this.pressed ? 0.975 : 1 })
         .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
         .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER))
+        .compositingFilter(pressLightFieldFilter(this.pressed))
         .onTouch((event: TouchEvent): void => {
             if (event.type === TouchType.Down) {
                 this.pressed = true;
@@ -376,6 +378,7 @@ export struct HomePage {
             .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
             .visualEffect(pressVisualEffect(
                 this.displayCardPressed === 'total', hdsEffect.PointLightIlluminatedType.BORDER))
+            .compositingFilter(pressLightFieldFilter(this.displayCardPressed === 'total'))
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.displayCardPressed = 'total';
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.displayCardPressed = '';
@@ -436,6 +439,7 @@ export struct HomePage {
             .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
             .visualEffect(pressVisualEffect(
                 this.displayCardPressed === 'status', hdsEffect.PointLightIlluminatedType.BORDER))
+            .compositingFilter(pressLightFieldFilter(this.displayCardPressed === 'status'))
             .onTouch((event: TouchEvent): void => {
                 if (event.type === TouchType.Down) this.displayCardPressed = 'status';
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.displayCardPressed = '';

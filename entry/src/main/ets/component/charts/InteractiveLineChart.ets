@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
-import { pressVisualEffect } from '../../common/visualEffects';
+import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import type { ChartViewportState } from '../../common/types';
 
 export interface LineChartPoint {
@@ -474,6 +474,7 @@ export struct InteractiveLineChart {
                 .animation({ duration: 120, curve: Curve.EaseOut })
                 .visualEffect(pressVisualEffect(this.pressedLegend === chartSeries.label,
                     hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                .compositingFilter(pressLightFieldFilter(this.pressedLegend === chartSeries.label))
                 .onTouch((event: TouchEvent): void => {
                     if (event.type === TouchType.Down) this.beginLegendPress(chartSeries.label);
                     else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -505,6 +506,7 @@ export struct InteractiveLineChart {
                     .visualEffect(pressVisualEffect(this.enablePressEffect && this.pressed,
                         this.enablePressEffect ? hdsEffect.PointLightIlluminatedType.BORDER :
                             hdsEffect.PointLightIlluminatedType.NONE, 4, 100))
+                    .compositingFilter(pressLightFieldFilter(this.enablePressEffect && this.pressed))
                     .onReady(() => {
                         this.canvasReady = true;
                         this.applyViewportState(false);

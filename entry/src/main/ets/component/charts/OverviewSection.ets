@@ -3,7 +3,7 @@ import { hdsEffect } from '@kit.UIDesignKit';
 import { getContinuationState, setContinuationOverviewState } from '../../common/appState';
 import { fetchApiHistory, fetchRatingDistribution, fetchSdkDistribution } from '../../common/MarketApi';
 import { formatCount } from '../../common/format';
-import { pressVisualEffect } from '../../common/visualEffects';
+import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { vibration } from '../../common/vibration';
 import type { BaseAPIResponse, ChartViewportState, RatingDistribution } from '../../common/types';
 import { InteractiveLineChart } from './InteractiveLineChart';
@@ -385,6 +385,7 @@ struct DistributionPanel {
             .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
             .animation({ duration: 120, curve: Curve.EaseOut })
             .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER, 4, 100))
+            .compositingFilter(pressLightFieldFilter(this.pressed))
             .onReady((): void => {
                 this.canvasReady = true;
                 this.animatePie();
@@ -432,6 +433,7 @@ struct DistributionPanel {
                     .visualEffect(pressVisualEffect(
                         this.pressedControl === label,
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                    .compositingFilter(pressLightFieldFilter(this.pressedControl === label))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.beginControlPress(label);
                         else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -479,6 +481,7 @@ struct DistributionPanel {
                             .animation({ duration: 120, curve: Curve.EaseOut })
                             .visualEffect(pressVisualEffect(this.pressedControl === 'expand',
                                 hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
+                            .compositingFilter(pressLightFieldFilter(this.pressedControl === 'expand'))
                             .onTouch((event: TouchEvent): void => {
                                 if (event.type === TouchType.Down) this.beginControlPress('expand');
                                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -856,6 +859,7 @@ export struct OverviewSection {
                             .visualEffect(pressVisualEffect(
                                 this.pressedControl === label,
                                 hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                            .compositingFilter(pressLightFieldFilter(this.pressedControl === label))
                             .onTouch((event: TouchEvent): void => {
                                 if (event.type === TouchType.Down) this.beginControlPress(label);
                                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -903,6 +907,7 @@ export struct OverviewSection {
                         .animation({ duration: 120, curve: Curve.EaseOut })
                         .visualEffect(pressVisualEffect(this.pressedControl === 'sdk-expand',
                             hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
+                        .compositingFilter(pressLightFieldFilter(this.pressedControl === 'sdk-expand'))
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.beginControlPress('sdk-expand');
                             else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
@@ -1019,7 +1024,7 @@ export struct OverviewSection {
             }
             if (this.loading && !this.loaded) {
                 LoadingProgress().width(34).height(34).color($r('app.color.diff_content')).margin(50)
-                    .accessibilityText('应用概况图表加载中')
+                    .accessibilityText('概况图表加载中')
             }
             if (this.contentWidth >= 840) {
                 Row({ space: 12 }) {
@@ -1101,6 +1106,6 @@ export struct OverviewSection {
             this.contentWidth = Number(area.width);
         })
         .onAppear(() => { if (!this.loaded) this.load(false); })
-        .accessibilityText('应用概况页面')
+        .accessibilityText('概况页面')
     }
 }
