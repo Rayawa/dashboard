@@ -10,11 +10,11 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { setFirstLaunch } from '../../common/storage';
 import { privacyManager } from '@kit.StoreKit';
 import { showToastSafely } from '../../common/safeUi';
-import { customUserAgent } from '../../common/constants';
+import { customUserAgent, ROUTE_HTML_PAGE } from '../../common/constants';
 import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
 
 @Component
-export struct HTML {
+export struct LocalHtmlPage {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
@@ -24,16 +24,17 @@ export struct HTML {
   @State private topPlaceholderHeight: number = 100;
 
   aboutToAppear() {
-    const pathInfo = getPathParamsSafely<WebViewParam>(this.pageStack, 'HTMLPage', 'pages/more/htmlPage');
+    const pathInfo = getPathParamsSafely<WebViewParam>(this.pageStack, ROUTE_HTML_PAGE,
+      'pages/more/LocalHtmlPage');
     if (pathInfo && pathInfo.length > 0) {
       this.params = pathInfo[0];
     }
   }
-  private PromptAction: PromptAction = this.getUIContext().getPromptAction();
+  private prompt: PromptAction = this.getUIContext().getPromptAction();
 
   private async closePage() {
     try {
-      const result: promptAction.ShowDialogSuccessResponse = await this.PromptAction.showDialog({
+      const result: promptAction.ShowDialogSuccessResponse = await this.prompt.showDialog({
         title: `撤销${this.params.title}`,
         message: '撤销后应用将清除本地缓存退出，确定要撤销吗？',
         buttons: [
@@ -49,17 +50,17 @@ export struct HTML {
           await setFirstLaunch(true);
           const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
           privacyManager.disableService();
-          showToastSafely(this.PromptAction, `${this.params.title}已撤销，即将退出`, 2000, 'HtmlPage');
+          showToastSafely(this.prompt, `${this.params.title}已撤销，即将退出`, 2000, 'HtmlPage');
           context.terminateSelf().then(() => {
-            console.info('[Dashboard][pages/more/htmlPage][INFO]', 'Ability 销毁指令发送成功');
+            console.info('[Dashboard][pages/more/LocalHtmlPage][INFO]', 'Ability 销毁指令发送成功');
           }).catch((err: BusinessError) => {
-            console.error('[Dashboard][pages/more/htmlPage][ERROR]', `销毁失败: ${err.code}`);
+            console.error('[Dashboard][pages/more/LocalHtmlPage][ERROR]', `销毁失败: ${err.code}`);
           });
         } catch (error) {
           const err = error as BusinessError;
-          console.error('[Dashboard][pages/more/htmlPage][ERROR]', `撤销服务失败: ${err.message} (Code: ${err.code})`);
+          console.error('[Dashboard][pages/more/LocalHtmlPage][ERROR]', `撤销服务失败: ${err.message} (Code: ${err.code})`);
           showToastSafely(
-            this.PromptAction,
+            this.prompt,
             `撤销失败: ${err.message} (Code: ${err.code})`,
             2500,
             'HtmlPage',
@@ -67,8 +68,9 @@ export struct HTML {
         }
       }
     } catch (error) {
-      console.error('[Dashboard][pages/more/htmlPage][ERROR]', `撤销确认弹窗显示失败: ${JSON.stringify(error)}`);
-      showToastSafely(this.PromptAction, '暂时无法打开确认窗口，请稍后重试', 2000, 'HtmlPage');
+      console.error('[Dashboard][pages/more/LocalHtmlPage][ERROR]',
+        `撤销确认弹窗显示失败: ${JSON.stringify(error)}`);
+      showToastSafely(this.prompt, '暂时无法打开确认窗口，请稍后重试', 2000, 'HtmlPage');
     }
   }
 
@@ -87,7 +89,7 @@ export struct HTML {
               try {
                 this.controller.setCustomUserAgent(customUserAgent);
               } catch (error) {
-                console.warn('[Dashboard][pages/more/htmlPage][WARN]',
+                console.warn('[Dashboard][pages/more/LocalHtmlPage][WARN]',
                   `设置网页User-Agent失败: ${JSON.stringify(error)}`);
               }
             })
@@ -114,7 +116,7 @@ export struct HTML {
     .transition(pageTransition())
     .onBackPressed(() => {
       if(this.vibrationLevel > 0) vibration.backVibration()
-      popPathSafely(this.pageStack, 'pages/more/htmlPage');
+      popPathSafely(this.pageStack, 'pages/more/LocalHtmlPage');
       return true;
     })
     .titleBar({
@@ -191,7 +193,7 @@ export struct HTML {
         backIcon: {
           action: () => {
             if(this.vibrationLevel > 0) vibration.backVibration()
-            popPathSafely(this.pageStack, 'pages/more/htmlPage')
+            popPathSafely(this.pageStack, 'pages/more/LocalHtmlPage')
           },
         },
       },
@@ -201,7 +203,7 @@ export struct HTML {
 
 @Builder
 export function HTMLBuilder() {
-  HTML().expandSafeArea(
+  LocalHtmlPage().expandSafeArea(
     [SafeAreaType.SYSTEM],
     [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM],)
 }

@@ -90,9 +90,9 @@ struct UpdateLogCard {
 
 
 @Component
-struct appLog {
+struct AppLogPage {
     @Consume('pageStack') pageStack: NavPathStack;
-    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private prompt: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink('vibrationLevel') vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
         hdsMaterial.MaterialLevel.GENTLE;
@@ -506,7 +506,7 @@ struct appLog {
                                 isEnabled: true,
                                 action: () => {
                                     this.toggleFilter("beta");
-                                    showToastSafely(this.PromptAction, this.showBeta ? '打开Beta版本日志' : '关闭Beta版本日志', 500, 'AppLog');
+                                    showToastSafely(this.prompt, this.showBeta ? '打开Beta版本日志' : '关闭Beta版本日志', 500, 'AppLog');
                                 },
                             },
                         },
@@ -517,7 +517,7 @@ struct appLog {
                                 isEnabled: true,
                                 action: () => {
                                     this.toggleFilter("rc");
-                                    showToastSafely(this.PromptAction, this.showRc ? '打开ReleaseCandidate版本日志' : '关闭ReleaseCandidate版本日志', 500, 'AppLog');
+                                    showToastSafely(this.prompt, this.showRc ? '打开ReleaseCandidate版本日志' : '关闭ReleaseCandidate版本日志', 500, 'AppLog');
                                 },
                             },
                         },
@@ -530,7 +530,7 @@ struct appLog {
                                 isEnabled: true,
                                 action: () => {
                                     this.toggleFilter("release");
-                                    showToastSafely(this.PromptAction, this.showRelease ? '打开正式版日志' : '关闭正式版日志', 500, 'AppLog');
+                                    showToastSafely(this.prompt, this.showRelease ? '打开正式版日志' : '关闭正式版日志', 500, 'AppLog');
                                 },
                             },
                         },
@@ -539,7 +539,7 @@ struct appLog {
                 backIcon: {
                     action: () => {
                         if(this.vibrationLevel > 0) vibration.backVibration()
-                        popPathSafely(this.pageStack, 'pages/more/appLog')
+                        popPathSafely(this.pageStack, 'pages/more/AppLogPage')
                     },
                 },
             },
@@ -566,5 +566,5 @@ struct appLog {
 
 @Builder
 export function AppLogBuilder(){
-    appLog()
+    AppLogPage()
 }

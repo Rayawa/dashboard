@@ -33,12 +33,21 @@ export struct KnockShareSingleGuideCard {
     @State private pressed: boolean = false;
     private animFrames: ImageFrameInfo[] = [];
     private staticFrame: ImageFrameInfo[] = [];
+    private loadToken: number = 0;
 
     aboutToAppear(): void {
-        this.staticFrame.push({ src: RAWFILE_SRC_PREFIX + this.getPath(1) });
-        this.loadPixels().then(() => {
-            this.animReady = true;
+        this.staticFrame = [{ src: RAWFILE_SRC_PREFIX + this.getPath(1) }];
+        const token = ++this.loadToken;
+        this.loadPixels(token).catch((error: Error) => {
+            Logger.error(`Guide animation loading failed: ${error.message}`);
         });
+    }
+
+    aboutToDisappear(): void {
+        this.loadToken++;
+        this.animReady = false;
+        this.releaseAnimationFrames();
+        this.staticFrame = [];
     }
 
     @Builder
@@ -153,12 +162,39 @@ export struct KnockShareSingleGuideCard {
         }
     }
 
-    private async loadPixels(): Promise<void> {
-        const tasks: Promise<ImageFrameInfo>[] = [];
+    private async loadPixels(token: number): Promise<void> {
+        const frames: ImageFrameInfo[] = [];
+        // Decode sequentially to avoid opening and decoding up to 128 images at once.
         for (let i = 1; i <= this.res.framesCount; i++) {
-            tasks.push(this.loadByRawfile(i));
+            const frame = await this.loadByRawfile(i);
+            if (token !== this.loadToken) {
+                this.releaseFrame(frame);
+                this.releaseFrames(frames);
+                return;
+            }
+            frames.push(frame);
         }
-        this.animFrames = await Promise.all(tasks);
+        this.releaseAnimationFrames();
+        this.animFrames = frames;
+        this.animReady = true;
+    }
+
+    private releaseFrame(frame: ImageFrameInfo): void {
+        if (typeof frame.src === 'string') return;
+        try {
+            (frame.src as PixelMap).release();
+        } catch (error) {
+            Logger.warn(`Guide animation frame release failed: ${JSON.stringify(error)}`);
+        }
+    }
+
+    private releaseFrames(frames: ImageFrameInfo[]): void {
+        for (const frame of frames) this.releaseFrame(frame);
+    }
+
+    private releaseAnimationFrames(): void {
+        this.releaseFrames(this.animFrames);
+        this.animFrames = [];
     }
 
     private async loadByRawfile(index: number): Promise<ImageFrameInfo> {

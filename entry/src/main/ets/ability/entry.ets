@@ -36,6 +36,11 @@ export default class EntryAbility extends UIAbility {
     storage: LocalStorage = new LocalStorage();
     private isContinuation: boolean = false;
     private startupTask: Promise<void> = Promise.resolve();
+    private mainWindow?: window.Window;
+    private readonly windowSizeChangeCallback = (windowSize: window.Size): void => {
+        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, windowSize.width);
+        this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, windowSize.height);
+    };
 
     onContinue(wantParam: Record<string, Object>): AbilityConstant.OnContinueResult {
         // `version` is supplied by the distributed framework, but it can be absent for
@@ -193,16 +198,31 @@ export default class EntryAbility extends UIAbility {
         this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, DEFAULT_WINDOW_HEIGHT);
         try {
             const windowClass = await windowStage.getMainWindow();
+            this.detachWindowSizeListener();
+            this.mainWindow = windowClass;
             const rect = windowClass.getWindowProperties().windowRect;
             this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, rect.width);
             this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, rect.height);
-            windowClass.on('windowSizeChange', (windowSize) => {
-                this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_WIDTH, windowSize.width);
-                this.storage.setOrCreate(LOCAL_STORAGE_KEY_WINDOW_HEIGHT, windowSize.height);
-            });
+            windowClass.on('windowSizeChange', this.windowSizeChangeCallback);
         } catch (error) {
             console.warn('[Dashboard][ability/entry][WARN]', `无法读取或监听窗口尺寸，使用默认尺寸: ${JSON.stringify(error)}`);
         }
+    }
+
+    private detachWindowSizeListener(): void {
+        if (!this.mainWindow) return;
+        try {
+            this.mainWindow.off('windowSizeChange', this.windowSizeChangeCallback);
+        } catch (error) {
+            console.warn('[Dashboard][ability/entry][WARN]',
+                `窗口尺寸监听释放失败: ${JSON.stringify(error)}`);
+        } finally {
+            this.mainWindow = undefined;
+        }
+    }
+
+    onWindowStageDestroy(): void {
+        this.detachWindowSizeListener();
     }
     private loadContent(windowStage: window.WindowStage, path: string): void {
         try {

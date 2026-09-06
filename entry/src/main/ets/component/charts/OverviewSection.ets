@@ -42,11 +42,16 @@ struct DistributionPanel {
     private detailProgress: number = 1;
     private animationToken: number = 0;
     private controlPressToken: number = 0;
+    private controlPressTimer: number = -1;
+    private animationTimer: number = -1;
+    private drawTimer: number = -1;
 
     private beginControlPress(key: string): void {
         const token = ++this.controlPressToken;
         this.pressedControl = key;
-        setTimeout((): void => {
+        if (this.controlPressTimer >= 0) clearTimeout(this.controlPressTimer);
+        this.controlPressTimer = setTimeout((): void => {
+            this.controlPressTimer = -1;
             if (this.controlPressToken === token && this.pressedControl === key) {
                 this.pressedControl = '';
             }
@@ -55,25 +60,40 @@ struct DistributionPanel {
 
     private endControlPress(): void {
         this.controlPressToken++;
+        if (this.controlPressTimer >= 0) {
+            clearTimeout(this.controlPressTimer);
+            this.controlPressTimer = -1;
+        }
         this.pressedControl = '';
     }
 
     private onChartChanged(): void {
         this.endControlPress();
         this.selected = 0;
-        setTimeout((): void => this.animatePie(), 0);
+        this.scheduleAnimation((): void => this.animatePie(), 0);
     }
     private onDisplayChanged(): void {
         this.endControlPress();
         this.selected = 0;
         if (this.expanded) {
-            setTimeout((): void => this.animateOtherExpansion(), 0);
+            this.scheduleAnimation((): void => this.animateOtherExpansion(), 0);
         } else {
-            setTimeout((): void => this.animateOtherCollapse(), 0);
+            this.scheduleAnimation((): void => this.animateOtherCollapse(), 0);
         }
     }
     private onSelectedLabelChanged(): void {
-        setTimeout((): void => this.draw(), 0);
+        if (this.drawTimer >= 0) clearTimeout(this.drawTimer);
+        this.drawTimer = setTimeout((): void => {
+            this.drawTimer = -1;
+            this.draw();
+        }, 0);
+    }
+    private scheduleAnimation(action: () => void, delay: number): void {
+        if (this.animationTimer >= 0) clearTimeout(this.animationTimer);
+        this.animationTimer = setTimeout((): void => {
+            this.animationTimer = -1;
+            action();
+        }, delay);
     }
     private animatePie(): void {
         if (!this.canvasReady || this.chart.total <= 0) {
@@ -89,7 +109,7 @@ struct DistributionPanel {
             const elapsed = Math.min(1, (Date.now() - startedAt) / 700);
             this.drawProgress = 1 - Math.pow(1 - elapsed, 3);
             this.draw();
-            if (elapsed < 1) setTimeout(tick, 16);
+            if (elapsed < 1) this.scheduleAnimation(tick, 16);
         };
         tick();
     }
@@ -108,7 +128,7 @@ struct DistributionPanel {
             const elapsed = Math.min(1, (Date.now() - startedAt) / 520);
             this.detailProgress = 1 - Math.pow(1 - elapsed, 3);
             this.draw();
-            if (elapsed < 1) setTimeout(tick, 16);
+            if (elapsed < 1) this.scheduleAnimation(tick, 16);
         };
         tick();
     }
@@ -127,7 +147,7 @@ struct DistributionPanel {
             const elapsed = Math.min(1, (Date.now() - startedAt) / 420);
             this.detailProgress = Math.pow(1 - elapsed, 3);
             this.draw();
-            if (elapsed < 1) setTimeout(tick, 16);
+            if (elapsed < 1) this.scheduleAnimation(tick, 16);
         };
         tick();
     }
@@ -347,6 +367,15 @@ struct DistributionPanel {
 
     aboutToDisappear(): void {
         this.animationToken++;
+        this.endControlPress();
+        if (this.animationTimer >= 0) {
+            clearTimeout(this.animationTimer);
+            this.animationTimer = -1;
+        }
+        if (this.drawTimer >= 0) {
+            clearTimeout(this.drawTimer);
+            this.drawTimer = -1;
+        }
     }
 
     @Builder
@@ -509,7 +538,11 @@ struct DistributionPanel {
                 this.canvasSize = this.horizontalLegend ?
                     Math.max(154, Math.min(196, width * 0.36)) :
                     Math.max(164, Math.min(220, width - (this.embedded ? 24 : 44)));
-                setTimeout((): void => this.draw(), 0);
+                if (this.drawTimer >= 0) clearTimeout(this.drawTimer);
+                this.drawTimer = setTimeout((): void => {
+                    this.drawTimer = -1;
+                    this.draw();
+                }, 0);
             }
         })
         .onAppear(() => this.animatePie())
@@ -610,11 +643,14 @@ export struct OverviewSection {
     private reloadAfterCurrent: boolean = false;
     private restoredContinuationUi: boolean = false;
     private controlPressToken: number = 0;
+    private controlPressTimer: number = -1;
 
     private beginControlPress(key: string): void {
         const token = ++this.controlPressToken;
         this.pressedControl = key;
-        setTimeout((): void => {
+        if (this.controlPressTimer >= 0) clearTimeout(this.controlPressTimer);
+        this.controlPressTimer = setTimeout((): void => {
+            this.controlPressTimer = -1;
             if (this.controlPressToken === token && this.pressedControl === key) {
                 this.pressedControl = '';
             }
@@ -623,7 +659,15 @@ export struct OverviewSection {
 
     private endControlPress(): void {
         this.controlPressToken++;
+        if (this.controlPressTimer >= 0) {
+            clearTimeout(this.controlPressTimer);
+            this.controlPressTimer = -1;
+        }
         this.pressedControl = '';
+    }
+
+    aboutToDisappear(): void {
+        this.endControlPress();
     }
 
     aboutToAppear(): void {

@@ -50,7 +50,9 @@ export struct SStationPage {
     @State private pageVisible: boolean = false;
     private pendingScrollDistance: number = 0;
     private restoredScroll: boolean = false;
+    private restoreScrollTimer: number = -1;
     private shareManager?: WebShareManager;
+    private readonly shareOwnerId: number = WebShareManager.createOwnerId();
     private webBridge: SStationWebBridge = new SStationWebBridge((open: boolean): void => {
         this.onDetailOpenChanged?.(open);
     });
@@ -72,12 +74,24 @@ export struct SStationPage {
         }
     }
 
+    aboutToDisappear(): void {
+        if (this.restoreScrollTimer >= 0) {
+            clearTimeout(this.restoreScrollTimer);
+            this.restoreScrollTimer = -1;
+        }
+        this.shareManager?.clearShareDataProvider(this.shareOwnerId);
+        this.shareManager?.disablePassiveShare(this.shareOwnerId);
+        this.shareManager = undefined;
+    }
+
     private restoreScrollPosition(): void {
         if (this.restoredScroll || this.pendingScrollDistance <= 0) {
             return;
         }
         this.restoredScroll = true;
-        setTimeout((): void => {
+        if (this.restoreScrollTimer >= 0) clearTimeout(this.restoreScrollTimer);
+        this.restoreScrollTimer = setTimeout((): void => {
+            this.restoreScrollTimer = -1;
             try {
                 this.scroller.scrollTo({
                     xOffset: 0,
@@ -189,8 +203,9 @@ export struct SStationPage {
             data.title,
             data.description,
             (): WebShareData => this.liveShareData(),
+            this.shareOwnerId,
         );
-        this.shareManager.enablePassiveShare();
+        this.shareManager.enablePassiveShare(this.shareOwnerId);
     }
 
     private showShare(): void {
@@ -203,8 +218,8 @@ export struct SStationPage {
             this.syncShareData();
             return;
         }
-        this.shareManager?.clearShareDataProvider();
-        this.shareManager?.disablePassiveShare();
+        this.shareManager?.clearShareDataProvider(this.shareOwnerId);
+        this.shareManager?.disablePassiveShare(this.shareOwnerId);
     }
 
     private onCommandVersionChanged(): void {

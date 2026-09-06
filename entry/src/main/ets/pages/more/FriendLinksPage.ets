@@ -32,10 +32,12 @@ import {
   OpenStoreURL,
   PAPER_TALK_URL,
   PROJECT_HOME_URL,
+  ROUTE_WEB_PAGE,
   SBaseURL,
   SUBSCRIPTION_ATOMIC_URL,
   SUBSCRIPTION_URL,
   T_DASHBOARD_URL,
+  WEB_PAGE_FRIEND_LINK_TOP_INSET,
 } from '../../common/constants';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
@@ -43,11 +45,7 @@ import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { pageTransition } from '../../common/motion';
 import { pressVisualEffect } from '../../common/visualEffects';
-
-interface FriendWebParams {
-  url: string;
-  title: string;
-}
+import { WebPageParams } from '../web/WebPage';
 
 interface LinkConfig {
   icon: Resource;
@@ -58,9 +56,9 @@ interface LinkConfig {
 }
 
 @Component
-struct friend {
+struct FriendLinksPage {
   @Consume('pageStack') pageStack: NavPathStack;
-  private PromptAction: PromptAction = this.getUIContext().getPromptAction();
+  private prompt: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
     hdsMaterial.MaterialLevel.GENTLE;
@@ -77,9 +75,9 @@ struct friend {
         uri: site.url,
       } as Want);
     } catch (error) {
-      console.error('[Dashboard][pages/more/friend][ERROR]',
+      console.error('[Dashboard][pages/more/FriendLinksPage][ERROR]',
         `打开外部链接${site.title}失败: ${JSON.stringify(error)}`);
-      showToastSafely(this.PromptAction, `无法打开${site.title}`, 1800, 'Friend');
+      showToastSafely(this.prompt, `无法打开${site.title}`, 1800, 'Friend');
     }
   }
 
@@ -113,7 +111,7 @@ struct friend {
   ];
 
   @Builder
-  private RoundedPrefixIcon(icon: Resource): void {
+  private roundedPrefixIcon(icon: Resource): void {
     Image(icon)
       .width(24)
       .height(24)
@@ -122,7 +120,7 @@ struct friend {
   }
 
   @Builder
-  private RightSuffix(): void {
+  private rightSuffix(): void {
     Image($r('app.media.right'))
       .width(20)
       .height(20)
@@ -131,7 +129,7 @@ struct friend {
   }
 
   @Builder
-  private ExternalSuffix(): void {
+  private externalSuffix(): void {
     Image($r('app.media.share'))
       .width(20)
       .height(20)
@@ -142,7 +140,7 @@ struct friend {
   @Builder linkListItem(site: LinkConfig) {
     HdsListItemCard({
       prefixItem: site.roundedIcon ? new PrefixCustomBuilder(() => {
-        this.RoundedPrefixIcon(site.icon)
+        this.roundedPrefixIcon(site.icon)
       }) : new PrefixIcon({
         iconSize: IconSize.SYSTEM_ICON,
         iconValue: { image: site.icon },
@@ -156,9 +154,9 @@ struct friend {
         },
       },
       suffixItem: site.opensExternal ? new SuffixCustomBuilder(() => {
-        this.ExternalSuffix()
+        this.externalSuffix()
       }) : new SuffixCustomBuilder(() => {
-        this.RightSuffix()
+        this.rightSuffix()
       }),
       onClick: () => {
         if (site.opensExternal) {
@@ -166,8 +164,12 @@ struct friend {
           return;
         }
         if (this.vibrationLevel > 0) vibration.dotVibration();
-        const params: FriendWebParams = { url: site.url, title: site.title };
-        pushPathSafely(this.pageStack, "FriendPageWeb", params, 'pages/more/friend');
+        const params: WebPageParams = {
+          url: site.url,
+          title: site.title,
+          contentInsetTop: WEB_PAGE_FRIEND_LINK_TOP_INSET,
+        };
+        pushPathSafely(this.pageStack, ROUTE_WEB_PAGE, params, 'pages/more/FriendLinksPage');
       },
       cardHeight: 54,
       cardBackgroundColor: $r('app.color.v3_surface'),
@@ -182,7 +184,7 @@ struct friend {
   }
 
   @Builder
-  private LinkList(sites: LinkConfig[], label: string): void {
+  private linkList(sites: LinkConfig[], label: string): void {
     Column() {
       ForEach(sites, (site: LinkConfig, index: number) => {
         this.linkListItem(site)
@@ -207,7 +209,7 @@ struct friend {
   }
 
   @Builder
-  private LinkSection(title: string, sites: LinkConfig[]): void {
+  private linkSection(title: string, sites: LinkConfig[]): void {
     Column({ space: LIST_SECTION_CONTENT_GAP }) {
       Text(title)
         .fontSize(14)
@@ -216,7 +218,7 @@ struct friend {
         .width('100%')
         .padding({ left: LIST_SECTION_TITLE_START_PADDING })
         .accessibilityText(title)
-      this.LinkList(sites, title)
+      this.linkList(sites, title)
     }
     .width('100%')
   }
@@ -261,7 +263,7 @@ struct friend {
             .color($r("app.color.border"))
             .accessibilityText('重要提示与项目组站点分隔线')
 
-          this.LinkSection('Harmony Gallery项目组站点矩阵', this.projectSites)
+          this.linkSection('Harmony Gallery项目组站点矩阵', this.projectSites)
 
           Divider()
             .margin({
@@ -271,7 +273,7 @@ struct friend {
             .color($r("app.color.border"))
             .accessibilityText('项目组站点与友链应用分隔线')
 
-          this.LinkSection('使用Harmony Dashboard数据的应用', this.friendApps)
+          this.linkSection('使用Harmony Dashboard数据的应用', this.friendApps)
 
           Divider()
             .margin({
@@ -281,7 +283,7 @@ struct friend {
             .color($r("app.color.border"))
             .accessibilityText('友链应用与友链站点分隔线')
 
-          this.LinkSection('使用Harmony Dashboard数据的站点', this.friendSites)
+          this.linkSection('使用Harmony Dashboard数据的站点', this.friendSites)
 
           Divider()
             .margin({
@@ -291,7 +293,7 @@ struct friend {
             .color($r("app.color.border"))
             .accessibilityText('友链站点与其他站点分隔线')
 
-          this.LinkSection('其他站点', this.otherSites)
+          this.linkSection('其他站点', this.otherSites)
           Blank().height(20).width('100%')
         }
         .width('100%')
@@ -316,7 +318,7 @@ struct friend {
       }
       if(this.vibrationLevel > 0) vibration.backVibration()
       this.isExiting = true;
-      popPathSafely(this.pageStack, 'pages/more/friend');
+      popPathSafely(this.pageStack, 'pages/more/FriendLinksPage');
       return true;
     })
     .titleBar({
@@ -355,7 +357,7 @@ struct friend {
             if (this.isExiting) return;
             if(this.vibrationLevel > 0) vibration.backVibration()
             this.isExiting = true;
-            popPathSafely(this.pageStack, 'pages/more/friend');
+            popPathSafely(this.pageStack, 'pages/more/FriendLinksPage');
           },
         },
       },
@@ -367,5 +369,5 @@ struct friend {
 
 @Builder
 export function FriendPageBuilder(){
-  friend()
+  FriendLinksPage()
 }

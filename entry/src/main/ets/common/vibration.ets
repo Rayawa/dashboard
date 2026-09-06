@@ -15,9 +15,7 @@ export class vibration {
     return level === VIBRATION_LEVEL_SOFT ? EFFECT_SOFT : EFFECT_HARD;
   }
 
-  private static startPresetVibration(count: number, intensity: number): void {
-    const effectId = vibration.currentEffectId();
-    if (effectId === undefined) return;
+  private static startPresetVibrationWithEffect(effectId: string, count: number, intensity: number): void {
     vibrator.isSupportEffect(effectId, (err: BusinessError, state: boolean) => {
       if (err) {
         console.error('[Dashboard][common/vibration][ERROR]',
@@ -55,6 +53,12 @@ export class vibration {
     });
   }
 
+  private static startPresetVibration(count: number, intensity: number): void {
+    const effectId = vibration.currentEffectId();
+    if (effectId === undefined) return;
+    vibration.startPresetVibrationWithEffect(effectId, count, intensity);
+  }
+
   static dotVibration(): void {
     vibration.startPresetVibration(1, 50);
   }
@@ -71,8 +75,8 @@ export class vibration {
   }
 
   static waveVibration(): void {
-    // 用于首次启动时拦截关闭重要提示等需要明显提醒的场景。
-    vibration.startPresetVibration(5, 100);
+    // 首次启动时拦截关闭重要提示属于强制提醒，不受用户常规触觉强度设置影响。
+    vibration.startPresetVibrationWithEffect(EFFECT_HARD, 5, 100);
   }
 
   static errorVibration(): void {

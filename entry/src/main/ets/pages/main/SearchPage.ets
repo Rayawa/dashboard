@@ -1,6 +1,6 @@
 import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
-import { BACKGROUND_REFRESH_DELAY_MS } from '../../common/constants';
+import { BACKGROUND_REFRESH_DELAY_MS, SEARCH_SHARED_GEOMETRY_ID } from '../../common/constants';
 import { consumeSearchTarget, setDetailTarget } from '../../common/appState';
 import { fetchAppById, fetchAppByPackage, fetchAppsPage, submitApp } from '../../common/MarketApi';
 import { formatCount, formatDateTime } from '../../common/format';
@@ -19,7 +19,6 @@ import type {
 } from '../../common/types';
 import { vibration } from '../../common/vibration';
 
-export const SEARCH_SHARED_GEOMETRY_ID: string = 'apps_search_shared_element';
 const SEARCH_DISMISS_SWIPE_DISTANCE_VP: number = 96;
 
 interface NameSearchResult {
@@ -77,6 +76,12 @@ export struct SearchPage {
     private openDetailAfterSearch: boolean = false;
     private backgroundUpdateToken: number = 0;
     private enterTimers: number[] = [];
+
+    aboutToDisappear(): void {
+        this.backgroundUpdateToken++;
+        cancelStaggerEnterAnimation(this.enterTimers);
+        this.enterTimers = [];
+    }
 
     private updatePageAnimation(visible: boolean): void {
         cancelStaggerEnterAnimation(this.enterTimers);

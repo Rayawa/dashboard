@@ -83,7 +83,9 @@ entry/src/main/ets/
 │   └── types.ets             types des API, pages et routes
 ├── component/
 │   ├── charts/               graphiques natifs de l’accueil
-│   └── settings.ets          réglages et gestion du cache
+│   ├── SettingsPanel.ets     réglages et gestion du cache
+│   ├── WarningContent.ets    avis de premier lancement
+│   └── ContactPanel.ets      contacts et actions de copie
 └── pages/
     ├── Dashboard.ets         HdsNavigation et quatre HdsTabs fixes
     ├── main/
@@ -93,8 +95,11 @@ entry/src/main/ets/
     │   ├── AppsPage.ets      page combinée aperçu/liste
     │   └── MyPage.ets
     ├── detail/               page native commune de détail
-    └── more/                 tutoriel, liens, documents Web, journal et accords
+    ├── more/                 tutoriel, liens, journal, accords et développement
+    └── web/WebPage.ets       destination Web distante commune
 ```
+
+Consultez [ARCHITECTURE.md](ARCHITECTURE.md) pour les limites des modules, l’état, le cycle de vie et la gestion des ressources.
 
 ## Principales API
 

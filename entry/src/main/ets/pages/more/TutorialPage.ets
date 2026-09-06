@@ -24,7 +24,7 @@ interface TutorialSection {
 }
 
 @Component
-export struct tutorial {
+export struct TutorialPage {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
@@ -169,7 +169,7 @@ export struct tutorial {
       } as Want);
     } catch (error) {
       const businessError = error as BusinessError;
-      console.error('[Dashboard][pages/more/tutorial][ERROR]', `打开项目网站失败: ${businessError.message}`);
+      console.error('[Dashboard][pages/more/TutorialPage][ERROR]', `打开项目网站失败: ${businessError.message}`);
       showToastSafely(this.prompt, '打开项目网站失败', 1000, 'Tutorial');
     }
   }
@@ -425,7 +425,7 @@ export struct tutorial {
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {
       if (this.vibrationLevel > 0) vibration.backVibration();
-      popPathSafely(this.pageStack, 'pages/more/tutorial');
+      popPathSafely(this.pageStack, 'pages/more/TutorialPage');
       return true;
     })
     .titleBar({
@@ -487,7 +487,7 @@ export struct tutorial {
         backIcon: {
           action: () => {
             if (this.vibrationLevel > 0) vibration.backVibration();
-            popPathSafely(this.pageStack, 'pages/more/tutorial');
+            popPathSafely(this.pageStack, 'pages/more/TutorialPage');
           },
         },
       },
@@ -498,5 +498,5 @@ export struct tutorial {
 
 @Builder
 export function TutorialPageBuilder(): void {
-  tutorial()
+  TutorialPage()
 }

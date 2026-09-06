@@ -16,8 +16,13 @@ export interface WebShareData {
 
 export class WebShareManager {
   private static instance: WebShareManager;
+  private static nextOwnerId: number = 0;
   private context: common.UIAbilityContext;
   private isListening: boolean = false;
+  private enablePromise?: Promise<void>;
+  private passiveShareWindowId?: number;
+  private activeOwnerId: number = 0;
+  private desiredListening: boolean = false;
 
   private currentUrl: string = "";
   private currentTitle: string = '应用看板链接分享';
@@ -29,8 +34,14 @@ export class WebShareManager {
     this.context = context;
   }
 
+  public static createOwnerId(): number {
+    WebShareManager.nextOwnerId++;
+    return WebShareManager.nextOwnerId;
+  }
+
   public updateShareData(url: string, title: string = '应用看板链接分享', description: string = '',
-    dataProvider?: () => WebShareData): void {
+    dataProvider?: () => WebShareData, ownerId: number = 0): void {
+    this.activeOwnerId = ownerId;
     this.currentUrl = url;
     this.currentTitle = title;
     this.currentDescription = description || url;
@@ -39,7 +50,8 @@ export class WebShareManager {
     Logger.info(TAG, `URL 缓存已更新: ${url}`);
   }
 
-  public clearShareDataProvider(): void {
+  public clearShareDataProvider(ownerId: number = 0): void {
+    if (ownerId !== 0 && ownerId !== this.activeOwnerId) return;
     this.currentDataProvider = undefined;
   }
 
@@ -113,9 +125,25 @@ export class WebShareManager {
   /**
    * 2. 开启被动分享监听 (碰一碰 + 隔空传送)
    */
-  public async enablePassiveShare(): Promise<void> {
+  public async enablePassiveShare(ownerId: number = 0): Promise<void> {
+    if (ownerId !== 0 && ownerId !== this.activeOwnerId) return;
+    this.desiredListening = true;
     if (!canIUse('SystemCapability.Collaboration.HarmonyShare') || this.isListening) return;
 
+    if (this.enablePromise) {
+      await this.enablePromise;
+      return;
+    }
+
+    this.enablePromise = this.registerPassiveShare();
+    try {
+      await this.enablePromise;
+    } finally {
+      this.enablePromise = undefined;
+    }
+  }
+
+  private async registerPassiveShare(): Promise<void> {
     try {
       const win = await window.getLastWindow(this.context);
       const windowId = win.getWindowProperties().id;
@@ -128,6 +156,7 @@ export class WebShareManager {
       });
 
       this.isListening = true;
+      this.passiveShareWindowId = windowId;
       Logger.info(TAG, "HarmonyShare: Knock and Gesture sharing enabled.");
     } catch (err) {
       Logger.error(TAG, `HarmonyShare: Enable sharing failed: ${(err as BusinessError).message}`);
@@ -137,7 +166,15 @@ export class WebShareManager {
   /**
    * 3. 关闭所有监听
    */
-  public async disablePassiveShare(): Promise<void> {
+  public async disablePassiveShare(ownerId: number = 0): Promise<void> {
+    if (ownerId !== 0 && ownerId !== this.activeOwnerId) return;
+    this.desiredListening = false;
+    if (this.enablePromise) {
+      await this.enablePromise;
+    }
+    // Another page became the active owner while registration was pending.
+    if (ownerId !== 0 && ownerId !== this.activeOwnerId) return;
+    if (this.desiredListening) return;
     if (!this.isListening) return;
     if (!canIUse('SystemCapability.Collaboration.HarmonyShare')) {
       this.isListening = false;
@@ -146,15 +183,16 @@ export class WebShareManager {
     }
 
     try {
-      const win = await window.getLastWindow(this.context);
-      const windowId = win.getWindowProperties().id;
+      const windowId = this.passiveShareWindowId;
       try {
         harmonyShare.off('knockShare');
       } catch (err) {
         Logger.error(TAG, `HarmonyShare: Knock listener cleanup failed: ${(err as BusinessError).message}`);
       }
       try {
-        harmonyShare.off('gesturesShare', { windowId });
+        if (windowId !== undefined) {
+          harmonyShare.off('gesturesShare', { windowId });
+        }
       } catch (err) {
         Logger.error(TAG, `HarmonyShare: Gesture listener cleanup failed: ${(err as BusinessError).message}`);
       }
@@ -163,6 +201,7 @@ export class WebShareManager {
       Logger.error(TAG, `HarmonyShare: Window unavailable while disabling listeners: ${(err as BusinessError).message}`);
     } finally {
       this.isListening = false;
+      this.passiveShareWindowId = undefined;
       Logger.info(TAG, "HarmonyShare: Passive sharing state reset.");
     }
   }

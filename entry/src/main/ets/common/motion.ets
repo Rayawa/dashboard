@@ -1,16 +1,18 @@
 import { curves, UIContext } from '@kit.ArkUI';
+import {
+  CONTENT_ENTER_DURATION_MS,
+  PAGE_EXIT_DURATION_MS,
+  PAGE_TRANSITION_DURATION_MS,
+  STAGGER_ENTER_DELAY_MS,
+  STAGGER_ENTER_DURATION_MS,
+  STAGGER_ENTER_INTERVAL_MS,
+} from './constants';
 
 /**
  * Dashboard 的统一动效节奏。
  *
  * 交互反馈保持短促，页面/组件进出使用无明显回弹的弹簧。
  */
-export const CONTENT_ENTER_DURATION_MS: number = 280;
-export const PAGE_TRANSITION_DURATION_MS: number = 300;
-export const STAGGER_ENTER_DURATION_MS: number = 500;
-export const STAGGER_ENTER_DELAY_MS: number = 100;
-export const STAGGER_ENTER_INTERVAL_MS: number = 125;
-
 export function contentEnterTransition(offsetY: number = 12): TransitionEffect {
   return TransitionEffect.OPACITY
     .combine(TransitionEffect.translate({ y: offsetY }))
@@ -30,7 +32,7 @@ export function pageTransition(): TransitionEffect {
     TransitionEffect.OPACITY
       .combine(TransitionEffect.translate({ x: 10 }))
       .combine(TransitionEffect.scale({ x: 0.992, y: 0.992 }))
-      .animation({ duration: 220, curve: Curve.EaseInOut }),
+      .animation({ duration: PAGE_EXIT_DURATION_MS, curve: Curve.EaseInOut }),
   );
 }
 

@@ -83,7 +83,9 @@ entry/src/main/ets/
 │   └── types.ets             API, page, and route types
 ├── component/
 │   ├── charts/               native Home chart components
-│   └── settings.ets          settings and cache management
+│   ├── SettingsPanel.ets     settings and cache management
+│   ├── WarningContent.ets    first-launch notice content
+│   └── ContactPanel.ets      contact and copy actions
 └── pages/
     ├── Dashboard.ets         HdsNavigation and four fixed HdsTabs
     ├── main/
@@ -93,8 +95,11 @@ entry/src/main/ets/
     │   ├── AppsPage.ets      combined app overview/list page
     │   └── MyPage.ets
     ├── detail/               shared native app-detail page
-    └── more/                 tutorial, links, web documents, update log, and agreements
+    ├── more/                 tutorial, links, update log, agreements, and developer pages
+    └── web/WebPage.ets       shared remote-web destination
 ```
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for module boundaries, state rules, lifecycle, and resource ownership.
 
 ## Main API endpoints
 

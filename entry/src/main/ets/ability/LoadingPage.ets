@@ -1,6 +1,6 @@
 @Entry
 @Component
-struct loading {
+struct LoadingPage {
   build() {
     Stack() {
       Column({ space: 12 }) {

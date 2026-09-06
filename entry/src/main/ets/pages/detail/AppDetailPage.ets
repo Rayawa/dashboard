@@ -95,6 +95,7 @@ export struct AppDetailPage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private scroller: Scroller = new Scroller();
     private shareManager?: WebShareManager;
+    private readonly shareOwnerId: number = WebShareManager.createOwnerId();
     private target: AppRouteTarget = {};
     @State private app: MarketApp | undefined = undefined;
     @State private metrics: AppMetric[] = [];
@@ -110,6 +111,11 @@ export struct AppDetailPage {
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
         hdsMaterial.MaterialLevel.GENTLE;
+    private active: boolean = false;
+    private requestVersion: number = 0;
+    private initialLoadTimer: number = -1;
+    private restoreScrollTimer: number = -1;
+    private backgroundRefreshTimer: number = -1;
 
     private vibrate(): void {
         if (this.vibrationLevel > 0) {
@@ -118,6 +124,7 @@ export struct AppDetailPage {
     }
 
     aboutToAppear(): void {
+        this.active = true;
         const fallbackTarget = peekDetailTarget();
         this.target = (this.routeTarget.appId || this.routeTarget.packageName) ? this.routeTarget : fallbackTarget;
         this.app = this.target.previewApp;
@@ -171,8 +178,10 @@ export struct AppDetailPage {
             this.shareUrl(),
             `${this.app.name}｜Dashboard应用看板`,
             `${this.app.developer_name || '未知开发者'} · ${this.app.pkg_name}`,
+            undefined,
+            this.shareOwnerId,
         );
-        this.shareManager.enablePassiveShare();
+        this.shareManager.enablePassiveShare(this.shareOwnerId);
     }
 
     private showShare(): void {
@@ -204,6 +213,7 @@ export struct AppDetailPage {
     }
 
     private load(force: boolean, background: boolean = false, showRefreshing: boolean = false): void {
+        const version = ++this.requestVersion;
         if (showRefreshing) {
             this.refreshing = true;
         }
@@ -212,6 +222,7 @@ export struct AppDetailPage {
             this.errorMessage = '';
         }
         this.request(force).then((result) => {
+            if (!this.active || version !== this.requestVersion) return;
             if (!result.data.success || !result.data.data?.full_info) {
                 throw new Error('未找到该应用');
             }
@@ -220,26 +231,30 @@ export struct AppDetailPage {
             this.syncShareData();
             if (this.app.pkg_name) {
                 fetchAppMetrics(this.app.pkg_name, force).then((metricResult) => {
-                    if (metricResult.data.success) {
+                    if (this.active && version === this.requestVersion && metricResult.data.success) {
                         this.metrics = metricResult.data.data ?? [];
                     }
                 }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `指标加载失败: ${error.message}`));
                 fetchAppRatingHistory(this.app.pkg_name, force).then((ratingResult) => {
-                    if (ratingResult.data.success) {
+                    if (this.active && version === this.requestVersion && ratingResult.data.success) {
                         this.ratingHistory = ratingResult.data.data ?? [];
                     }
                 }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `评分趋势加载失败: ${error.message}`));
             }
             if (!force && !this.target.backgroundRefreshHandled) {
-                setTimeout((): void => {
+                if (this.backgroundRefreshTimer >= 0) clearTimeout(this.backgroundRefreshTimer);
+                this.backgroundRefreshTimer = setTimeout((): void => {
+                    this.backgroundRefreshTimer = -1;
+                    if (!this.active || version !== this.requestVersion) return;
                     this.load(true, true);
                 }, BACKGROUND_REFRESH_DELAY_MS);
             }
         }).catch((error: Error) => {
-            if (!background) {
+            if (this.active && version === this.requestVersion && !background) {
                 this.errorMessage = `详情加载失败：${error.message}`;
             }
         }).finally(() => {
+            if (!this.active || version !== this.requestVersion) return;
             this.loading = false;
             this.refreshing = false;
         });
@@ -332,7 +347,16 @@ export struct AppDetailPage {
     }
 
     aboutToDisappear(): void {
-        this.shareManager?.disablePassiveShare();
+        this.active = false;
+        this.requestVersion++;
+        if (this.initialLoadTimer >= 0) clearTimeout(this.initialLoadTimer);
+        if (this.restoreScrollTimer >= 0) clearTimeout(this.restoreScrollTimer);
+        if (this.backgroundRefreshTimer >= 0) clearTimeout(this.backgroundRefreshTimer);
+        this.initialLoadTimer = -1;
+        this.restoreScrollTimer = -1;
+        this.backgroundRefreshTimer = -1;
+        this.shareManager?.clearShareDataProvider(this.shareOwnerId);
+        this.shareManager?.disablePassiveShare(this.shareOwnerId);
     }
 
     build() {
@@ -611,11 +635,15 @@ export struct AppDetailPage {
                             this.target,
                             this.shareUrl(),
                         );
-                        setTimeout((): void => {
+                        this.initialLoadTimer = setTimeout((): void => {
+                            this.initialLoadTimer = -1;
+                            if (!this.active) return;
                             this.load(false);
                         }, 0);
                         if (continuation.routeName === CONTINUATION_ROUTE_DETAIL && continuation.scrollDistance > 0) {
-                            setTimeout((): void => {
+                            this.restoreScrollTimer = setTimeout((): void => {
+                                this.restoreScrollTimer = -1;
+                                if (!this.active) return;
                                 try {
                                     this.scroller.scrollTo({
                                         xOffset: 0,

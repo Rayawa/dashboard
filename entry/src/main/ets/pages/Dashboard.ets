@@ -12,10 +12,9 @@ import { curves, LengthMetrics, PromptAction, SegmentButtonV2Items } from '@kit.
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { getFirstLaunch } from '../common/storage';
 import {
-  consumeMainTab, getContinuationState, setAppsViewIndex, setContinuationView, setMainTab,
+  consumeMainTab, getContinuationState, peekDetailTarget, setAppsViewIndex, setContinuationView, setMainTab,
 } from '../common/appState';
 import {
-  APP_STATE_KEY_DETAIL_TARGET,
   CONTINUATION_ROUTE_DETAIL,
   MAIN_TAB_APPS,
   MAIN_TAB_DEFAULT,
@@ -27,9 +26,16 @@ import {
   S_STATION_COMMAND_NONE,
   S_STATION_COMMAND_SHARE,
   S_STATION_COMMAND_SCROLL_TOP,
+  ROUTE_APP_DETAIL,
+  ROUTE_APP_LOG,
+  ROUTE_DEVELOPER,
+  ROUTE_FRIEND_LINKS,
+  ROUTE_HTML_PAGE,
+  ROUTE_TUTORIAL,
+  ROUTE_WEB_PAGE,
 } from '../common/constants';
 import type { AppRouteTarget } from '../common/types';
-import { warn } from '../component/warn';
+import { WarningContent } from '../component/WarningContent';
 import { vibration } from '../common/vibration';
 import { pushPathSafely } from '../common/safeNavigation';
 import { showToastSafely } from '../common/safeUi';
@@ -38,13 +44,12 @@ import { HomePage } from './main/HomePage';
 import { AppsPage } from './main/AppsPage';
 import { MyPage } from './main/MyPage';
 import { AppDetailPage } from './detail/AppDetailPage';
-import { AboutWebBuilder, AboutWebParams } from './more/aboutWeb';
-import { AppLogBuilder } from './more/appLog';
-import { HTMLBuilder } from './more/htmlPage';
-import { TutorialPageBuilder } from './more/tutorial';
-import { FriendPageBuilder } from './more/friend';
-import { FriendPageWebBuilder, FriendWebParams } from './more/friendWeb';
+import { AppLogBuilder } from './more/AppLogPage';
+import { HTMLBuilder } from './more/LocalHtmlPage';
+import { TutorialPageBuilder } from './more/TutorialPage';
+import { FriendPageBuilder } from './more/FriendLinksPage';
 import { DeveloperPage } from './more/DeveloperPage';
+import { WebPageBuilder, WebPageParams } from './web/WebPage';
 import { HdsTitleBarSegment } from '../component/HdsTitleBarSegment';
 
 interface MainTab {
@@ -89,6 +94,12 @@ struct Dashboard {
         { text: '应用概况', accessibilityText: '应用概况' },
         { text: '应用列表', accessibilityText: '应用列表' },
     ]);
+    private readonly mainTabs: MainTab[] = [
+        { label: 'S站', icon: $r('sys.media.wifi_router_fill') },
+        { label: '首页', icon: $r('sys.media.return_home_fill') },
+        { label: '应用详情', icon: $r('sys.media.rectangle_filled_and_line_horizontal_and_rectangle') },
+        { label: '我的', icon: $r('sys.media.person_badge_waveform') },
+    ];
 
     @Builder
     private appsTitleSegment(): void {
@@ -114,17 +125,8 @@ struct Dashboard {
         .justifyContent(FlexAlign.Center)
     }
 
-    private tabs(): MainTab[] {
-        return [
-            { label: 'S站', icon: $r('sys.media.wifi_router_fill') },
-            { label: '首页', icon: $r('sys.media.return_home_fill') },
-            { label: '应用详情', icon: $r('sys.media.rectangle_filled_and_line_horizontal_and_rectangle') },
-            { label: '我的', icon: $r('sys.media.person_badge_waveform') },
-        ];
-    }
-
     private mainTitle(): string {
-        return this.tabs()[this.selectedIndex]?.label ?? '首页';
+        return this.mainTabs[this.selectedIndex]?.label ?? '首页';
     }
 
     private vibrate(): void {
@@ -140,7 +142,7 @@ struct Dashboard {
 
     private openTutorial(): void {
         this.vibrate();
-        pushPathSafely(this.pageStack, 'TutorialPage');
+        pushPathSafely(this.pageStack, ROUTE_TUTORIAL);
     }
 
     private dispatchSStationCommand(command: number): void {
@@ -229,7 +231,7 @@ struct Dashboard {
     }
 
     private openAppDetail(target: AppRouteTarget): void {
-        pushPathSafely(this.pageStack, 'AppDetailPage', target, 'pages/Dashboard');
+        pushPathSafely(this.pageStack, ROUTE_APP_DETAIL, target, 'pages/Dashboard');
     }
 
     private async handlePageShow(): Promise<void> {
@@ -247,14 +249,14 @@ struct Dashboard {
         } catch (error) {
             console.warn('[Dashboard][pages/Dashboard][WARN]', `[v3] 首启状态读取失败: ${JSON.stringify(error)}`);
         }
-        const detail = AppStorage.get<AppRouteTarget>(APP_STATE_KEY_DETAIL_TARGET) ?? {};
+        const detail = peekDetailTarget();
         if (detail.appId || detail.packageName) {
             try {
-                if (this.pageStack.getIndexByName('AppDetailPage').length > 0) {
-                    this.pageStack.removeByName('AppDetailPage');
+                if (this.pageStack.getIndexByName(ROUTE_APP_DETAIL).length > 0) {
+                    this.pageStack.removeByName(ROUTE_APP_DETAIL);
                 }
                 setTimeout((): void => {
-                    pushPathSafely(this.pageStack, 'AppDetailPage', detail, 'pages/Dashboard');
+                    pushPathSafely(this.pageStack, ROUTE_APP_DETAIL, detail, 'pages/Dashboard');
                 }, 0);
             } catch (error) {
                 console.error('[Dashboard][pages/Dashboard][ERROR]',
@@ -289,28 +291,26 @@ struct Dashboard {
 
     @Builder
     destinationBuilder(name: string, param: Object) {
-        if (name === 'AppDetailPage') {
+        if (name === ROUTE_APP_DETAIL) {
             AppDetailPage({ routeTarget: param as AppRouteTarget })
-        } else if (name === 'AboutWebPage') {
-            AboutWebBuilder(param as AboutWebParams)
-        } else if (name === 'AppLogPage') {
+        } else if (name === ROUTE_WEB_PAGE) {
+            WebPageBuilder(param as WebPageParams)
+        } else if (name === ROUTE_APP_LOG) {
             AppLogBuilder()
-        } else if (name === 'HTMLPage') {
+        } else if (name === ROUTE_HTML_PAGE) {
             HTMLBuilder()
-        } else if (name === 'TutorialPage') {
+        } else if (name === ROUTE_TUTORIAL) {
             TutorialPageBuilder()
-        } else if (name === 'FriendPage') {
+        } else if (name === ROUTE_FRIEND_LINKS) {
             FriendPageBuilder()
-        } else if (name === 'FriendPageWeb') {
-            FriendPageWebBuilder(param as FriendWebParams)
-        } else if (name === 'DeveloperPage') {
+        } else if (name === ROUTE_DEVELOPER) {
             DeveloperPage()
         }
     }
 
     @Builder
-    private WarningSheet(): void {
-        warn({ isShow: this.showWarning, requiresConfirmation: this.warningRequiresConfirmation })
+    private warningSheet(): void {
+        WarningContent({ isShow: this.showWarning, requiresConfirmation: this.warningRequiresConfirmation })
     }
 
     build() {
@@ -327,7 +327,7 @@ struct Dashboard {
                             },
                         })
                     }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[0].icon, this.tabs()[0].label))
+                    .tabBar(new BottomTabBarStyle(this.mainTabs[0].icon, this.mainTabs[0].label))
                     .opacity(this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.92)
                     .scale({ x: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985,
                         y: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985 })
@@ -341,7 +341,7 @@ struct Dashboard {
                             onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
                         })
                     }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[1].icon, this.tabs()[1].label))
+                    .tabBar(new BottomTabBarStyle(this.mainTabs[1].icon, this.mainTabs[1].label))
                     .accessibilityText('首页标签页')
 
                     TabContent() {
@@ -358,7 +358,7 @@ struct Dashboard {
                             onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
                         })
                     }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[2].icon, this.tabs()[2].label))
+                    .tabBar(new BottomTabBarStyle(this.mainTabs[2].icon, this.mainTabs[2].label))
                     .accessibilityText('应用详情标签页')
 
                     TabContent() {
@@ -371,7 +371,7 @@ struct Dashboard {
                             },
                         })
                     }
-                    .tabBar(new BottomTabBarStyle(this.tabs()[3].icon, this.tabs()[3].label))
+                    .tabBar(new BottomTabBarStyle(this.mainTabs[3].icon, this.mainTabs[3].label))
                     .accessibilityText('我的标签页')
                 }
                 .barPosition(BarPosition.End)
@@ -487,7 +487,7 @@ struct Dashboard {
         .backgroundColor($r('app.color.background'))
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .accessibilityText('Dashboard应用导航')
-        .bindSheet($$this.showWarning, this.WarningSheet(), {
+        .bindSheet($$this.showWarning, this.warningSheet(), {
             title: { title: '重要提示', subtitle: '使用前请阅读以下说明' },
             height: SheetSize.LARGE,
             detents: [SheetSize.LARGE],
@@ -502,6 +502,7 @@ struct Dashboard {
                     this.preventWarningDismiss();
                     return;
                 }
+                this.vibrate();
                 action.dismiss();
             },
         })
