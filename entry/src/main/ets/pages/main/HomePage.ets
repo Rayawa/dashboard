@@ -12,6 +12,7 @@ import { fetchAppsPage, fetchMarketInfo } from '../../common/MarketApi';
 import { formatDateTime, formatExactCount } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
 import {
+    cancelStaggerEnterAnimation,
     contentEnterTransition,
     startStaggerEnterAnimation,
 } from '../../common/motion';
@@ -33,12 +34,15 @@ struct RollingNumber {
     @Prop accessibilityLabel: string = '';
     @State private displayedValue: number = 0;
     private animationToken: number = 0;
+    private animationTimer: number = -1;
 
     private animateValue(): void {
         const target = Math.max(0, Math.round(this.value));
         const token = ++this.animationToken;
         this.displayedValue = 0;
-        setTimeout((): void => {
+        if (this.animationTimer >= 0) clearTimeout(this.animationTimer);
+        this.animationTimer = setTimeout((): void => {
+            this.animationTimer = -1;
             if (token !== this.animationToken) return;
             this.getUIContext().animateTo({ duration: 1000, curve: Curve.EaseOut }, (): void => {
                 this.displayedValue = target;
@@ -52,6 +56,10 @@ struct RollingNumber {
 
     aboutToDisappear(): void {
         this.animationToken++;
+        if (this.animationTimer >= 0) {
+            clearTimeout(this.animationTimer);
+            this.animationTimer = -1;
+        }
     }
 
     build() {
@@ -203,6 +211,8 @@ export struct HomePage {
     private restoredScroll: boolean = false;
     private reloadAfterCurrent: boolean = false;
     private enterAnimationPlayed: boolean = false;
+    private enterAnimationTimers: number[] = [];
+    private restoreScrollTimer: number = -1;
 
     private onActiveChanged(): void {
         if (this.active && this.loaded) this.startPageAnimationOnce();
@@ -212,9 +222,18 @@ export struct HomePage {
         if (this.enterAnimationPlayed) return;
         this.enterAnimationPlayed = true;
         this.animStep = 0;
-        startStaggerEnterAnimation(this.getUIContext(), 3, (step: number): void => {
+        this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 3, (step: number): void => {
             this.animStep = step;
         });
+    }
+
+    aboutToDisappear(): void {
+        cancelStaggerEnterAnimation(this.enterAnimationTimers);
+        this.enterAnimationTimers = [];
+        if (this.restoreScrollTimer >= 0) {
+            clearTimeout(this.restoreScrollTimer);
+            this.restoreScrollTimer = -1;
+        }
     }
 
     private onScrollToTopVersionChanged(): void {
@@ -548,7 +567,8 @@ export struct HomePage {
         const continuation = getContinuationState();
         if (continuation.mainTab !== MAIN_TAB_HOME || continuation.routeName !== CONTINUATION_ROUTE_MAIN ||
             continuation.scrollDistance <= 0) return;
-        setTimeout((): void => {
+        this.restoreScrollTimer = setTimeout((): void => {
+            this.restoreScrollTimer = -1;
             try {
                 this.scroller.scrollTo({
                     xOffset: 0,

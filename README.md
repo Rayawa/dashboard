@@ -18,7 +18,7 @@ Dashboard 应用看板是 `harmony_get_market` 的 HarmonyOS 原生客户端。�
 1. **S站**：应用启动时预热并缓存 ArkWeb 页面，支持当前网页分享、碰一碰与隔空传送；网页使用独立视口滚动，使站内悬浮详情始终显示在当前视图。
 2. **首页**：明确展示“应用总数 = 鸿蒙应用 + 元服务”，宽屏将数据与状态和最近收录左右排列。
 3. **应用详情**：顶部依次为搜索框、概况/列表切换栏与内容；搜索通过共享元素展开，列表支持类型及字段筛选、排序和分页。
-4. **我的**：依次展示 AppIcon、中英文名称、设置、更多栏目、版本/版权/备案信息。
+4. **我的**：依次展示 AppIcon、中英文名称、设置、更多栏目、版本/版权/备案信息；“联系我们”使用可在遮罩点击后关闭的半模态页面。
 
 应用列表、搜索结果和系统分享入口都使用同一公用详情模板：
 
@@ -68,6 +68,15 @@ Dashboard 应用看板是 `harmony_get_market` 的 HarmonyOS 原生客户端。�
 
 新增的 `v3_*` 色彩全部提供浅色和深色版本；S站 ArkWeb 占位背景在浅色模式使用 `#EEF6FE`，深色模式使用 `#030712`。
 
+## 触觉反馈、重要提示与半模态交互
+
+应用的可操作控件使用 `common/vibration.ets` 统一提供触觉反馈，并尊重“我的 → 设置”中的三档选择：关闭、灵动和硬朗。普通按钮、筛选、图表选择、分页和网页操作使用短振动；标题栏、系统返回和侧滑返回使用带短时间去重的返回振动。
+
+- 首次启动会显示不可绕过的重要提示。用户必须同意，或选择“取消并退出”。在未同意前尝试通过系统返回、侧滑、拖拽或遮罩关闭，会保持提示显示，并以长振动配合“请先阅读并同意重要提示！”提示。
+- 后续从“我的 → 重要提示”重新查看时，可使用关闭按钮、系统返回、侧滑或遮罩关闭；这些正常关闭动作会给出短振动。
+- “联系我们”使用 `bindSheet` 的 `enableOutsideInteractive: false`。在平板默认跟手样式下，遮罩会拦截底层页面操作；点击 sheet 外侧只会先关闭 sheet。
+- 清理缓存、撤销隐私同意等确认操作及其取消选项也提供触觉反馈。
+
 ## 关键目录
 
 ```text
@@ -79,11 +88,17 @@ entry/src/main/ets/
 │   ├── appState.ets          跨 Ability 瞬态状态
 │   ├── storage.ets           Preferences 与 AppStorage 水合
 │   ├── safeUi.ets            PromptAction 安全调用与日志回退
+│   ├── safeNavigation.ets    路由参数与安全 push/pop
+│   ├── motion.ets            页面进入与共享转场动画
+│   ├── shareControl.ets      系统分享与被动分享生命周期
+│   ├── vibration.ets         统一短、返回、长与错误振动
 │   ├── constants.ets         跨文件常量
 │   └── types.ets             API、页面和路由类型
 ├── component/
 │   ├── charts/               首页原生图表组件
-│   └── settings.ets          设置和缓存管理
+│   ├── SettingsPanel.ets     设置和缓存管理
+│   ├── WarningContent.ets    首启提示内容
+│   └── ContactPanel.ets      联系方式与复制操作
 └── pages/
     ├── Dashboard.ets         HdsNavigation + 四个固定 HdsTabs
     ├── main/
@@ -93,8 +108,11 @@ entry/src/main/ets/
     │   ├── AppsPage.ets      应用概览/列表合并页
     │   └── MyPage.ets
     ├── detail/               公用原生应用详情页
-    └── more/                 教程、友链、网页说明、日志与协议子页面
+    ├── more/                 TutorialPage、FriendLinksPage、AppLogPage、LocalHtmlPage 与 DeveloperPage
+    └── web/WebPage.ets       API 文档和友链共用的唯一远程网页页面
 ```
+
+更完整的模块边界、状态约束、生命周期和资源释放规则见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 ## API 对照
 
@@ -121,6 +139,7 @@ entry/src/main/ets/
 3. 检查签名配置是否指向本机有效文件；仓库内的其他开发者绝对路径不能直接使用。
 4. 选择 phone、tablet 或 2in1 目标进行构建和真机/模拟器验证。
 5. 重点验证：弱网回退、缓存清除、深浅色、600/840vp 断点、唯一分享入口、S站与详情页三类分享、接续位置、表格滚动/页码跳转和无障碍播报。
+6. 验证触觉反馈设置、首次重要提示的关闭拦截及长振动、后续查看时的正常关闭振动，以及平板上“联系我们”sheet 的遮罩拦截和外侧点击关闭。
 
 ## 隐私与说明
 

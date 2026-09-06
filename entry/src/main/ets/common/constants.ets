@@ -44,6 +44,19 @@ export const DEFAULT_NETWORK_TIMEOUT_MS = 10000;
 export const RESPONSIVE_BREAKPOINT_MEDIUM = '600vp';
 export const RESPONSIVE_BREAKPOINT_LARGE = '840vp';
 export const CONTENT_MAX_WIDTH = 1440;
+export const WEB_PAGE_DEFAULT_TITLE = '网页';
+export const WEB_PAGE_DEFAULT_TOP_INSET = 0;
+export const WEB_PAGE_FRIEND_LINK_TOP_INSET = 100;
+export const WEB_PAGE_PROGRESS_TOP_OFFSET = 96;
+export const WEB_PAGE_PROGRESS_HEIGHT = 4;
+export const WEB_PAGE_TOAST_DURATION_MS = 1600;
+export const SEARCH_SHARED_GEOMETRY_ID = 'apps_search_shared_element';
+export const CONTENT_ENTER_DURATION_MS = 280;
+export const PAGE_TRANSITION_DURATION_MS = 300;
+export const PAGE_EXIT_DURATION_MS = 220;
+export const STAGGER_ENTER_DURATION_MS = 500;
+export const STAGGER_ENTER_DELAY_MS = 100;
+export const STAGGER_ENTER_INTERVAL_MS = 125;
 // 卡片列表页的统一布局基准，“我的”和“友情链接”共用。
 export const LIST_PAGE_HORIZONTAL_PADDING = 14;
 export const LIST_SECTION_SPACING = 14;
@@ -72,6 +85,15 @@ export const S_STATION_COMMAND_HOME = 3;
 export const S_STATION_COMMAND_BACK = 4;
 export const CONTINUATION_ROUTE_MAIN = 'main';
 export const CONTINUATION_ROUTE_DETAIL = 'detail';
+
+// 页面路由名。页面跳转和 Navigation 目标分发必须共用这些值。
+export const ROUTE_APP_DETAIL = 'AppDetailPage';
+export const ROUTE_WEB_PAGE = 'WebPage';
+export const ROUTE_APP_LOG = 'AppLogPage';
+export const ROUTE_HTML_PAGE = 'HTMLPage';
+export const ROUTE_TUTORIAL = 'TutorialPage';
+export const ROUTE_FRIEND_LINKS = 'FriendPage';
+export const ROUTE_DEVELOPER = 'DeveloperPage';
 
 // 主要链接
 export const mainPage = new URL("https://dashboard.rayawa.top")

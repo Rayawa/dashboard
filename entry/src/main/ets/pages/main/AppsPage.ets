@@ -1,6 +1,6 @@
 import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
-import { CONTINUATION_ROUTE_MAIN, MAIN_TAB_APPS } from '../../common/constants';
+import { CONTINUATION_ROUTE_MAIN, MAIN_TAB_APPS, SEARCH_SHARED_GEOMETRY_ID } from '../../common/constants';
 import {
     getContinuationState, hasPendingSearchTarget, setContinuationAppsListState, setContinuationView, setDetailTarget,
 } from '../../common/appState';
@@ -10,13 +10,14 @@ import { formatBytes, formatCount, formatDateTime } from '../../common/format';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
 import {
+    cancelStaggerEnterAnimation,
     contentEnterTransition,
     startStaggerEnterAnimation,
 } from '../../common/motion';
 import { pressVisualEffect } from '../../common/visualEffects';
 import { vibration } from '../../common/vibration';
 import { OverviewSection } from '../../component/charts/OverviewSection';
-import { SEARCH_SHARED_GEOMETRY_ID, SearchPage } from './SearchPage';
+import { SearchPage } from './SearchPage';
 
 interface SortChoice { label: string; field: string; }
 interface FilterChoice { label: string; field: string; }
@@ -112,6 +113,25 @@ export struct AppsPage {
     @Link selectedIndexes: number[];
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private pageScroller: Scroller = new Scroller();
+    private readonly sortChoiceItems: SortChoice[] = [
+        { label: '更新时间', field: 'updated_at' }, { label: '下载量', field: 'download_count' },
+        { label: '评分数量', field: 'total_star_rating_count' }, { label: '应用大小', field: 'size_bytes' },
+        { label: '上架时间', field: 'listed_at' },
+    ];
+    private readonly filterChoiceItems: FilterChoice[] = [
+        { label: '应用名称', field: 'name' }, { label: '分类', field: 'kind_name' },
+        { label: '类型', field: 'kind_type_name' }, { label: '标签', field: 'tag_name' },
+        { label: '开发者', field: 'developer_name' },
+    ];
+    private readonly typeSelectOptions: SelectOption[] = ['全部类型', '鸿蒙应用', '元服务']
+        .map((label: string) => ({ value: label } as SelectOption));
+    private readonly sortSelectOptions: SelectOption[] = this.sortChoiceItems
+        .map((choice: SortChoice) => ({ value: choice.label } as SelectOption));
+    private readonly filterSelectOptions: SelectOption[] = this.filterChoiceItems
+        .map((choice: FilterChoice) => ({ value: choice.label } as SelectOption));
+    private readonly pageSizes: number[] = [20, 50, 100];
+    private readonly pageSizeSelectOptions: SelectOption[] = this.pageSizes
+        .map((size: number) => ({ value: `每页 ${size} 条` } as SelectOption));
     @State private searchExpanded: boolean = false;
     @State private searchPullRefreshing: boolean = false;
     @State private apps: MarketApp[] = [];
@@ -138,6 +158,8 @@ export struct AppsPage {
     private reloadAfterCurrent: boolean = false;
     private reloadForce: boolean = false;
     private enterAnimationPlayed: boolean = false;
+    private enterAnimationTimers: number[] = [];
+    private restoreScrollTimer: number = -1;
 
     private onActiveChanged(): void {
         if (this.active) this.startPageAnimationOnce();
@@ -147,9 +169,18 @@ export struct AppsPage {
         if (this.enterAnimationPlayed) return;
         this.enterAnimationPlayed = true;
         this.animStep = 0;
-        startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
+        this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
             this.animStep = step;
         });
+    }
+
+    aboutToDisappear(): void {
+        cancelStaggerEnterAnimation(this.enterAnimationTimers);
+        this.enterAnimationTimers = [];
+        if (this.restoreScrollTimer >= 0) {
+            clearTimeout(this.restoreScrollTimer);
+            this.restoreScrollTimer = -1;
+        }
     }
 
     private validIndex(value: number, count: number): number {
@@ -230,31 +261,23 @@ export struct AppsPage {
     }
     private vibrate(): void { if (this.vibrationLevel > 0) vibration.dotVibration(); }
     private sortChoices(): SortChoice[] {
-        return [
-            { label: '更新时间', field: 'updated_at' }, { label: '下载量', field: 'download_count' },
-            { label: '评分数量', field: 'total_star_rating_count' }, { label: '应用大小', field: 'size_bytes' },
-            { label: '上架时间', field: 'listed_at' },
-        ];
+        return this.sortChoiceItems;
     }
     private filterChoices(): FilterChoice[] {
-        return [
-            { label: '应用名称', field: 'name' }, { label: '分类', field: 'kind_name' },
-            { label: '类型', field: 'kind_type_name' }, { label: '标签', field: 'tag_name' },
-            { label: '开发者', field: 'developer_name' },
-        ];
+        return this.filterChoiceItems;
     }
     private typeOptions(): SelectOption[] {
-        return ['全部类型', '鸿蒙应用', '元服务'].map((label: string) => ({ value: label } as SelectOption));
+        return this.typeSelectOptions;
     }
     private sortOptions(): SelectOption[] {
-        return this.sortChoices().map((choice: SortChoice) => ({ value: choice.label } as SelectOption));
+        return this.sortSelectOptions;
     }
     private filterOptions(): SelectOption[] {
-        return this.filterChoices().map((choice: FilterChoice) => ({ value: choice.label } as SelectOption));
+        return this.filterSelectOptions;
     }
-    private pageSizeChoices(): number[] { return [20, 50, 100]; }
+    private pageSizeChoices(): number[] { return this.pageSizes; }
     private pageSizeOptions(): SelectOption[] {
-        return this.pageSizeChoices().map((size: number) => ({ value: `每页 ${size} 条` } as SelectOption));
+        return this.pageSizeSelectOptions;
     }
     private pageSize(): number { return this.pageSizeChoices()[this.pageSizeIndex]; }
     private totalPages(): number { return Math.max(1, Math.ceil(this.total / this.pageSize())); }
@@ -734,9 +757,14 @@ export struct AppsPage {
                             const continuation = getContinuationState();
                             if (continuation.mainTab === MAIN_TAB_APPS &&
                                 continuation.routeName === CONTINUATION_ROUTE_MAIN && continuation.scrollDistance > 0) {
-                                setTimeout((): void => this.pageScroller.scrollTo({
-                                    xOffset: 0, yOffset: continuation.scrollDistance, animation: { duration: 0 },
-                                }), 80);
+                                this.restoreScrollTimer = setTimeout((): void => {
+                                    this.restoreScrollTimer = -1;
+                                    this.pageScroller.scrollTo({
+                                        xOffset: 0,
+                                        yOffset: continuation.scrollDistance,
+                                        animation: { duration: 0 },
+                                    });
+                                }, 80);
                             }
                         }
                     })

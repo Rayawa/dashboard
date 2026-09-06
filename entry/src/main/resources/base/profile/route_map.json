@@ -2,32 +2,27 @@
   "routerMap": [
     {
       "name": "TutorialPage",
-      "pageSourceFile": "src/main/ets/pages/more/tutorial.ets",
+      "pageSourceFile": "src/main/ets/pages/more/TutorialPage.ets",
       "buildFunction": "TutorialPageBuilder"
     },
     {
       "name": "FriendPage",
-      "pageSourceFile": "src/main/ets/pages/more/friend.ets",
+      "pageSourceFile": "src/main/ets/pages/more/FriendLinksPage.ets",
       "buildFunction": "FriendPageBuilder"
     },
     {
-      "name": "FriendPageWeb",
-      "pageSourceFile": "src/main/ets/pages/more/friendWeb.ets",
-      "buildFunction": "FriendPageWebBuilder"
-    },
-    {
       "name": "HTMLPage",
-      "pageSourceFile": "src/main/ets/pages/more/htmlPage.ets",
+      "pageSourceFile": "src/main/ets/pages/more/LocalHtmlPage.ets",
       "buildFunction": "HTMLBuilder"
     },
     {
-      "name": "AboutWebPage",
-      "pageSourceFile": "src/main/ets/pages/more/aboutWeb.ets",
-      "buildFunction": "AboutWebBuilder"
+      "name": "WebPage",
+      "pageSourceFile": "src/main/ets/pages/web/WebPage.ets",
+      "buildFunction": "WebPageBuilder"
     },
     {
       "name": "AppLogPage",
-      "pageSourceFile": "src/main/ets/pages/more/appLog.ets",
+      "pageSourceFile": "src/main/ets/pages/more/AppLogPage.ets",
       "buildFunction": "AppLogBuilder"
     }
   ]

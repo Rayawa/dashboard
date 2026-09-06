@@ -1,6 +1,6 @@
 {
   "src": [
     "pages/Dashboard",
-    "ability/loading"
+    "ability/LoadingPage"
   ]
 }

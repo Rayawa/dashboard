@@ -1,8 +1,8 @@
 import { common, Want } from '@kit.AbilityKit';
 import { PromptAction, TextModifier } from '@kit.ArkUI';
 import { HdsListItemCard, IconSize, PrefixIcon, SuffixCustomBuilder } from '@kit.UIDesignKit';
-import { settings } from '../../component/settings';
-import { contact } from '../../component/contact';
+import { SettingsPanel } from '../../component/SettingsPanel';
+import { ContactPanel } from '../../component/ContactPanel';
 import {
     APP_VERSION,
     CONTENT_MAX_WIDTH,
@@ -19,6 +19,12 @@ import {
     MAIN_TAB_MY,
     MEOW_CHANNEL_URL,
     MIIT_ICP_URL,
+    ROUTE_APP_LOG,
+    ROUTE_DEVELOPER,
+    ROUTE_FRIEND_LINKS,
+    ROUTE_HTML_PAGE,
+    ROUTE_TUTORIAL,
+    ROUTE_WEB_PAGE,
     SBaseURL,
 } from '../../common/constants';
 import { getContinuationState, setContinuationView } from '../../common/appState';
@@ -27,7 +33,7 @@ import URL from '../../common/url';
 import { showToastSafely } from '../../common/safeUi';
 import { EmptyPathParam } from '../../common/safeNavigation';
 import { vibration } from '../../common/vibration';
-import { startStaggerEnterAnimation } from '../../common/motion';
+import { cancelStaggerEnterAnimation, startStaggerEnterAnimation } from '../../common/motion';
 
 interface MoreItem {
     title: string;
@@ -42,7 +48,7 @@ struct MoreRow {
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
 
     @Builder
-    private RightSuffix(): void {
+    private rightSuffix(): void {
         Image($r('app.media.right'))
             .width(20)
             .height(20)
@@ -51,7 +57,7 @@ struct MoreRow {
     }
 
     @Builder
-    private ExternalSuffix(): void {
+    private externalSuffix(): void {
         Image($r('app.media.share'))
             .width(20)
             .height(20)
@@ -74,9 +80,9 @@ struct MoreRow {
                 },
             },
             suffixItem: this.item.opensExternal ? new SuffixCustomBuilder(() => {
-                this.ExternalSuffix()
+                this.externalSuffix()
             }) : new SuffixCustomBuilder(() => {
-                this.RightSuffix()
+                this.rightSuffix()
             }),
             onClick: () => {
                 if (this.vibrationLevel > 0) vibration.dotVibration();
@@ -111,6 +117,8 @@ export struct MyPage {
     private versionTapTimer: number = -1;
     private restoredScroll: boolean = false;
     private enterAnimationPlayed: boolean = false;
+    private enterAnimationTimers: number[] = [];
+    private restoreScrollTimer: number = -1;
 
     private onActiveChanged(): void {
         if (this.active) this.startPageAnimationOnce();
@@ -120,9 +128,22 @@ export struct MyPage {
         if (this.enterAnimationPlayed) return;
         this.enterAnimationPlayed = true;
         this.animStep = 0;
-        startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
+        this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
             this.animStep = step;
         });
+    }
+
+    aboutToDisappear(): void {
+        cancelStaggerEnterAnimation(this.enterAnimationTimers);
+        this.enterAnimationTimers = [];
+        if (this.versionTapTimer >= 0) {
+            clearTimeout(this.versionTapTimer);
+            this.versionTapTimer = -1;
+        }
+        if (this.restoreScrollTimer >= 0) {
+            clearTimeout(this.restoreScrollTimer);
+            this.restoreScrollTimer = -1;
+        }
     }
 
     private requiredStep(group: string): number {
@@ -195,13 +216,13 @@ export struct MyPage {
                 icon: $r('app.media.api'),
                 action: () => {
                     const url = new URL('docs', SBaseURL);
-                    this.pushPage('AboutWebPage', new WebViewParam(url.toString(), 'API 文档说明'));
+                    this.pushPage(ROUTE_WEB_PAGE, new WebViewParam(url.toString(), 'API 文档说明'));
                 },
             },
             {
                 title: '友情链接',
                 icon: $r('app.media.sponsor'),
-                action: () => this.pushPage('FriendPage'),
+                action: () => this.pushPage(ROUTE_FRIEND_LINKS),
             },
         ];
     }
@@ -218,12 +239,12 @@ export struct MyPage {
             {
                 title: '查看教程',
                 icon: $r('app.media.tutorial'),
-                action: () => this.pushPage('TutorialPage'),
+                action: () => this.pushPage(ROUTE_TUTORIAL),
             },
             {
                 title: '更新日志',
                 icon: $r('app.media.app_log'),
-                action: () => this.pushPage('AppLogPage'),
+                action: () => this.pushPage(ROUTE_APP_LOG),
             },
             {
                 title: '联系我们',
@@ -234,7 +255,7 @@ export struct MyPage {
                 title: '隐私政策',
                 icon: $r('app.media.privacy'),
                 action: () => this.pushPage(
-                    'HTMLPage',
+                    ROUTE_HTML_PAGE,
                     new WebViewParam($rawfile('privacy.html'), '隐私政策'),
                 ),
             },
@@ -248,7 +269,7 @@ export struct MyPage {
         }
         if (this.versionTapCount >= 10) {
             this.versionTapCount = 0;
-            this.pushPage('DeveloperPage');
+            this.pushPage(ROUTE_DEVELOPER);
             return;
         }
         this.versionTapTimer = setTimeout((): void => {
@@ -392,7 +413,7 @@ export struct MyPage {
                 .width('100%')
                 .padding({ left: LIST_SECTION_TITLE_START_PADDING })
                 .accessibilityText('设置')
-            settings()
+            SettingsPanel({ active: this.active })
         }
         .width('100%')
         .opacity(this.animStep >= this.requiredStep('settings') ? 1 : 0)
@@ -434,7 +455,8 @@ export struct MyPage {
         const continuation = getContinuationState();
         if (continuation.mainTab !== MAIN_TAB_MY || continuation.routeName !== CONTINUATION_ROUTE_MAIN ||
             continuation.scrollDistance <= 0) return;
-        setTimeout((): void => {
+        this.restoreScrollTimer = setTimeout((): void => {
+            this.restoreScrollTimer = -1;
             try {
                 this.scroller.scrollTo({
                     xOffset: 0,
@@ -559,9 +581,12 @@ export struct MyPage {
             if (this.active) this.startPageAnimationOnce();
         })
         .accessibilityText('我的与关于页面')
-        .bindSheet($$this.showContact, this.ContactSheet(), {
+        .bindSheet($$this.showContact, this.contactSheet(), {
             title: { title: '联系我们' },
             height: SheetSize.FIT_CONTENT,
+            // 平板默认可能采用跟手样式，默认允许与底层页面交互；显式禁用以由遮罩承接点击。
+            // 未注册 onWillDismiss 时，点击遮罩会按系统默认行为关闭半模态页面。
+            enableOutsideInteractive: false,
             onWillDisappear: () => {
                 this.vibrate();
                 this.showContact = false;
@@ -570,9 +595,9 @@ export struct MyPage {
     }
 
     @Builder
-    ContactSheet() {
+    private contactSheet(): void {
         Column() {
-            contact()
+            ContactPanel()
         }
         .width('100%')
         .padding({ top: 8, bottom: 20 })

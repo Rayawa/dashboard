@@ -7,23 +7,27 @@ import { privacyManager } from '@kit.StoreKit';
 import { showToastSafely } from '../common/safeUi';
 
 @Component
-export struct confirmButtons {
+export struct PrivacyConfirmationButtons {
     @Link isShow: boolean;
-    private PromptAction: PromptAction = this.getUIContext().getPromptAction();
+    private prompt: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink('vibrationLevel') vibrationLevel: number = 1;
     @State countDown: number = 3;
     @State isConfirmEnabled: boolean = false;
     @State isExiting: boolean = false;
     @State isProcessing: boolean = false;
     private timerId: number = -1;
+    private isActive: boolean = false;
 
     aboutToAppear(): void {
+        this.isActive = true;
         this.startCountDown();
     }
 
     aboutToDisappear(): void {
+        this.isActive = false;
         if (this.timerId !== -1) {
             clearInterval(this.timerId);
+            this.timerId = -1;
         }
     }
 
@@ -31,14 +35,17 @@ export struct confirmButtons {
         try {
             let isFirstLaunch = await getFirstLaunch();
 
+            if (!this.isActive) return;
             if (isFirstLaunch === true) {
                 // 情况 A：首次启动，执行倒计时逻辑
                 this.timerId = setInterval(() => {
-                    if (this.countDown > 0) {
+                    if (this.countDown > 1) {
                         this.countDown--;
                     } else {
+                        this.countDown = 0;
                         this.isConfirmEnabled = true;
                         clearInterval(this.timerId);
+                        this.timerId = -1;
                     }
                 }, 1000);
             } else {
@@ -47,32 +54,32 @@ export struct confirmButtons {
             }
         } catch (err) {
             let error = err as BusinessError;
-            console.error('[Dashboard][component/confirmButtons][ERROR]', "Index", "检查失败", JSON.stringify(error));
+            console.error('[Dashboard][component/PrivacyConfirmationButtons][ERROR]', "Index", "检查失败", JSON.stringify(error));
             this.isConfirmEnabled = true;
         }
     }
 
     private async handleCancel(): Promise<void> {
         this.isExiting = true;
-        showToastSafely(this.PromptAction, '退出应用…', 2000, 'PrivacyConfirm');
+        showToastSafely(this.prompt, '退出应用…', 2000, 'PrivacyConfirm');
         try {
             await setFirstLaunch(true);
 
-            console.info('[Dashboard][component/confirmButtons][INFO]', "Index", "用户点击取消，标记位重置为true。");
+            console.info('[Dashboard][component/PrivacyConfirmationButtons][INFO]', "Index", "用户点击取消，标记位重置为true。");
         } catch (err) {
-            console.error('[Dashboard][component/confirmButtons][ERROR]', "获取失败");
+            console.error('[Dashboard][component/PrivacyConfirmationButtons][ERROR]', "获取失败");
         }
         setTimeout(() => {
             try {
                 privacyManager.disableService();
                 const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
                 context.terminateSelf().then(() => {
-                    console.info('[Dashboard][component/confirmButtons][INFO]', 'Ability 销毁指令发送成功');
+                    console.info('[Dashboard][component/PrivacyConfirmationButtons][INFO]', 'Ability 销毁指令发送成功');
                 }).catch((err: BusinessError) => {
-                    console.error('[Dashboard][component/confirmButtons][ERROR]', `销毁失败: ${err.code}`);
+                    console.error('[Dashboard][component/PrivacyConfirmationButtons][ERROR]', `销毁失败: ${err.code}`);
                 });
             } catch (err) {
-                console.error('[Dashboard][component/confirmButtons][ERROR]', `撤回隐私协议失败: ${err.code}`);
+                console.error('[Dashboard][component/PrivacyConfirmationButtons][ERROR]', `撤回隐私协议失败: ${err.code}`);
             }
         }, 500);
     }
@@ -83,11 +90,11 @@ export struct confirmButtons {
             await setFirstLaunch(false);
 
             this.isShow = false;
-            console.info('[Dashboard][component/confirmButtons][INFO]', "Index", "用户已同意协议，标记位已更新。");
+            console.info('[Dashboard][component/PrivacyConfirmationButtons][INFO]', "Index", "用户已同意协议，标记位已更新。");
         } catch (error) {
-            console.error('[Dashboard][component/confirmButtons][ERROR]',
+            console.error('[Dashboard][component/PrivacyConfirmationButtons][ERROR]',
                 `保存重要提示同意状态失败: ${JSON.stringify(error)}`);
-            showToastSafely(this.PromptAction, '保存同意状态失败，请重试', 2000, 'PrivacyConfirm');
+            showToastSafely(this.prompt, '保存同意状态失败，请重试', 2000, 'PrivacyConfirm');
             return;
         }
         this.isProcessing = true;

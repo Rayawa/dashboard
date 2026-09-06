@@ -15,8 +15,11 @@ import {
     LIST_ITEM_SUFFIX_MARGIN,
 } from '../common/constants';
 
+const USERNAME_SAVE_DEBOUNCE_MS = 300;
+
 @Component
-export struct settings {
+export struct SettingsPanel {
+    @Prop @Watch('onActiveChanged') active: boolean = false;
     @StorageLink('vibrationLevel') vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = 1;
     @StorageLink('username') username: string = '';
@@ -25,6 +28,9 @@ export struct settings {
     @State cacheSize: string = '计算中…';
     @State showUsernameHelp: boolean = false;
     @State private contentWidth: number = 0;
+    private cacheSizeTimer: number = -1;
+    private usernameSaveTimer: number = -1;
+    private pendingUsername?: string;
 
     private vibrationPrefixItem: PrefixIcon = new PrefixIcon({
         iconSize: IconSize.SYSTEM_ICON,
@@ -46,11 +52,48 @@ export struct settings {
         iconValue: { image: $r('app.media.trash') },
     });
 
-    aboutToAppear(): void {
-        const context =
-            this.getUIContext().getHostContext() as common.UIAbilityContext;
+    private onActiveChanged(): void {
+        if (this.active) this.scheduleCacheSizeRefresh();
+    }
 
-        this.cacheSize = formatBytes(getCacheSizeBytes(context));
+    private scheduleCacheSizeRefresh(): void {
+        if (this.cacheSizeTimer >= 0) clearTimeout(this.cacheSizeTimer);
+        this.cacheSizeTimer = setTimeout((): void => {
+            this.cacheSizeTimer = -1;
+            const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+            this.cacheSize = formatBytes(getCacheSizeBytes(context));
+        }, 0);
+    }
+
+    aboutToDisappear(): void {
+        if (this.cacheSizeTimer >= 0) {
+            clearTimeout(this.cacheSizeTimer);
+            this.cacheSizeTimer = -1;
+        }
+        if (this.usernameSaveTimer >= 0) {
+            clearTimeout(this.usernameSaveTimer);
+            this.usernameSaveTimer = -1;
+        }
+        this.persistPendingUsername();
+    }
+
+    private scheduleUsernameSave(value: string): void {
+        this.pendingUsername = value.trim();
+        if (this.usernameSaveTimer >= 0) clearTimeout(this.usernameSaveTimer);
+        this.usernameSaveTimer = setTimeout((): void => {
+            this.usernameSaveTimer = -1;
+            this.persistPendingUsername();
+        }, USERNAME_SAVE_DEBOUNCE_MS);
+    }
+
+    private persistPendingUsername(): void {
+        if (this.pendingUsername === undefined) return;
+        const username = this.pendingUsername;
+        this.pendingUsername = undefined;
+        setUsername(username).catch((error: Error) => {
+            console.error('[Dashboard][component/SettingsPanel][ERROR]',
+                `自动保存用户名失败: ${error.message}`);
+        });
     }
 
     private trash(): void {
@@ -88,7 +131,7 @@ export struct settings {
                             );
                         } catch (error) {
                             console.error(
-                                '[Dashboard][component/settings][ERROR]',
+                                '[Dashboard][component/SettingsPanel][ERROR]',
                                 `清除缓存失败: ${JSON.stringify(error)}`
                             );
 
@@ -107,7 +150,7 @@ export struct settings {
             });
         } catch (error) {
             console.error(
-                '[Dashboard][component/settings][ERROR]',
+                '[Dashboard][component/SettingsPanel][ERROR]',
                 `清除缓存确认窗口显示失败: ${JSON.stringify(error)}`
             );
 
@@ -122,7 +165,7 @@ export struct settings {
 
     build() {
         Column() {
-            this.UsernameItem()
+            this.usernameItem()
 
             Divider()
                 .color($r('app.color.border'))
@@ -132,7 +175,7 @@ export struct settings {
                     right: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
                 })
 
-            this.VibrationLevelItem()
+            this.vibrationLevelItem()
 
             Divider()
                 .color($r('app.color.border'))
@@ -142,7 +185,7 @@ export struct settings {
                     right: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
                 })
 
-            this.MaterialLevelItem()
+            this.materialLevelItem()
 
             Divider()
                 .color($r('app.color.border'))
@@ -152,7 +195,7 @@ export struct settings {
                     right: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
                 })
 
-            this.TrashItem()
+            this.trashItem()
         }
         .width('100%')
         .backgroundColor($r('app.color.v3_surface'))
@@ -163,6 +206,9 @@ export struct settings {
             offsetY: 2
         })
         .clip(true)
+        .onAppear((): void => {
+            if (this.active) this.scheduleCacheSizeRefresh();
+        })
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })
@@ -187,12 +233,12 @@ export struct settings {
     }
 
     @Builder
-    VibrationLevelItem() {
+    private vibrationLevelItem(): void {
         HdsListItemCard({
             prefixItem: this.vibrationPrefixItem,
             textItem: {
                 customBuilder: () => {
-                    this.VibrationLevelContent()
+                    this.vibrationLevelContent()
                 },
             },
             cardHeight: this.isNarrowSettings() ? 116 : 68,
@@ -209,7 +255,7 @@ export struct settings {
     }
 
     @Builder
-    VibrationLevelContent() {
+    private vibrationLevelContent(): void {
         Flex({
             wrap: FlexWrap.Wrap,
             justifyContent: FlexAlign.SpaceBetween,
@@ -244,7 +290,7 @@ export struct settings {
 
                             setVibrationLevel(nextLevel).catch((error: Error) => {
                                 console.error(
-                                    '[Dashboard][component/settings][ERROR]',
+                                    '[Dashboard][component/SettingsPanel][ERROR]',
                                     `保存振动强度失败: ${error.message}`
                                 );
                             });
@@ -255,9 +301,9 @@ export struct settings {
                     )
 
                 Row() {
-                    this.VibrationLevelLabel('关闭', 0)
-                    this.VibrationLevelLabel('灵动', 1)
-                    this.VibrationLevelLabel('硬朗', 2)
+                    this.vibrationLevelLabel('关闭', 0)
+                    this.vibrationLevelLabel('灵动', 1)
+                    this.vibrationLevelLabel('硬朗', 2)
                 }
                 .width(190)
                 .justifyContent(FlexAlign.SpaceBetween)
@@ -276,7 +322,7 @@ export struct settings {
     }
 
     @Builder
-    VibrationLevelLabel(label: string, level: number) {
+    private vibrationLevelLabel(label: string, level: number): void {
         Text(label)
             .fontSize(12)
             .fontWeight(
@@ -309,12 +355,12 @@ export struct settings {
     }
 
     @Builder
-    MaterialLevelItem() {
+    private materialLevelItem(): void {
         HdsListItemCard({
             prefixItem: this.materialPrefixItem,
             textItem: {
                 customBuilder: () => {
-                    this.MaterialLevelContent()
+                    this.materialLevelContent()
                 },
             },
             cardHeight: this.isNarrowSettings() ? 116 : 68,
@@ -331,7 +377,7 @@ export struct settings {
     }
 
     @Builder
-    MaterialLevelContent() {
+    private materialLevelContent(): void {
         Flex({
             wrap: FlexWrap.Wrap,
             justifyContent: FlexAlign.SpaceBetween,
@@ -368,7 +414,7 @@ export struct settings {
 
                             setImmersiveMaterialLevel(nextLevel).catch((error: Error) => {
                                 console.error(
-                                    '[Dashboard][component/settings][ERROR]',
+                                    '[Dashboard][component/SettingsPanel][ERROR]',
                                     `保存材质等级失败: ${error.message}`
                                 );
                             });
@@ -379,9 +425,9 @@ export struct settings {
                     )
 
                 Row() {
-                    this.MaterialLevelLabel('流畅', 2)
-                    this.MaterialLevelLabel('轻柔', 1)
-                    this.MaterialLevelLabel('精美', 0)
+                    this.materialLevelLabel('流畅', 2)
+                    this.materialLevelLabel('轻柔', 1)
+                    this.materialLevelLabel('精美', 0)
                 }
                 .width(190)
                 .justifyContent(FlexAlign.SpaceBetween)
@@ -400,7 +446,7 @@ export struct settings {
     }
 
     @Builder
-    MaterialLevelLabel(label: string, level: number) {
+    private materialLevelLabel(label: string, level: number): void {
         Text(label)
             .fontSize(12)
             .fontWeight(
@@ -425,12 +471,12 @@ export struct settings {
     }
 
     @Builder
-    UsernameItem() {
+    private usernameItem(): void {
         HdsListItemCard({
             prefixItem: this.usernamePrefixItem,
             textItem: {
                 customBuilder: () => {
-                    this.UsernameContent()
+                    this.usernameContent()
                 },
             },
             cardHeight: this.isNarrowSettings() ? 108 : 68,
@@ -447,7 +493,7 @@ export struct settings {
     }
 
     @Builder
-    UsernameContent() {
+    private usernameContent(): void {
         Flex({
             wrap: FlexWrap.Wrap,
             justifyContent: FlexAlign.SpaceBetween,
@@ -473,14 +519,7 @@ export struct settings {
                     .backgroundColor($r('app.color.v3_surface_alt'))
                     .onChange((value: string) => {
                         this.username = value;
-
-                        setUsername(value.trim())
-                            .catch((error: Error) => {
-                                console.error(
-                                    '[Dashboard][component/settings][ERROR]',
-                                    `自动保存用户名失败: ${error.message}`
-                                );
-                            });
+                        this.scheduleUsernameSave(value);
                     })
                     .accessibilityText(
                         `用户名输入框，当前用户名为${this.username || 'HarmonyOS用户'}`
@@ -523,12 +562,12 @@ export struct settings {
     }
 
     @Builder
-    TrashItem() {
+    private trashItem(): void {
         HdsListItemCard({
             prefixItem: this.trashPrefixItem,
             textItem: {
                 customBuilder: () => {
-                    this.TrashContent()
+                    this.trashContent()
                 },
             },
             onClick: () => {
@@ -549,7 +588,7 @@ export struct settings {
     }
 
     @Builder
-    TrashContent() {
+    private trashContent(): void {
         Flex({
             justifyContent: FlexAlign.SpaceBetween,
             alignItems: ItemAlign.Center

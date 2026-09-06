@@ -173,6 +173,26 @@
       "value": "#FFFFF4DE"
     },
     {
+      "name": "v3_notice_bg",
+      "value": "#FFFFF1F2"
+    },
+    {
+      "name": "v3_notice_surface",
+      "value": "#29FFFFFF"
+    },
+    {
+      "name": "v3_notice_text",
+      "value": "#FF172033"
+    },
+    {
+      "name": "v3_notice_text_secondary",
+      "value": "#FF5F6B7A"
+    },
+    {
+      "name": "v3_notice_divider",
+      "value": "#FFF3C7CC"
+    },
+    {
       "name": "v3_shadow",
       "value": "#1A1A2B45"
     }

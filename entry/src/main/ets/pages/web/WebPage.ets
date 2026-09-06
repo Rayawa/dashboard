@@ -1,57 +1,90 @@
 import { common, Want } from '@kit.AbilityKit';
 import { webview } from '@kit.ArkWeb';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
+import {
+  HdsNavDestination,
+  HdsNavDestinationTitleMode,
+  ScrollEffectType,
+  TitleSize,
+} from '@kit.UIDesignKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
-import { customUserAgent } from '../../common/constants';
-import { popPathSafely } from '../../common/safeNavigation';
-import { showToastSafely } from '../../common/safeUi';
-import { vibration } from '../../common/vibration';
+import {
+  customUserAgent,
+  WEB_PAGE_DEFAULT_TITLE,
+  WEB_PAGE_DEFAULT_TOP_INSET,
+  WEB_PAGE_PROGRESS_HEIGHT,
+  WEB_PAGE_PROGRESS_TOP_OFFSET,
+  WEB_PAGE_TOAST_DURATION_MS,
+} from '../../common/constants';
 import { contentEnterTransition, pageTransition } from '../../common/motion';
+import { popPathSafely } from '../../common/safeNavigation';
 import { WebShareManager } from '../../common/shareControl';
 import type { WebShareData } from '../../common/shareControl';
+import { showToastSafely } from '../../common/safeUi';
+import { vibration } from '../../common/vibration';
 
-export interface FriendWebParams {
+/** Parameters shared by every in-app remote web page. */
+export interface WebPageParams {
   url: string;
   title: string;
+  contentInsetTop?: number;
 }
 
+/**
+ * The single reusable remote-web destination.
+ *
+ * Page-specific callers only provide content metadata. Loading, error handling,
+ * navigation, sharing and external-browser behavior stay consistent here.
+ */
 @Component
-export struct friendWeb {
-  @Consume('pageStack') pageStack: NavPathStack;
+export struct WebPage {
+  @Consume('pageStack') private pageStack: NavPathStack;
+  @Prop url: string = '';
+  @Prop title: string = '';
+  @Prop contentInsetTop: number = WEB_PAGE_DEFAULT_TOP_INSET;
+  @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
+  @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
+    hdsMaterial.MaterialLevel.GENTLE;
+  @State private progress: number = 0;
+  @State private loading: boolean = true;
+  @State private errorMessage: string = '';
+  @State private currentUrl: string = '';
+
   private controller: webview.WebviewController = new webview.WebviewController();
   private scroller: Scroller = new Scroller();
   private prompt: PromptAction = this.getUIContext().getPromptAction();
-  @Prop url: string = '';
-  @Prop title: string = '';
-  @State progress: number = 0;
-  @State loading: boolean = true;
-  @State errorMessage: string = '';
-  @State currentUrl: string = '';
-  @StorageLink('vibrationLevel') vibrationLevel: number = 1;
-  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.GENTLE;
   private shareManager?: WebShareManager;
+  private readonly shareOwnerId: number = WebShareManager.createOwnerId();
 
   aboutToAppear(): void {
+    // Keep component creation light. ArkWeb and passive sharing are initialized
+    // only after the controller is attached to the rendered page.
     this.currentUrl = this.url;
-    this.syncShareData();
   }
 
   aboutToDisappear(): void {
-    this.shareManager?.clearShareDataProvider();
-    this.shareManager?.disablePassiveShare();
+    this.shareManager?.clearShareDataProvider(this.shareOwnerId);
+    this.shareManager?.disablePassiveShare(this.shareOwnerId);
+    this.shareManager = undefined;
+  }
+
+  private displayTitle(): string {
+    return this.title || WEB_PAGE_DEFAULT_TITLE;
+  }
+
+  private vibrate(): void {
+    if (this.vibrationLevel > 0) vibration.dotVibration();
   }
 
   private refresh(): void {
-    if (this.vibrationLevel > 0) vibration.dotVibration();
+    this.vibrate();
     this.errorMessage = '';
     this.loading = true;
     try {
       this.controller.loadUrl(this.liveShareData().url);
     } catch (error) {
-      console.error('[Dashboard][pages/more/friendWeb][ERROR]', `刷新失败: ${JSON.stringify(error)}`);
-      showToastSafely(this.prompt, '暂时无法刷新网页', 1600, 'FriendWeb');
+      console.error('[Dashboard][pages/web/WebPage][ERROR]', `刷新失败: ${JSON.stringify(error)}`);
+      showToastSafely(this.prompt, '暂时无法刷新网页', WEB_PAGE_TOAST_DURATION_MS, 'WebPage');
     }
   }
 
@@ -64,12 +97,12 @@ export struct friendWeb {
         this.currentUrl = liveUrl;
       }
     } catch (error) {
-      console.warn('[Dashboard][pages/more/friendWeb][WARN]',
+      console.warn('[Dashboard][pages/web/WebPage][WARN]',
         `读取实时分享地址失败，使用已记录地址: ${JSON.stringify(error)}`);
     }
     return {
       url,
-      title: `${this.title || '友情链接'}｜Harmony Dashboard`,
+      title: `${this.displayTitle()}｜Harmony Dashboard`,
       description: url,
     };
   }
@@ -80,25 +113,28 @@ export struct friendWeb {
     const data = this.liveShareData();
     this.shareManager = WebShareManager.getInstance(context);
     this.shareManager.updateShareData(data.url, data.title, data.description,
-      (): WebShareData => this.liveShareData());
-    this.shareManager.enablePassiveShare();
+      (): WebShareData => this.liveShareData(), this.shareOwnerId);
+    this.shareManager.enablePassiveShare(this.shareOwnerId);
   }
 
   private showShare(): void {
-    if (this.vibrationLevel > 0) vibration.dotVibration();
+    this.vibrate();
     this.syncShareData();
     this.shareManager?.showSystemShare();
   }
 
   private async openBrowser(): Promise<void> {
-    if (this.vibrationLevel > 0) vibration.dotVibration();
+    this.vibrate();
     try {
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-      await context.startAbility({ action: 'ohos.want.action.viewData', entities: ['entity.system.browsable'],
-        uri: this.liveShareData().url } as Want);
+      await context.startAbility({
+        action: 'ohos.want.action.viewData',
+        entities: ['entity.system.browsable'],
+        uri: this.liveShareData().url,
+      } as Want);
     } catch (error) {
-      console.error('[Dashboard][pages/more/friendWeb][ERROR]', `浏览器打开失败: ${JSON.stringify(error)}`);
-      showToastSafely(this.prompt, '打开链接失败', 1600, 'FriendWeb');
+      console.error('[Dashboard][pages/web/WebPage][ERROR]', `浏览器打开失败: ${JSON.stringify(error)}`);
+      showToastSafely(this.prompt, '打开链接失败', WEB_PAGE_TOAST_DURATION_MS, 'WebPage');
     }
   }
 
@@ -110,9 +146,9 @@ export struct friendWeb {
         return true;
       }
     } catch (error) {
-      console.warn('[Dashboard][pages/more/friendWeb][WARN]', `检查网页后退历史失败: ${JSON.stringify(error)}`);
+      console.warn('[Dashboard][pages/web/WebPage][WARN]', `检查网页后退历史失败: ${JSON.stringify(error)}`);
     }
-    popPathSafely(this.pageStack, 'pages/more/friendWeb');
+    popPathSafely(this.pageStack, 'pages/web/WebPage');
     return true;
   }
 
@@ -121,9 +157,11 @@ export struct friendWeb {
       Stack({ alignContent: Alignment.Top }) {
         Scroll(this.scroller) {
           Column() {
-            Blank().height(100).width('100%')
+            if (this.contentInsetTop > 0) {
+              Blank().height(this.contentInsetTop).width('100%')
+            }
             Web({ src: this.url, controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
-              .id('HmDashboard_FriendWeb')
+              .id('HmDashboard_WebPage')
               .width('100%')
               .layoutMode(WebLayoutMode.FIT_CONTENT)
               .nestedScroll({
@@ -135,9 +173,10 @@ export struct friendWeb {
               .onControllerAttached(() => {
                 try {
                   this.controller.setCustomUserAgent(customUserAgent);
+                  this.syncShareData();
                 } catch (error) {
                   this.errorMessage = '网页初始化失败';
-                  console.error('[Dashboard][pages/more/friendWeb][ERROR]', `初始化失败: ${JSON.stringify(error)}`);
+                  console.error('[Dashboard][pages/web/WebPage][ERROR]', `初始化失败: ${JSON.stringify(error)}`);
                 }
               })
               .onProgressChange((event) => this.progress = event.newProgress)
@@ -169,19 +208,20 @@ export struct friendWeb {
               .darkMode(WebDarkMode.Auto)
               .forceDarkAccess(true)
               .metaViewport(true)
-              .accessibilityText(`${this.title || '友情链接'}网页内容`)
+              .accessibilityText(`${this.displayTitle()}网页内容`)
           }
           .width('100%')
         }
         .width('100%')
         .height('100%')
         .scrollBar(BarState.Off)
-        .accessibilityText(`可滚动的${this.title || '友情链接'}网页页面`)
+        .accessibilityText(`可滚动的${this.displayTitle()}网页页面`)
+
         if (this.loading) {
           Progress({ value: this.progress, total: 100 })
             .width('100%')
-            .height(4)
-            .position({ y: 96 })
+            .height(WEB_PAGE_PROGRESS_HEIGHT)
+            .position({ y: WEB_PAGE_PROGRESS_TOP_OFFSET })
             .color($r('app.color.diff_content'))
             .transition(TransitionEffect.OPACITY.animation({ duration: 160, curve: Curve.EaseOut }))
             .accessibilityText(`网页加载进度百分之${this.progress}`)
@@ -192,7 +232,7 @@ export struct friendWeb {
             Button('重新加载')
               .backgroundColor($r('app.color.diff_content'))
               .onClick(() => this.refresh())
-              .accessibilityText('重新加载友情链接')
+              .accessibilityText(`重新加载${this.displayTitle()}`)
           }
           .padding(22)
           .borderRadius(18)
@@ -254,7 +294,7 @@ export struct friendWeb {
         },
       },
       content: {
-        title: { mainTitle: this.title || '友情链接', mainTitleSize: TitleSize.TITLE_S },
+        title: { mainTitle: this.displayTitle(), mainTitleSize: TitleSize.TITLE_S },
         menu: { value: [
           { content: { label: '刷新', icon: $r('app.media.refresh'), isEnabled: !this.loading,
             action: () => this.refresh() } },
@@ -266,11 +306,15 @@ export struct friendWeb {
         backIcon: { action: () => this.goBack() },
       },
     })
-    .accessibilityText(`${this.title || '友情链接'}导航页`)
+    .accessibilityText(`${this.displayTitle()}导航页`)
   }
 }
 
 @Builder
-export function FriendPageWebBuilder(params: FriendWebParams): void {
-  friendWeb({ url: params.url, title: params.title })
+export function WebPageBuilder(params: WebPageParams): void {
+  WebPage({
+    url: params.url,
+    title: params.title,
+    contentInsetTop: params.contentInsetTop ?? WEB_PAGE_DEFAULT_TOP_INSET,
+  })
 }

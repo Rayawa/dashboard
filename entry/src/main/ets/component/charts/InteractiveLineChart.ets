@@ -45,11 +45,16 @@ export struct InteractiveLineChart {
     private animationToken: number = 0;
     private animatedDataSignature: string = '';
     private legendPressToken: number = 0;
+    private legendPressTimer: number = -1;
+    private animationTimer: number = -1;
+    private drawTimer: number = -1;
 
     private beginLegendPress(label: string): void {
         const token = ++this.legendPressToken;
         this.pressedLegend = label;
-        setTimeout((): void => {
+        if (this.legendPressTimer >= 0) clearTimeout(this.legendPressTimer);
+        this.legendPressTimer = setTimeout((): void => {
+            this.legendPressTimer = -1;
             if (this.legendPressToken === token && this.pressedLegend === label) {
                 this.pressedLegend = '';
             }
@@ -58,6 +63,10 @@ export struct InteractiveLineChart {
 
     private endLegendPress(): void {
         this.legendPressToken++;
+        if (this.legendPressTimer >= 0) {
+            clearTimeout(this.legendPressTimer);
+            this.legendPressTimer = -1;
+        }
         this.pressedLegend = '';
     }
 
@@ -94,7 +103,11 @@ export struct InteractiveLineChart {
         }
         this.selected = Math.max(0, this.pointCount() - 1);
         this.applyViewportState(false);
-        setTimeout((): void => this.startEntranceAnimation(), 0);
+        if (this.animationTimer >= 0) clearTimeout(this.animationTimer);
+        this.animationTimer = setTimeout((): void => {
+            this.animationTimer = -1;
+            this.startEntranceAnimation();
+        }, 0);
     }
 
     private onViewportPropChanged(): void {
@@ -145,7 +158,12 @@ export struct InteractiveLineChart {
             const elapsed = Math.min(1, (Date.now() - startedAt) / 800);
             this.drawProgress = 1 - Math.pow(1 - elapsed, 3);
             this.draw();
-            if (elapsed < 1) setTimeout(tick, 16);
+            if (elapsed < 1) {
+                this.animationTimer = setTimeout((): void => {
+                    this.animationTimer = -1;
+                    tick();
+                }, 16);
+            }
         };
         tick();
     }
@@ -179,6 +197,15 @@ export struct InteractiveLineChart {
 
     aboutToDisappear(): void {
         this.animationToken++;
+        this.endLegendPress();
+        if (this.animationTimer >= 0) {
+            clearTimeout(this.animationTimer);
+            this.animationTimer = -1;
+        }
+        if (this.drawTimer >= 0) {
+            clearTimeout(this.drawTimer);
+            this.drawTimer = -1;
+        }
     }
 
     private maximum(): number {
@@ -488,7 +515,11 @@ export struct InteractiveLineChart {
                         if (width > 0) {
                             this.canvasWidth = width;
                             this.applyViewportState(false);
-                            setTimeout((): void => this.draw(), 0);
+                            if (this.drawTimer >= 0) clearTimeout(this.drawTimer);
+                            this.drawTimer = setTimeout((): void => {
+                                this.drawTimer = -1;
+                                this.draw();
+                            }, 0);
                         }
                     })
                     .onTouch((event: TouchEvent): void => {
