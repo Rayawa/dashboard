@@ -474,7 +474,7 @@ struct AppLogPage {
                 },
                 originalStyle: {
                     backgroundStyle: {
-                        backgroundColor: $r("sys.color.ohos_id_color_background"),
+                        backgroundColor: Color.Transparent,
                     },
                     contentStyle: {
                         titleStyle: {
@@ -493,7 +493,7 @@ struct AppLogPage {
                 },
                 scrollEffectStyle: {
                     backgroundStyle: {
-                        backgroundColor: $r("sys.color.ohos_id_color_background_transparent"),
+                        backgroundColor: Color.Transparent,
                     },
                     contentStyle: {
                         titleStyle: {

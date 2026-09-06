@@ -189,7 +189,7 @@ export struct WarningContent {
     .onAreaChange((_oldValue: Area, newValue: Area): void => {
       this.contentWidth = Number(newValue.width);
     })
-    .scrollBar(BarState.Auto)
+    .scrollBar(BarState.Off)
     .edgeEffect(EdgeEffect.Spring)
     .nestedScroll({
       scrollForward: NestedScrollMode.PARENT_FIRST,
