@@ -18,7 +18,7 @@ La page racine utilise `HdsNavigation`, les pages enfants utilisent `HdsNavDesti
 1. **Site S** — préchauffe et met en cache sa page ArkWeb au démarrage de l’application, puis permet de partager la page courante par le système, par contact ou par geste dans l’air. Un viewport Web indépendant maintient les fenêtres de détail flottantes dans la vue courante.
 2. **Accueil** — indique que le total correspond aux applications HarmonyOS plus les services atomiques ; sur écran large, les totaux, l’état du service et les derniers ajouts sont affichés côte à côte.
 3. **Détails des applications** — regroupe en haut la recherche et le sélecteur aperçu/liste. La liste prend en charge les filtres par type et par champ, le tri et la pagination.
-4. **Mon espace** — affiche l’icône et les noms de l’application, les réglages, les liens supplémentaires, la version, le copyright et les informations ICP.
+4. **Mon espace** — affiche l’icône et les noms de l’application, les réglages, les liens supplémentaires, la version, le copyright et les informations ICP. Le tutoriel n’est disponible qu’ici afin de ne pas le dupliquer dans la barre de titre ; « Nous contacter » ouvre une feuille semi-modale refermable.
 
 La liste, les résultats de recherche, les liens profonds et l’entrée de partage système utilisent le même modèle natif de détail :
 
@@ -50,6 +50,16 @@ Toutes les pages de données natives utilisent `common/MarketApi.ets` et ne cons
 - Les notifications passent par `common/safeUi.ets` ; l’indisponibilité temporaire du contexte d’interface est journalisée sans interrompre le flux principal.
 - Les messages de console utilisent le préfixe `[Dashboard][chemin du module][niveau]` pour faciliter le filtrage.
 - La fonction de prise intelligente vérifie `SystemCapability.MultimodalAwareness.Motion` et rétablit la disposition normale des boutons sur les appareils non compatibles.
+- La vignette par défaut du partage système et les résultats de compatibilité des effets de vibration sont réutilisés après le premier accès afin d’éviter les lectures et requêtes répétées pendant une session.
+
+## Réglages et capacités de l’appareil
+
+Mon espace → Réglages enregistre le nom d’utilisateur, l’intensité des vibrations, l’effet de champ lumineux et le niveau de matériau immersif. Au démarrage, les valeurs sont hydratées depuis Preferences vers `AppStorage` ; les lectures suivantes utilisent le cache du processus, tandis que les écritures restent persistantes.
+
+- Le nom d’utilisateur est joint aux demandes de soumission ; s’il est vide, le nom de l’appareil est utilisé.
+- Les vibrations proposent les niveaux Désactivé, Dynamique et Fort. Le contrôle est masqué lorsqu’il n’existe pas de matériel de vibration.
+- L’effet de champ lumineux propose les niveaux Faible, Lumineux et Haute luminosité. Le dernier dépend de la composition HDR de l’API 24 ; avec l’API 23 ou sans HDR global, l’application revient sans risque au niveau Lumineux.
+- L’application déclare les autorisations réseau, état du réseau, luminosité HDR, détection de gestes et vibration. Les capacités optionnelles disposent d’un comportement de repli.
 
 ## Mise en page adaptative et accessibilité
 
@@ -79,6 +89,12 @@ entry/src/main/ets/
 │   ├── appState.ets          état temporaire entre les Ability
 │   ├── storage.ets           hydratation de Preferences et AppStorage
 │   ├── safeUi.ets            appels PromptAction sûrs et repli de journalisation
+│   ├── safeNavigation.ets    paramètres de route et helpers push/pop sûrs
+│   ├── motion.ets            animations d’entrée et de transition partagée
+│   ├── shareControl.ets      cycle de vie des partages système et reçus
+│   ├── vibration.ets         vibrations courtes, retour, longues et d’erreur
+│   ├── visualEffects.ets     repli de compatibilité champ lumineux et HDR
+│   ├── dashboardConfig.ets   visibilité du tableau contrôlée par le serveur
 │   ├── constants.ets         constantes communes
 │   └── types.ets             types des API, pages et routes
 ├── component/
@@ -124,9 +140,10 @@ Les routes réellement exposées par le back-end font foi. Consultez `API.md`, `
 3. Configurez un profil de signature local valide ; les chemins absolus d’un autre poste ne peuvent pas être réutilisés directement.
 4. Compilez et testez les cibles téléphone, tablette ou 2in1 sur un appareil ou un émulateur.
 5. Vérifiez le repli en réseau faible, le nettoyage du cache, les thèmes clair/sombre, les seuils 600/840vp, l’unique entrée de partage reçue, les trois modes de partage sur le site S et la page de détail, la position de continuité, le défilement et le saut de page du tableau, ainsi que la lecture par le lecteur d’écran.
+6. Sur les appareils avec et sans HDR et matériel de vibration, vérifiez l’affichage des réglages, les replis et l’avertissement de Haute luminosité.
 
 ## Confidentialité et mentions
 
-Les données du marché sont collectées sur Internet et fournies à titre indicatif ; leur exactitude, leur exhaustivité et leur authenticité ne sont pas garanties. L’application utilise des informations sur l’appareil pour construire le User-Agent des requêtes et une télémétrie d’exécution anonyme. Consultez la politique de confidentialité intégrée pour plus de détails.
+Les données du marché sont collectées sur Internet et fournies à titre indicatif ; leur exactitude, leur exhaustivité et leur authenticité ne sont pas garanties. L’application utilise des informations sur l’appareil pour construire le User-Agent des requêtes et une télémétrie d’exécution anonyme. Un nom d’utilisateur explicitement défini est transmis avec les demandes de soumission. Consultez la politique de confidentialité intégrée pour plus de détails.
 
 Copyright © 2026 Ray Chen (Rayawa). Tous droits réservés. Domaine déclaré : `rayawa.top` ; enregistrement ICP : 京ICP备2025153453号.

@@ -18,7 +18,7 @@ The root page uses `HdsNavigation`, child pages use `HdsNavDestination`, and fou
 1. **S Site** — warms up and caches its ArkWeb page at app startup and supports sharing the current page, Knock-to-Share, and air-gesture sharing. An independent Web viewport keeps floating detail dialogs in the current view.
 2. **Home** — shows that the total equals HarmonyOS apps plus Atomic Services; wide layouts place totals, service status, and recently listed apps side by side.
 3. **App Details** — places search and an overview/list switcher at the top. The list supports type and field filters, sorting, and pagination.
-4. **My** — shows the app icon and names, settings, additional links, version, copyright, and ICP filing information.
+4. **My** — shows the app icon and names, settings, additional links, version, copyright, and ICP filing information. The tutorial is intentionally available here only, rather than duplicated in the title bar; Contact Us opens as a dismissible half-modal sheet.
 
 The app list, search results, deep links, and system-share entry all use the same native detail template:
 
@@ -50,6 +50,16 @@ All native data pages use `common/MarketApi.ets`; pages do not construct HTTP re
 - Toast messages are routed through `common/safeUi.ets`; a temporarily unavailable UI context is logged without interrupting the main flow.
 - Console messages use the `[Dashboard][module path][level]` prefix for easier filtering.
 - Smart Holding checks `SystemCapability.MultimodalAwareness.Motion` before use and restores the standard button layout on unsupported devices.
+- The default system-share thumbnail and vibration-effect capability results are reused after first use, avoiding repeated resource reads and capability queries within a session.
+
+## Settings and device capabilities
+
+My → Settings persists the username, vibration intensity, light-field effect, and immersive material level. At startup, values are hydrated from Preferences into `AppStorage`; later reads use the in-process cache while writes remain persistent.
+
+- The username is included with submission requests; when left blank, the device name is used.
+- Vibration offers Off, Dynamic, and Strong levels. The control is hidden on devices without vibration hardware.
+- Light-field effects offer Dim, Bright, and High-Brightness levels. The last option requires API 24 HDR compositing; API 23 or devices without global HDR safely fall back to Bright.
+- The app declares network, network-status, HDR-brightness, gesture-detection, and vibration permissions. Optional capabilities have fallback behavior when unavailable.
 
 ## Responsive layout and accessibility
 
@@ -79,6 +89,12 @@ entry/src/main/ets/
 │   ├── appState.ets          transient cross-Ability state
 │   ├── storage.ets           Preferences and AppStorage hydration
 │   ├── safeUi.ets            safe PromptAction calls and logging fallback
+│   ├── safeNavigation.ets    route parameters and safe push/pop helpers
+│   ├── motion.ets            page-entry and shared-transition animation
+│   ├── shareControl.ets      system and inbound-share lifecycle
+│   ├── vibration.ets         shared short, back, long, and error vibration
+│   ├── visualEffects.ets     light-field and HDR compatibility fallback
+│   ├── dashboardConfig.ets   server-controlled dashboard visibility
 │   ├── constants.ets         shared constants
 │   └── types.ets             API, page, and route types
 ├── component/
@@ -124,9 +140,10 @@ The back end's runtime routes are authoritative. See `API.md`, `API_DOCS.md`, an
 3. Configure a valid local signing profile; absolute paths from another developer's machine cannot be reused directly.
 4. Build and test phone, tablet, or 2in1 targets on a device or emulator.
 5. Verify weak-network fallback, cache clearing, light/dark themes, 600/840vp breakpoints, the single inbound share entry, all three sharing modes on the S Site and detail page, continuation position, table scrolling/page jumps, and screen-reader output.
+6. On devices with and without HDR and vibration hardware, verify settings visibility, fallback behavior, and the High-Brightness warning.
 
 ## Privacy and notices
 
-Market data is collected from the internet and is provided for reference only; its accuracy, completeness, and authenticity are not guaranteed. The app uses device information to construct its request User-Agent and anonymous runtime telemetry. Refer to the in-app privacy policy for details.
+Market data is collected from the internet and is provided for reference only; its accuracy, completeness, and authenticity are not guaranteed. The app uses device information to construct its request User-Agent and anonymous runtime telemetry. A username explicitly set by the user is sent with submission requests. Refer to the in-app privacy policy for details.
 
 Copyright © 2026 Ray Chen (Rayawa). All rights reserved. Filing domain: `rayawa.top`; ICP filing: 京ICP备2025153453号.
