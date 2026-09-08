@@ -269,7 +269,7 @@ export struct SettingsPanel {
                     })
             }
 
-            this.lightFieldLevelItem()
+            // this.lightFieldLevelItem()
 
             Divider()
                 .color($r('app.color.border'))

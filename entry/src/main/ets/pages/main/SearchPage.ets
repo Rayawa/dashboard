@@ -3,7 +3,7 @@ import { hdsEffect } from '@kit.UIDesignKit';
 import { BACKGROUND_REFRESH_DELAY_MS, SEARCH_SHARED_GEOMETRY_ID } from '../../common/constants';
 import { consumeSearchTarget, setDetailTarget } from '../../common/appState';
 import { fetchAppById, fetchAppByPackage, fetchAppsPage, submitApp } from '../../common/MarketApi';
-import { formatCount, formatDateTime } from '../../common/format';
+import { formatDateTime, formatDownloadCount } from '../../common/format';
 import { clearSearchHistory, getSearchHistory, setSearchHistory } from '../../common/storage';
 import { parseInputSplitLinksPkgsAndAppIds } from '../../common/utils';
 import { showToastSafely } from '../../common/safeUi';
@@ -18,6 +18,7 @@ import type {
     SubmitAppBody,
 } from '../../common/types';
 import { vibration } from '../../common/vibration';
+import { scrollByAxis } from '../../common/scroll';
 
 const SEARCH_DISMISS_SWIPE_DISTANCE_VP: number = 96;
 
@@ -76,6 +77,7 @@ export struct SearchPage {
     private openDetailAfterSearch: boolean = false;
     private backgroundUpdateToken: number = 0;
     private enterTimers: number[] = [];
+    private resultScroller: Scroller = new Scroller();
 
     aboutToDisappear(): void {
         this.backgroundUpdateToken++;
@@ -408,7 +410,7 @@ export struct SearchPage {
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                 Text(app.developer_name || '未知开发者').fontSize(12).fontColor($r('app.color.diff_content'))
                     .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
-                Text(`${app.pkg_name} · ${formatCount(app.download_count)} 下载`).fontSize(11)
+                Text(`${app.pkg_name} · ${formatDownloadCount(app.download_count)} 下载`).fontSize(11)
                     .fontColor($r('app.color.v3_text_secondary')).maxLines(1)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                 Text(`更新：${formatDateTime(app.updated_at)}`).fontSize(11)
@@ -537,7 +539,7 @@ export struct SearchPage {
                 .opacity(this.animStep >= 1 ? 1 : 0)
                 .translate({ y: this.animStep >= 1 ? 0 : 20 })
             } else if (this.resultCount > 0) {
-                Grid() {
+                Grid(this.resultScroller) {
                     LazyForEach(this.resultSource, (app: MarketApp) => {
                         GridItem() { this.resultCard(app) }
                     }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
@@ -553,6 +555,7 @@ export struct SearchPage {
             }
         }
         .width('100%').height('100%').backgroundColor($r('app.color.background'))
+        .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.resultScroller, event))
         .transition(this.transitionEffect)
         .gesture(
             PanGesture({ fingers: 1, direction: PanDirection.Vertical })

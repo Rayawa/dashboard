@@ -17,6 +17,7 @@ import {
     startStaggerEnterAnimation,
 } from '../../common/motion';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
+import { scrollByAxis } from '../../common/scroll';
 import { vibration } from '../../common/vibration';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
 
@@ -681,6 +682,7 @@ export struct HomePage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.background'))
+        .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })

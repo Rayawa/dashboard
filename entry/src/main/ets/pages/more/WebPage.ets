@@ -19,6 +19,7 @@ import {
 import { contentEnterTransition, pageTransition } from '../../common/motion';
 import { popPathSafely } from '../../common/safeNavigation';
 import { WebShareManager } from '../../common/shareControl';
+import { scrollByAxis } from '../../common/scroll';
 import type { WebShareData } from '../../common/shareControl';
 import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
@@ -249,6 +250,7 @@ export struct WebPage {
       .backgroundColor($r('app.color.backcolor'))
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
+    .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
     .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => this.goBack())

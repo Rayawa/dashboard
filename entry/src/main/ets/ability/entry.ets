@@ -1,4 +1,5 @@
 import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { webview } from '@kit.ArkWeb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { loadPersistedState } from '../common/storage';
@@ -10,6 +11,7 @@ import {
     DEFAULT_WINDOW_WIDTH,
     LOCAL_STORAGE_KEY_WINDOW_HEIGHT,
     LOCAL_STORAGE_KEY_WINDOW_WIDTH,
+    SBaseURL,
 } from '../common/constants';
 import {
     defaultAppsListState,
@@ -103,6 +105,13 @@ export default class EntryAbility extends UIAbility {
     }
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+        // 在页面树创建前加载 ArkWeb 内核并预连接 S 站，缩短隐藏标签页首次加载时间。
+        try {
+            webview.WebviewController.initializeWebEngine();
+            webview.WebviewController.prepareForPageLoad(SBaseURL.toString(), true, 2);
+        } catch (error) {
+            console.warn('[Dashboard][ability/entry][WARN]', `预热S站失败: ${JSON.stringify(error)}`);
+        }
         this.restoreContinuationParams(want, launchParam);
         if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
             try {

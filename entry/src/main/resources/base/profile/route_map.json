@@ -17,7 +17,7 @@
     },
     {
       "name": "WebPage",
-      "pageSourceFile": "src/main/ets/pages/web/WebPage.ets",
+      "pageSourceFile": "src/main/ets/pages/more/WebPage.ets",
       "buildFunction": "WebPageBuilder"
     },
     {

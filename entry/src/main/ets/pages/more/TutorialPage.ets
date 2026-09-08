@@ -16,6 +16,7 @@ import { vibration } from '../../common/vibration';
 import { cancelStaggerEnterAnimation, pageTransition, startStaggerEnterAnimation } from '../../common/motion';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import KnockShareGuideCard, { CardRes } from '../../component/KnockShareGuideCard';
+import { scrollByAxis } from '../../common/scroll';
 
 const TUTORIAL_COLUMN_BREAKPOINT = 840;
 const SHARE_ROW_BREAKPOINT = 680;
@@ -28,11 +29,12 @@ export struct TutorialPage {
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
     hdsMaterial.MaterialLevel.GENTLE;
   private prompt: PromptAction = this.getUIContext().getPromptAction();
+  private scroller: Scroller = new Scroller();
   @State private pressedCard: string = '';
   @State private contentWidth: number = 0;
   @State private shareContentWidth: number = 0;
   @State private animStep: number = 0;
-  private enterAnimationPlayed: boolean = false;
+  private enterAnimationPending: boolean = true;
   private enterAnimationTimers: number[] = [];
   private readonly cardSwiperResourcesPhone: CardRes[] = [{
     text: '打开碰一碰分享后，按系统提示将两台设备靠近即可发送。',
@@ -42,13 +44,19 @@ export struct TutorialPage {
     stopDelay: 500,
   }];
 
-  private startPageAnimationOnce(totalSteps: number): void {
-    if (this.enterAnimationPlayed) return;
-    this.enterAnimationPlayed = true;
+  private startPageAnimationForEntry(totalSteps: number): void {
+    if (!this.enterAnimationPending) return;
+    this.enterAnimationPending = false;
+    cancelStaggerEnterAnimation(this.enterAnimationTimers);
     this.animStep = 0;
     this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), totalSteps, (step: number): void => {
       this.animStep = step;
     });
+  }
+
+  aboutToAppear(): void {
+    this.enterAnimationPending = true;
+    this.animStep = 0;
   }
 
   private enterStep(narrowStep: number, wideStep: number): number {
@@ -160,14 +168,14 @@ export struct TutorialPage {
   @Builder
   private contactRow(title: string, name: string, detail: string, copyContent: string, label: string): void {
     Row({ space: 10 }) {
-      Column({ space: 2 }) {
+      Column({ space: 1 }) {
         Text(title)
           .fontSize(13)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('app.color.v3_text_primary'))
         Text(`${name} · ${detail}`)
           .fontSize(12)
-          .lineHeight(18)
+          .lineHeight(17)
           .fontColor($r('app.color.v3_text_secondary'))
       }
       .layoutWeight(1)
@@ -175,8 +183,8 @@ export struct TutorialPage {
       Text('复制').fontSize(12).fontColor($r('app.color.diff_content'))
     }
     .width('100%')
-    .padding({ left: 12, right: 12, top: 10, bottom: 10 })
-    .borderRadius(12)
+    .padding({ left: 12, right: 12, top: 7, bottom: 7 })
+    .borderRadius(10)
     .backgroundColor($r('app.color.v3_surface_alt'))
     .scale({ x: this.pressedCard === `contact-${title}` ? 0.98 : 1,
       y: this.pressedCard === `contact-${title}` ? 0.98 : 1 })
@@ -196,7 +204,7 @@ export struct TutorialPage {
 
   @Builder
   private appIntroductionCard(): void {
-    Column({ space: 11 }) {
+    Column({ space: 9 }) {
       Text('应用介绍')
         .fontSize(20).fontWeight(FontWeight.Bold).fontColor($r('app.color.diff_content'))
       Text('欢迎来到 Dashboard 应用看板')
@@ -216,7 +224,7 @@ export struct TutorialPage {
         .lineHeight(18)
         .fontColor($r('app.color.v3_accent_red'))
         .width('100%')
-        .padding(10)
+        .padding(8)
         .borderRadius(10)
         .backgroundColor($r('app.color.v3_warning_bg'))
       Divider()
@@ -240,7 +248,7 @@ export struct TutorialPage {
     }
     .alignItems(HorizontalAlign.Start)
     .width('100%')
-    .padding(16)
+    .padding(14)
     .borderRadius(16)
     .backgroundColor($r('app.color.v3_surface'))
     .border({ width: 1, color: $r('app.color.nd_card_border') })
@@ -296,9 +304,6 @@ export struct TutorialPage {
   @Builder
   private queryImage(title: string, imageResource: Resource, accessibility: string): void {
     Column({ space: 8 }) {
-      Text(title)
-        .fontSize(12).lineHeight(18).fontColor($r('app.color.v3_text_secondary'))
-        .textAlign(TextAlign.Center).width('100%')
       Image(imageResource)
         .width('100%')
         .aspectRatio(QUERY_IMAGE_RATIO)
@@ -306,6 +311,9 @@ export struct TutorialPage {
         .borderRadius(9)
         .border({ width: 1, color: $r('app.color.border') })
         .accessibilityText(accessibility)
+      Text(title)
+        .fontSize(12).lineHeight(18).fontColor($r('app.color.v3_text_secondary'))
+        .textAlign(TextAlign.Center).width('100%')
     }
     .layoutWeight(1)
     .alignItems(HorizontalAlign.Center)
@@ -432,7 +440,7 @@ export struct TutorialPage {
 
   @Builder
   private narrowTutorialContent(): void {
-    Scroll() {
+    Scroll(this.scroller) {
       Column({ space: 16 }) {
         Blank().height(100).width('100%')
         this.appIntroductionCard()
@@ -473,7 +481,7 @@ export struct TutorialPage {
         .color($r('app.color.border'))
         .accessibilityText('教程介绍与功能说明分隔线')
 
-      Scroll() {
+      Scroll(this.scroller) {
         Column({ space: 16 }) {
           Blank().height(100).width('100%')
           this.appFeaturesCard()
@@ -511,10 +519,11 @@ export struct TutorialPage {
       .onAreaChange((_oldValue: Area, newValue: Area): void => {
         const nextWidth = Number(newValue.width);
         this.contentWidth = nextWidth;
-        this.startPageAnimationOnce(nextWidth >= TUTORIAL_COLUMN_BREAKPOINT ? 3 : 4);
+        this.startPageAnimationForEntry(nextWidth >= TUTORIAL_COLUMN_BREAKPOINT ? 3 : 4);
       })
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
+    .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
     .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {

@@ -178,7 +178,9 @@ struct DistributionPanel {
         return this.onSelect !== undefined && this.colorLabels.length > 0;
     }
     private sourceLabels(): string[] {
-        return this.usesSharedLabels() ? this.colorLabels : this.chart.labels;
+        return this.usesSharedLabels() ?
+            this.colorLabels.filter((label: string): boolean => this.chart.labels.indexOf(label) >= 0) :
+            this.chart.labels;
     }
     private displayLabels(): string[] {
         const labels = this.sourceLabels();
@@ -702,10 +704,12 @@ export struct OverviewSection {
     private onRefreshVersionChanged(): void { if (this.refreshVersion > 0) this.load(true); }
     private distribution(title: string, source: number[][]): DistributionChart {
         const sorted = source.slice().sort((a: number[], b: number[]) => Number(b[0]) - Number(a[0]));
-        const values = sorted.map((item: number[]) => Number(item[1]));
+        const total = sorted.reduce((sum: number, item: number[]) => sum + Number(item[1]), 0);
+        const visible = sorted.filter((item: number[]): boolean =>
+            total > 0 && Number(item[1]) / total >= 0.01);
+        const values = visible.map((item: number[]) => Number(item[1]));
         return {
-            title, labels: sorted.map((item: number[]) => `API ${item[0]}`), values,
-            total: values.reduce((sum: number, value: number) => sum + value, 0),
+            title, labels: visible.map((item: number[]) => `API ${item[0]}`), values, total,
         };
     }
     private sdkColors(): Resource[] {
@@ -744,6 +748,7 @@ export struct OverviewSection {
         return total;
     }
     private sdkPercent(chart: DistributionChart, label: string): string {
+        if (label !== '其他' && chart.labels.indexOf(label) < 0) return '—';
         const percent = chart.total > 0 ? this.sdkValue(chart, label) / chart.total * 100 : 0;
         return `${percent.toFixed(1)}%`;
     }

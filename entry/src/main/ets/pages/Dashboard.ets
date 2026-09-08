@@ -48,7 +48,7 @@ import { HTMLBuilder } from './more/LocalHtmlPage';
 import { TutorialPageBuilder } from './more/TutorialPage';
 import { FriendPageBuilder } from './more/FriendLinksPage';
 import { DeveloperPage } from './more/DeveloperPage';
-import { WebPageBuilder, WebPageParams } from './web/WebPage';
+import { WebPageBuilder, WebPageParams } from './more/WebPage';
 import { HdsTitleBarSegment } from '../component/HdsTitleBarSegment';
 
 interface MainTab {
@@ -113,6 +113,7 @@ struct Dashboard {
                 experimentalHeight: 52,
                 onItemClicked: (index: number): void => {
                     this.vibrate();
+                    this.appsViewIndexes = [index];
                     setAppsViewIndex(index);
                 },
             })
@@ -260,6 +261,8 @@ struct Dashboard {
 
     onPageShow(): void {
         this.handlePageShow();
+        // HdsTabs 建立后立即触发预加载；首次进应用时无需先切到 S 站才开始请求网页。
+        setTimeout((): void => this.preloadSStation(), 0);
     }
 
     onBackPress(): boolean {
@@ -369,7 +372,8 @@ struct Dashboard {
                 }
                 .barPosition(BarPosition.End)
                 .barWidth(250)
-                .cachedMaxCount(4, TabsCacheMode.CACHE_LATEST_SWITCHED)
+                // 默认首页两侧的页面在应用进入时立即创建；S站的 Web 因此无需等待首次点击。
+                .cachedMaxCount(4, TabsCacheMode.CACHE_BOTH_SIDE)
                 .scrollable(false)
                 .vertical(false)
                 .barOverlap(true)
@@ -478,8 +482,8 @@ struct Dashboard {
         .accessibilityText('Dashboard应用导航')
         .bindSheet($$this.showWarning, this.warningSheet(), {
             title: { title: '重要提示', subtitle: '使用前请阅读以下说明' },
-            height: SheetSize.LARGE,
-            detents: [SheetSize.LARGE],
+            height: SheetSize.FIT_CONTENT,
+            detents: [SheetSize.FIT_CONTENT],
             preferType: SheetType.BOTTOM,
             showClose: !this.warningRequiresConfirmation,
             dragBar: true,

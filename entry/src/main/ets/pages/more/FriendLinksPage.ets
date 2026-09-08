@@ -45,7 +45,8 @@ import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { cancelStaggerEnterAnimation, pageTransition, startStaggerEnterAnimation } from '../../common/motion';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
-import { WebPageParams } from '../web/WebPage';
+import { WebPageParams } from './WebPage';
+import { scrollByAxis } from '../../common/scroll';
 
 interface LinkConfig {
   icon: Resource;
@@ -65,12 +66,11 @@ struct FriendLinksPage {
   private isExiting: boolean = false;
   @State private warningPressed: boolean = false;
   @State private animStep: number = 0;
-  private enterAnimationPlayed: boolean = false;
+  private scroller: Scroller = new Scroller();
   private enterAnimationTimers: number[] = [];
 
-  private startPageAnimationOnce(): void {
-    if (this.enterAnimationPlayed) return;
-    this.enterAnimationPlayed = true;
+  private startPageAnimation(): void {
+    cancelStaggerEnterAnimation(this.enterAnimationTimers);
     this.animStep = 0;
     this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
       this.animStep = step;
@@ -244,7 +244,7 @@ struct FriendLinksPage {
 
   build() {
     HdsNavDestination() {
-      Scroll(){
+      Scroll(this.scroller) {
         Column({ space: LIST_SECTION_SPACING }) {
           Blank().height(100)
           Column(){
@@ -330,9 +330,10 @@ struct FriendLinksPage {
       .width("100%")
       .backgroundColor($r("app.color.background"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-      .onAppear((): void => this.startPageAnimationOnce())
+      .onAppear((): void => this.startPageAnimation())
     }
     .titleMode(HdsNavDestinationTitleMode.MINI)
+    .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
     .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => {

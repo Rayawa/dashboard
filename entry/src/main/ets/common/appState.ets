@@ -64,7 +64,7 @@ export function defaultAppsListState(): AppsListContinuationState {
         filterIndex: 0,
         filterText: '',
         appliedFilterText: '',
-        sortIndex: 0,
+        sortIndex: 1,
         descending: true,
     };
 }

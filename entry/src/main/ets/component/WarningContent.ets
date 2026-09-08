@@ -5,6 +5,7 @@ import { vibration } from '../common/vibration';
 import { PrivacyConfirmationButtons } from './PrivacyConfirmationButtons';
 import { mainPage } from '../common/constants';
 import { showToastSafely } from '../common/safeUi';
+import { scrollByAxis } from '../common/scroll';
 
 @Component
 export struct WarningContent {
@@ -13,6 +14,7 @@ export struct WarningContent {
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @State contentWidth: number = 0;
+  private scroller: Scroller = new Scroller();
 
   private readonly WIDE_LAYOUT_BREAKPOINT: number = 680;
 
@@ -110,7 +112,8 @@ export struct WarningContent {
   @Builder
   private limitationCard(): void {
     Column({ space: 9 }) {
-      this.noticeSection('架构限制', '数据内容仅覆盖 HarmonyOS 5+ 核心环境，不含侧载或企业定制版应用。')
+      this.noticeSection('收录范围',
+        '仅收录已正式上架华为应用市场、且支持 HarmonyOS NEXT 及后续版本的应用；不包含侧载应用、公开测试应用或邀请测试应用。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
       this.noticeSection('更新延迟', '数据存在滞后性，同步质量受限于用户网络稳定性，项目组不保证信息的即时性。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
@@ -126,7 +129,7 @@ export struct WarningContent {
     .backgroundColor($r('app.color.v3_surface'))
     .border({ width: 1, color: $r('app.color.nd_card_border') })
     .accessibilityGroup(true)
-    .accessibilityText('架构限制、更新延迟、知识产权和动态调整')
+    .accessibilityText('应用收录范围、更新延迟、知识产权和动态调整')
   }
 
   @Builder
@@ -154,7 +157,7 @@ export struct WarningContent {
 
   @Builder
   private noticeContent(): void {
-    Scroll() {
+    Scroll(this.scroller) {
       if (this.contentWidth >= this.WIDE_LAYOUT_BREAKPOINT) {
         Row({ space: 16 }) {
           Column({ space: 14 }) {
@@ -185,7 +188,6 @@ export struct WarningContent {
       }
     }
     .width('100%')
-    .layoutWeight(1)
     .onAreaChange((_oldValue: Area, newValue: Area): void => {
       this.contentWidth = Number(newValue.width);
     })
@@ -205,8 +207,8 @@ export struct WarningContent {
       }
     }
     .width('100%')
-    .height('100%')
     .padding({ left: 16, right: 16, bottom: 16 })
+    .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
     .accessibilityGroup(true)
     .accessibilityText('应用数据来源和免责声明')
   }

@@ -11,6 +11,7 @@ import { vibration } from '../../common/vibration';
 import { popPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { cancelStaggerEnterAnimation, pageTransition, startStaggerEnterAnimation } from '../../common/motion';
+import { scrollByAxis } from '../../common/scroll';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 
 interface UpdateLog {
@@ -102,7 +103,7 @@ struct AppLogPage {
     @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
         hdsMaterial.MaterialLevel.GENTLE;
     @State private animStep: number = 0;
-    private enterAnimationPlayed: boolean = false;
+    private scroller: Scroller = new Scroller();
     private enterAnimationTimers: number[] = [];
     private updateLogs: UpdateLog[] = [
         {
@@ -385,9 +386,8 @@ struct AppLogPage {
         this.updateFilteredLogs();
     }
 
-    private startPageAnimationOnce(): void {
-        if (this.enterAnimationPlayed) return;
-        this.enterAnimationPlayed = true;
+    private startPageAnimation(): void {
+        cancelStaggerEnterAnimation(this.enterAnimationTimers);
         this.animStep = 0;
         this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
             this.animStep = step;
@@ -417,7 +417,7 @@ struct AppLogPage {
 
     build() {
         HdsNavDestination() {
-            Scroll() {
+            Scroll(this.scroller) {
                 Column() {
                     Blank().height(100).width('100%')
                     Column() {
@@ -455,13 +455,14 @@ struct AppLogPage {
             .height("100%")
             .backgroundColor($r("app.color.backcolor"))
             .accessibilityText('可滚动的应用更新日志')
-            .onAppear((): void => this.startPageAnimationOnce())
+            .onAppear((): void => this.startPageAnimation())
         }
         .onBackPressed(() => {
             if(this.vibrationLevel > 0) vibration.backVibration()
             return false;
         })
         .titleMode(HdsNavDestinationTitleMode.MINI)
+        .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
         .transition(pageTransition())
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .titleBar({
