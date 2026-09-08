@@ -11,6 +11,17 @@ export function formatCount(value: number | undefined): string {
     return String(value);
 }
 
+/** 下载量低于一千时不展示具体数值。 */
+export function formatDownloadCount(value: number | undefined): string {
+    if (value === undefined || value === null) {
+        return '-';
+    }
+    if (value < 1000) {
+        return '<1千';
+    }
+    return formatCount(value);
+}
+
 export function formatExactCount(value: number | undefined): string {
     if (value === undefined || value === null) {
         return '-';

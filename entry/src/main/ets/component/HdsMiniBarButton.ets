@@ -24,6 +24,13 @@ export struct HdsMiniBarButton {
   }
 
   @Builder
+  private miniBarBackground(): void {
+    Blank()
+      .width('100%')
+      .height('100%')
+  }
+
+  @Builder
   private miniBarContent(): void {
     Stack({ alignContent: Alignment.Center }) {
       this.buttonContent()
@@ -53,7 +60,7 @@ export struct HdsMiniBarButton {
   }
 
   build() {
-    Column() {
+    Stack({ alignContent: Alignment.Center }) {
       if (deviceInfo.distributionOSApiVersion >= 60100) {
         HdsTabs({ controller: this.controller }) {
           TabContent()
@@ -81,11 +88,18 @@ export struct HdsMiniBarButton {
           },
           miniBar: {
             miniBarBuilder: () => {
-              this.miniBarContent()
+              this.miniBarBackground()
             },
             miniBarStyle: 1,
           },
         })
+        Column() {
+          this.miniBarContent()
+        }
+        .width(this.barWidth)
+        .height(this.barHeight - 12)
+        .justifyContent(FlexAlign.Center)
+        .zIndex(1)
       } else {
         Row() {
           this.miniBarContent()
@@ -98,8 +112,6 @@ export struct HdsMiniBarButton {
     }
     .width(this.barWidth)
     .height(this.barHeight)
-    .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
     .backgroundColor(Color.Transparent)
     .accessibilityText('概况和总表分段控件')
   }

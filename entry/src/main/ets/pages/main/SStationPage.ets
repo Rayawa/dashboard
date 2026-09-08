@@ -20,6 +20,7 @@ import { vibration } from '../../common/vibration';
 import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
 import { WebShareManager } from '../../common/shareControl';
 import type { WebShareData } from '../../common/shareControl';
+import { scrollByAxis } from '../../common/scroll';
 
 class SStationWebBridge {
     private onDetailOpenChanged: (open: boolean) => void;
@@ -44,12 +45,14 @@ export struct SStationPage {
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @State private progress: number = 0;
     @State private loading: boolean = true;
+    @State private showLoadingIndicator: boolean = false;
     @State private errorMessage: string = '';
     @State private currentUrl: string = SBaseURL.toString();
     @State private initialUrl: string = SBaseURL.toString();
     @State private pageVisible: boolean = false;
     private pendingScrollDistance: number = 0;
     private restoredScroll: boolean = false;
+    private enterAnimationPlayed: boolean = false;
     private restoreScrollTimer: number = -1;
     private shareManager?: WebShareManager;
     private readonly shareOwnerId: number = WebShareManager.createOwnerId();
@@ -58,8 +61,13 @@ export struct SStationPage {
     });
 
     aboutToAppear(): void {
-        this.pageVisible = false;
-        runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
+        if (!this.enterAnimationPlayed) {
+            this.enterAnimationPlayed = true;
+            this.pageVisible = false;
+            runPageEnterAnimation(this.getUIContext(), (): void => { this.pageVisible = true; });
+        } else {
+            this.pageVisible = true;
+        }
         try {
             const continuation = getContinuationState();
             if (continuation.mainTab === MAIN_TAB_S_STATION &&
@@ -240,6 +248,7 @@ export struct SStationPage {
             } else if (this.command === S_STATION_COMMAND_HOME) {
                 this.errorMessage = '';
                 this.loading = true;
+                this.showLoadingIndicator = true;
                 this.currentUrl = SBaseURL.toString();
                 setContinuationPageUrl(this.currentUrl);
                 this.scroller.scrollTo({ xOffset: 0, yOffset: 0 });
@@ -294,6 +303,8 @@ export struct SStationPage {
                     })
                     .onPageBegin((event) => {
                         this.loading = true;
+                        // 后台预加载保持无感；用户主动在S站内导航时才展示加载进度。
+                        this.showLoadingIndicator = this.active;
                         this.errorMessage = '';
                         if (event?.url && event.url !== 'about:blank') {
                             this.currentUrl = event.url;
@@ -302,6 +313,7 @@ export struct SStationPage {
                     })
                     .onPageEnd((event) => {
                         this.loading = false;
+                        this.showLoadingIndicator = false;
                         this.errorMessage = '';
                         if (event?.url && event.url !== 'about:blank') {
                             this.currentUrl = event.url;
@@ -325,6 +337,7 @@ export struct SStationPage {
                             return;
                         }
                         this.loading = false;
+                        this.showLoadingIndicator = false;
                         this.errorMessage = '网页主页面加载失败，请检查网络连接后重试';
                         console.warn('[Dashboard][pages/main/SStationPage][WARN]',
                             `S站主页面加载失败: ${JSON.stringify(event.error)}`);
@@ -353,7 +366,7 @@ export struct SStationPage {
             .backgroundColor($r('app.color.s_station_placeholder'))
             .accessibilityText('使用内部滚动的S站网页视图')
 
-            if (this.loading) {
+            if (this.loading && this.showLoadingIndicator) {
                 Progress({ value: this.progress, total: 100 })
                     .width('100%')
                     .height(4)
@@ -381,6 +394,7 @@ export struct SStationPage {
                             if (this.vibrationLevel > 0) vibration.dotVibration();
                             this.errorMessage = '';
                             this.loading = true;
+                            this.showLoadingIndicator = true;
                             try {
                                 this.controller.loadUrl(this.currentUrl);
                             } catch (error) {
@@ -403,6 +417,7 @@ export struct SStationPage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.backcolor'))
+        .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
         .opacity(this.pageVisible ? 1 : 0.01)
         .translate({ y: this.pageVisible ? 0 : 10 })
         .accessibilityGroup(true)

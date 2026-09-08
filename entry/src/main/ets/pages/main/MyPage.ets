@@ -33,6 +33,7 @@ import { showToastSafely } from '../../common/safeUi';
 import { EmptyPathParam } from '../../common/safeNavigation';
 import { vibration } from '../../common/vibration';
 import { cancelStaggerEnterAnimation, startStaggerEnterAnimation } from '../../common/motion';
+import { scrollByAxis } from '../../common/scroll';
 
 interface MoreItem {
     title: string;
@@ -573,6 +574,7 @@ export struct MyPage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.background'))
+        .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })

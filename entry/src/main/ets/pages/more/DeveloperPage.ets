@@ -18,6 +18,7 @@ import {
 import { curves, LengthMetrics } from '@kit.ArkUI';
 import { pageTransition } from '../../common/motion';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
+import { scrollByAxis } from '../../common/scroll';
 
 interface DeveloperField {
   label: string;
@@ -29,6 +30,7 @@ export struct DeveloperPage {
   @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
     hdsMaterial.MaterialLevel.GENTLE;
   @State private pressedField: string = '';
+  private scroller: Scroller = new Scroller();
   private fields(): DeveloperField[] {
     return [
       { label: '应用版本', value: APP_VERSION },
@@ -50,7 +52,7 @@ export struct DeveloperPage {
 
   build() {
     HdsNavDestination() {
-      Scroll() {
+      Scroll(this.scroller) {
         Column({ space: 12 }) {
           Blank().height(100).width('100%')
           Text('仅用于诊断设备适配、网络请求标识与版本信息。')
@@ -112,6 +114,7 @@ export struct DeveloperPage {
       .backgroundColor($r('app.color.background'))
       .accessibilityText('可滚动的开发者页面')
     }
+    .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
     .titleBar({
       style: {
         scrollEffectOpts: {

@@ -13,12 +13,10 @@ export struct ContactPanel {
     @StorageLink('vibrationLevel') vibrationLevel: number = 1;
     @State private pressedItem: string = '';
     @State private animStep: number = 0;
-    private enterAnimationPlayed: boolean = false;
     private enterAnimationTimers: number[] = [];
 
-    private startEnterAnimationOnce(): void {
-        if (this.enterAnimationPlayed) return;
-        this.enterAnimationPlayed = true;
+    private startEnterAnimation(): void {
+        cancelStaggerEnterAnimation(this.enterAnimationTimers);
         this.animStep = 0;
         this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 5, (step: number): void => {
             this.animStep = step;
@@ -121,7 +119,7 @@ export struct ContactPanel {
         .width("100%")
         .padding(5)
         .margin({ bottom: 20 })
-        .onAppear((): void => this.startEnterAnimationOnce())
+        .onAppear((): void => this.startEnterAnimation())
         .accessibilityGroup(true)
         .accessibilityText('联系我们')
     }
