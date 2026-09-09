@@ -81,6 +81,16 @@
         "name": "ohos.permission.GET_NETWORK_INFO"
       },
       {
+        "name": "ohos.permission.DISTRIBUTED_DATASYNC",
+        "reason": "$string:STORAGE_distributed_permission_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility","shareEntryAbility"
+          ],
+          "when": "always"
+        }
+      },
+      {
         "name": "ohos.permission.HDR_BRIGHTNESS"
       },
       {
