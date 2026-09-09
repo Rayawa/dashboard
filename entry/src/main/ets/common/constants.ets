@@ -133,8 +133,68 @@ export const S_SITE_APP_DETAIL_QUERY = 'dashboard?app_id=';
 export const CONTINUATION_MIN_VERSION: string = '3.0.0';
 export const CONTINUATION_MIN_VERSION_CODE: number = 30000000;
 
-// UA
-export const customUserAgent: string = `${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion}) API:${deviceInfo.sdkApiVersion} | ${deviceInfo.productModel}/${deviceInfo.productModelAlias}/${deviceInfo.softwareModel}/${deviceInfo.hardwareModel} | ${deviceInfo.deviceType}/${deviceInfo.marketName}/${deviceInfo.chipType}`;
+// HTTP User-Agent 必须能安全转换为文本。保留可见 ASCII 原文，仅编码设备名称中的中文等字符。
+function encodeUserAgentText(value: string): string {
+    let encoded = '';
+    for (let index = 0; index < value.length; index++) {
+        const codeUnit = value.charCodeAt(index);
+        let character = value.charAt(index);
+        if (codeUnit >= 0xD800 && codeUnit <= 0xDBFF && index + 1 < value.length) {
+            const nextCodeUnit = value.charCodeAt(index + 1);
+            if (nextCodeUnit >= 0xDC00 && nextCodeUnit <= 0xDFFF) {
+                character = value.substring(index, index + 2);
+                index++;
+            }
+        }
+        if (codeUnit >= 0x20 && codeUnit <= 0x7E) {
+            encoded += character;
+        } else {
+            encoded += encodeURIComponent(character);
+        }
+    }
+    return encoded;
+}
+
+const rawCustomUserAgent: string = `(TEST_ONLY)@${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion}) API:${deviceInfo.sdkApiVersion} | ${deviceInfo.productModel}/${deviceInfo.productModelAlias}/${deviceInfo.softwareModel}/${deviceInfo.hardwareModel} | ${deviceInfo.deviceType}/${deviceInfo.marketName}/${deviceInfo.chipType}`;
+export const customUserAgent: string = encodeUserAgentText(rawCustomUserAgent);
+
+// 遥测上报使用的完整设备信息，字段与 2.x 版本保持一致。
+export class FullDeviceInfo {
+    public device_type: string = deviceInfo.deviceType
+    public manufacture: string = deviceInfo.manufacture
+    public brand: string = deviceInfo.brand
+    public market_name: string = deviceInfo.marketName
+    public product_series: string = deviceInfo.productSeries
+    public product_model: string = deviceInfo.productModel
+    public product_model_alias: string = deviceInfo.productModelAlias
+    public software_model: string = deviceInfo.softwareModel
+    public hardware_model: string = deviceInfo.hardwareModel
+    public bootloader_version: string = deviceInfo.bootloaderVersion
+    public abi_list: string = deviceInfo.abiList
+    public security_patch_tag: string = deviceInfo.securityPatchTag
+    public display_version: string = deviceInfo.displayVersion
+    public incremental_version: string = deviceInfo.incrementalVersion
+    public os_release_type: string = deviceInfo.osReleaseType
+    public os_full_name: string = deviceInfo.osFullName
+    public sdk_api_version: number = deviceInfo.sdkApiVersion
+    public first_api_version: number = deviceInfo.firstApiVersion
+    public version_id: string = deviceInfo.versionId
+    public build_type: string = deviceInfo.buildType
+    public build_user: string = deviceInfo.buildUser
+    public build_host: string = deviceInfo.buildHost
+    public build_time: string = deviceInfo.buildTime
+    public build_root_hash: string = deviceInfo.buildRootHash
+    public distribution_os_name: string = deviceInfo.distributionOSName
+    public distribution_os_version: string = deviceInfo.distributionOSVersion
+    public distribution_os_api_version: number = deviceInfo.distributionOSApiVersion
+    public distribution_os_api_name: string = deviceInfo.distributionOSApiName
+    public distribution_os_release_type: string = deviceInfo.distributionOSReleaseType
+    public performance_class: string = deviceInfo.performanceClass.toString()
+    public chip_type: string = deviceInfo.chipType
+}
+
+// 用户标识符
+export const ONLY_ID: string = deviceInfo.ODID;
 
 /**
  * 所有原生 API 请求统一从这里取得请求头，避免不同接口遗漏应用 User-Agent。

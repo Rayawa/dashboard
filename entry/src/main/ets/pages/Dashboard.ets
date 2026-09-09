@@ -8,18 +8,24 @@ import {
   TitleSize,
 } from '@kit.UIDesignKit';
 import { curves, LengthMetrics, PromptAction, SegmentButtonV2Items } from '@kit.ArkUI';
+import { http } from '@kit.NetworkKit';
 import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { getFirstLaunch } from '../common/storage';
 import {
   consumeMainTab, getContinuationState, peekDetailTarget, setAppsViewIndex, setContinuationView, setMainTab,
 } from '../common/appState';
 import {
+  APP_BUNDLE_NAME,
+  APP_VERSION,
   CONTINUATION_ROUTE_DETAIL,
+  customUserAgent,
+  FullDeviceInfo,
   MAIN_TAB_APPS,
   MAIN_TAB_DEFAULT,
   MAIN_TAB_HOME,
   MAIN_TAB_MY,
   MAIN_TAB_S_STATION,
+  ONLY_ID,
   S_STATION_COMMAND_BACK,
   S_STATION_COMMAND_HOME,
   S_STATION_COMMAND_NONE,
@@ -32,8 +38,15 @@ import {
   ROUTE_HTML_PAGE,
   ROUTE_TUTORIAL,
   ROUTE_WEB_PAGE,
+  SUBMIT_PLATFORM,
 } from '../common/constants';
-import type { AppRouteTarget } from '../common/types';
+import type {
+  AppRouteTarget,
+  BaseAPIResponse,
+  TelemetryDeviceInfo,
+  TelemetryIngestResponse,
+  TelemetryReportBody,
+} from '../common/types';
 import { WarningContent } from '../component/WarningContent';
 import { vibration } from '../common/vibration';
 import { pushPathSafely } from '../common/safeNavigation';
@@ -50,6 +63,66 @@ import { DeveloperPage } from './more/DeveloperPage';
 import { WebPageBuilder, WebPageParams } from './more/WebPage';
 import { HdsTitleBarSegment } from '../component/HdsTitleBarSegment';
 import { SStationNodeParams, SStationPreloadNodeController } from '../component/SStationPreloadNode';
+
+async function report_user_telemetry(
+  event_name: string = customUserAgent,
+): Promise<BaseAPIResponse<TelemetryIngestResponse> | null> {
+  const final_data: TelemetryReportBody = {
+    app_id: APP_BUNDLE_NAME,
+    only_id: ONLY_ID,
+    app_version: APP_VERSION,
+    submit_platform: SUBMIT_PLATFORM,
+    custom_user_agent: customUserAgent,
+    event_name,
+    device_info: new FullDeviceInfo() as TelemetryDeviceInfo,
+  };
+  const path = 'https://ddns.shenjack.top:10003/api/v0/telemetry/report';
+  const request = http.createHttp();
+
+  try {
+    const dataString = JSON.stringify(final_data);
+    const response = await request.request(path.toString(), {
+      method: http.RequestMethod.POST,
+      header: { 'Content-Type': 'application/json', 'User-Agent': customUserAgent },
+      extraData: dataString,
+      expectDataType: http.HttpDataType.STRING,
+      usingCache: false,
+      connectTimeout: 10000,
+      readTimeout: 10000,
+    });
+    console.info(`Status: ${response.responseCode}`);
+    if (response.responseCode === 200 && response.result) {
+      const rawResult = response.result;
+      try {
+        if (typeof rawResult === 'string') {
+          if (!rawResult.trim()) {
+            console.error('Error: Received empty string');
+            return null;
+          }
+          return JSON.parse(rawResult) as BaseAPIResponse<TelemetryIngestResponse>;
+        }
+        return rawResult as BaseAPIResponse<TelemetryIngestResponse>;
+      } catch (parseError) {
+        console.error(`JSON Parse Failed. Raw Content: ${rawResult}`);
+        console.error(`Parse Error Detail: ${JSON.stringify(parseError)}`);
+        return null;
+      }
+    } else {
+      console.error(`Error Status: ${response.responseCode}`);
+      console.error(`Error Detail from Server: ${response.result}`);
+      if (typeof response.result !== 'string') {
+        console.error(`Error Detail JSON: ${JSON.stringify(response.result)}`);
+      }
+    }
+    console.warn(`Request failed with code: ${response.responseCode}`);
+    return null;
+  } catch (error) {
+    console.error('Network/Request Error:', error);
+    return null;
+  } finally {
+    request.destroy();
+  }
+}
 
 interface MainTab {
     label: string;
@@ -90,6 +163,7 @@ struct Dashboard {
     @State private sStationCommand: number = S_STATION_COMMAND_NONE;
     @State private sStationCommandVersion: number = 0;
     @State private sStationDetailOpen: boolean = false;
+    private hasReportedTelemetry: boolean = false;
     private appsSegmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
         { text: '概况', accessibilityText: '概况' },
         { text: '总表', accessibilityText: '总表' },
@@ -269,6 +343,10 @@ struct Dashboard {
 
     onPageShow(): void {
         this.handlePageShow();
+        if (!this.hasReportedTelemetry) {
+            this.hasReportedTelemetry = true;
+            report_user_telemetry(customUserAgent);
+        }
     }
 
     aboutToAppear(): void {
