@@ -38,7 +38,6 @@ import { WarningContent } from '../component/WarningContent';
 import { vibration } from '../common/vibration';
 import { pushPathSafely } from '../common/safeNavigation';
 import { showToastSafely } from '../common/safeUi';
-import { SStationPage } from './main/SStationPage';
 import { HomePage } from './main/HomePage';
 import { AppsPage } from './main/AppsPage';
 import { MyPage } from './main/MyPage';
@@ -50,6 +49,7 @@ import { FriendPageBuilder } from './more/FriendLinksPage';
 import { DeveloperPage } from './more/DeveloperPage';
 import { WebPageBuilder, WebPageParams } from './more/WebPage';
 import { HdsTitleBarSegment } from '../component/HdsTitleBarSegment';
+import { SStationNodeParams, SStationPreloadNodeController } from '../component/SStationPreloadNode';
 
 interface MainTab {
     label: string;
@@ -72,6 +72,7 @@ interface MainTitleMenuItem {
 struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
     private tabsController: HdsTabsController = new HdsTabsController();
+    private sStationNodeController: SStationPreloadNodeController = new SStationPreloadNodeController();
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
@@ -149,16 +150,22 @@ struct Dashboard {
         this.vibrate();
         this.sStationCommand = command;
         this.sStationCommandVersion++;
+        this.updateSStationNode();
     }
 
-    private preloadSStation(): void {
-        try {
-            this.tabsController.preloadItems([MAIN_TAB_S_STATION]).catch((error: Error) => {
-                console.warn('[Dashboard][pages/Dashboard][WARN]', `S站标签页预加载失败: ${error.message}`);
-            });
-        } catch (error) {
-            console.warn('[Dashboard][pages/Dashboard][WARN]', `S站标签页预加载无法启动: ${JSON.stringify(error)}`);
-        }
+    private sStationNodeParams(): SStationNodeParams {
+        return {
+            command: this.sStationCommand,
+            commandVersion: this.sStationCommandVersion,
+            active: this.selectedIndex === MAIN_TAB_S_STATION,
+            onDetailOpenChanged: (open: boolean): void => {
+                this.sStationDetailOpen = open;
+            },
+        };
+    }
+
+    private updateSStationNode(): void {
+        this.sStationNodeController.update(this.sStationNodeParams());
     }
 
     private handleTabBarClick(index: number): void {
@@ -231,6 +238,7 @@ struct Dashboard {
     private async handlePageShow(): Promise<void> {
         this.selectedIndex = Math.max(MAIN_TAB_S_STATION, Math.min(MAIN_TAB_MY,
             consumeMainTab(this.selectedIndex)));
+        this.updateSStationNode();
         // consumeMainTab 用于读取 Ability/接续指定页；立即写回，供各标签页恢复滚动位置。
         setMainTab(this.selectedIndex);
         this.searchRequestVersion++;
@@ -261,8 +269,11 @@ struct Dashboard {
 
     onPageShow(): void {
         this.handlePageShow();
-        // HdsTabs 建立后立即触发预加载；首次进应用时无需先切到 S 站才开始请求网页。
-        setTimeout((): void => this.preloadSStation(), 0);
+    }
+
+    aboutToAppear(): void {
+        // BuilderNode 会立即创建并加载 Web；首次点击 S 站时仅执行节点挂载。
+        this.sStationNodeController.initialize(this.getUIContext(), this.sStationNodeParams());
     }
 
     onBackPress(): boolean {
@@ -280,6 +291,7 @@ struct Dashboard {
             vibration.backVibration();
             this.sStationCommand = S_STATION_COMMAND_BACK;
             this.sStationCommandVersion++;
+            this.updateSStationNode();
             return true;
         }
         return false;
@@ -314,14 +326,9 @@ struct Dashboard {
             Stack() {
                 HdsTabs({ controller: this.tabsController, index: this.selectedIndex }) {
                     TabContent() {
-                        SStationPage({
-                            command: this.sStationCommand,
-                            commandVersion: this.sStationCommandVersion,
-                            active: this.selectedIndex === MAIN_TAB_S_STATION,
-                            onDetailOpenChanged: (open: boolean): void => {
-                                this.sStationDetailOpen = open;
-                            },
-                        })
+                        NodeContainer(this.sStationNodeController)
+                            .width('100%')
+                            .height('100%')
                     }
                     .tabBar(new BottomTabBarStyle(this.mainTabs[0].icon, this.mainTabs[0].label))
                     .opacity(this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.92)
@@ -372,8 +379,8 @@ struct Dashboard {
                 }
                 .barPosition(BarPosition.End)
                 .barWidth(250)
-                // 默认首页两侧的页面在应用进入时立即创建；S站的 Web 因此无需等待首次点击。
-                .cachedMaxCount(4, TabsCacheMode.CACHE_BOTH_SIDE)
+                // S站由离线节点独立预加载；Tabs 缓存负责保留已切换的其余主页面。
+                .cachedMaxCount(4, TabsCacheMode.CACHE_LATEST_SWITCHED)
                 .scrollable(false)
                 .vertical(false)
                 .barOverlap(true)
@@ -390,6 +397,7 @@ struct Dashboard {
                 .onTabBarClick((index: number) => this.handleTabBarClick(index))
                 .onChange((index: number) => {
                     this.selectedIndex = index;
+                    this.updateSStationNode();
                     setMainTab(index);
                     const continuation = getContinuationState();
                     if (continuation.routeName !== CONTINUATION_ROUTE_DETAIL) {
@@ -400,7 +408,6 @@ struct Dashboard {
                     }
                 })
                 .accessibilityText('主界面四个标签页，依次为S站、首页、详情和我的')
-                .onAppear((): void => this.preloadSStation())
 
             }
             .width('100%')

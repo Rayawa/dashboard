@@ -70,16 +70,29 @@ struct DetailTag {
                 .fontColor($r('app.color.diff_content'))
                 .flexShrink(0)
                 .accessibilityText(this.field.label)
-            Text(this.field.value)
-                .fontSize(12)
-                .fontColor($r('app.color.v3_text_primary'))
+            Scroll() {
+                Row() {
+                    Text(this.field.value)
+                        .fontSize(12)
+                        .fontColor($r('app.color.v3_text_primary'))
+                        .maxLines(1)
+                        .textAlign(TextAlign.Start)
+                        .accessibilityText(`${this.field.label}${this.field.value}`)
+                }
+                .constraintSize({ minWidth: '100%' })
+                .justifyContent(FlexAlign.Start)
+            }
                 .layoutWeight(1)
-                .wordBreak(WordBreak.BREAK_WORD)
-                .accessibilityText(`${this.field.label}${this.field.value}`)
+                .height(20)
+                .scrollable(ScrollDirection.Horizontal)
+                .scrollBar(BarState.Off)
+                .edgeEffect(EdgeEffect.None)
+                .accessibilityText(`${this.field.label}详情，可左右滑动查看`)
         }
-        .alignItems(VerticalAlign.Top)
+        .alignItems(VerticalAlign.Center)
         .padding({ left: 10, right: 10, top: 7, bottom: 7 })
         .width('100%')
+        .height(36)
         .borderRadius(14)
         .backgroundColor($r('app.color.v3_surface_alt'))
         .border({ width: 1, color: $r('app.color.v3_chart_grid') })
@@ -107,6 +120,7 @@ struct ScreenshotCarousel {
     private autoPlayTimer: number = -1;
     private switching: boolean = false;
     private active: boolean = false;
+    private settledScreenshotKeys: string[] = [];
 
     private onScreenshotsChanged(): void {
         if (this.currentIndex >= this.screenshots.length) {
@@ -138,21 +152,61 @@ struct ScreenshotCarousel {
         return width > height;
     }
 
-    private previousIndex(): number {
-        return (this.currentIndex - 1 + this.screenshots.length) % this.screenshots.length;
+    private relativePosition(index: number): number {
+        const count = this.screenshots.length;
+        if (count <= 1 || index === this.currentIndex) {
+            return 0;
+        }
+        const forward = (index - this.currentIndex + count) % count;
+        if (forward === 1) {
+            return 1;
+        }
+        if (forward === count - 1) {
+            return -1;
+        }
+        return 2;
     }
 
-    private nextIndex(): number {
-        return (this.currentIndex + 1) % this.screenshots.length;
+    private cardPosition(index: number, leftCopy: boolean): number {
+        if (leftCopy && this.screenshots.length === 2) {
+            return index === this.currentIndex ? 2 : -1;
+        }
+        return this.relativePosition(index);
     }
 
     private revealProgress(): number {
         return Math.min(1, Math.abs(this.dragOffset) / Math.max(1, this.frameWidth));
     }
 
+    private screenshotKey(shot: ScreenshotInfo, index: number): string {
+        return `${shot.url}-${index}`;
+    }
+
+    private markScreenshotSettled(shot: ScreenshotInfo, index: number): void {
+        const key = this.screenshotKey(shot, index);
+        if (!this.settledScreenshotKeys.includes(key)) {
+            this.settledScreenshotKeys.push(key);
+        }
+        if (this.allScreenshotsSettled()) {
+            this.restartAutoPlay();
+        }
+    }
+
+    private allScreenshotsSettled(): boolean {
+        for (let index = 0; index < this.screenshots.length; index++) {
+            if (!this.settledScreenshotKeys.includes(this.screenshotKey(this.screenshots[index], index))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private cardScale(position: number): number {
         if (position === 0) {
             return 1;
+        }
+        if (Math.abs(position) > 1) {
+            return 0.9;
         }
         const revealing = (this.dragOffset < 0 && position === 1) || (this.dragOffset > 0 && position === -1);
         return revealing ? 0.9 + this.revealProgress() * 0.1 : 0.9;
@@ -161,6 +215,9 @@ struct ScreenshotCarousel {
     private cardTranslateX(position: number): number {
         if (position === 0) {
             return this.dragOffset;
+        }
+        if (Math.abs(position) > 1) {
+            return this.frameWidth * 2;
         }
         const sideOffset = this.frameWidth * (this.isLandscape() ? 0.12 : 0.32);
         if ((this.dragOffset < 0 && position === 1) || (this.dragOffset > 0 && position === -1)) {
@@ -173,6 +230,9 @@ struct ScreenshotCarousel {
         if (position === 0) {
             return 1;
         }
+        if (Math.abs(position) > 1) {
+            return 0;
+        }
         const revealing = (this.dragOffset < 0 && position === 1) || (this.dragOffset > 0 && position === -1);
         return revealing ? 0.68 + this.revealProgress() * 0.32 : 0.68;
     }
@@ -180,6 +240,9 @@ struct ScreenshotCarousel {
     private cardZIndex(position: number): number {
         if (position === 0) {
             return 3;
+        }
+        if (Math.abs(position) > 1) {
+            return 0;
         }
         const revealing = (this.dragOffset < 0 && position === 1) || (this.dragOffset > 0 && position === -1);
         return revealing ? 2 : 1;
@@ -194,7 +257,7 @@ struct ScreenshotCarousel {
 
     private restartAutoPlay(): void {
         this.stopAutoPlay();
-        if (!this.active || this.screenshots.length <= 1) {
+        if (!this.active || this.screenshots.length <= 1 || !this.allScreenshotsSettled()) {
             return;
         }
         this.autoPlayTimer = setInterval((): void => this.completeSwitch(1), 2500);
@@ -259,7 +322,7 @@ struct ScreenshotCarousel {
     }
 
     @Builder
-    private screenshotCard(shot: ScreenshotInfo, index: number, position: number): void {
+    private screenshotCard(shot: ScreenshotInfo, index: number, leftCopy: boolean = false): void {
         Image(shot.url)
             .width(this.isLandscape() ? '88%' : (this.compact ? '91%' : '52%'))
             .aspectRatio(this.isLandscape() ? 16 / 9 : 9 / 16)
@@ -269,21 +332,29 @@ struct ScreenshotCarousel {
             .backgroundColor($r('app.color.v3_surface_alt'))
             .border({ width: 1, color: $r('app.color.nd_card_border') })
             .alt($r('app.media.startIcon'))
-            .translate({ x: this.cardTranslateX(position) })
-            .scale({ x: this.cardScale(position), y: this.cardScale(position) })
-            .opacity(this.cardOpacity(position))
-            .zIndex(this.cardZIndex(position))
+            .onComplete((): void => this.markScreenshotSettled(shot, index))
+            .onError((): void => this.markScreenshotSettled(shot, index))
+            .translate({ x: this.cardTranslateX(this.cardPosition(index, leftCopy)) })
+            .scale({
+                x: this.cardScale(this.cardPosition(index, leftCopy)),
+                y: this.cardScale(this.cardPosition(index, leftCopy)),
+            })
+            .opacity(this.cardOpacity(this.cardPosition(index, leftCopy)))
+            .zIndex(this.cardZIndex(this.cardPosition(index, leftCopy)))
             .accessibilityText(`第${index + 1}张应用截图`)
     }
 
     build() {
         Column({ space: 12 }) {
             Stack({ alignContent: Alignment.Center }) {
-                if (this.screenshots.length > 1) {
-                    this.screenshotCard(this.screenshots[this.previousIndex()], this.previousIndex(), -1)
-                    this.screenshotCard(this.screenshots[this.nextIndex()], this.nextIndex(), 1)
+                ForEach(this.screenshots, (shot: ScreenshotInfo, index: number) => {
+                    this.screenshotCard(shot, index)
+                }, (shot: ScreenshotInfo, index: number) => this.screenshotKey(shot, index))
+                if (this.screenshots.length === 2) {
+                    ForEach(this.screenshots, (shot: ScreenshotInfo, index: number) => {
+                        this.screenshotCard(shot, index, true)
+                    }, (shot: ScreenshotInfo, index: number) => `${this.screenshotKey(shot, index)}-left-copy`)
                 }
-                this.screenshotCard(this.screenshots[this.currentIndex], this.currentIndex, 0)
             }
             .width('100%')
             .constraintSize({ maxWidth: 760 })
