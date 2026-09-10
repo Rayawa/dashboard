@@ -31,6 +31,7 @@ import {
   OpenStoreURL,
   PAPER_TALK_URL,
   PROJECT_HOME_URL,
+  ROUTE_APP_DETAIL,
   ROUTE_WEB_PAGE,
   SBaseURL,
   SUBSCRIPTION_ATOMIC_URL,
@@ -44,6 +45,7 @@ import { showToastSafely } from '../../common/safeUi';
 import { cancelStaggerEnterAnimation, pageTransition, startStaggerEnterAnimation } from '../../common/motion';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { WebPageParams } from './WebPage';
+import { AppRouteTarget } from '../../common/types';
 import { scrollByAxis } from '../../common/scroll';
 import {
   HDS_MATERIAL_LEVEL_GENTLE,
@@ -57,6 +59,7 @@ interface LinkConfig {
   url: string;
   title: string;
   opensExternal: boolean;
+  detailPackageName?: string;
   roundedIcon?: boolean;
 }
 
@@ -112,11 +115,15 @@ struct FriendLinksPage {
       roundedIcon: true },
   ];
   @State private friendApps: LinkConfig[] = [
-    { icon: $r('app.media.jide'), url: GETRACE_URL.toString(), title: '迹得', opensExternal: true },
-    { icon: $r('app.media.subscription'), url: SUBSCRIPTION_URL.toString(), title: '记得订阅', opensExternal: true },
+    { icon: $r('app.media.jide'), url: GETRACE_URL.toString(), title: '迹得', opensExternal: false,
+      detailPackageName: 'cn.biandangroup.getrace' },
+    { icon: $r('app.media.subscription'), url: SUBSCRIPTION_URL.toString(), title: '记得订阅', opensExternal: false,
+      detailPackageName: 'com.xxtstudio.accountDL' },
     { icon: $r('app.media.subscriptionAtomic'), url: SUBSCRIPTION_ATOMIC_URL.toString(),
-      title: '记得订阅（元服务）', opensExternal: true },
-    { icon: $r('app.media.zhiyu'), url: PAPER_TALK_URL.toString(), title: '纸语', opensExternal: true },
+      title: '记得订阅（元服务）', opensExternal: false,
+      detailPackageName: 'com.atomicservice.6917600885144283966' },
+    { icon: $r('app.media.zhiyu'), url: PAPER_TALK_URL.toString(), title: '纸语', opensExternal: false,
+      detailPackageName: 'com.my.papertalk' },
   ];
   @State private friendSites: LinkConfig[] = [
     { icon: $r('app.media.HapStore'), url: HapStoreURL.toString(), title: 'Hap资源站', opensExternal: false },
@@ -179,6 +186,12 @@ struct FriendLinksPage {
         this.rightSuffix()
       }),
       onClick: () => {
+        if (site.detailPackageName) {
+          if (this.vibrationLevel > 0) vibration.dotVibration();
+          const target: AppRouteTarget = { packageName: site.detailPackageName };
+          pushPathSafely(this.pageStack, ROUTE_APP_DETAIL, target, 'pages/more/FriendLinksPage');
+          return;
+        }
         if (site.opensExternal) {
           this.openExternal(site);
           return;
@@ -198,7 +211,8 @@ struct FriendLinksPage {
       cardPrefixMargin: LIST_ITEM_PREFIX_MARGIN,
       cardSuffixMargin: LIST_ITEM_SUFFIX_MARGIN,
       accessibilityOptions: {
-        accessibilityText: site.opensExternal ? `直接打开外部链接${site.title}` : `预览${site.title}`,
+        accessibilityText: site.detailPackageName ? `查看${site.title}应用详情` :
+          (site.opensExternal ? `直接打开外部链接${site.title}` : `预览${site.title}`),
       },
     })
   }

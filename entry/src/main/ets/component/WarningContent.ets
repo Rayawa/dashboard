@@ -113,7 +113,7 @@ export struct WarningContent {
   private limitationCard(): void {
     Column({ space: 9 }) {
       this.noticeSection('收录范围',
-        '仅收录已正式上架华为应用市场、且支持 HarmonyOS NEXT 及后续版本的应用；不包含侧载应用、公开测试应用或邀请测试应用。')
+        '应用仅收录已正式上架HarmonyOS NEXT及后续版本华为应用市场的应用；不包含侧载应用、公开测试应用或邀请测试应用。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
       this.noticeSection('更新延迟', '数据存在滞后性，同步质量受限于用户网络稳定性，项目组不保证信息的即时性。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
