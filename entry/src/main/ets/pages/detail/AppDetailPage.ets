@@ -55,6 +55,9 @@ import type {
 } from '../../common/types';
 import { InteractiveLineChart } from '../../component/charts/InteractiveLineChart';
 import type { LineChartPoint } from '../../component/charts/InteractiveLineChart';
+import { downsampleLinePoints, filterDownloadOutliers } from '../../component/charts/chartDataProcessing';
+
+const DETAIL_CHART_MAX_POINTS: number = 360;
 
 interface DetailField {
     label: string;
@@ -436,8 +439,8 @@ export struct AppDetailPage {
     private readonly shareOwnerId: number = WebShareManager.createOwnerId();
     private target: AppRouteTarget = {};
     @State private app: MarketApp | undefined = undefined;
-    @State private metrics: AppMetric[] = [];
-    @State private ratingHistory: AppRatingHistory[] = [];
+    @State private downloadChartPoints: LineChartPoint[] = [];
+    @State private ratingChartPoints: LineChartPoint[] = [];
     @State private loading: boolean = true;
     @State private refreshing: boolean = false;
     @State private fromCache: boolean = false;
@@ -662,12 +665,12 @@ export struct AppDetailPage {
             if (this.app.pkg_name) {
                 fetchAppMetrics(this.app.pkg_name, force).then((metricResult) => {
                     if (this.active && version === this.requestVersion && metricResult.data.success) {
-                        this.metrics = metricResult.data.data ?? [];
+                        this.downloadChartPoints = this.prepareDownloadPoints(metricResult.data.data ?? []);
                     }
                 }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `指标加载失败: ${error.message}`));
                 fetchAppRatingHistory(this.app.pkg_name, force).then((ratingResult) => {
                     if (this.active && version === this.requestVersion && ratingResult.data.success) {
-                        this.ratingHistory = ratingResult.data.data ?? [];
+                        this.ratingChartPoints = this.prepareRatingPoints(ratingResult.data.data ?? []);
                     }
                 }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `评分趋势加载失败: ${error.message}`));
             }
@@ -733,17 +736,25 @@ export struct AppDetailPage {
         } as ScreenshotInfo));
     }
 
-    private downloadPoints(): LineChartPoint[] {
-        return this.metrics.slice().sort((left: AppMetric, right: AppMetric) =>
-            new Date(left.created_at).getTime() - new Date(right.created_at).getTime()).map((metric: AppMetric) => ({
+    private prepareDownloadPoints(metrics: AppMetric[]): LineChartPoint[] {
+        const points = metrics.filter((metric: AppMetric): boolean =>
+            Number.isFinite(new Date(metric.created_at).getTime()) &&
+            Number.isFinite(Number(metric.download_count)) && Number(metric.download_count) >= 0)
+            .sort((left: AppMetric, right: AppMetric) =>
+                new Date(left.created_at).getTime() - new Date(right.created_at).getTime())
+            .map((metric: AppMetric) => ({
                 label: formatDateTime(metric.created_at).split(' ')[0],
                 value: Number(metric.download_count ?? 0),
                 detail: `${formatDateTime(metric.created_at)} · 下载量 ${formatDownloadCount(metric.download_count)} · 版本 ${metric.version || '-'}`,
             } as LineChartPoint));
+        return downsampleLinePoints(filterDownloadOutliers(points), DETAIL_CHART_MAX_POINTS);
     }
 
-    private ratingPoints(): LineChartPoint[] {
-        return this.ratingHistory.slice().sort((left: AppRatingHistory, right: AppRatingHistory) =>
+    private prepareRatingPoints(ratingHistory: AppRatingHistory[]): LineChartPoint[] {
+        const points = ratingHistory.filter((rating: AppRatingHistory): boolean => {
+            const value = Number(rating.cumulative_avg_rating_high_prec ?? rating.cumulative_avg_rating_origin ?? 0);
+            return Number.isFinite(new Date(rating.report_date).getTime()) && Number.isFinite(value) && value >= 0 && value <= 5;
+        }).sort((left: AppRatingHistory, right: AppRatingHistory) =>
             new Date(left.report_date).getTime() - new Date(right.report_date).getTime()).map((rating: AppRatingHistory) => {
                 const value = Number(rating.cumulative_avg_rating_high_prec ?? rating.cumulative_avg_rating_origin ?? 0);
                 return {
@@ -752,6 +763,7 @@ export struct AppDetailPage {
                     detail: `${rating.report_date} · 平均评分 ${value.toFixed(2)} · 累计 ${formatCount(rating.cumulative_total_count)} 条评分`,
                 } as LineChartPoint;
             });
+        return downsampleLinePoints(points, DETAIL_CHART_MAX_POINTS);
     }
 
     private async openExternal(uri: string, failureMessage: string): Promise<void> {
@@ -814,7 +826,7 @@ export struct AppDetailPage {
 
     @Builder
     private appActions(): void {
-        Flex({ wrap: FlexWrap.Wrap }) {
+        Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
             Button('在华为应用市场打开', { stateEffect: false })
                 .margin(4)
                 .backgroundColor($r('app.color.diff_content'))
@@ -870,6 +882,9 @@ export struct AppDetailPage {
     @Builder
     private appInformation(): void {
         Column({ space: 12 }) {
+            if (this.contentWidth < 840) {
+                this.appActions()
+            }
             GridRow({
                 columns: { xs: 1, sm: 2, md: 2 },
                 gutter: { x: 8, y: 8 },
@@ -889,7 +904,9 @@ export struct AppDetailPage {
             .border({ width: 1, color: $r('app.color.nd_card_border') })
             .accessibilityText('以标签形式展示的应用详细字段')
 
-            this.appActions()
+            if (this.contentWidth >= 840) {
+                this.appActions()
+            }
         }
         .width('100%')
         .opacity(this.animStep >= this.requiredStep('information') ? 1 : 0)
@@ -967,7 +984,7 @@ export struct AppDetailPage {
         InteractiveLineChart({
             title: '下载量趋势',
             unit: '次',
-            points: this.downloadPoints(),
+            points: this.downloadChartPoints,
             lineColor: $r('app.color.diff_content'),
             enablePressEffect: false,
             viewport: this.downloadChartViewport,
@@ -982,7 +999,7 @@ export struct AppDetailPage {
         InteractiveLineChart({
             title: '评分趋势',
             unit: '分',
-            points: this.ratingPoints(),
+            points: this.ratingChartPoints,
             lineColor: $r('app.color.v3_accent_orange'),
             enablePressEffect: false,
             viewport: this.ratingChartViewport,

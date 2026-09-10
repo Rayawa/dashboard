@@ -150,6 +150,11 @@ export struct InteractiveLineChart {
             return;
         }
         this.animatedDataSignature = signature;
+        if (this.pointCount() > 180) {
+            this.drawProgress = 1;
+            this.draw();
+            return;
+        }
         const token = ++this.animationToken;
         const startedAt = Date.now();
         this.drawProgress = 0;
@@ -383,6 +388,8 @@ export struct InteractiveLineChart {
             const color = this.resolveColor(chartSeries.color);
             const firstX = this.pointX(0);
             const lastX = this.pointX(chartSeries.points.length - 1);
+            const pointSpacing = Math.abs(this.pointX(Math.min(1, chartSeries.points.length - 1)) - firstX);
+            const drawPointMarkers = pointSpacing >= 6;
             const gradient = this.context.createLinearGradient(0, top, 0, baseline);
             gradient.addColorStop(0, this.rgba(color, source.length > 1 ? 0.16 : 0.34));
             gradient.addColorStop(1, this.rgba(color, 0));
@@ -401,6 +408,7 @@ export struct InteractiveLineChart {
             this.traceSmoothLine(chartSeries.points, top, drawHeight, maximum);
             this.context.stroke();
             for (let index = 0; index < chartSeries.points.length; index++) {
+                if (!drawPointMarkers && index !== this.selected) continue;
                 const x = this.pointX(index);
                 if (x < left - 6 || x > left + drawWidth + 6) continue;
                 const y = this.pointY(chartSeries.points, index, top, drawHeight, maximum);
