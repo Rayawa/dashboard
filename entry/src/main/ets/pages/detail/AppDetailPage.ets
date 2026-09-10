@@ -2,11 +2,9 @@ import { common, Want } from '@kit.AbilityKit';
 import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
 import {
     hdsEffect,
-    hdsMaterial,
     HdsNavDestination,
     HdsNavDestinationTitleMode,
     ScrollEffectType,
-    TitleSize,
 } from '@kit.UIDesignKit';
 import {
     BACKGROUND_REFRESH_DELAY_MS,
@@ -38,6 +36,12 @@ import {
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
+import {
+    HDS_MATERIAL_LEVEL_GENTLE,
+    HDS_MATERIAL_TYPE_IMMERSIVE,
+    HDS_TITLE_SIZE_SMALL,
+    SUPPORTS_HARMONY_API_23,
+} from '../../common/platformCompatibility';
 import type {
     ApiDataResult,
     AppDetailPayload,
@@ -445,8 +449,7 @@ export struct AppDetailPage {
     @State private ratingChartViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
     @State private pressedAction: string = '';
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
-    @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-        hdsMaterial.MaterialLevel.GENTLE;
+    @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
     private active: boolean = false;
     private requestVersion: number = 0;
     private initialLoadTimer: number = -1;
@@ -1056,6 +1059,7 @@ export struct AppDetailPage {
                     .width('100%')
                     .height('100%')
                     .scrollBar(BarState.Off)
+                    .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true, effectEdge: EffectEdge.END })
                     .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.leftScroller, event))
                     .accessibilityText('可独立滚动的应用信息栏')
                 }
@@ -1085,6 +1089,7 @@ export struct AppDetailPage {
                     .width('100%')
                     .height('100%')
                     .scrollBar(BarState.Off)
+                    .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true, effectEdge: EffectEdge.END })
                     .onDidScroll((): void => this.saveScrollPosition(this.rightScroller))
                     .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.rightScroller, event))
                     .accessibilityText('可独立滚动的应用介绍、截图和趋势图表栏')
@@ -1198,6 +1203,7 @@ export struct AppDetailPage {
               .width('100%')
               .height('100%')
               .scrollBar(BarState.Off)
+              .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true, effectEdge: EffectEdge.END })
               .onDidScroll((): void => this.saveScrollPosition(this.scroller))
               .backgroundColor($r('app.color.background'))
               .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
@@ -1256,15 +1262,15 @@ export struct AppDetailPage {
                         },
                     },
                 },
-                systemMaterialEffect: {
-                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
+                    materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
                     materialLevel: this.immersiveMaterialLevel,
-                },
+                } : undefined,
             },
             content: {
                 title: {
                     mainTitle: this.app?.name || '应用详情',
-                    mainTitleSize: TitleSize.TITLE_S,
+                    mainTitleSize: SUPPORTS_HARMONY_API_23 ? HDS_TITLE_SIZE_SMALL : undefined,
                 },
                 menu: {
                     value: [

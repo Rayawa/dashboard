@@ -4,15 +4,19 @@ import {
     HdsNavDestination,
     HdsNavDestinationTitleMode,
     ScrollEffectType,
-    TitleSize,
 } from '@kit.UIDesignKit';
-import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { vibration } from '../../common/vibration';
 import { popPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
 import { cancelStaggerEnterAnimation, pageTransition, startStaggerEnterAnimation } from '../../common/motion';
 import { scrollByAxis } from '../../common/scroll';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
+import {
+    HDS_MATERIAL_LEVEL_GENTLE,
+    HDS_MATERIAL_TYPE_IMMERSIVE,
+    HDS_TITLE_SIZE_SMALL,
+    SUPPORTS_HARMONY_API_23,
+} from '../../common/platformCompatibility';
 
 interface UpdateLog {
     version: string;
@@ -100,15 +104,26 @@ struct AppLogPage {
     @Consume('pageStack') pageStack: NavPathStack;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink('vibrationLevel') vibrationLevel: number = 1;
-    @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-        hdsMaterial.MaterialLevel.GENTLE;
+    @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
     @State private animStep: number = 0;
     private scroller: Scroller = new Scroller();
     private enterAnimationTimers: number[] = [];
     private updateLogs: UpdateLog[] = [
         {
+            version: "V3.0.1",
+            date: "2026-9-16",
+            type: "release",
+            isRelease: true,
+            items: [
+                "将应用最小兼容从API23版本向下兼容至API20",
+                "为搜索页面增加了下拉关闭的功能",
+                "修复了图表图例的渲染问题",
+                "修复了上版本部分页面没有顶部与底部回弹的问题",
+            ],
+        },
+        {
             version: "V3.0.0",
-            date: "2026-8-31",
+            date: "2026-9-9",
             type: "release",
             isRelease: true,
             items: [
@@ -400,7 +415,7 @@ struct AppLogPage {
     }
 
     toggleFilter(type: "beta" | "rc" | "release"): void {
-                if(this.vibrationLevel > 0) vibration.dotVibration()
+        if(this.vibrationLevel > 0) vibration.dotVibration()
         switch (type) {
             case "beta":
                 this.showBeta = !this.showBeta;
@@ -453,6 +468,7 @@ struct AppLogPage {
             .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
             .width("100%")
             .height("100%")
+            .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
             .backgroundColor($r("app.color.backcolor"))
             .accessibilityText('可滚动的应用更新日志')
             .onAppear((): void => this.startPageAnimation())
@@ -511,15 +527,15 @@ struct AppLogPage {
                         },
                     },
                 },
-                systemMaterialEffect: {
-                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
+                    materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
                     materialLevel: this.immersiveMaterialLevel
-                }
+                } : undefined
             },
             content: {
                 title: {
                     mainTitle: "App更新日志",
-                    mainTitleSize: TitleSize.TITLE_S,
+                    mainTitleSize: SUPPORTS_HARMONY_API_23 ? HDS_TITLE_SIZE_SMALL : undefined,
                 },
                 menu: {
                     value: [

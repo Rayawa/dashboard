@@ -5,11 +5,10 @@ import {
   HdsTabs,
   HdsTabsController,
   ScrollEffectType,
-  TitleSize,
 } from '@kit.UIDesignKit';
 import { curves, LengthMetrics, PromptAction, SegmentButtonV2Items } from '@kit.ArkUI';
+import { deviceInfo } from '@kit.BasicServicesKit';
 import { http } from '@kit.NetworkKit';
-import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { getFirstLaunch } from '../common/storage';
 import {
   consumeMainTab, getContinuationState, peekDetailTarget, setAppsViewIndex, setContinuationView, setMainTab,
@@ -51,6 +50,12 @@ import { WarningContent } from '../component/WarningContent';
 import { vibration } from '../common/vibration';
 import { pushPathSafely } from '../common/safeNavigation';
 import { showToastSafely } from '../common/safeUi';
+import {
+  HDS_MATERIAL_LEVEL_GENTLE,
+  HDS_MATERIAL_TYPE_IMMERSIVE,
+  HDS_TITLE_SIZE_SMALL,
+  SUPPORTS_HARMONY_API_23,
+} from '../common/platformCompatibility';
 import { HomePage } from './main/HomePage';
 import { AppsPage } from './main/AppsPage';
 import { MyPage } from './main/MyPage';
@@ -148,8 +153,7 @@ struct Dashboard {
     private sStationNodeController: SStationPreloadNodeController = new SStationPreloadNodeController();
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
-    @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-        hdsMaterial.MaterialLevel.GENTLE;
+    @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
     @State private selectedIndex: number = MAIN_TAB_DEFAULT;
     @State private searchRequestVersion: number = 0;
     @State private showWarning: boolean = false;
@@ -399,93 +403,123 @@ struct Dashboard {
         WarningContent({ isShow: this.showWarning, requiresConfirmation: this.warningRequiresConfirmation })
     }
 
+    @Builder
+    private mainTabContents(): void {
+        TabContent() {
+            NodeContainer(this.sStationNodeController)
+                .width('100%')
+                .height('100%')
+        }
+        .tabBar(new BottomTabBarStyle(this.mainTabs[0].icon, this.mainTabs[0].label))
+        .opacity(this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.92)
+        .scale({ x: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985,
+            y: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985 })
+        .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
+        .accessibilityText('S站标签页')
+
+        TabContent() {
+            HomePage({
+                active: this.selectedIndex === MAIN_TAB_HOME,
+                scrollToTopVersion: this.mainActionIndex === MAIN_TAB_HOME ? this.mainActionVersion : 0,
+                onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
+            })
+        }
+        .tabBar(new BottomTabBarStyle(this.mainTabs[1].icon, this.mainTabs[1].label))
+        .accessibilityText('首页标签页')
+
+        TabContent() {
+            AppsPage({
+                active: this.selectedIndex === MAIN_TAB_APPS,
+                selectedIndexes: $appsViewIndexes,
+                scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
+                requestVersion: this.searchRequestVersion,
+                searchCommandVersion: this.appsSearchCommandVersion,
+                searchCloseVersion: this.appsSearchCloseVersion,
+                onSearchOpenChanged: (open: boolean): void => {
+                    this.appsSearchOpen = open;
+                },
+                onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
+            })
+        }
+        .tabBar(new BottomTabBarStyle(this.mainTabs[2].icon, this.mainTabs[2].label))
+        .accessibilityText('详情标签页')
+
+        TabContent() {
+            MyPage({
+                active: this.selectedIndex === MAIN_TAB_MY,
+                scrollToTopVersion: this.mainActionIndex === MAIN_TAB_MY ? this.mainActionVersion : 0,
+                onShowWarning: (): void => {
+                    this.warningRequiresConfirmation = false;
+                    this.showWarning = true;
+                },
+            })
+        }
+        .tabBar(new BottomTabBarStyle(this.mainTabs[3].icon, this.mainTabs[3].label))
+        .accessibilityText('我的标签页')
+    }
+
+    private onMainTabChanged(index: number): void {
+        this.selectedIndex = index;
+        this.updateSStationNode();
+        setMainTab(index);
+        const continuation = getContinuationState();
+        if (continuation.routeName !== CONTINUATION_ROUTE_DETAIL) {
+            setContinuationView(index, 0);
+        }
+        if (this.vibrationLevel > 0) {
+            vibration.dotVibration();
+        }
+    }
+
+    @Builder
+    private mainTabsView(): void {
+        // distributionOSApiVersion 6.1.0 对应 HarmonyOS API 23。
+        if (deviceInfo.distributionOSApiVersion >= 60100) {
+            HdsTabs({ controller: this.tabsController, index: this.selectedIndex }) {
+                this.mainTabContents()
+            }
+            .barPosition(BarPosition.End)
+            .barWidth(250)
+            // API 23+ 缓存最近切换页面，并使用系统浮动材质底栏。
+            .cachedMaxCount(4, TabsCacheMode.CACHE_LATEST_SWITCHED)
+            .scrollable(false)
+            .vertical(false)
+            .barOverlap(true)
+            .blurStrategy(BlurStrategy.ENABLE)
+            .barFloatingStyle({
+                barBottomMargin: 28,
+                lightColor: $r('app.color.diff_content'),
+                gradientMask: { maskColor: Color.Transparent, maskHeight: 92 },
+                systemMaterialEffect: {
+                    materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
+                    materialLevel: this.immersiveMaterialLevel,
+                },
+            })
+            .onTabBarClick((index: number) => this.handleTabBarClick(index))
+            .onChange((index: number) => this.onMainTabChanged(index))
+            .accessibilityText('主界面四个标签页，依次为S站、首页、详情和我的')
+        } else {
+            HdsTabs({ controller: this.tabsController, index: this.selectedIndex }) {
+                this.mainTabContents()
+            }
+            .barPosition(BarPosition.End)
+            .barWidth(250)
+            .scrollable(false)
+            .vertical(false)
+            .barOverlap(true)
+            .blurStrategy(BlurStrategy.ENABLE)
+            .barBackgroundColor($r('app.color.v3_surface'))
+            .barBackgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THICK)
+            .onTabBarClick((index: number) => this.handleTabBarClick(index))
+            .onChange((index: number) => this.onMainTabChanged(index))
+            .accessibilityText('主界面四个标签页，依次为S站、首页、详情和我的')
+        }
+    }
+
     build() {
         HdsNavigation(this.pageStack) {
             Stack() {
-                HdsTabs({ controller: this.tabsController, index: this.selectedIndex }) {
-                    TabContent() {
-                        NodeContainer(this.sStationNodeController)
-                            .width('100%')
-                            .height('100%')
-                    }
-                    .tabBar(new BottomTabBarStyle(this.mainTabs[0].icon, this.mainTabs[0].label))
-                    .opacity(this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.92)
-                    .scale({ x: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985,
-                        y: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985 })
-                    .animation({ curve: curves.springMotion(0.62, 0.88), duration: 260 })
-                    .accessibilityText('S站标签页')
-
-                    TabContent() {
-                        HomePage({
-                            active: this.selectedIndex === MAIN_TAB_HOME,
-                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_HOME ? this.mainActionVersion : 0,
-                            onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
-                        })
-                    }
-                    .tabBar(new BottomTabBarStyle(this.mainTabs[1].icon, this.mainTabs[1].label))
-                    .accessibilityText('首页标签页')
-
-                    TabContent() {
-                        AppsPage({
-                            active: this.selectedIndex === MAIN_TAB_APPS,
-                            selectedIndexes: $appsViewIndexes,
-                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
-                            requestVersion: this.searchRequestVersion,
-                            searchCommandVersion: this.appsSearchCommandVersion,
-                            searchCloseVersion: this.appsSearchCloseVersion,
-                            onSearchOpenChanged: (open: boolean): void => {
-                                this.appsSearchOpen = open;
-                            },
-                            onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
-                        })
-                    }
-                    .tabBar(new BottomTabBarStyle(this.mainTabs[2].icon, this.mainTabs[2].label))
-                    .accessibilityText('详情标签页')
-
-                    TabContent() {
-                        MyPage({
-                            active: this.selectedIndex === MAIN_TAB_MY,
-                            scrollToTopVersion: this.mainActionIndex === MAIN_TAB_MY ? this.mainActionVersion : 0,
-                            onShowWarning: (): void => {
-                                this.warningRequiresConfirmation = false;
-                                this.showWarning = true;
-                            },
-                        })
-                    }
-                    .tabBar(new BottomTabBarStyle(this.mainTabs[3].icon, this.mainTabs[3].label))
-                    .accessibilityText('我的标签页')
-                }
-                .barPosition(BarPosition.End)
-                .barWidth(250)
-                // S站由离线节点独立预加载；Tabs 缓存负责保留已切换的其余主页面。
-                .cachedMaxCount(4, TabsCacheMode.CACHE_LATEST_SWITCHED)
-                .scrollable(false)
-                .vertical(false)
-                .barOverlap(true)
-                .blurStrategy(BlurStrategy.ENABLE)
-                .barFloatingStyle({
-                    barBottomMargin: 28,
-                    lightColor: $r('app.color.diff_content'),
-                    gradientMask: { maskColor: Color.Transparent, maskHeight: 92 },
-                    systemMaterialEffect: {
-                        materialType: hdsMaterial.MaterialType.IMMERSIVE,
-                        materialLevel: this.immersiveMaterialLevel,
-                    },
-                })
-                .onTabBarClick((index: number) => this.handleTabBarClick(index))
-                .onChange((index: number) => {
-                    this.selectedIndex = index;
-                    this.updateSStationNode();
-                    setMainTab(index);
-                    const continuation = getContinuationState();
-                    if (continuation.routeName !== CONTINUATION_ROUTE_DETAIL) {
-                        setContinuationView(index, 0);
-                    }
-                    if (this.vibrationLevel > 0) {
-                        vibration.dotVibration();
-                    }
-                })
-                .accessibilityText('主界面四个标签页，依次为S站、首页、详情和我的')
+                this.mainTabsView()
 
             }
             .width('100%')
@@ -505,7 +539,6 @@ struct Dashboard {
         .titleMode(HdsNavigationTitleMode.MINI)
         .hideBackButton(true)
         .hideTitleBar(this.appsSearchOpen)
-        .divider({ color: $r('app.color.border') })
         .titleBar({
             style: {
                 scrollEffectOpts: {
@@ -542,15 +575,15 @@ struct Dashboard {
                         },
                     },
                 },
-                systemMaterialEffect: {
-                    materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
+                    materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
                     materialLevel: this.immersiveMaterialLevel,
-                },
+                } : undefined,
             },
             content: {
                 title: {
                     mainTitle: this.mainTitle(),
-                    mainTitleSize: TitleSize.TITLE_S,
+                    mainTitleSize: SUPPORTS_HARMONY_API_23 ? HDS_TITLE_SIZE_SMALL : undefined,
                 },
                 menu: {
                     value: this.titleMenuItems(),
