@@ -7,8 +7,7 @@ import {
   PrefixCustomBuilder,
   PrefixIcon,
   ScrollEffectType,
-  SuffixCustomBuilder,
-  TitleSize
+  SuffixCustomBuilder
 } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
 import { curves, LengthMetrics, PromptAction, TextModifier } from '@kit.ArkUI';
@@ -39,7 +38,6 @@ import {
   T_DASHBOARD_URL,
   WEB_PAGE_FRIEND_LINK_TOP_INSET,
 } from '../../common/constants';
-import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { common, Want } from '@kit.AbilityKit';
 import { popPathSafely, pushPathSafely } from '../../common/safeNavigation';
 import { showToastSafely } from '../../common/safeUi';
@@ -47,6 +45,12 @@ import { cancelStaggerEnterAnimation, pageTransition, startStaggerEnterAnimation
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { WebPageParams } from './WebPage';
 import { scrollByAxis } from '../../common/scroll';
+import {
+  HDS_MATERIAL_LEVEL_GENTLE,
+  HDS_MATERIAL_TYPE_IMMERSIVE,
+  HDS_TITLE_SIZE_SMALL,
+  SUPPORTS_HARMONY_API_23,
+} from '../../common/platformCompatibility';
 
 interface LinkConfig {
   icon: Resource;
@@ -61,8 +65,7 @@ struct FriendLinksPage {
   @Consume('pageStack') pageStack: NavPathStack;
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
-  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.GENTLE;
+  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
   private isExiting: boolean = false;
   @State private warningPressed: boolean = false;
   @State private animStep: number = 0;
@@ -328,6 +331,7 @@ struct FriendLinksPage {
       }
       .height("100%")
       .width("100%")
+      .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
       .backgroundColor($r("app.color.background"))
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       .onAppear((): void => this.startPageAnimation())
@@ -369,13 +373,16 @@ struct FriendLinksPage {
             backIconStyle: { backgroundColor: $r("sys.color.comp_background_tertiary"), iconColor: $r("sys.color.icon_primary") },
           },
         },
-        systemMaterialEffect: {
-          materialType: hdsMaterial.MaterialType.IMMERSIVE,
+        systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
+          materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
           materialLevel: this.immersiveMaterialLevel
-        }
+        } : undefined
       },
       content: {
-        title: { mainTitle: "友情链接", mainTitleSize: TitleSize.TITLE_S },
+        title: {
+          mainTitle: "友情链接",
+          mainTitleSize: SUPPORTS_HARMONY_API_23 ? HDS_TITLE_SIZE_SMALL : undefined,
+        },
         backIcon: {
           action: () => {
             if (this.isExiting) return;

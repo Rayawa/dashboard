@@ -5,7 +5,7 @@
 Dashboard is the native HarmonyOS client for `harmony_get_market`. It loads market data from the back end's `/api/v0` endpoints while retaining the ArkWeb entry to the S Site.
 
 - Bundle name: `top.rayawa.dashboard`
-- Version: `3.0.0`
+- Version: `3.0.1`
 - Build number: `30000005`
 - Target and compatible version: HarmonyOS `6.1.0(23)` (API 23)
 - Devices: phone, tablet, and 2in1

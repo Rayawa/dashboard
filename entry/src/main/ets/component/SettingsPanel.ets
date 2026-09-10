@@ -7,6 +7,7 @@ import { isHdrLightFieldSupported } from '../common/visualEffects';
 import { clearCompleteCache, getCacheSizeBytes } from '../common/CacheService';
 import { formatBytes } from '../common/format';
 import { showToastSafely } from '../common/safeUi';
+import { SUPPORTS_HARMONY_API_23 } from '../common/platformCompatibility';
 import {
     HdsListItemCard, IconSize, PrefixIcon
 } from '@kit.UIDesignKit';
@@ -271,15 +272,17 @@ export struct SettingsPanel {
 
             // this.lightFieldLevelItem()
 
-            Divider()
-                .color($r('app.color.border'))
-                .strokeWidth(0.5)
-                .margin({
-                    left: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
-                    right: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
-                })
+            if (SUPPORTS_HARMONY_API_23) {
+                Divider()
+                    .color($r('app.color.border'))
+                    .strokeWidth(0.5)
+                    .margin({
+                        left: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
+                        right: LIST_ITEM_DIVIDER_HORIZONTAL_MARGIN,
+                    })
 
-            this.materialLevelItem()
+                this.materialLevelItem()
+            }
 
             Divider()
                 .color($r('app.color.border'))

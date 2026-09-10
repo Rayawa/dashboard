@@ -525,6 +525,7 @@ export struct MyPage {
                         .layoutWeight(6)
                         .height('100%')
                         .scrollBar(BarState.Off)
+                        .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
                         .onDidScroll((): void => this.saveScrollPosition())
                         .accessibilityText('可滚动的设置、更多与帮助列表')
                     }
@@ -565,6 +566,7 @@ export struct MyPage {
                 .width('100%')
                 .height('100%')
                 .scrollBar(BarState.Off)
+                .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
                 .onDidScroll((): void => this.saveScrollPosition())
                 .backgroundColor($r('app.color.background'))
                 .accessibilityText('可滚动的我的页面')

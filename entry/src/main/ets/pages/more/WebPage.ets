@@ -1,13 +1,12 @@
 import { common, Want } from '@kit.AbilityKit';
+import { deviceInfo } from '@kit.BasicServicesKit';
 import { webview } from '@kit.ArkWeb';
 import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import {
   HdsNavDestination,
   HdsNavDestinationTitleMode,
   ScrollEffectType,
-  TitleSize,
 } from '@kit.UIDesignKit';
-import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import {
   customUserAgent,
   WEB_PAGE_DEFAULT_TITLE,
@@ -23,6 +22,12 @@ import { scrollByAxis } from '../../common/scroll';
 import type { WebShareData } from '../../common/shareControl';
 import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
+import {
+  HDS_MATERIAL_LEVEL_GENTLE,
+  HDS_MATERIAL_TYPE_IMMERSIVE,
+  HDS_TITLE_SIZE_SMALL,
+  SUPPORTS_HARMONY_API_23,
+} from '../../common/platformCompatibility';
 
 /** Parameters shared by every in-app remote web page. */
 export interface WebPageParams {
@@ -44,8 +49,7 @@ export struct WebPage {
   @Prop title: string = '';
   @Prop contentInsetTop: number = WEB_PAGE_DEFAULT_TOP_INSET;
   @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
-  @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.GENTLE;
+  @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
   @State private progress: number = 0;
   @State private loading: boolean = true;
   @State private errorMessage: string = '';
@@ -118,6 +122,90 @@ export struct WebPage {
     this.shareManager.enablePassiveShare(this.shareOwnerId);
   }
 
+  private updateCurrentUrl(url: string): void {
+    if (url && url !== 'about:blank') this.currentUrl = url;
+  }
+
+  private handleControllerAttached(): void {
+    try {
+      this.controller.setCustomUserAgent(customUserAgent);
+      this.syncShareData();
+    } catch (error) {
+      this.errorMessage = '网页初始化失败';
+      console.error('[Dashboard][pages/web/WebPage][ERROR]', `初始化失败: ${JSON.stringify(error)}`);
+    }
+  }
+
+  private handlePageBegin(event: OnPageBeginEvent): void {
+    this.loading = true;
+    this.errorMessage = '';
+    this.updateCurrentUrl(event.url);
+  }
+
+  private handlePageEnd(event: OnPageEndEvent): void {
+    this.loading = false;
+    this.errorMessage = '';
+    this.updateCurrentUrl(event.url);
+    this.syncShareData();
+  }
+
+  private handleErrorReceive(event: OnErrorReceiveEvent): void {
+    try {
+      if (!event.request.isMainFrame()) return;
+    } catch (_error) {
+      return;
+    }
+    this.loading = false;
+    this.errorMessage = '网页加载失败，请检查网络连接';
+  }
+
+  @Builder
+  private remoteWebContent(): void {
+    if (deviceInfo.deviceType === '2in1') {
+      Web({ src: this.url, controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
+        .id('HmDashboard_WebPage_2in1')
+        .width('100%')
+        .layoutMode(WebLayoutMode.FIT_CONTENT)
+        .nestedScroll({
+          scrollForward: NestedScrollMode.SELF_FIRST,
+          scrollBackward: NestedScrollMode.SELF_FIRST,
+        })
+        .overScrollMode(OverScrollMode.NEVER)
+        .backgroundColor($r('app.color.backcolor'))
+        .onControllerAttached(() => this.handleControllerAttached())
+        .onProgressChange((event) => this.progress = event.newProgress)
+        .onNavigationEntryCommitted((event) => this.updateCurrentUrl(event.url))
+        .onPageBegin((event) => this.handlePageBegin(event))
+        .onPageEnd((event) => this.handlePageEnd(event))
+        .onErrorReceive((event) => this.handleErrorReceive(event))
+        .domStorageAccess(true)
+        .darkMode(WebDarkMode.Auto)
+        .accessibilityText(`${this.displayTitle()}网页内容`)
+    } else {
+      Web({ src: this.url, controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
+        .id('HmDashboard_WebPage')
+        .width('100%')
+        .layoutMode(WebLayoutMode.FIT_CONTENT)
+        .nestedScroll({
+          scrollForward: NestedScrollMode.SELF_FIRST,
+          scrollBackward: NestedScrollMode.SELF_FIRST,
+        })
+        .overScrollMode(OverScrollMode.NEVER)
+        .backgroundColor($r('app.color.backcolor'))
+        .onControllerAttached(() => this.handleControllerAttached())
+        .onProgressChange((event) => this.progress = event.newProgress)
+        .onNavigationEntryCommitted((event) => this.updateCurrentUrl(event.url))
+        .onPageBegin((event) => this.handlePageBegin(event))
+        .onPageEnd((event) => this.handlePageEnd(event))
+        .onErrorReceive((event) => this.handleErrorReceive(event))
+        .domStorageAccess(true)
+        .darkMode(WebDarkMode.Auto)
+        .forceDarkAccess(true)
+        .metaViewport(true)
+        .accessibilityText(`${this.displayTitle()}网页内容`)
+    }
+  }
+
   private showShare(): void {
     this.vibrate();
     this.syncShareData();
@@ -161,61 +249,14 @@ export struct WebPage {
             if (this.contentInsetTop > 0) {
               Blank().height(this.contentInsetTop).width('100%')
             }
-            Web({ src: this.url, controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
-              .id('HmDashboard_WebPage')
-              .width('100%')
-              .layoutMode(WebLayoutMode.FIT_CONTENT)
-              .nestedScroll({
-                scrollForward: NestedScrollMode.SELF_FIRST,
-                scrollBackward: NestedScrollMode.SELF_FIRST,
-              })
-              .overScrollMode(OverScrollMode.NEVER)
-              .backgroundColor($r('app.color.backcolor'))
-              .onControllerAttached(() => {
-                try {
-                  this.controller.setCustomUserAgent(customUserAgent);
-                  this.syncShareData();
-                } catch (error) {
-                  this.errorMessage = '网页初始化失败';
-                  console.error('[Dashboard][pages/web/WebPage][ERROR]', `初始化失败: ${JSON.stringify(error)}`);
-                }
-              })
-              .onProgressChange((event) => this.progress = event.newProgress)
-              .onNavigationEntryCommitted((event) => {
-                if (event?.url && event.url !== 'about:blank') this.currentUrl = event.url;
-              })
-              .onPageBegin((event) => {
-                this.loading = true;
-                this.errorMessage = '';
-                if (event?.url && event.url !== 'about:blank') this.currentUrl = event.url;
-              })
-              .onPageEnd((event) => {
-                this.loading = false;
-                this.errorMessage = '';
-                if (event?.url && event.url !== 'about:blank') this.currentUrl = event.url;
-                this.syncShareData();
-              })
-              .onErrorReceive((event) => {
-                if (!event) return;
-                try {
-                  if (!event.request.isMainFrame()) return;
-                } catch (_error) {
-                  return;
-                }
-                this.loading = false;
-                this.errorMessage = '网页加载失败，请检查网络连接';
-              })
-              .domStorageAccess(true)
-              .darkMode(WebDarkMode.Auto)
-              .forceDarkAccess(true)
-              .metaViewport(true)
-              .accessibilityText(`${this.displayTitle()}网页内容`)
+            this.remoteWebContent()
           }
           .width('100%')
         }
         .width('100%')
         .height('100%')
         .scrollBar(BarState.Off)
+        .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
         .accessibilityText(`可滚动的${this.displayTitle()}网页页面`)
 
         if (this.loading) {
@@ -290,13 +331,16 @@ export struct WebPage {
             },
           },
         },
-        systemMaterialEffect: {
-          materialType: hdsMaterial.MaterialType.IMMERSIVE,
+        systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
+          materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
           materialLevel: this.immersiveMaterialLevel,
-        },
+        } : undefined,
       },
       content: {
-        title: { mainTitle: this.displayTitle(), mainTitleSize: TitleSize.TITLE_S },
+        title: {
+          mainTitle: this.displayTitle(),
+          mainTitleSize: SUPPORTS_HARMONY_API_23 ? HDS_TITLE_SIZE_SMALL : undefined,
+        },
         menu: { value: [
           { content: { label: '刷新', icon: $r('app.media.refresh'), isEnabled: !this.loading,
             action: () => this.refresh() } },

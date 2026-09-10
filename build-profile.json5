@@ -7,11 +7,11 @@
         "material": {
           "certpath": "/Users/raychen/Develop/Dashboard/certificate/dashboard.cer",
           "keyAlias": "Rayawa",
-          "keyPassword": "0000001EA24F382941B5CBF7DA8393CAF17C57426FC0DDEE12EE6309B9CD620C552C7CB7ED6AB6B669BE22F63A3B",
+          "keyPassword": "0000001ED5A4FA90AD6C596E0B31A6F9B6CDFC9810CC71E00CE79B8C952DB082745DA8CD92C321CB491DBA71EC59",
           "profile": "/Users/raychen/Develop/Dashboard/certificate/dashboardRelease.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/raychen/Develop/Dashboard/certificate/Rayawa.p12",
-          "storePassword": "0000001EA93884127B1D4D39D788529E804B573ABF3278E4610D2CD80B00454E326FA09AC7891AD3DF12EC8A19CC"
+          "storePassword": "0000001E949F2698D72ECFD23D3F3CE1D7F08C8544C06415099E6994E66A4401FB5B94BAC184A1C6D28B30B71230"
         }
       },
       {
@@ -20,20 +20,20 @@
         "material": {
           "certpath": "/Users/raychen/.ohos/config/debug_dashboard-HarmonyOS_k55T3qco-dVZUC72GrhrBJhDtrlAwf4N_kK34BNrRgg=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B7BAD31EC15D13E9FFCC33A707007158D0AB24257FD71AB5CE1FCA121B933077246BDE8BD75DD20",
+          "keyPassword": "0000001B0156C3C15E4B375762BCE49CFF2B8317BD33BA9539C64775E1D1F0A1D8B3C2D5887E011720B0B2",
           "profile": "/Users/raychen/.ohos/config/debug_dashboard-HarmonyOS_k55T3qco-dVZUC72GrhrBJhDtrlAwf4N_kK34BNrRgg=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/raychen/.ohos/config/debug_dashboard-HarmonyOS_k55T3qco-dVZUC72GrhrBJhDtrlAwf4N_kK34BNrRgg=.p12",
-          "storePassword": "0000001B6C80980D2FC76277209186AD1A84765FB7032141D61425FC872144A4071E300F21769D9E2F8AF9"
+          "storePassword": "0000001BB9F3E144DDA0F514F249CE430ED09AE22A828EE8E09FA9C2005904C725D71ADE8528EE338F1044"
         }
       }
     ],
     "products": [
       {
         "name": "default",
-        "signingConfig": "release",
+        "signingConfig": "debug",
         "targetSdkVersion": "6.1.0(23)",
-        "compatibleSdkVersion": "6.1.0(23)",
+        "compatibleSdkVersion": "6.0.0(20)",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {

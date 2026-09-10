@@ -1,6 +1,5 @@
 import { LengthMetrics, PromptAction, promptAction } from '@kit.ArkUI';
-import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, TitleSize } from '@kit.UIDesignKit';
-import { hdsMaterial } from '@hms.hds.hdsMaterial';
+import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
 import { pageTransition } from '../../common/motion';
 import { webview } from '@kit.ArkWeb';
@@ -12,13 +11,18 @@ import { privacyManager } from '@kit.StoreKit';
 import { showToastSafely } from '../../common/safeUi';
 import { customUserAgent, ROUTE_HTML_PAGE } from '../../common/constants';
 import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
+import {
+  HDS_MATERIAL_LEVEL_GENTLE,
+  HDS_MATERIAL_TYPE_IMMERSIVE,
+  HDS_TITLE_SIZE_SMALL,
+  SUPPORTS_HARMONY_API_23,
+} from '../../common/platformCompatibility';
 
 @Component
 export struct LocalHtmlPage {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
-  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.GENTLE;
+  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
   controller: webview.WebviewController = new webview.WebviewController();
   @State params: WebViewParam = new WebViewParam('', '');
   @State private topPlaceholderHeight: number = 100;
@@ -96,6 +100,7 @@ export struct LocalHtmlPage {
             .domStorageAccess(true)
             .fileAccess(true)
             .mixedMode(MixedMode.All)
+            .overScrollMode(OverScrollMode.ALWAYS)
             .onScroll((event) => {
               if (event) {
                 const nextHeight = Math.max(0, 100 - Math.max(0, event.yOffset));
@@ -165,15 +170,15 @@ export struct LocalHtmlPage {
             },
           },
         },
-        systemMaterialEffect: {
-          materialType: hdsMaterial.MaterialType.IMMERSIVE,
+        systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
+          materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
           materialLevel: this.immersiveMaterialLevel
-        }
+        } : undefined
       },
       content: {
         title: {
           mainTitle: this.params.title,
-          mainTitleSize: TitleSize.TITLE_S,
+          mainTitleSize: SUPPORTS_HARMONY_API_23 ? HDS_TITLE_SIZE_SMALL : undefined,
         },
         menu: {
           value: [

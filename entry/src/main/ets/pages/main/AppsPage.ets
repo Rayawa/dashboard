@@ -780,7 +780,8 @@ export struct AppsPage {
                         }
                     })
                 }
-                .width('100%').height('100%').scrollBar(BarState.Auto).edgeEffect(EdgeEffect.Spring)
+                .width('100%').height('100%').scrollBar(BarState.Auto)
+                .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true, effectEdge: EffectEdge.END })
                 .onDidScroll((): void => this.recordScroll(this.pageScroller))
                 .accessibilityText('可滚动并支持下拉打开应用搜索的应用页面')
             }

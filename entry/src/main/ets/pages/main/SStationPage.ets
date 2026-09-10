@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit';
+import { deviceInfo } from '@kit.BasicServicesKit';
 import { webview } from '@kit.ArkWeb';
 import {
     customUserAgent,
@@ -260,6 +261,115 @@ export struct SStationPage {
         }
     }
 
+    private updateCurrentUrl(url: string): boolean {
+        if (url && url !== 'about:blank') {
+            this.currentUrl = url;
+            setContinuationPageUrl(url);
+            return true;
+        }
+        return false;
+    }
+
+    private handleControllerAttached(): void {
+        try {
+            this.controller.setCustomUserAgent(customUserAgent);
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                `初始化ArkWeb失败: ${JSON.stringify(error)}`);
+        }
+    }
+
+    private handlePageBegin(event: OnPageBeginEvent): void {
+        this.loading = true;
+        // 后台预加载保持无感；用户主动在S站内导航时才展示加载进度。
+        this.showLoadingIndicator = this.active;
+        this.errorMessage = '';
+        this.updateCurrentUrl(event.url);
+    }
+
+    private handlePageEnd(event: OnPageEndEvent): void {
+        this.loading = false;
+        this.showLoadingIndicator = false;
+        this.errorMessage = '';
+        if (this.updateCurrentUrl(event.url)) this.restoreScrollPosition();
+        this.installAppDetailObserver();
+        if (this.active) this.syncShareData();
+    }
+
+    private handleErrorReceive(event: OnErrorReceiveEvent): void {
+        try {
+            if (!event.request.isMainFrame()) return;
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+                `无法判断网页错误来源，忽略本次错误提示: ${JSON.stringify(error)}`);
+            return;
+        }
+        this.loading = false;
+        this.showLoadingIndicator = false;
+        this.errorMessage = '网页主页面加载失败，请检查网络连接后重试';
+        console.warn('[Dashboard][pages/main/SStationPage][WARN]',
+            `S站主页面加载失败: ${JSON.stringify(event.error)}`);
+    }
+
+    @Builder
+    private stationWebContent(): void {
+        if (deviceInfo.deviceType === '2in1') {
+            Web({ src: this.initialUrl, controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
+                .id('HmDashboard_SStation_2in1')
+                .width('100%')
+                .layoutMode(WebLayoutMode.FIT_CONTENT)
+                .nestedScroll({
+                    scrollForward: NestedScrollMode.SELF_FIRST,
+                    scrollBackward: NestedScrollMode.SELF_FIRST,
+                })
+                .overScrollMode(OverScrollMode.NEVER)
+                .backgroundColor($r('app.color.s_station_placeholder'))
+                .javaScriptProxy({
+                    object: this.webBridge,
+                    name: 'dashboardNative',
+                    methodList: ['setAppDetailOpen'],
+                    controller: this.controller,
+                })
+                .onControllerAttached(() => this.handleControllerAttached())
+                .onNavigationEntryCommitted((event) => this.updateCurrentUrl(event.url))
+                .onPageBegin((event) => this.handlePageBegin(event))
+                .onPageEnd((event) => this.handlePageEnd(event))
+                .onErrorReceive((event) => this.handleErrorReceive(event))
+                .onProgressChange((event) => this.progress = event.newProgress)
+                .domStorageAccess(true)
+                .darkMode(WebDarkMode.Auto)
+                .accessibilityText('S站网页内容')
+        } else {
+            Web({ src: this.initialUrl, controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
+                .id('HmDashboard_SStation')
+                .width('100%')
+                .layoutMode(WebLayoutMode.FIT_CONTENT)
+                .nestedScroll({
+                    scrollForward: NestedScrollMode.SELF_FIRST,
+                    scrollBackward: NestedScrollMode.SELF_FIRST,
+                })
+                .overScrollMode(OverScrollMode.NEVER)
+                .backgroundColor($r('app.color.s_station_placeholder'))
+                .javaScriptProxy({
+                    object: this.webBridge,
+                    name: 'dashboardNative',
+                    methodList: ['setAppDetailOpen'],
+                    controller: this.controller,
+                })
+                .onControllerAttached(() => this.handleControllerAttached())
+                .onNavigationEntryCommitted((event) => this.updateCurrentUrl(event.url))
+                .onPageBegin((event) => this.handlePageBegin(event))
+                .onPageEnd((event) => this.handlePageEnd(event))
+                .onErrorReceive((event) => this.handleErrorReceive(event))
+                .onProgressChange((event) => this.progress = event.newProgress)
+                .domStorageAccess(true)
+                .darkMode(WebDarkMode.Auto)
+                .forceDarkAccess(true)
+                .metaViewport(true)
+                .accessibilityText('S站网页内容')
+        }
+    }
+
     build() {
         Stack({ alignContent: Alignment.Top }) {
             Scroll(this.scroller) {
@@ -267,89 +377,7 @@ export struct SStationPage {
                     Blank()
                         .height(100)
                         .width('100%')
-                    Web({
-                        src: this.initialUrl,
-                        controller: this.controller,
-                        renderMode: RenderMode.SYNC_RENDER,
-                    })
-                    .id('HmDashboard_SStation')
-                    .width('100%')
-                    .layoutMode(WebLayoutMode.FIT_CONTENT)
-                    .nestedScroll({
-                        scrollForward: NestedScrollMode.SELF_FIRST,
-                        scrollBackward: NestedScrollMode.SELF_FIRST,
-                    })
-                    .overScrollMode(OverScrollMode.NEVER)
-                    .backgroundColor($r('app.color.s_station_placeholder'))
-                    .javaScriptProxy({
-                        object: this.webBridge,
-                        name: 'dashboardNative',
-                        methodList: ['setAppDetailOpen'],
-                        controller: this.controller,
-                    })
-                    .onControllerAttached(() => {
-                        try {
-                            this.controller.setCustomUserAgent(customUserAgent);
-                        } catch (error) {
-                            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
-                                `初始化ArkWeb失败: ${JSON.stringify(error)}`);
-                        }
-                    })
-                    .onNavigationEntryCommitted((event) => {
-                        if (event?.url && event.url !== 'about:blank') {
-                            this.currentUrl = event.url;
-                            setContinuationPageUrl(event.url);
-                        }
-                    })
-                    .onPageBegin((event) => {
-                        this.loading = true;
-                        // 后台预加载保持无感；用户主动在S站内导航时才展示加载进度。
-                        this.showLoadingIndicator = this.active;
-                        this.errorMessage = '';
-                        if (event?.url && event.url !== 'about:blank') {
-                            this.currentUrl = event.url;
-                            setContinuationPageUrl(event.url);
-                        }
-                    })
-                    .onPageEnd((event) => {
-                        this.loading = false;
-                        this.showLoadingIndicator = false;
-                        this.errorMessage = '';
-                        if (event?.url && event.url !== 'about:blank') {
-                            this.currentUrl = event.url;
-                            setContinuationPageUrl(event.url);
-                            this.restoreScrollPosition();
-                        }
-                        this.installAppDetailObserver();
-                        if (this.active) this.syncShareData();
-                    })
-                    .onErrorReceive((event) => {
-                        if (!event) {
-                            return;
-                        }
-                        try {
-                            if (!event.request.isMainFrame()) {
-                                return;
-                            }
-                        } catch (error) {
-                            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
-                                `无法判断网页错误来源，忽略本次错误提示: ${JSON.stringify(error)}`);
-                            return;
-                        }
-                        this.loading = false;
-                        this.showLoadingIndicator = false;
-                        this.errorMessage = '网页主页面加载失败，请检查网络连接后重试';
-                        console.warn('[Dashboard][pages/main/SStationPage][WARN]',
-                            `S站主页面加载失败: ${JSON.stringify(event.error)}`);
-                    })
-                    .onProgressChange((event) => {
-                        this.progress = event.newProgress;
-                    })
-                    .domStorageAccess(true)
-                    .darkMode(WebDarkMode.Auto)
-                    .forceDarkAccess(true)
-                    .metaViewport(true)
-                    .accessibilityText('S站网页内容')
+                    this.stationWebContent()
                     Blank()
                         .height(50)
                         .width('100%')
@@ -363,6 +391,7 @@ export struct SStationPage {
             })
             .width('100%')
             .height('100%')
+            .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
             .backgroundColor($r('app.color.s_station_placeholder'))
             .accessibilityText('使用内部滚动的S站网页视图')
 

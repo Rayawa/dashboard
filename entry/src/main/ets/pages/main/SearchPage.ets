@@ -560,7 +560,7 @@ export struct SearchPage {
         .gesture(
             PanGesture({ fingers: 1, direction: PanDirection.Vertical })
                 .onActionEnd((event: GestureEvent): void => {
-                    if (event.offsetY <= -SEARCH_DISMISS_SWIPE_DISTANCE_VP) {
+                    if (Math.abs(event.offsetY) >= SEARCH_DISMISS_SWIPE_DISTANCE_VP) {
                         this.vibrate();
                         if (this.onClose) { this.onClose(); }
                     }

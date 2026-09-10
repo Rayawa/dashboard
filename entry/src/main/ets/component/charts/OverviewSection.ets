@@ -12,6 +12,8 @@ import type { LineChartPoint, LineChartSeries } from './InteractiveLineChart';
 interface DistributionChart { title: string; labels: string[]; values: number[]; total: number; }
 interface HistoryPoint { date: string; values: Record<string, number>; }
 const COLLAPSED_SDK_COUNT: number = 7;
+// 快速点击也至少跨过一个渲染提交周期，避免点光源在首帧生成前就被移除。
+const MIN_PRESS_FEEDBACK_MS: number = 140;
 
 @Component
 struct DistributionPanel {
@@ -40,8 +42,11 @@ struct DistributionPanel {
     private canvasReady: boolean = false;
     private drawProgress: number = 1;
     private detailProgress: number = 1;
+    // 父级 Prop 提交前先用于当前 Canvas 帧，避免旧选中扇区被重复绘制一次。
+    private pendingSelectedLabel: string = '';
     private animationToken: number = 0;
     private controlPressToken: number = 0;
+    private controlPressStartedAt: number = 0;
     private controlPressTimer: number = -1;
     private animationTimer: number = -1;
     private drawTimer: number = -1;
@@ -49,6 +54,7 @@ struct DistributionPanel {
     private beginControlPress(key: string): void {
         const token = ++this.controlPressToken;
         this.pressedControl = key;
+        this.controlPressStartedAt = Date.now();
         if (this.controlPressTimer >= 0) clearTimeout(this.controlPressTimer);
         this.controlPressTimer = setTimeout((): void => {
             this.controlPressTimer = -1;
@@ -58,22 +64,36 @@ struct DistributionPanel {
         }, 800);
     }
 
-    private endControlPress(): void {
-        this.controlPressToken++;
+    private endControlPress(immediate: boolean = false): void {
         if (this.controlPressTimer >= 0) {
             clearTimeout(this.controlPressTimer);
             this.controlPressTimer = -1;
         }
-        this.pressedControl = '';
+        const key = this.pressedControl;
+        const token = this.controlPressToken;
+        const remaining = immediate ? 0 :
+            Math.max(0, MIN_PRESS_FEEDBACK_MS - (Date.now() - this.controlPressStartedAt));
+        if (key.length === 0 || remaining <= 0) {
+            this.controlPressToken++;
+            this.pressedControl = '';
+            return;
+        }
+        this.controlPressTimer = setTimeout((): void => {
+            this.controlPressTimer = -1;
+            if (this.controlPressToken === token && this.pressedControl === key) {
+                this.controlPressToken++;
+                this.pressedControl = '';
+            }
+        }, remaining);
     }
 
     private onChartChanged(): void {
-        this.endControlPress();
+        this.endControlPress(true);
         this.selected = 0;
         this.scheduleAnimation((): void => this.animatePie(), 0);
     }
     private onDisplayChanged(): void {
-        this.endControlPress();
+        this.endControlPress(true);
         this.selected = 0;
         if (this.expanded) {
             this.scheduleAnimation((): void => this.animateOtherExpansion(), 0);
@@ -82,6 +102,7 @@ struct DistributionPanel {
         }
     }
     private onSelectedLabelChanged(): void {
+        this.pendingSelectedLabel = '';
         if (this.drawTimer >= 0) clearTimeout(this.drawTimer);
         this.drawTimer = setTimeout((): void => {
             this.drawTimer = -1;
@@ -232,6 +253,9 @@ struct DistributionPanel {
         return colors[(sharedIndex >= 0 ? sharedIndex : index) % colors.length];
     }
     private selectedIndex(): number {
+        if (this.onSelect && this.pendingSelectedLabel.length > 0) {
+            return this.displayLabels().indexOf(this.pendingSelectedLabel);
+        }
         if (this.onSelect && this.selectedLabel.length > 0) {
             return this.displayLabels().indexOf(this.selectedLabel);
         }
@@ -360,7 +384,10 @@ struct DistributionPanel {
                 }
                 if (!this.onSelect && index !== this.selectedIndex() && this.vibrationLevel > 0) vibration.dotVibration();
                 this.selected = index;
-                if (this.onSelect) this.onSelect(labels[index]);
+                if (this.onSelect) {
+                    this.pendingSelectedLabel = labels[index];
+                    this.onSelect(labels[index]);
+                }
                 this.draw();
                 return;
             }
@@ -369,7 +396,7 @@ struct DistributionPanel {
 
     aboutToDisappear(): void {
         this.animationToken++;
-        this.endControlPress();
+        this.endControlPress(true);
         if (this.animationTimer >= 0) {
             clearTimeout(this.animationTimer);
             this.animationTimer = -1;
@@ -427,19 +454,21 @@ struct DistributionPanel {
                     }
                     .width('100%').padding({ left: 6, right: 6, top: 5, bottom: 5 }).borderRadius(8)
                     .border({ width: 1, color: $r('app.color.nd_card_border') })
-                    .backgroundColor(index === this.selectedIndex() ?
-                        $r('app.color.v3_surface_alt') : Color.Transparent)
                     .scale({ x: this.pressedControl === label ? 0.97 : 1,
                         y: this.pressedControl === label ? 0.97 : 1 })
                     .animation({ duration: 120, curve: Curve.EaseOut })
+                    .backgroundColor(index === this.selectedIndex() ?
+                        $r('app.color.v3_surface_alt') : Color.Transparent)
                     .visualEffect(pressVisualEffect(
                         this.pressedControl === label,
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .compositingFilter(pressLightFieldFilter(this.pressedControl === label))
                     .onTouch((event: TouchEvent): void => {
                         if (event.type === TouchType.Down) this.beginControlPress(label);
-                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        else if (event.type === TouchType.Up) {
                             this.endControlPress();
+                        } else if (event.type === TouchType.Cancel) {
+                            this.endControlPress(true);
                         }
                     })
                     .onClick(() => {
@@ -486,8 +515,10 @@ struct DistributionPanel {
                             .compositingFilter(pressLightFieldFilter(this.pressedControl === 'expand'))
                             .onTouch((event: TouchEvent): void => {
                                 if (event.type === TouchType.Down) this.beginControlPress('expand');
-                                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                else if (event.type === TouchType.Up) {
                                     this.endControlPress();
+                                } else if (event.type === TouchType.Cancel) {
+                                    this.endControlPress(true);
                                 }
                             })
                             .onClick(() => {
@@ -648,11 +679,13 @@ export struct OverviewSection {
     private reloadAfterCurrent: boolean = false;
     private restoredContinuationUi: boolean = false;
     private controlPressToken: number = 0;
+    private controlPressStartedAt: number = 0;
     private controlPressTimer: number = -1;
 
     private beginControlPress(key: string): void {
         const token = ++this.controlPressToken;
         this.pressedControl = key;
+        this.controlPressStartedAt = Date.now();
         if (this.controlPressTimer >= 0) clearTimeout(this.controlPressTimer);
         this.controlPressTimer = setTimeout((): void => {
             this.controlPressTimer = -1;
@@ -662,17 +695,31 @@ export struct OverviewSection {
         }, 800);
     }
 
-    private endControlPress(): void {
-        this.controlPressToken++;
+    private endControlPress(immediate: boolean = false): void {
         if (this.controlPressTimer >= 0) {
             clearTimeout(this.controlPressTimer);
             this.controlPressTimer = -1;
         }
-        this.pressedControl = '';
+        const key = this.pressedControl;
+        const token = this.controlPressToken;
+        const remaining = immediate ? 0 :
+            Math.max(0, MIN_PRESS_FEEDBACK_MS - (Date.now() - this.controlPressStartedAt));
+        if (key.length === 0 || remaining <= 0) {
+            this.controlPressToken++;
+            this.pressedControl = '';
+            return;
+        }
+        this.controlPressTimer = setTimeout((): void => {
+            this.controlPressTimer = -1;
+            if (this.controlPressToken === token && this.pressedControl === key) {
+                this.controlPressToken++;
+                this.pressedControl = '';
+            }
+        }, remaining);
     }
 
     aboutToDisappear(): void {
-        this.endControlPress();
+        this.endControlPress(true);
     }
 
     aboutToAppear(): void {
@@ -856,19 +903,21 @@ export struct OverviewSection {
                             .padding({ left: 6, right: 6, top: 5, bottom: 5 })
                             .borderRadius(8)
                             .border({ width: 1, color: $r('app.color.nd_card_border') })
-                            .backgroundColor(label === this.activeSdkLabel() ?
-                                $r('app.color.v3_surface_alt') : Color.Transparent)
                             .scale({ x: this.pressedControl === label ? 0.97 : 1,
                                 y: this.pressedControl === label ? 0.97 : 1 })
                             .animation({ duration: 120, curve: Curve.EaseOut })
+                            .backgroundColor(label === this.activeSdkLabel() ?
+                                $r('app.color.v3_surface_alt') : Color.Transparent)
                             .visualEffect(pressVisualEffect(
                                 this.pressedControl === label,
                                 hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                             .compositingFilter(pressLightFieldFilter(this.pressedControl === label))
                             .onTouch((event: TouchEvent): void => {
                                 if (event.type === TouchType.Down) this.beginControlPress(label);
-                                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                                else if (event.type === TouchType.Up) {
                                     this.endControlPress();
+                                } else if (event.type === TouchType.Cancel) {
+                                    this.endControlPress(true);
                                 }
                             })
                             .onClick(() => {
@@ -915,8 +964,10 @@ export struct OverviewSection {
                         .compositingFilter(pressLightFieldFilter(this.pressedControl === 'sdk-expand'))
                         .onTouch((event: TouchEvent): void => {
                             if (event.type === TouchType.Down) this.beginControlPress('sdk-expand');
-                            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                            else if (event.type === TouchType.Up) {
                                 this.endControlPress();
+                            } else if (event.type === TouchType.Cancel) {
+                                this.endControlPress(true);
                             }
                         })
                         .onClick(() => {

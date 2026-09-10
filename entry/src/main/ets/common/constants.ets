@@ -1,5 +1,6 @@
 import { URL } from "./url";
 import { deviceInfo } from "@kit.BasicServicesKit";
+import { DEVICE_CHIP_TYPE } from './platformCompatibility';
 
 // 持久化与运行时状态键。装饰器要求字面量 key 的位置保留字面量，
 // 其余读取和写入一律引用这里的常量。
@@ -122,7 +123,7 @@ export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
 export const FANGZHOU_URL = new URL("https://fangzhou.club/");
 
 // dev
-export const APP_VERSION: string = "3.0.0";
+export const APP_VERSION: string = "3.0.1";
 export const APP_BUILD_NUMBER: number = 30000005;
 export const APP_BUNDLE_NAME: string = "top.rayawa.dashboard"
 export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
@@ -155,7 +156,7 @@ function encodeUserAgentText(value: string): string {
     return encoded;
 }
 
-const rawCustomUserAgent: string = `${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion}) API:${deviceInfo.sdkApiVersion} | ${deviceInfo.productModel}/${deviceInfo.productModelAlias}/${deviceInfo.softwareModel}/${deviceInfo.hardwareModel} | ${deviceInfo.deviceType}/${deviceInfo.marketName}/${deviceInfo.chipType}`;
+const rawCustomUserAgent: string = `${APP_BUNDLE_NAME}(${APP_VERSION}) | ${deviceInfo.osFullName}(${deviceInfo.incrementalVersion}) API:${deviceInfo.sdkApiVersion} | ${deviceInfo.productModel}/${deviceInfo.productModelAlias}/${deviceInfo.softwareModel}/${deviceInfo.hardwareModel} | ${deviceInfo.deviceType}/${deviceInfo.marketName}/${DEVICE_CHIP_TYPE}`;
 export const customUserAgent: string = encodeUserAgentText(rawCustomUserAgent);
 
 // 遥测上报使用的完整设备信息，字段与 2.x 版本保持一致。
@@ -190,7 +191,7 @@ export class FullDeviceInfo {
     public distribution_os_api_name: string = deviceInfo.distributionOSApiName
     public distribution_os_release_type: string = deviceInfo.distributionOSReleaseType
     public performance_class: string = deviceInfo.performanceClass.toString()
-    public chip_type: string = deviceInfo.chipType
+    public chip_type: string = DEVICE_CHIP_TYPE
 }
 
 // 用户标识符

@@ -1,13 +1,11 @@
 import { common, Want } from '@kit.AbilityKit';
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
 import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
-import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import {
   hdsEffect,
   HdsNavDestination,
   HdsNavDestinationTitleMode,
   ScrollEffectType,
-  TitleSize,
 } from '@kit.UIDesignKit';
 import { APP_VERSION, CONTENT_MAX_WIDTH, mainPage } from '../../common/constants';
 import { popPathSafely } from '../../common/safeNavigation';
@@ -17,6 +15,12 @@ import { cancelStaggerEnterAnimation, pageTransition, startStaggerEnterAnimation
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import KnockShareGuideCard, { CardRes } from '../../component/KnockShareGuideCard';
 import { scrollByAxis } from '../../common/scroll';
+import {
+  HDS_MATERIAL_LEVEL_GENTLE,
+  HDS_MATERIAL_TYPE_IMMERSIVE,
+  HDS_TITLE_SIZE_SMALL,
+  SUPPORTS_HARMONY_API_23,
+} from '../../common/platformCompatibility';
 
 const TUTORIAL_COLUMN_BREAKPOINT = 840;
 const SHARE_ROW_BREAKPOINT = 680;
@@ -26,8 +30,7 @@ const QUERY_IMAGE_RATIO = 1216 / 1893;
 export struct TutorialPage {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
-  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.GENTLE;
+  @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   private scroller: Scroller = new Scroller();
   @State private pressedCard: string = '';
@@ -455,6 +458,7 @@ export struct TutorialPage {
     .width('100%')
     .height('100%')
     .scrollBar(BarState.Off)
+    .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
     .accessibilityText('可滚动的应用使用教程')
   }
 
@@ -494,6 +498,7 @@ export struct TutorialPage {
       .layoutWeight(6)
       .height('100%')
       .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
       .accessibilityText('可独立滚动的教程右栏')
     }
     .width('100%')
@@ -567,13 +572,16 @@ export struct TutorialPage {
             },
           },
         },
-        systemMaterialEffect: {
-          materialType: hdsMaterial.MaterialType.IMMERSIVE,
+        systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
+          materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
           materialLevel: this.immersiveMaterialLevel,
-        },
+        } : undefined,
       },
       content: {
-        title: { mainTitle: '教程', mainTitleSize: TitleSize.TITLE_S },
+        title: {
+          mainTitle: '教程',
+          mainTitleSize: SUPPORTS_HARMONY_API_23 ? HDS_TITLE_SIZE_SMALL : undefined,
+        },
         backIcon: {
           action: () => {
             if (this.vibrationLevel > 0) vibration.backVibration();

@@ -644,6 +644,7 @@ export struct HomePage {
                         .layoutWeight(6)
                         .height('100%')
                         .scrollBar(BarState.Off)
+                        .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
                         .onDidScroll((): void => this.saveScrollPosition())
                         .accessibilityText('可上下滚动的最近收录应用')
                     }
@@ -674,6 +675,7 @@ export struct HomePage {
                 .width('100%')
                 .height('100%')
                 .scrollBar(BarState.Off)
+                .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
                 .onDidScroll((): void => this.saveScrollPosition())
                 .backgroundColor($r('app.color.background'))
                 .accessibilityText('可滚动的首页')

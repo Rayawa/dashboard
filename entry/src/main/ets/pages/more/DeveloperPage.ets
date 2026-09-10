@@ -1,11 +1,9 @@
 import { deviceInfo } from '@kit.BasicServicesKit';
 import {
   hdsEffect,
-  hdsMaterial,
   HdsNavDestination,
   HdsNavDestinationTitleMode,
-  ScrollEffectType,
-  TitleSize
+  ScrollEffectType
 } from '@kit.UIDesignKit';
 import {
   APP_BUILD_NUMBER,
@@ -19,6 +17,13 @@ import { curves, LengthMetrics } from '@kit.ArkUI';
 import { pageTransition } from '../../common/motion';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { scrollByAxis } from '../../common/scroll';
+import {
+  DEVICE_CHIP_TYPE,
+  HDS_MATERIAL_LEVEL_GENTLE,
+  HDS_MATERIAL_TYPE_IMMERSIVE,
+  HDS_TITLE_SIZE_SMALL,
+  SUPPORTS_HARMONY_API_23,
+} from '../../common/platformCompatibility';
 
 interface DeveloperField {
   label: string;
@@ -27,8 +32,7 @@ interface DeveloperField {
 
 @Component
 export struct DeveloperPage {
-  @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: hdsMaterial.MaterialLevel =
-    hdsMaterial.MaterialLevel.GENTLE;
+  @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
   @State private pressedField: string = '';
   private scroller: Scroller = new Scroller();
   private fields(): DeveloperField[] {
@@ -46,7 +50,7 @@ export struct DeveloperPage {
       { label: '软硬件型号', value: `${deviceInfo.softwareModel} / ${deviceInfo.hardwareModel}` },
       { label: '设备类型', value: deviceInfo.deviceType },
       { label: '市场名称', value: deviceInfo.marketName },
-      { label: '芯片型号', value: deviceInfo.chipType },
+      { label: '芯片型号', value: DEVICE_CHIP_TYPE },
     ];
   }
 
@@ -111,6 +115,7 @@ export struct DeveloperPage {
       .width('100%')
       .height('100%')
       .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
       .backgroundColor($r('app.color.background'))
       .accessibilityText('可滚动的开发者页面')
     }
@@ -151,15 +156,15 @@ export struct DeveloperPage {
             },
           },
         },
-        systemMaterialEffect: {
-          materialType: hdsMaterial.MaterialType.IMMERSIVE,
+        systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
+          materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
           materialLevel: this.immersiveMaterialLevel,
-        },
+        } : undefined,
       },
       content: {
         title: {
           mainTitle: '开发者信息',
-          mainTitleSize: TitleSize.TITLE_S,
+          mainTitleSize: SUPPORTS_HARMONY_API_23 ? HDS_TITLE_SIZE_SMALL : undefined,
         },
       },
     })
