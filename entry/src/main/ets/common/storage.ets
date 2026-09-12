@@ -163,8 +163,16 @@ export async function setFirstLaunch(first: boolean): Promise<void> {
 // ===== 用户名（原 profile 文件 / username）=====
 export function getDeviceName(): string {
     try {
-        const productModel = deviceInfo.productModel;
-        return productModel && productModel.trim().length > 0 ? productModel : "HarmonyOS设备";
+        const productModel = deviceInfo.productModel?.trim() ?? '';
+        if (productModel.length > 0 && productModel !== '?' && productModel.toLowerCase() !== 'unknown') {
+            return productModel;
+        }
+        const productModelAlias = deviceInfo.productModelAlias?.trim() ?? '';
+        if (productModelAlias.length > 0 && productModelAlias !== '?' &&
+            productModelAlias.toLowerCase() !== 'unknown') {
+            return productModelAlias;
+        }
+        return "我的设备";
     } catch (error) {
         console.error('[Dashboard][common/storage][ERROR]', "Failed to get device name:", error);
         return "我的设备";
@@ -173,7 +181,13 @@ export function getDeviceName(): string {
 
 export async function getUsername(): Promise<string> {
     const s = await ensureReady();
-    return (await s.get(KEY_USERNAME, getDeviceName())) as string;
+    const username = ((await s.get(KEY_USERNAME, getDeviceName())) as string)?.trim() ?? '';
+    if (username.length > 0 && username !== '?' && username.toLowerCase() !== 'unknown') {
+        return username;
+    }
+    const deviceName = getDeviceName();
+    await s.set(KEY_USERNAME, deviceName);
+    return deviceName;
 }
 
 export async function setUsername(username?: string): Promise<void> {

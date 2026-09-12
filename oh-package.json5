@@ -1,6 +1,6 @@
 {
   "modelVersion": "6.0.0",
-  "description": "鸿蒙应用市场数据看板",
+  "description": "Dashboard应用看板",
   "dependencies": {},
   "devDependencies": {
     "@ohos/hypium": "1.0.24",

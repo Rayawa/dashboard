@@ -269,8 +269,8 @@ struct FriendLinksPage {
               .fontWeight(700)
               .fontSize(20)
               .fontColor($r('app.color.v3_accent_red'))
-            Text("友情链接内网站展示的任何内容均与应用看板无关；\n" +
-              "Harmony Dashboard项目组不负责维护友情链接内容。")
+            Text("友情链接内网站展示的任何内容均与Dashboard应用看板无关；\n" +
+              "Dashboard应用看板项目组不负责维护友情链接内容。")
               .fontWeight(600)
               .fontSize(15)
               .margin({ top: 15 })
@@ -302,7 +302,7 @@ struct FriendLinksPage {
             .color($r("app.color.border"))
             .accessibilityText('重要提示与项目组站点分隔线')
 
-          this.linkSection('Harmony Gallery项目组站点矩阵', this.projectSites, 2)
+          this.linkSection('Dashboard应用看板项目组站点', this.projectSites, 2)
 
           Divider()
             .margin({
@@ -312,7 +312,7 @@ struct FriendLinksPage {
             .color($r("app.color.border"))
             .accessibilityText('项目组站点与友链应用分隔线')
 
-          this.linkSection('使用Harmony Dashboard数据的应用', this.friendApps, 3)
+          this.linkSection('使用Dashboard应用看板信息的应用', this.friendApps, 3)
 
           Divider()
             .margin({
@@ -322,7 +322,7 @@ struct FriendLinksPage {
             .color($r("app.color.border"))
             .accessibilityText('友链应用与友链站点分隔线')
 
-          this.linkSection('使用Harmony Dashboard数据的站点', this.friendSites, 4)
+          this.linkSection('使用Dashboard应用看板信息的站点', this.friendSites, 4)
 
           Divider()
             .margin({

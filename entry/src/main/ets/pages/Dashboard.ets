@@ -8,23 +8,18 @@ import {
 } from '@kit.UIDesignKit';
 import { curves, LengthMetrics, PromptAction, SegmentButtonV2Items } from '@kit.ArkUI';
 import { deviceInfo } from '@kit.BasicServicesKit';
-import { http } from '@kit.NetworkKit';
 import { getFirstLaunch } from '../common/storage';
 import {
   consumeMainTab, getContinuationState, peekDetailTarget, setAppsViewIndex, setContinuationView, setMainTab,
 } from '../common/appState';
 import {
-  APP_BUNDLE_NAME,
-  APP_VERSION,
   CONTINUATION_ROUTE_DETAIL,
   customUserAgent,
-  FullDeviceInfo,
   MAIN_TAB_APPS,
   MAIN_TAB_DEFAULT,
   MAIN_TAB_HOME,
   MAIN_TAB_MY,
   MAIN_TAB_S_STATION,
-  ONLY_ID,
   S_STATION_COMMAND_BACK,
   S_STATION_COMMAND_HOME,
   S_STATION_COMMAND_NONE,
@@ -37,15 +32,8 @@ import {
   ROUTE_HTML_PAGE,
   ROUTE_TUTORIAL,
   ROUTE_WEB_PAGE,
-  SUBMIT_PLATFORM,
 } from '../common/constants';
-import type {
-  AppRouteTarget,
-  BaseAPIResponse,
-  TelemetryDeviceInfo,
-  TelemetryIngestResponse,
-  TelemetryReportBody,
-} from '../common/types';
+import type { AppRouteTarget } from '../common/types';
 import { WarningContent } from '../component/WarningContent';
 import { vibration } from '../common/vibration';
 import { pushPathSafely } from '../common/safeNavigation';
@@ -68,66 +56,7 @@ import { DeveloperPage } from './more/DeveloperPage';
 import { WebPageBuilder, WebPageParams } from './more/WebPage';
 import { HdsTitleBarSegment } from '../component/HdsTitleBarSegment';
 import { SStationNodeParams, SStationPreloadNodeController } from '../component/SStationPreloadNode';
-
-async function report_user_telemetry(
-  event_name: string = customUserAgent,
-): Promise<BaseAPIResponse<TelemetryIngestResponse> | null> {
-  const final_data: TelemetryReportBody = {
-    app_id: APP_BUNDLE_NAME,
-    only_id: ONLY_ID,
-    app_version: APP_VERSION,
-    submit_platform: SUBMIT_PLATFORM,
-    custom_user_agent: customUserAgent,
-    event_name,
-    device_info: new FullDeviceInfo() as TelemetryDeviceInfo,
-  };
-  const path = 'https://ddns.shenjack.top:10003/api/v0/telemetry/report';
-  const request = http.createHttp();
-
-  try {
-    const dataString = JSON.stringify(final_data);
-    const response = await request.request(path.toString(), {
-      method: http.RequestMethod.POST,
-      header: { 'Content-Type': 'application/json', 'User-Agent': customUserAgent },
-      extraData: dataString,
-      expectDataType: http.HttpDataType.STRING,
-      usingCache: false,
-      connectTimeout: 10000,
-      readTimeout: 10000,
-    });
-    console.info(`Status: ${response.responseCode}`);
-    if (response.responseCode === 200 && response.result) {
-      const rawResult = response.result;
-      try {
-        if (typeof rawResult === 'string') {
-          if (!rawResult.trim()) {
-            console.error('Error: Received empty string');
-            return null;
-          }
-          return JSON.parse(rawResult) as BaseAPIResponse<TelemetryIngestResponse>;
-        }
-        return rawResult as BaseAPIResponse<TelemetryIngestResponse>;
-      } catch (parseError) {
-        console.error(`JSON Parse Failed. Raw Content: ${rawResult}`);
-        console.error(`Parse Error Detail: ${JSON.stringify(parseError)}`);
-        return null;
-      }
-    } else {
-      console.error(`Error Status: ${response.responseCode}`);
-      console.error(`Error Detail from Server: ${response.result}`);
-      if (typeof response.result !== 'string') {
-        console.error(`Error Detail JSON: ${JSON.stringify(response.result)}`);
-      }
-    }
-    console.warn(`Request failed with code: ${response.responseCode}`);
-    return null;
-  } catch (error) {
-    console.error('Network/Request Error:', error);
-    return null;
-  } finally {
-    request.destroy();
-  }
-}
+import { reportUserTelemetry } from '../common/TelemetryService';
 
 interface MainTab {
     label: string;
@@ -168,6 +97,8 @@ struct Dashboard {
     @State private sStationCommandVersion: number = 0;
     @State private sStationDetailOpen: boolean = false;
     private hasReportedTelemetry: boolean = false;
+    private pageShowToken: number = 0;
+    private detailRestoreTimer: number = -1;
     private appsSegmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
         { text: '概况', accessibilityText: '概况' },
         { text: '总表', accessibilityText: '总表' },
@@ -313,7 +244,7 @@ struct Dashboard {
         pushPathSafely(this.pageStack, ROUTE_APP_DETAIL, target, 'pages/Dashboard');
     }
 
-    private async handlePageShow(): Promise<void> {
+    private async handlePageShow(pageShowToken: number): Promise<void> {
         this.selectedIndex = Math.max(MAIN_TAB_S_STATION, Math.min(MAIN_TAB_MY,
             consumeMainTab(this.selectedIndex)));
         this.updateSStationNode();
@@ -322,6 +253,7 @@ struct Dashboard {
         this.searchRequestVersion++;
         try {
             const shouldShowWarning = await getFirstLaunch();
+            if (pageShowToken !== this.pageShowToken) return;
             if (shouldShowWarning) {
                 this.warningRequiresConfirmation = true;
                 this.showWarning = true;
@@ -329,13 +261,17 @@ struct Dashboard {
         } catch (error) {
             console.warn('[Dashboard][pages/Dashboard][WARN]', `[v3] 首启状态读取失败: ${JSON.stringify(error)}`);
         }
+        if (pageShowToken !== this.pageShowToken) return;
         const detail = peekDetailTarget();
         if (detail.appId || detail.packageName) {
             try {
                 if (this.pageStack.getIndexByName(ROUTE_APP_DETAIL).length > 0) {
                     this.pageStack.removeByName(ROUTE_APP_DETAIL);
                 }
-                setTimeout((): void => {
+                if (this.detailRestoreTimer >= 0) clearTimeout(this.detailRestoreTimer);
+                this.detailRestoreTimer = setTimeout((): void => {
+                    this.detailRestoreTimer = -1;
+                    if (pageShowToken !== this.pageShowToken) return;
                     pushPathSafely(this.pageStack, ROUTE_APP_DETAIL, detail, 'pages/Dashboard');
                 }, 0);
             } catch (error) {
@@ -346,10 +282,18 @@ struct Dashboard {
     }
 
     onPageShow(): void {
-        this.handlePageShow();
+        this.handlePageShow(++this.pageShowToken);
         if (!this.hasReportedTelemetry) {
             this.hasReportedTelemetry = true;
-            report_user_telemetry(customUserAgent);
+            reportUserTelemetry(customUserAgent);
+        }
+    }
+
+    aboutToDisappear(): void {
+        this.pageShowToken++;
+        if (this.detailRestoreTimer >= 0) {
+            clearTimeout(this.detailRestoreTimer);
+            this.detailRestoreTimer = -1;
         }
     }
 

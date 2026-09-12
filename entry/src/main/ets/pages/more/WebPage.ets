@@ -107,7 +107,7 @@ export struct WebPage {
     }
     return {
       url,
-      title: `${this.displayTitle()}｜Harmony Dashboard`,
+      title: `${this.displayTitle()}｜Dashboard应用看板`,
       description: url,
     };
   }

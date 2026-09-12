@@ -1,4 +1,5 @@
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from "@ohos/hypium";
+import { buildAppsPagePath } from '../main/ets/common/AppListQuery';
 
 export default function localUnitTest() {
     describe("localUnitTest", () => {
@@ -28,6 +29,36 @@ export default function localUnitTest() {
             // Defines a variety of assertion methods, which are used to declare expected boolean conditions.
             expect(a).assertContain(b);
             expect(a).assertEqual(a);
+        });
+        it('buildAppsPagePathIncludesHuaweiByDefault', 0, () => {
+            const path = buildAppsPagePath({
+                page: 1,
+                pageSize: 20,
+                sort: 'total_star_rating_count',
+                desc: true,
+                excludeHuawei: false,
+            });
+            expect(path.includes('exclude_huawei')).assertFalse();
+            expect(path).assertContain('sort=total_star_rating_count');
+            expect(path).assertContain('desc=true');
+        });
+        it('buildAppsPagePathEncodesFilters', 0, () => {
+            const path = buildAppsPagePath({
+                page: 0,
+                pageSize: 50,
+                sort: 'updated_at',
+                desc: false,
+                searchKey: 'developer_name',
+                searchValue: '测试 开发者',
+                exact: true,
+                excludeHuawei: true,
+                excludeAtomic: true,
+            });
+            expect(path).assertContain('apps/list/1?');
+            expect(path).assertContain('search_value=%E6%B5%8B%E8%AF%95%20%E5%BC%80%E5%8F%91%E8%80%85');
+            expect(path).assertContain('search_exact=true');
+            expect(path).assertContain('exclude_huawei=true');
+            expect(path).assertContain('exclude_atomic=true');
         });
     });
 }

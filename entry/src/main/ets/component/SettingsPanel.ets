@@ -1,7 +1,7 @@
 import { vibration } from '../common/vibration';
 import { common } from '@kit.AbilityKit';
 import {
-    setImmersiveMaterialLevel, setLightFieldLevel, setUsername, setVibrationLevel
+    getDeviceName, setImmersiveMaterialLevel, setLightFieldLevel, setUsername, setVibrationLevel
 } from '../common/storage';
 import { isHdrLightFieldSupported } from '../common/visualEffects';
 import { clearCompleteCache, getCacheSizeBytes } from '../common/CacheService';
@@ -66,7 +66,7 @@ struct UsernameEditor {
             Row({ space: 8 }) {
                 TextInput({
                     text: this.draftUsername,
-                    placeholder: 'HarmonyOS用户'
+                    placeholder: getDeviceName()
                 })
                     .layoutWeight(1)
                     .constraintSize({ minWidth: 120 })
@@ -82,7 +82,7 @@ struct UsernameEditor {
                     })
                     .onSubmit((): void => this.commitDraft())
                     .accessibilityText(
-                        `用户名输入框，当前用户名为${this.draftUsername || 'HarmonyOS用户'}`
+                        `用户名输入框，当前用户名为${this.draftUsername || getDeviceName()}`
                     )
 
                 Image($r('app.media.question'))
@@ -108,7 +108,7 @@ struct UsernameEditor {
         .padding({ right: 7 })
         .width('100%')
         .accessibilityGroup(true)
-        .accessibilityText(`用户名设置，当前${this.draftUsername || 'HarmonyOS用户'}`)
+        .accessibilityText(`用户名设置，当前${this.draftUsername || getDeviceName()}`)
     }
 }
 
@@ -729,7 +729,7 @@ export struct SettingsPanel {
             cardSuffixMargin: LIST_ITEM_SUFFIX_MARGIN,
             accessibilityOptions: {
                 accessibilityText:
-                `用户名设置，当前${this.username || 'HarmonyOS用户'}`,
+                `用户名设置，当前${this.username || getDeviceName()}`,
             },
         })
     }

@@ -6,7 +6,7 @@ import {
 } from '../../common/appState';
 import type { AppsListContinuationState } from '../../common/appState';
 import { fetchAppsPage } from '../../common/MarketApi';
-import { formatBytes, formatCount, formatDateTime, formatDownloadCount } from '../../common/format';
+import { formatCount } from '../../common/format';
 import { scrollByAxis } from '../../common/scroll';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
@@ -18,89 +18,12 @@ import {
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { vibration } from '../../common/vibration';
 import { OverviewSection } from '../../component/charts/OverviewSection';
+import { AppTableRow } from '../../component/apps/AppTableRow';
 import { SearchPage } from './SearchPage';
 
 interface SortChoice { label: string; field: string; }
 interface FilterChoice { label: string; field: string; }
 const SEARCH_PULL_TRIGGER_DISTANCE_VP: number = 64;
-
-@Component
-struct AppTableRow {
-    app: MarketApp = {} as MarketApp;
-    index: number = 0;
-    @Prop tableWidth: number = 924;
-    @Prop developerWidth: number = 150;
-    onOpen: (app: MarketApp) => void = () => {};
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
-    @State private pressed: boolean = false;
-
-    private rating(): string {
-        const value = Number(this.app.average_rating ?? 0);
-        return value > 0 ? value.toFixed(1) : '-';
-    }
-
-    build() {
-        Row() {
-            Text(String(this.index)).width(44).fontSize(12).textAlign(TextAlign.Center)
-                .fontColor($r('app.color.v3_text_secondary')).accessibilityText(`序号${this.index}`)
-            Row({ space: 8 }) {
-                Stack() {
-                    Image(this.app.icon_url || $r('app.media.startIcon'))
-                        .width('100%').height('100%').objectFit(ImageFit.Cover)
-                        .borderRadius(8).clip(true)
-                        .alt($r('app.media.startIcon'))
-                        .accessibilityText(`${this.app.name || '未知应用'}图标`)
-                }
-                    .width(34).height(34).borderRadius(8).clip(true)
-                Column({ space: 2 }) {
-                    Text(this.app.name || '未知应用').fontSize(13).fontWeight(FontWeight.Medium)
-                        .fontColor($r('app.color.v3_text_primary')).maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    Text(this.app.pkg_name || this.app.app_id).fontSize(10)
-                        .fontColor($r('app.color.v3_text_secondary')).maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                }.alignItems(HorizontalAlign.Start)
-            }.width(220)
-            Text(this.app.developer_name || '-').width(this.developerWidth).fontSize(12)
-                .fontColor($r('app.color.diff_content')).maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .accessibilityText(`开发者${this.app.developer_name || '未知'}`)
-            Text(`${this.app.kind_type_name || '-'} · ${this.app.kind_name || '-'}`).width(140).fontSize(12)
-                .fontColor($r('app.color.v3_text_primary')).maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .accessibilityText(`分类${this.app.kind_type_name || ''}${this.app.kind_name || ''}`)
-            Text(this.rating()).width(70).fontSize(12).fontColor($r('app.color.v3_text_primary'))
-                .accessibilityText(`评分${this.rating()}`)
-            Text(formatDownloadCount(this.app.download_count)).width(100).fontSize(12)
-                .fontColor($r('app.color.v3_text_primary'))
-                .accessibilityText(`下载量${formatDownloadCount(this.app.download_count)}`)
-            Text(formatBytes(this.app.size_bytes)).width(90).fontSize(12)
-                .fontColor($r('app.color.v3_text_secondary'))
-                .accessibilityText(`应用大小${formatBytes(this.app.size_bytes)}`)
-            Text(formatDateTime(this.app.updated_at).split(' ')[0]).width(110).fontSize(12)
-                .fontColor($r('app.color.v3_text_secondary'))
-                .accessibilityText(`更新时间${formatDateTime(this.app.updated_at)}`)
-        }
-        .width(this.tableWidth).height(58).padding({ left: 8, right: 8 })
-        .border({ width: { bottom: 1 }, color: $r('app.color.v3_chart_grid') })
-        .backgroundColor(this.index % 2 === 0 ? $r('app.color.v3_surface_alt') : $r('app.color.v3_surface'))
-        .scale({ x: this.pressed ? 0.99 : 1, y: this.pressed ? 0.99 : 1 })
-        .animation({ curve: Curve.EaseOut, duration: 120 })
-        .onTouch((event: TouchEvent) => {
-            if (event.type === TouchType.Down) {
-                this.pressed = true;
-            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                this.pressed = false;
-            }
-        })
-        .onClick(() => {
-            if (this.vibrationLevel > 0) vibration.dotVibration();
-            this.onOpen(this.app);
-        })
-        .accessibilityGroup(true)
-        .accessibilityText(`序号${this.index}，${this.app.name || '未知应用'}，开发者${this.app.developer_name || '未知'}，分类${this.app.kind_type_name || ''}${this.app.kind_name || ''}，评分${this.rating()}，下载量${formatDownloadCount(this.app.download_count)}，点击打开详情`)
-    }
-}
 
 @Component
 export struct AppsPage {
@@ -115,7 +38,7 @@ export struct AppsPage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private pageScroller: Scroller = new Scroller();
     private readonly sortChoiceItems: SortChoice[] = [
-        { label: '更新时间', field: 'updated_at' }, { label: '下载量', field: 'download_count' },
+        { label: '更新时间', field: 'updated_at' }, /* { label: '下载量', field: 'download_count' }, */
         { label: '评分数量', field: 'total_star_rating_count' }, { label: '应用大小', field: 'size_bytes' },
         { label: '上架时间', field: 'listed_at' },
     ];
@@ -124,7 +47,7 @@ export struct AppsPage {
         { label: '类型', field: 'kind_type_name' }, { label: '标签', field: 'tag_name' },
         { label: '开发者', field: 'developer_name' },
     ];
-    private readonly typeSelectOptions: SelectOption[] = ['全部类型', '鸿蒙应用', '元服务']
+    private readonly typeSelectOptions: SelectOption[] = ['全部类型', '应用', '元服务']
         .map((label: string) => ({ value: label } as SelectOption));
     private readonly sortSelectOptions: SelectOption[] = this.sortChoiceItems
         .map((choice: SortChoice) => ({ value: choice.label } as SelectOption));
@@ -158,9 +81,11 @@ export struct AppsPage {
     private restoredView: boolean = false;
     private reloadAfterCurrent: boolean = false;
     private reloadForce: boolean = false;
+    private listLoadToken: number = 0;
     private enterAnimationPlayed: boolean = false;
     private enterAnimationTimers: number[] = [];
     private restoreScrollTimer: number = -1;
+    private reloadTimer: number = -1;
 
     private onActiveChanged(): void {
         if (this.active) this.startPageAnimationOnce();
@@ -176,17 +101,47 @@ export struct AppsPage {
     }
 
     aboutToDisappear(): void {
+        this.listLoadToken++;
+        this.reloadAfterCurrent = false;
+        this.reloadForce = false;
         cancelStaggerEnterAnimation(this.enterAnimationTimers);
         this.enterAnimationTimers = [];
         if (this.restoreScrollTimer >= 0) {
             clearTimeout(this.restoreScrollTimer);
             this.restoreScrollTimer = -1;
         }
+        if (this.reloadTimer >= 0) {
+            clearTimeout(this.reloadTimer);
+            this.reloadTimer = -1;
+        }
     }
 
     private validIndex(value: number, count: number): number {
         const index = Number(value);
         return Number.isInteger(index) && index >= 0 && index < count ? index : 0;
+    }
+
+    private restoredSortIndex(state: AppsListContinuationState): number {
+        const legacySortFields: string[] = [
+            'updated_at', 'download_count', 'total_star_rating_count', 'size_bytes', 'listed_at',
+        ];
+        let field = state.sortField ?? '';
+        if (field.length === 0) {
+            const legacyIndex = Number(state.sortIndex);
+            if (Number.isInteger(legacyIndex) && legacyIndex >= 0 && legacyIndex < legacySortFields.length) {
+                field = legacySortFields[legacyIndex];
+            }
+        }
+        // 下载量排序不再对外提供；旧状态平滑迁移到当前默认的评分数量排序。
+        if (field === 'download_count') {
+            field = 'total_star_rating_count';
+        }
+        for (let index = 0; index < this.sortChoices().length; index++) {
+            if (this.sortChoices()[index].field === field) {
+                return index;
+            }
+        }
+        return 0;
     }
 
     private restoreContinuationListState(): void {
@@ -198,7 +153,7 @@ export struct AppsPage {
         this.filterIndex = this.validIndex(state.filterIndex, this.filterChoices().length);
         this.filterText = typeof state.filterText === 'string' ? state.filterText : '';
         this.appliedFilterText = typeof state.appliedFilterText === 'string' ? state.appliedFilterText : '';
-        this.sortIndex = this.validIndex(state.sortIndex, this.sortChoices().length);
+        this.sortIndex = this.restoredSortIndex(state);
         this.descending = state.descending !== false;
     }
 
@@ -211,6 +166,7 @@ export struct AppsPage {
             filterText: this.filterText,
             appliedFilterText: this.appliedFilterText,
             sortIndex: this.sortIndex,
+            sortField: this.sortChoices()[this.sortIndex].field,
             descending: this.descending,
         };
         setContinuationAppsListState(state);
@@ -286,6 +242,7 @@ export struct AppsPage {
     private developerWidth(): number { return 150 + Math.max(0, this.tableViewportWidth - 924); }
 
     private async load(force: boolean = false): Promise<void> {
+        const loadToken = ++this.listLoadToken;
         if (this.loading) {
             this.reloadAfterCurrent = true;
             this.reloadForce = this.reloadForce || force;
@@ -307,15 +264,27 @@ export struct AppsPage {
             }
         }
         try {
-            const result = await fetchAppsPage(this.page, this.pageSize(), sort, this.descending,
-                searchKey, searchValue, false, force, false, excludeAtomic);
+            const result = await fetchAppsPage({
+                page: this.page,
+                pageSize: this.pageSize(),
+                sort,
+                desc: this.descending,
+                searchKey,
+                searchValue,
+                exact: false,
+                force,
+                excludeHuawei: false,
+                excludeAtomic,
+            });
             const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
             if (!response.success || !response.data) throw new Error('应用列表数据不可用');
+            if (loadToken !== this.listLoadToken) return;
             this.apps = response.data.data ?? [];
             this.total = response.data.total_count ?? 0;
             this.fromCache = result.stale;
             this.loaded = true;
         } catch (error) {
+            if (loadToken !== this.listLoadToken) return;
             const message = (error as Error).message;
             console.error('[Dashboard][pages/main/AppsPage][ERROR]', `应用列表加载失败: ${message}`);
             showToastSafely(this.prompt, `应用列表加载失败：${message}`, 2500, 'V3Apps');
@@ -325,7 +294,10 @@ export struct AppsPage {
                 const forceNext = this.reloadForce;
                 this.reloadAfterCurrent = false;
                 this.reloadForce = false;
-                setTimeout((): void => { this.load(forceNext); }, 0);
+                this.reloadTimer = setTimeout((): void => {
+                    this.reloadTimer = -1;
+                    this.load(forceNext);
+                }, 0);
             }
         }
     }
@@ -421,7 +393,7 @@ export struct AppsPage {
         Column({ space: 8 }) {
             Flex({ wrap: FlexWrap.Wrap }) {
                 Select(this.typeOptions()).selected(this.typeIndex)
-                    .value(['全部类型', '鸿蒙应用', '元服务'][this.typeIndex]).height(42).margin(4)
+                    .value(['全部类型', '应用', '元服务'][this.typeIndex]).height(42).margin(4)
                     .backgroundColor($r('app.color.v3_surface'))
                     .scale({ x: this.pressedControl === 'type' ? 0.97 : 1,
                         y: this.pressedControl === 'type' ? 0.97 : 1 })
@@ -442,7 +414,7 @@ export struct AppsPage {
                         this.recordListState();
                         this.load(false);
                     })
-                    .accessibilityText('筛选全部类型鸿蒙应用或元服务')
+                    .accessibilityText('筛选全部类型应用或元服务')
                 Select(this.filterOptions()).selected(this.filterIndex)
                     .value(this.filterChoices()[this.filterIndex].label).height(42).margin(4)
                     .backgroundColor($r('app.color.v3_surface'))
@@ -602,7 +574,7 @@ export struct AppsPage {
                             .fontColor($r('app.color.v3_text_secondary'))
                         Text('分类').width(140).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                         Text('评分').width(70).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text('下载量').width(100).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        // Text('下载量').width(100).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                         Text('大小').width(90).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                         Text('更新时间').width(110).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                     }
@@ -741,7 +713,7 @@ export struct AppsPage {
                                     .accessibilityText(`共${formatCount(this.total)}条应用数据`)
                                 this.filterBar()
                                 if (this.typeIndex === 2 && this.appliedFilterText.length > 0) {
-                                    Text('元服务类型筛选优先，字段筛选将在切换到全部类型或鸿蒙应用后生效')
+                                    Text('元服务类型筛选优先，字段筛选将在切换到全部类型或应用后生效')
                                         .fontSize(12).fontColor($r('app.color.v3_accent_orange')).width('100%')
                                 }
                                 if (this.fromCache) {

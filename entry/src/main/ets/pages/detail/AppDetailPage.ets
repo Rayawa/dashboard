@@ -707,8 +707,8 @@ export struct AppDetailPage {
             { label: '最低 SDK', value: String(this.app.minsdk ?? '-') },
             { label: '目标 SDK', value: String(this.app.target_sdk ?? '-') },
             { label: '编译 SDK', value: String(this.app.compile_sdk_version ?? '-') },
-            { label: '最低 Harmony API', value: String(this.app.min_hmos_api_level ?? '-') },
-            { label: '下载量', value: formatDownloadCount(this.app.download_count) },
+            { label: '最低 API 版本', value: String(this.app.min_hmos_api_level ?? '-') },
+            // { label: '下载量', value: formatDownloadCount(this.app.download_count) },
             { label: '评分', value: this.app.average_rating ? `${this.app.average_rating} / 5` : '-' },
             { label: '评分数量', value: formatCount(this.app.total_star_rating_count) },
             { label: '供应商', value: this.app.supplier || '-' },
@@ -827,7 +827,7 @@ export struct AppDetailPage {
     @Builder
     private appActions(): void {
         Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
-            Button('在华为应用市场打开', { stateEffect: false })
+            Button('打开应用详情', { stateEffect: false })
                 .margin(4)
                 .backgroundColor($r('app.color.diff_content'))
                 .scale({
@@ -848,7 +848,7 @@ export struct AppDetailPage {
                     this.vibrate();
                     this.openMarket();
                 })
-                .accessibilityText('在华为应用市场打开此应用')
+                .accessibilityText('打开此应用的公开详情页面')
             if (this.app?.privacy_url) {
                 Button('隐私政策', { stateEffect: false })
                     .margin(4)
@@ -1030,7 +1030,7 @@ export struct AppDetailPage {
             if (this.screenshots().length > 0) {
                 this.appScreenshots()
             }
-            this.downloadChart()
+            // this.downloadChart()
             this.ratingChart()
         }
         .width('100%')

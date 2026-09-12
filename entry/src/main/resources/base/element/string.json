@@ -2,15 +2,15 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "鸿蒙应用市场数据看板"
+      "value": "Dashboard应用看板"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "鸿蒙应用市场数据看板"
+      "value": "Dashboard应用看板"
     },
     {
       "name": "EntryAbility_label",
-      "value": "鸿蒙应用市场数据看板"
+      "value": "Dashboard应用看板"
     },
     {
       "name": "shareEntryAbility_desc",
@@ -30,7 +30,7 @@
     },
     {
       "name": "shareEntryAbility_label",
-      "value": "投稿应用至看板"
+      "value": "投稿应用至Dashboard应用看板"
     },
     {
       "name": "queryEntryAbility_label",
@@ -42,11 +42,11 @@
     },
     {
       "name": "simple_share_label",
-      "value": "直接投稿到看板"
+      "value": "直接投稿到Dashboard应用看板"
     },
     {
       "name": "complex_share_label",
-      "value": "填写信息投稿到看板"
+      "value": "填写信息投稿到Dashboard应用看板"
     },
     {
       "name": "STORAGE_distributed_permission_reason",

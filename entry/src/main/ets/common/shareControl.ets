@@ -25,7 +25,7 @@ export class WebShareManager {
   private desiredListening: boolean = false;
 
   private currentUrl: string = "";
-  private currentTitle: string = '应用看板链接分享';
+  private currentTitle: string = 'Dashboard应用看板链接分享';
   private currentDescription: string = '';
   private currentThumbnail?: Uint8Array;
   private thumbnailPromise?: Promise<void>;
@@ -40,7 +40,7 @@ export class WebShareManager {
     return WebShareManager.nextOwnerId;
   }
 
-  public updateShareData(url: string, title: string = '应用看板链接分享', description: string = '',
+  public updateShareData(url: string, title: string = 'Dashboard应用看板链接分享', description: string = '',
     dataProvider?: () => WebShareData, ownerId: number = 0): void {
     this.activeOwnerId = ownerId;
     this.currentUrl = url;
@@ -62,7 +62,7 @@ export class WebShareManager {
       const data = this.currentDataProvider();
       if (!data.url || data.url === 'about:blank') return;
       this.currentUrl = data.url;
-      this.currentTitle = data.title || '应用看板链接分享';
+      this.currentTitle = data.title || 'Dashboard应用看板链接分享';
       this.currentDescription = data.description || data.url;
     } catch (error) {
       Logger.warn(TAG, `实时分享数据读取失败: ${(error as BusinessError).message}`);
@@ -99,6 +99,9 @@ export class WebShareManager {
   public static getInstance(context: common.UIAbilityContext): WebShareManager {
     if (!WebShareManager.instance) {
       WebShareManager.instance = new WebShareManager(context);
+    } else {
+      // 窗口或 Ability 重建后刷新上下文，避免单例继续持有已经失效的旧上下文。
+      WebShareManager.instance.context = context;
     }
     return WebShareManager.instance;
   }
@@ -158,21 +161,45 @@ export class WebShareManager {
   }
 
   private async registerPassiveShare(): Promise<void> {
+    let knockRegistered = false;
+    let gesturesRegistered = false;
+    let windowId: number | undefined = undefined;
     try {
       const win = await window.getLastWindow(this.context);
-      const windowId = win.getWindowProperties().id;
+      windowId = win.getWindowProperties().id;
+      if (!this.desiredListening) return;
 
       harmonyShare.on('knockShare', (target: harmonyShare.SharableTarget) => {
         this.executePassiveShare(target);
       });
+      knockRegistered = true;
       harmonyShare.on('gesturesShare', { windowId: windowId }, (target: harmonyShare.SharableTarget) => {
         this.executePassiveShare(target);
       });
+      gesturesRegistered = true;
 
       this.isListening = true;
       this.passiveShareWindowId = windowId;
       Logger.info(TAG, "HarmonyShare: Knock and Gesture sharing enabled.");
     } catch (err) {
+      if (gesturesRegistered && windowId !== undefined) {
+        try {
+          harmonyShare.off('gesturesShare', { windowId });
+        } catch (cleanupError) {
+          Logger.warn(TAG,
+            `HarmonyShare: Gesture listener rollback failed: ${(cleanupError as BusinessError).message}`);
+        }
+      }
+      if (knockRegistered) {
+        try {
+          harmonyShare.off('knockShare');
+        } catch (cleanupError) {
+          Logger.warn(TAG,
+            `HarmonyShare: Knock listener rollback failed: ${(cleanupError as BusinessError).message}`);
+        }
+      }
+      this.isListening = false;
+      this.passiveShareWindowId = undefined;
       Logger.error(TAG, `HarmonyShare: Enable sharing failed: ${(err as BusinessError).message}`);
     }
   }

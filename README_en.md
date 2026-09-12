@@ -1,13 +1,13 @@
-# Dashboard for HarmonyOS
+# Dashboard Application Viewer
 
 [简体中文](README.md) · [English](README_en.md) · [Français](README_fr.md)
 
-Dashboard is the native HarmonyOS client for `harmony_get_market`. It loads market data from the back end's `/api/v0` endpoints while retaining the ArkWeb entry to the S Site.
+Dashboard Application Viewer is the native client for `harmony_get_market`. It queries public SDK, version, category, and rating information through the back end's `/api/v0` endpoints while retaining the ArkWeb entry to the S Site.
 
 - Bundle name: `top.rayawa.dashboard`
 - Version: `3.0.1`
 - Build number: `30000005`
-- Target and compatible version: HarmonyOS `6.1.0(23)` (API 23)
+- Target and compatible version: system `6.1.0(23)` (API 23)
 - Devices: phone, tablet, and 2in1
 - Branch: `v3.0.0(23)`, migrated from `shenjack`
 
@@ -16,7 +16,7 @@ Dashboard is the native HarmonyOS client for `harmony_get_market`. It loads mark
 The root page uses `HdsNavigation`, child pages use `HdsNavDestination`, and four main pages are connected by fixed-title `HdsTabs`. The bottom bar no longer auto-hides or uses a manually specified size:
 
 1. **S Site** — warms up and caches its ArkWeb page at app startup and supports sharing the current page, Knock-to-Share, and air-gesture sharing. An independent Web viewport keeps floating detail dialogs in the current view.
-2. **Home** — shows that the total equals HarmonyOS apps plus Atomic Services; wide layouts place totals, service status, and recently listed apps side by side.
+2. **Home** — shows that the total equals applications plus Atomic Services; wide layouts place totals, service status, and recently listed apps side by side.
 3. **App Details** — places search and an overview/list switcher at the top. The list supports type and field filters, sorting, and pagination.
 4. **My** — shows the app icon and names, settings, additional links, version, copyright, and ICP filing information. The tutorial is intentionally available here only, rather than duplicated in the title bar; Contact Us opens as a dismissible half-modal sheet.
 
@@ -136,7 +136,7 @@ The back end's runtime routes are authoritative. See `API.md`, `API_DOCS.md`, an
 ## Development and verification
 
 1. Open the project with DevEco Studio 6.1 or newer.
-2. Install the HarmonyOS API 23 SDK and the required HMS SDK.
+2. Install the required API 23 and system SDKs.
 3. Configure a valid local signing profile; absolute paths from another developer's machine cannot be reused directly.
 4. Build and test phone, tablet, or 2in1 targets on a device or emulator.
 5. Verify weak-network fallback, cache clearing, light/dark themes, 600/840vp breakpoints, the single inbound share entry, all three sharing modes on the S Site and detail page, continuation position, table scrolling/page jumps, and screen-reader output.
