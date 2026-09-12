@@ -16,6 +16,7 @@ export struct PrivacyConfirmationButtons {
     @State isExiting: boolean = false;
     @State isProcessing: boolean = false;
     private timerId: number = -1;
+    private exitTimerId: number = -1;
     private isActive: boolean = false;
 
     aboutToAppear(): void {
@@ -29,10 +30,16 @@ export struct PrivacyConfirmationButtons {
             clearInterval(this.timerId);
             this.timerId = -1;
         }
+        if (!this.isExiting && this.exitTimerId !== -1) {
+            clearTimeout(this.exitTimerId);
+            this.exitTimerId = -1;
+        }
     }
 
     private async startCountDown(): Promise<void> {
         try {
+            this.countDown = 3;
+            this.isConfirmEnabled = false;
             let isFirstLaunch = await getFirstLaunch();
 
             if (!this.isActive) return;
@@ -60,7 +67,9 @@ export struct PrivacyConfirmationButtons {
     }
 
     private async handleCancel(): Promise<void> {
+        if (this.isExiting || this.isProcessing) return;
         this.isExiting = true;
+        this.isProcessing = true;
         showToastSafely(this.prompt, '退出应用…', 2000, 'PrivacyConfirm');
         try {
             await setFirstLaunch(true);
@@ -69,7 +78,8 @@ export struct PrivacyConfirmationButtons {
         } catch (err) {
             console.error('[Dashboard][component/PrivacyConfirmationButtons][ERROR]', "获取失败");
         }
-        setTimeout(() => {
+        this.exitTimerId = setTimeout(() => {
+            this.exitTimerId = -1;
             try {
                 privacyManager.disableService();
                 const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -85,7 +95,8 @@ export struct PrivacyConfirmationButtons {
     }
 
     private async handleConfirm(): Promise<void> {
-        if (!this.isConfirmEnabled) return;
+        if (!this.isConfirmEnabled || this.isProcessing || this.isExiting) return;
+        this.isProcessing = true;
         try {
             await setFirstLaunch(false);
 
@@ -95,9 +106,9 @@ export struct PrivacyConfirmationButtons {
             console.error('[Dashboard][component/PrivacyConfirmationButtons][ERROR]',
                 `保存重要提示同意状态失败: ${JSON.stringify(error)}`);
             showToastSafely(this.prompt, '保存同意状态失败，请重试', 2000, 'PrivacyConfirm');
+            this.isProcessing = false;
             return;
         }
-        this.isProcessing = true;
         this.isShow = false;
     }
 
@@ -112,6 +123,7 @@ export struct PrivacyConfirmationButtons {
                 .fontColor($r('app.color.v3_text_primary'))
                 .backgroundColor($r('app.color.v3_surface_alt'))
                 .borderRadius(this.BORDER_RADIUS)
+                .enabled(!this.isExiting && !this.isProcessing)
                 .onClick(() => {
                     if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleCancel();
@@ -126,6 +138,7 @@ export struct PrivacyConfirmationButtons {
                 .height(this.BUTTON_HEIGHT)
                 .backgroundColor(this.isConfirmEnabled ? $r('app.color.v3_accent_red') : $r('app.color.v3_text_secondary'))
                 .borderRadius(this.BORDER_RADIUS)
+                .enabled(this.isConfirmEnabled && !this.isProcessing && !this.isExiting)
                 .onClick(() => {
                     if(this.vibrationLevel > 0) vibration.dotVibration()
                     this.handleConfirm();

@@ -1,13 +1,13 @@
-# Dashboard d’applications pour HarmonyOS
+# Dashboard d’applications
 
 [简体中文](README.md) · [English](README_en.md) · [Français](README_fr.md)
 
-Dashboard est le client natif HarmonyOS de `harmony_get_market`. Il charge les données du marché depuis les API `/api/v0` du back-end tout en conservant l’accès ArkWeb au site S.
+Dashboard est le client natif de `harmony_get_market`. Il consulte les informations publiques de SDK, de version, de catégorie et de notation via les API `/api/v0` du back-end tout en conservant l’accès ArkWeb au site S.
 
 - Nom du bundle : `top.rayawa.dashboard`
 - Version : `3.0.0`
 - Numéro de build : `30000005`
-- Version cible et compatible : HarmonyOS `6.1.0(23)` (API 23)
+- Version système cible et compatible : `6.1.0(23)` (API 23)
 - Appareils : téléphone, tablette et 2in1
 - Branche : `v3.0.0(23)`, migrée depuis `shenjack`
 
@@ -16,7 +16,7 @@ Dashboard est le client natif HarmonyOS de `harmony_get_market`. Il charge les d
 La page racine utilise `HdsNavigation`, les pages enfants utilisent `HdsNavDestination` et quatre pages principales sont reliées par des `HdsTabs` à titre fixe. La barre inférieure ne se masque plus automatiquement et n’utilise plus de taille définie manuellement :
 
 1. **Site S** — préchauffe et met en cache sa page ArkWeb au démarrage de l’application, puis permet de partager la page courante par le système, par contact ou par geste dans l’air. Un viewport Web indépendant maintient les fenêtres de détail flottantes dans la vue courante.
-2. **Accueil** — indique que le total correspond aux applications HarmonyOS plus les services atomiques ; sur écran large, les totaux, l’état du service et les derniers ajouts sont affichés côte à côte.
+2. **Accueil** — indique que le total correspond aux applications plus les services atomiques ; sur écran large, les totaux, l’état du service et les derniers ajouts sont affichés côte à côte.
 3. **Détails des applications** — regroupe en haut la recherche et le sélecteur aperçu/liste. La liste prend en charge les filtres par type et par champ, le tri et la pagination.
 4. **Mon espace** — affiche l’icône et les noms de l’application, les réglages, les liens supplémentaires, la version, le copyright et les informations ICP. Le tutoriel n’est disponible qu’ici afin de ne pas le dupliquer dans la barre de titre ; « Nous contacter » ouvre une feuille semi-modale refermable.
 
@@ -136,7 +136,7 @@ Les routes réellement exposées par le back-end font foi. Consultez `API.md`, `
 ## Développement et validation
 
 1. Ouvrez le projet avec DevEco Studio 6.1 ou une version plus récente.
-2. Installez le SDK HarmonyOS API 23 et le SDK HMS requis.
+2. Installez les SDK API 23 et système requis.
 3. Configurez un profil de signature local valide ; les chemins absolus d’un autre poste ne peuvent pas être réutilisés directement.
 4. Compilez et testez les cibles téléphone, tablette ou 2in1 sur un appareil ou un émulateur.
 5. Vérifiez le repli en réseau faible, le nettoyage du cache, les thèmes clair/sombre, les seuils 600/840vp, l’unique entrée de partage reçue, les trois modes de partage sur le site S et la page de détail, la position de continuité, le défilement et le saut de page du tableau, ainsi que la lecture par le lecteur d’écran.

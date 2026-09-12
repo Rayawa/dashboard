@@ -633,11 +633,11 @@ struct ApiHistoryChart {
     build() {
         Column({ space: 12 }) {
             Row() {
-                Text('Harmony API 版本占比历史').fontSize(18).fontWeight(FontWeight.Bold)
+                Text('API 版本占比历史').fontSize(18).fontWeight(FontWeight.Bold)
                     .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
             }.width('100%')
             InteractiveLineChart({
-                title: 'Harmony API版本占比历史',
+                title: 'API版本占比历史',
                 unit: '%',
                 series: this.chartSeries(),
                 showTitle: false,
@@ -649,7 +649,7 @@ struct ApiHistoryChart {
                 },
             })
         }
-        .width('100%').accessibilityText('Harmony API版本占比历史')
+        .width('100%').accessibilityText('API版本占比历史')
     }
 }
 
@@ -1068,7 +1068,7 @@ export struct OverviewSection {
             }
             this.apiKeys = Object.keys(discovered).sort((a: string, b: string) => Number(b) - Number(a));
             this.fromCache = this.fromCache || result.stale;
-        }).catch((error: Error) => this.failed('Harmony API 历史', error)).finally(() => this.finish());
+        }).catch((error: Error) => this.failed('API 版本历史', error)).finally(() => this.finish());
     }
 
     build() {

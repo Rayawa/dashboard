@@ -26,6 +26,7 @@ export interface AppsListContinuationState {
     filterText: string;
     appliedFilterText: string;
     sortIndex: number;
+    sortField?: string;
     descending: boolean;
 }
 
@@ -65,6 +66,7 @@ export function defaultAppsListState(): AppsListContinuationState {
         filterText: '',
         appliedFilterText: '',
         sortIndex: 1,
+        sortField: 'total_star_rating_count',
         descending: true,
     };
 }

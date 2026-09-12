@@ -10,6 +10,8 @@ import {
     SUBMIT_PLATFORM,
 } from './constants';
 import { readCache, writeCache } from './CacheService';
+import { buildAppsPagePath } from './AppListQuery';
+import type { AppsPageQuery } from './AppListQuery';
 import type {
     ApiDataResult,
     AppDetailPayload,
@@ -115,32 +117,12 @@ export function fetchMarketInfo(force: boolean = false): Promise<ApiDataResult<B
 }
 
 export function fetchAppsPage(
-    page: number,
-    pageSize: number,
-    sort: string,
-    desc: boolean,
-    searchKey?: string,
-    searchValue?: string,
-    exact: boolean = false,
-    force: boolean = false,
-    excludeHuawei: boolean = false,
-    excludeAtomic: boolean = false,
+    options: AppsPageQuery,
 ): Promise<ApiDataResult<BaseAPIResponse<PageInfo<MarketApp>>>> {
-    let query = `page_size=${pageSize}&detail=true&sort=${encodeURIComponent(sort)}&desc=${desc}`;
-    if (searchKey && searchValue) {
-        query += `&search_key=${encodeURIComponent(searchKey)}&search_value=${encodeURIComponent(searchValue)}`;
-        query += `&search_exact=${exact}`;
-    }
-    if (excludeHuawei) {
-        query += '&exclude_huawei=true';
-    }
-    if (excludeAtomic) {
-        query += '&exclude_atomic=true';
-    }
     return requestJson<BaseAPIResponse<PageInfo<MarketApp>>>(
-        `apps/list/${Math.max(1, page)}?${query}`,
+        buildAppsPagePath(options),
         CACHE_TTL_LIST_MS,
-        force,
+        options.force ?? false,
     );
 }
 

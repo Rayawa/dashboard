@@ -14,6 +14,7 @@ export struct WarningContent {
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @State contentWidth: number = 0;
+  @State wideTopCardHeight: number = 0;
   private scroller: Scroller = new Scroller();
 
   private readonly WIDE_LAYOUT_BREAKPOINT: number = 680;
@@ -21,6 +22,12 @@ export struct WarningContent {
   private vibrate(): void {
     if (this.vibrationLevel > 0) {
       vibration.dotVibration();
+    }
+  }
+
+  private updateWideTopCardHeight(height: number): void {
+    if (this.contentWidth >= this.WIDE_LAYOUT_BREAKPOINT && height > this.wideTopCardHeight) {
+      this.wideTopCardHeight = height;
     }
   }
 
@@ -62,7 +69,7 @@ export struct WarningContent {
   private primaryNoticeCard(): void {
     Column({ space: 14 }) {
       Row() {
-        Text('Harmony Dashboard 数据来源于网络')
+        Text('Dashboard应用看板信息来源于网络')
           .layoutWeight(1)
           .fontSize(16)
           .fontColor($r('app.color.v3_accent_red'))
@@ -88,7 +95,7 @@ export struct WarningContent {
           .fontSize(13)
           .fontColor($r('app.color.v3_notice_text_secondary'))
           .fontWeight(FontWeight.Medium)
-        Text('所有数据由第三方测算，不代表华为官方立场！')
+        Text('所有信息均来自公开网络，不代表任何平台官方立场！')
           .fontColor($r('app.color.v3_accent_red'))
           .fontWeight(FontWeight.Bold)
           .fontSize(14)
@@ -107,13 +114,64 @@ export struct WarningContent {
     .borderRadius(16)
     .backgroundColor($r('app.color.v3_notice_bg'))
     .border({ width: 1, color: $r('app.color.v3_notice_divider') })
+    .constraintSize({
+      minHeight: this.contentWidth >= this.WIDE_LAYOUT_BREAKPOINT ? this.wideTopCardHeight : 0,
+    })
+    .onAreaChange((_oldValue: Area, newValue: Area): void => {
+      this.updateWideTopCardHeight(Number(newValue.height));
+    })
+  }
+
+  @Builder
+  private marketplaceComplianceCard(): void {
+    Column({ space: 10 }) {
+      Text('应用市场合规调整说明')
+        .fontSize(16)
+        .fontColor($r('app.color.diff_content'))
+        .fontWeight(FontWeight.Bold)
+        .width('100%')
+
+      Text('近期版本在提交华为应用市场审核时，审核方对部分功能和宣传内容提出了合规要求。为保证应用能够继续上架，我们对以下内容进行了调整。')
+        .fontSize(13)
+        .fontColor($r('app.color.v3_text_primary'))
+        .lineHeight(21)
+        .width('100%')
+
+      Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
+      this.noticeSection('下载量展示',
+        '审核方认为应用下载量的真实性和准确性难以由应用独立证明，可能使用户对统计效果产生误解，因此应用内不再提供下载量及下载趋势展示。')
+      Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
+      this.noticeSection('外部链接与应用分发',
+        '审核方不允许应用内容引导用户前往第三方应用市场或赞助平台，因此应用移除了友情链接、赞助我们、外部应用市场及相关帮助入口。')
+      Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
+      this.noticeSection('社区功能',
+        '具备交流和内容发布能力的社区模块需要提交安全评估报告及审核通过证明。由于未提交相关资质，当前版本不提供社区频道与用户群聊功能。')
+      Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
+      this.noticeSection('品牌表述',
+        '审核方要求避免在未获得书面授权时使用可能暗示合作关系的品牌宣传。应用因此统一使用“Dashboard应用看板”名称；本应用与华为不存在合作、授权或官方关联。')
+      Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
+
+      Text('上述调整不影响SDK、版本、分类、评分等公开信息查询。')
+        .fontSize(13)
+        .fontColor($r('app.color.v3_notice_text_secondary'))
+        .lineHeight(21)
+        .width('100%')
+    }
+    .width('100%')
+    .padding(16)
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(16)
+    .backgroundColor($r('app.color.v3_surface'))
+    .border({ width: 1, color: $r('app.color.nd_card_border') })
+    .accessibilityGroup(true)
+    .accessibilityText('应用市场合规调整说明，包含下载量、外部链接、社区功能和品牌表述的调整原因')
   }
 
   @Builder
   private limitationCard(): void {
     Column({ space: 9 }) {
       this.noticeSection('收录范围',
-        '应用仅收录已正式上架HarmonyOS NEXT及后续版本华为应用市场的应用；不包含侧载应用、公开测试应用或邀请测试应用。')
+        '仅收录已正式公开发布的应用与元服务；不包含侧载、公开测试或邀请测试内容。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
       this.noticeSection('更新延迟', '数据存在滞后性，同步质量受限于用户网络稳定性，项目组不保证信息的即时性。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
@@ -130,12 +188,18 @@ export struct WarningContent {
     .border({ width: 1, color: $r('app.color.nd_card_border') })
     .accessibilityGroup(true)
     .accessibilityText('应用收录范围、更新延迟、知识产权和动态调整')
+    .constraintSize({
+      minHeight: this.contentWidth >= this.WIDE_LAYOUT_BREAKPOINT ? this.wideTopCardHeight : 0,
+    })
+    .onAreaChange((_oldValue: Area, newValue: Area): void => {
+      this.updateWideTopCardHeight(Number(newValue.height));
+    })
   }
 
   @Builder
   private projectPageCard(): void {
     Row() {
-      Text('查看项目总网页')
+      Text('查看项目网站首页')
         .layoutWeight(1)
         .fontSize(14)
         .fontColor($r('app.color.v3_text_primary'))
@@ -152,34 +216,41 @@ export struct WarningContent {
     .backgroundColor($r('app.color.v3_surface'))
     .border({ width: 1, color: $r('app.color.nd_card_border') })
     .onClick(() => this.openProjectPage())
-    .accessibilityText('打开Dashboard项目总网页查看详细说明')
+    .accessibilityText('打开Dashboard项目网站首页查看详细说明')
   }
 
   @Builder
   private noticeContent(): void {
     Scroll(this.scroller) {
       if (this.contentWidth >= this.WIDE_LAYOUT_BREAKPOINT) {
-        Row({ space: 16 }) {
-          Column({ space: 14 }) {
-            this.primaryNoticeCard()
-            this.projectPageCard()
-          }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Start)
+        Column({ space: 14 }) {
+          Row({ space: 16 }) {
+            Column() {
+              this.primaryNoticeCard()
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start)
 
-          Column() {
-            this.limitationCard()
+            Column() {
+              this.limitationCard()
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start)
           }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Start)
+          .width('100%')
+          .alignItems(VerticalAlign.Top)
+
+          this.marketplaceComplianceCard()
+          this.projectPageCard()
         }
         .width('100%')
         .padding({ top: 6, bottom: 16 })
-        .alignItems(VerticalAlign.Top)
+        .alignItems(HorizontalAlign.Start)
       } else {
         Column({ space: 14 }) {
           this.primaryNoticeCard()
           this.limitationCard()
+          this.marketplaceComplianceCard()
           this.projectPageCard()
         }
         .width('100%')

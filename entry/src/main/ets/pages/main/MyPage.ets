@@ -16,11 +16,11 @@ import {
     LIST_SECTION_TITLE_START_PADDING,
     mainPage,
     MAIN_TAB_MY,
-    MEOW_CHANNEL_URL,
+    // MEOW_CHANNEL_URL,
     MIIT_ICP_URL,
     ROUTE_APP_LOG,
     ROUTE_DEVELOPER,
-    ROUTE_FRIEND_LINKS,
+    // ROUTE_FRIEND_LINKS,
     ROUTE_HTML_PAGE,
     ROUTE_TUTORIAL,
     ROUTE_WEB_PAGE,
@@ -204,12 +204,14 @@ export struct MyPage {
                 opensExternal: true,
                 action: () => this.openExternal(mainPage.toString(), '网站首页'),
             },
+            /*
             {
                 title: '订阅MeoW频道',
                 icon: $r('app.media.MeoW'),
                 opensExternal: true,
                 action: () => this.openExternal(MEOW_CHANNEL_URL.toString(), 'MeoW频道'),
             },
+            */
             {
                 title: 'API 文档说明',
                 icon: $r('app.media.api'),
@@ -218,6 +220,7 @@ export struct MyPage {
                     this.pushPage(ROUTE_WEB_PAGE, new WebViewParam(url.toString(), 'API 文档说明'));
                 },
             },
+            /*
             {
                 title: '友情链接',
                 icon: $r('app.media.link'),
@@ -229,6 +232,7 @@ export struct MyPage {
                 opensExternal: true,
                 action: () => this.openExternal('https://afdian.com/a/shenjack', '爱发电赞助页面'),
             },
+            */
         ];
     }
 
@@ -307,12 +311,12 @@ export struct MyPage {
                 .fontColor($r('app.color.diff_content'))
                 .textAlign(TextAlign.Center)
                 .accessibilityText('Dashboard应用看板')
-            Text('Harmony Dashboard')
+            Text('Dashboard应用看板')
                 .fontSize(20)
                 .fontWeight(600)
                 .fontColor($r('app.color.v3_text_secondary'))
                 .textAlign(TextAlign.Center)
-                .accessibilityText('Harmony Dashboard')
+                .accessibilityText('Dashboard应用看板')
         }
         .width('100%')
         .padding({ top: 18, bottom: 18, left: 12, right: 12 })

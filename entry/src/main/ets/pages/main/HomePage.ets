@@ -19,6 +19,7 @@ import {
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { scrollByAxis } from '../../common/scroll';
 import { vibration } from '../../common/vibration';
+import { getDeviceName } from '../../common/storage';
 import type { AppRouteTarget, BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
 
 interface HomeStat {
@@ -301,7 +302,13 @@ export struct HomePage {
 
     private async loadRecentApps(force: boolean): Promise<void> {
         try {
-            const result = await fetchAppsPage(1, 12, 'listed_at', true, undefined, undefined, false, force);
+            const result = await fetchAppsPage({
+                page: 1,
+                pageSize: 12,
+                sort: 'listed_at',
+                desc: true,
+                force,
+            });
             const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
             if (response.success && response.data) {
                 this.recentApps = response.data.data ?? [];
@@ -353,12 +360,12 @@ export struct HomePage {
                 }.width('100%').alignItems(HorizontalAlign.Start)
                 Row({ space: 12 }) {
                     Column({ space: 4 }) {
-                        Text('鸿蒙应用').fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        Text('应用').fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                         RollingNumber({
                             value: this.market.app_count.apps,
                             fontSize: 20,
                             color: $r('app.color.diff_content'),
-                            accessibilityLabel: '鸿蒙应用',
+                            accessibilityLabel: '应用',
                         })
                     }.layoutWeight(1).alignItems(HorizontalAlign.Start)
                     Column({ space: 4 }) {
@@ -385,7 +392,7 @@ export struct HomePage {
                 else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.displayCardPressed = '';
             })
             .accessibilityGroup(true)
-            .accessibilityText(`应用总数${this.market.app_count.apps + this.market.app_count.atomic_services}，其中鸿蒙应用${this.market.app_count.apps}，元服务${this.market.app_count.atomic_services}`)
+            .accessibilityText(`应用总数${this.market.app_count.apps + this.market.app_count.atomic_services}，其中应用${this.market.app_count.apps}，元服务${this.market.app_count.atomic_services}`)
             .opacity(this.animStep >= 1 ? 1 : 0)
             .translate({ y: this.animStep >= 1 ? 0 : 20 })
         }
@@ -488,12 +495,12 @@ export struct HomePage {
     @Builder
     private greetingHeader(): void {
         Column({ space: 5 }) {
-            Text(`${this.greeting()}，${this.username || 'HarmonyOS用户'}`)
+            Text(`${this.greeting()}，${this.username || getDeviceName()}`)
                 .fontSize(26)
                 .fontWeight(FontWeight.Bold)
                 .fontColor($r('app.color.v3_text_primary'))
-                .accessibilityText(`${this.greeting()}，${this.username || 'HarmonyOS用户'}`)
-            Text('欢迎来到鸿蒙应用市场数据看板')
+                .accessibilityText(`${this.greeting()}，${this.username || getDeviceName()}`)
+            Text('欢迎来到Dashboard应用看板')
                 .fontSize(14)
                 .fontColor($r('app.color.v3_text_secondary'))
                 .accessibilityText('欢迎来到Dashboard应用看板')

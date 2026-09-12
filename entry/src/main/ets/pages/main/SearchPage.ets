@@ -76,13 +76,29 @@ export struct SearchPage {
     private activeTarget: AppRouteTarget = {};
     private openDetailAfterSearch: boolean = false;
     private backgroundUpdateToken: number = 0;
+    private lifecycleToken: number = 0;
+    private searchRequestToken: number = 0;
+    private visible: boolean = false;
     private enterTimers: number[] = [];
     private resultScroller: Scroller = new Scroller();
 
     aboutToDisappear(): void {
+        this.visible = false;
+        this.lifecycleToken++;
+        this.searchRequestToken++;
         this.backgroundUpdateToken++;
+        this.loading = false;
+        this.openDetailAfterSearch = false;
         cancelStaggerEnterAnimation(this.enterTimers);
         this.enterTimers = [];
+    }
+
+    private isVisible(lifecycleToken: number): boolean {
+        return this.visible && lifecycleToken === this.lifecycleToken;
+    }
+
+    private isSearchCurrent(searchToken: number, lifecycleToken: number): boolean {
+        return searchToken === this.searchRequestToken && this.isVisible(lifecycleToken);
     }
 
     private updatePageAnimation(visible: boolean): void {
@@ -104,11 +120,16 @@ export struct SearchPage {
         }
     }
 
-    private async loadRecommendations(): Promise<void> {
+    private async loadRecommendations(lifecycleToken: number): Promise<void> {
         try {
-            const result = await fetchAppsPage(1, 8, 'download_count', true);
+            const result = await fetchAppsPage({
+                page: 1,
+                pageSize: 8,
+                sort: 'download_count',
+                desc: true,
+            });
             const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
-            if (response.success && response.data) {
+            if (this.isVisible(lifecycleToken) && response.success && response.data) {
                 this.recommendedApps = response.data.data ?? [];
             }
         } catch (error) {
@@ -172,7 +193,16 @@ export struct SearchPage {
         return 5;
     }
     private async findByName(name: string): Promise<NameSearchResult> {
-        const firstResult = await fetchAppsPage(1, 100, 'download_count', true, 'name', name, false, true);
+        const firstResult = await fetchAppsPage({
+            page: 1,
+            pageSize: 100,
+            sort: 'download_count',
+            desc: true,
+            searchKey: 'name',
+            searchValue: name,
+            exact: false,
+            force: true,
+        });
         const response = firstResult.data as BaseAPIResponse<PageInfo<MarketApp>>;
         let matches: MarketApp[] = response.data?.data ?? [];
         if (!response.success || matches.length === 0) {
@@ -181,7 +211,16 @@ export struct SearchPage {
         const totalPages = response.data?.total_pages ?? 1;
         let stale = firstResult.stale;
         for (let page = 2; page <= totalPages; page++) {
-            const nextResult = await fetchAppsPage(page, 100, 'download_count', true, 'name', name, false, true);
+            const nextResult = await fetchAppsPage({
+                page,
+                pageSize: 100,
+                sort: 'download_count',
+                desc: true,
+                searchKey: 'name',
+                searchValue: name,
+                exact: false,
+                force: true,
+            });
             const nextResponse = nextResult.data as BaseAPIResponse<PageInfo<MarketApp>>;
             if (nextResponse.success && nextResponse.data) matches = matches.concat(nextResponse.data.data ?? []);
             stale = stale || nextResult.stale;
@@ -200,12 +239,17 @@ export struct SearchPage {
             console.warn('[Dashboard][pages/main/SearchPage][WARN]', `保存搜索历史失败: ${JSON.stringify(error)}`);
         }
     }
-    private async submitNew(target: AppRouteTarget): Promise<void> {
+    private async submitNew(
+        target: AppRouteTarget,
+        searchToken: number,
+        lifecycleToken: number,
+    ): Promise<boolean> {
         const body: SubmitAppBody = { comment: { user: this.username } };
         if (target.appId) body.app_id = target.appId;
         else if (target.packageName) body.pkg_name = target.packageName;
         else throw new Error('投稿缺少应用标识');
         const response = await submitApp(body);
+        if (!this.isSearchCurrent(searchToken, lifecycleToken)) return false;
         if (!response.success || !response.data?.full_info) throw new Error('投稿接口未返回有效应用数据');
         this.resultApp = response.data.full_info;
         this.setResults([response.data.full_info]);
@@ -213,6 +257,7 @@ export struct SearchPage {
         this.fromCache = false;
         this.status = '新应用已收录并完成加载';
         showToastSafely(this.prompt, `已发现并收录新应用：${response.data.full_info.name}`, 2200, 'V3Search');
+        return true;
     }
     private updateExisting(): void {
         const token = this.backgroundUpdateToken;
@@ -234,10 +279,12 @@ export struct SearchPage {
     }
     private async search(recordHistory: boolean = true): Promise<void> {
         const raw = this.input.trim();
-        if (!raw || this.loading) {
+        if (!this.visible || !raw || this.loading) {
             if (!raw) showToastSafely(this.prompt, '请输入应用信息', 1500, 'V3Search');
             return;
         }
+        const searchToken = ++this.searchRequestToken;
+        const lifecycleToken = this.lifecycleToken;
         this.loading = true;
         this.backgroundUpdateToken++;
         this.errorMessage = '';
@@ -246,11 +293,13 @@ export struct SearchPage {
         this.status = '正在查找应用…';
         if (recordHistory) {
             await this.remember(raw);
+            if (!this.isSearchCurrent(searchToken, lifecycleToken)) return;
         }
         try {
             const target = this.targetFromInput();
             if (!target.appId && !target.packageName) {
                 const searchResult = await this.findByName(raw);
+                if (!this.isSearchCurrent(searchToken, lifecycleToken)) return;
                 this.setResults(searchResult.apps);
                 this.resultApp = searchResult.apps[0];
                 this.activeTarget = { appId: this.resultApp.app_id, packageName: this.resultApp.pkg_name };
@@ -263,18 +312,22 @@ export struct SearchPage {
             }
             this.activeTarget = target;
             let detail: ApiDataResult<BaseAPIResponse<AppDetailPayload>>;
-            try { detail = await this.detailRequest(target, false); }
+            try {
+                detail = await this.detailRequest(target, false);
+                if (!this.isSearchCurrent(searchToken, lifecycleToken)) return;
+            }
             catch (error) {
+                if (!this.isSearchCurrent(searchToken, lifecycleToken)) return;
                 const requestError = error as Error;
                 if (this.isMissingApplication(requestError)) {
-                    await this.submitNew(target);
+                    if (!await this.submitNew(target, searchToken, lifecycleToken)) return;
                     this.openDetailIfRequested();
                     return;
                 }
                 throw requestError;
             }
             if (!detail.data.success || !detail.data.data?.full_info) {
-                await this.submitNew(target);
+                if (!await this.submitNew(target, searchToken, lifecycleToken)) return;
                 this.openDetailIfRequested();
                 return;
             }
@@ -283,15 +336,22 @@ export struct SearchPage {
             this.activeTarget = { appId: this.resultApp.app_id, packageName: this.resultApp.pkg_name };
             this.fromCache = detail.stale;
             this.status = detail.stale ? '已从离线缓存加载结果' : '搜索结果已完整加载';
-            if (detail.data.data.new_app) await this.submitNew(this.activeTarget);
-            else this.updateExisting();
+            if (detail.data.data.new_app) {
+                if (!await this.submitNew(this.activeTarget, searchToken, lifecycleToken)) return;
+            } else {
+                this.updateExisting();
+            }
             this.openDetailIfRequested();
         } catch (error) {
+            if (!this.isSearchCurrent(searchToken, lifecycleToken)) return;
             const message = (error as Error).message;
             this.errorMessage = message;
             this.status = '搜索或投稿未完成';
+            this.openDetailAfterSearch = false;
             showToastSafely(this.prompt, message, 2600, 'V3Search');
-        } finally { this.loading = false; }
+        } finally {
+            if (this.isSearchCurrent(searchToken, lifecycleToken)) this.loading = false;
+        }
     }
     private openDetail(app?: MarketApp): void {
         const targetApp = app ?? this.resultApp;
@@ -316,7 +376,10 @@ export struct SearchPage {
     private openDetailIfRequested(): void {
         if (!this.openDetailAfterSearch || !this.resultApp) return;
         this.openDetailAfterSearch = false;
-        setTimeout((): void => this.openDetail(), 0);
+        const lifecycleToken = this.lifecycleToken;
+        setTimeout((): void => {
+            if (this.isVisible(lifecycleToken)) this.openDetail();
+        }, 0);
     }
     private applySuggestion(value: string): void { this.input = value; this.search(); }
 
@@ -410,9 +473,11 @@ export struct SearchPage {
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                 Text(app.developer_name || '未知开发者').fontSize(12).fontColor($r('app.color.diff_content'))
                     .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
+                /*
                 Text(`${app.pkg_name} · ${formatDownloadCount(app.download_count)} 下载`).fontSize(11)
                     .fontColor($r('app.color.v3_text_secondary')).maxLines(1)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
+                */
                 Text(`更新：${formatDateTime(app.updated_at)}`).fontSize(11)
                     .fontColor($r('app.color.v3_text_secondary'))
             }.alignItems(HorizontalAlign.Start).layoutWeight(1)
@@ -567,11 +632,17 @@ export struct SearchPage {
                 })
         )
         .onAppear(() => {
+            this.visible = true;
+            const lifecycleToken = ++this.lifecycleToken;
             this.updatePageAnimation(true);
             this.clearInitialFocus();
-            setTimeout((): void => this.clearInitialFocus(), 0);
-            getSearchHistory().then((history: string[]) => { this.history = history; }).catch(() => {});
-            this.loadRecommendations();
+            setTimeout((): void => {
+                if (this.isVisible(lifecycleToken)) this.clearInitialFocus();
+            }, 0);
+            getSearchHistory().then((history: string[]) => {
+                if (this.isVisible(lifecycleToken)) this.history = history;
+            }).catch(() => {});
+            this.loadRecommendations(lifecycleToken);
             this.consumePendingTarget();
         })
         .onDisAppear(() => this.updatePageAnimation(false))
