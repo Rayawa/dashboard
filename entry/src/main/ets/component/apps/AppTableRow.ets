@@ -50,11 +50,9 @@ export struct AppTableRow {
                 .accessibilityText(`分类${this.app.kind_type_name || ''}${this.app.kind_name || ''}`)
             Text(this.rating()).width(70).fontSize(12).fontColor($r('app.color.v3_text_primary'))
                 .accessibilityText(`评分${this.rating()}`)
-            /*
             Text(formatDownloadCount(this.app.download_count)).width(100).fontSize(12)
                 .fontColor($r('app.color.v3_text_primary'))
                 .accessibilityText(`下载量${formatDownloadCount(this.app.download_count)}`)
-            */
             Text(formatBytes(this.app.size_bytes)).width(90).fontSize(12)
                 .fontColor($r('app.color.v3_text_secondary'))
                 .accessibilityText(`应用大小${formatBytes(this.app.size_bytes)}`)
@@ -79,6 +77,6 @@ export struct AppTableRow {
             this.onOpen(this.app);
         })
         .accessibilityGroup(true)
-        // .accessibilityText(`序号${this.index}，${this.app.name || '未知应用'}，开发者${this.app.developer_name || '未知'}，分类${this.app.kind_type_name || ''}${this.app.kind_name || ''}，评分${this.rating()}，下载量${formatDownloadCount(this.app.download_count)}，点击打开详情`)
+        .accessibilityText(`序号${this.index}，${this.app.name || '未知应用'}，开发者${this.app.developer_name || '未知'}，分类${this.app.kind_type_name || ''}${this.app.kind_name || ''}，评分${this.rating()}，下载量${formatDownloadCount(this.app.download_count)}，点击打开详情`)
     }
 }

@@ -5,8 +5,8 @@
 Dashboard Application Viewer is the native client for `harmony_get_market`. It queries public SDK, version, category, and rating information through the back end's `/api/v0` endpoints while retaining the ArkWeb entry to the S Site.
 
 - Bundle name: `top.rayawa.dashboard`
-- Version: `3.0.1`
-- Build number: `30000005`
+- Version: `3.1.0`
+- Build number: `30100001`
 - Target and compatible version: system `6.1.0(23)` (API 23)
 - Devices: phone, tablet, and 2in1
 - Branch: `v3.0.0(23)`, migrated from `shenjack`

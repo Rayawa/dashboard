@@ -8,6 +8,7 @@ import { vibration } from '../../common/vibration';
 import type { BaseAPIResponse, ChartViewportState, RatingDistribution } from '../../common/types';
 import { InteractiveLineChart } from './InteractiveLineChart';
 import type { LineChartPoint, LineChartSeries } from './InteractiveLineChart';
+import { DownloadGrowthSection } from './DownloadGrowthSection';
 
 interface DistributionChart { title: string; labels: string[]; values: number[]; total: number; }
 interface HistoryPoint { date: string; values: Record<string, number>; }
@@ -1082,6 +1083,7 @@ export struct OverviewSection {
                 LoadingProgress().width(34).height(34).color($r('app.color.diff_content')).margin(50)
                     .accessibilityText('概况图表加载中')
             }
+            DownloadGrowthSection()
             if (this.contentWidth >= 840) {
                 Row({ space: 12 }) {
                     Column() {

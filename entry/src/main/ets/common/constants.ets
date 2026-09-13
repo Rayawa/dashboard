@@ -123,8 +123,8 @@ export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
 export const FANGZHOU_URL = new URL("https://fangzhou.club/");
 
 // dev
-export const APP_VERSION: string = "3.0.1";
-export const APP_BUILD_NUMBER: number = 30000005;
+export const APP_VERSION: string = "3.1.0";
+export const APP_BUILD_NUMBER: number = 30100001;
 export const APP_BUNDLE_NAME: string = "top.rayawa.dashboard"
 export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
 export const MEOW_CHANNEL_URL = new URL("https://www.chuckfang.com/MeoW/appLinking?channelId=8bbba7f53bf9458284a41d04f295450b");

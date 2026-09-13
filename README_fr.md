@@ -5,8 +5,8 @@
 Dashboard est le client natif de `harmony_get_market`. Il consulte les informations publiques de SDK, de version, de catégorie et de notation via les API `/api/v0` du back-end tout en conservant l’accès ArkWeb au site S.
 
 - Nom du bundle : `top.rayawa.dashboard`
-- Version : `3.0.0`
-- Numéro de build : `30000005`
+- Version : `3.1.0`
+- Numéro de build : `30100001`
 - Version système cible et compatible : `6.1.0(23)` (API 23)
 - Appareils : téléphone, tablette et 2in1
 - Branche : `v3.0.0(23)`, migrée depuis `shenjack`

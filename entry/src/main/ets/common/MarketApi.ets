@@ -12,16 +12,27 @@ import {
 import { readCache, writeCache } from './CacheService';
 import { buildAppsPagePath } from './AppListQuery';
 import type { AppsPageQuery } from './AppListQuery';
+import {
+    buildAdvancedAppsQueryPath,
+    buildDeveloperRankingPath,
+    buildDownloadGrowthPath,
+} from './RankingQuery';
 import type {
+    AdvancedAppsQuery,
     ApiDataResult,
     AppDetailPayload,
     AppMetric,
     AppRatingHistory,
     BaseAPIResponse,
+    DailyMaxDownloadApp,
+    DeveloperRankingEntry,
+    DownloadGrowthApp,
+    DownloadGrowthQuery,
     MarketApp,
     MarketInfo,
     PageInfo,
     RatingDistribution,
+    SearchExpression,
     SubmitAppBody,
 } from './types';
 
@@ -124,6 +135,71 @@ export function fetchAppsPage(
         CACHE_TTL_LIST_MS,
         options.force ?? false,
     );
+}
+
+export function fetchAppsQuery(
+    options: AdvancedAppsQuery,
+    expression: SearchExpression,
+): Promise<ApiDataResult<BaseAPIResponse<PageInfo<MarketApp>>>> {
+    return requestJson<BaseAPIResponse<PageInfo<MarketApp>>>(
+        buildAdvancedAppsQueryPath(options),
+        CACHE_TTL_LIST_MS,
+        options.force ?? false,
+        http.RequestMethod.POST,
+        expression,
+    );
+}
+
+export function fetchDownloadGrowth(
+    options: DownloadGrowthQuery = {},
+    expression?: SearchExpression,
+): Promise<ApiDataResult<BaseAPIResponse<DownloadGrowthApp[]>>> {
+    return requestJson<BaseAPIResponse<DownloadGrowthApp[]>>(
+        buildDownloadGrowthPath(options),
+        CACHE_TTL_CHART_MS,
+        options.force ?? false,
+        expression ? http.RequestMethod.POST : http.RequestMethod.GET,
+        expression,
+    );
+}
+
+export function fetchDailyMaxDownloads(
+    force: boolean = false,
+): Promise<ApiDataResult<BaseAPIResponse<DailyMaxDownloadApp[]>>> {
+    return requestJson<BaseAPIResponse<DailyMaxDownloadApp[]>>(
+        'rankings/max_download', CACHE_TTL_HOME_MS, force,
+    );
+}
+
+export async function fetchDeveloperRanking(
+    limit: number = 10,
+    page: number = 1,
+    force: boolean = false,
+): Promise<ApiDataResult<BaseAPIResponse<DeveloperRankingEntry[]>>> {
+    const result = await requestJson<BaseAPIResponse<Array<Array<string | number>>>>(
+        buildDeveloperRankingPath(limit, page), CACHE_TTL_HOME_MS, force,
+    );
+    const entries: DeveloperRankingEntry[] = [];
+    for (const tuple of result.data.data ?? []) {
+        if (tuple.length < 3) continue;
+        entries.push({
+            developerId: String(tuple[0] ?? ''),
+            developerName: String(tuple[1] ?? '未知开发者'),
+            appCount: Number(tuple[2] ?? 0),
+        });
+    }
+    return {
+        data: {
+            success: result.data.success,
+            data: entries,
+            total: result.data.total,
+            limit: result.data.limit,
+            timestamp: result.data.timestamp,
+        },
+        fromCache: result.fromCache,
+        cachedAt: result.cachedAt,
+        stale: result.stale,
+    };
 }
 
 export function fetchAppById(appId: string, force: boolean = false): Promise<ApiDataResult<BaseAPIResponse<AppDetailPayload>>> {

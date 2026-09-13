@@ -2,10 +2,10 @@
   "app": {
     "bundleName": "top.rayawa.dashboard",
     "vendor": "example",
-    "versionCode": 30001002,
+    "versionCode": 30100001,
     //  x     xx    xx       x     xx
     //大版本 中版本 小版本   r2rc1b0 build
-    "versionName": "3.0.1",
+    "versionName": "3.1.0",
     "icon": "$media:layered_image",
     "label": "$string:app_name"
   }

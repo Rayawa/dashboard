@@ -473,11 +473,9 @@ export struct SearchPage {
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                 Text(app.developer_name || '未知开发者').fontSize(12).fontColor($r('app.color.diff_content'))
                     .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
-                /*
                 Text(`${app.pkg_name} · ${formatDownloadCount(app.download_count)} 下载`).fontSize(11)
                     .fontColor($r('app.color.v3_text_secondary')).maxLines(1)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
-                */
                 Text(`更新：${formatDateTime(app.updated_at)}`).fontSize(11)
                     .fontColor($r('app.color.v3_text_secondary'))
             }.alignItems(HorizontalAlign.Start).layoutWeight(1)

@@ -134,7 +134,7 @@ export interface SyncStatusInfo {
     elapsed_time?: SyncDuration;
     estimated_total_time?: SyncDuration;
     is_syncing_all: boolean;
-    next_sync_countdown?: number;
+    next_sync_countdown?: number | null;
     progress?: number[];
     total_failed: number;
     total_inserted: number;
@@ -193,6 +193,67 @@ export interface PageInfo<T> {
     page: number;
     page_size: number;
     total_pages: number;
+}
+
+export type SearchOperator = 'eq' | 'ne' | 'like' | 'not_like' | 'i_like' | 'not_i_like' |
+    'gt' | 'lt' | 'gte' | 'lte' | 'is_null' | 'is_not_null' |
+    'array_contains' | 'array_overlaps' | 'array_contained_by';
+
+export interface SearchCondition {
+    key: string;
+    op: SearchOperator;
+    value?: string | null;
+}
+
+/** 当前客户端提供一层 AND/OR 组合；每个条件均可使用完整的 API 搜索操作符。 */
+export interface SearchExpression {
+    and?: SearchCondition[];
+    or?: SearchCondition[];
+}
+
+export interface AdvancedAppsQuery {
+    page: number;
+    pageSize: number;
+    sort: string;
+    desc: boolean;
+    force?: boolean;
+}
+
+export interface DownloadGrowthQuery {
+    days?: number;
+    months?: number;
+    limit?: number;
+    page?: number;
+    listedDays?: number;
+    listedMonths?: number;
+    excludeHuawei?: boolean;
+    excludeAtomic?: boolean;
+    force?: boolean;
+}
+
+export interface DownloadGrowthApp {
+    app_id: string;
+    name: string;
+    pkg_name: string;
+    current_period_date: string;
+    prior_period_date: string;
+    current_download_count: number;
+    prior_download_count: number;
+    download_increment: number;
+}
+
+export interface DailyMaxDownloadApp {
+    app_id: string;
+    app_name: string;
+    pkg_name: string;
+    download_count: number;
+    report_date: string;
+}
+
+export interface DeveloperRankingEntry {
+    developerId: string;
+    developerName: string;
+    appCount: number;
 }
 
 /**
