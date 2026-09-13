@@ -54,6 +54,7 @@ import type {
     ScreenshotInfo,
 } from '../../common/types';
 import { InteractiveLineChart } from '../../component/charts/InteractiveLineChart';
+import { RatingBreakdown } from '../../component/detail/RatingBreakdown';
 import type { LineChartPoint } from '../../component/charts/InteractiveLineChart';
 import { downsampleLinePoints, filterDownloadOutliers } from '../../component/charts/chartDataProcessing';
 
@@ -708,11 +709,14 @@ export struct AppDetailPage {
             { label: '目标 SDK', value: String(this.app.target_sdk ?? '-') },
             { label: '编译 SDK', value: String(this.app.compile_sdk_version ?? '-') },
             { label: '最低 API 版本', value: String(this.app.min_hmos_api_level ?? '-') },
-            // { label: '下载量', value: formatDownloadCount(this.app.download_count) },
+            { label: '下载量', value: formatDownloadCount(this.app.download_count) },
             { label: '评分', value: this.app.average_rating ? `${this.app.average_rating} / 5` : '-' },
             { label: '评分数量', value: formatCount(this.app.total_star_rating_count) },
             { label: '供应商', value: this.app.supplier || '-' },
             { label: '标签', value: this.app.tag_name || '-' },
+            { label: '支持设备', value: this.app.main_device_codes?.join('、') || '-' },
+            { label: '应用内购买', value: this.app.iap ? '支持' : '不支持' },
+            { label: '付费状态', value: this.app.is_pay ? '付费应用' : '免费应用' },
             { label: '价格', value: String(this.app.price ?? '免费') },
             { label: '发行国家/地区', value: this.app.release_countries?.join('、') || '-' },
             { label: '备案主体', value: this.app.recordal_entity_name || this.app.recordal_entity_title || '-' },
@@ -827,7 +831,7 @@ export struct AppDetailPage {
     @Builder
     private appActions(): void {
         Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
-            Button('打开应用详情', { stateEffect: false })
+            Button('在华为应用市场打开', { stateEffect: false })
                 .margin(4)
                 .backgroundColor($r('app.color.diff_content'))
                 .scale({
@@ -848,7 +852,7 @@ export struct AppDetailPage {
                     this.vibrate();
                     this.openMarket();
                 })
-                .accessibilityText('打开此应用的公开详情页面')
+                .accessibilityText('在华为应用市场打开此应用')
             if (this.app?.privacy_url) {
                 Button('隐私政策', { stateEffect: false })
                     .margin(4)
@@ -903,6 +907,8 @@ export struct AppDetailPage {
             .backgroundColor($r('app.color.v3_surface'))
             .border({ width: 1, color: $r('app.color.nd_card_border') })
             .accessibilityText('以标签形式展示的应用详细字段')
+
+            RatingBreakdown({ app: this.app! })
 
             if (this.contentWidth >= 840) {
                 this.appActions()
@@ -1030,7 +1036,7 @@ export struct AppDetailPage {
             if (this.screenshots().length > 0) {
                 this.appScreenshots()
             }
-            // this.downloadChart()
+            this.downloadChart()
             this.ratingChart()
         }
         .width('100%')

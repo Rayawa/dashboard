@@ -123,35 +123,35 @@ export struct WarningContent {
   }
 
   @Builder
-  private marketplaceComplianceCard(): void {
+  private dataScopeCard(): void {
     Column({ space: 10 }) {
-      Text('应用市场合规调整说明')
+      Text('数据口径与功能说明')
         .fontSize(16)
         .fontColor($r('app.color.diff_content'))
         .fontWeight(FontWeight.Bold)
         .width('100%')
 
-      Text('近期版本在提交华为应用市场审核时，审核方对部分功能和宣传内容提出了合规要求。为保证应用能够继续上架，我们对以下内容进行了调整。')
+      Text('Dashboard应用看板整理公开网络信息，提供应用、SDK、版本、分类、评分及历史快照查询。以下数据均为统计结果，不是任何平台的官方运营数据。')
         .fontSize(13)
         .fontColor($r('app.color.v3_text_primary'))
         .lineHeight(21)
         .width('100%')
 
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
-      this.noticeSection('下载量展示',
-        '审核方认为应用下载量的真实性和准确性难以由应用独立证明，可能使用户对统计效果产生误解，因此应用内不再提供下载量及下载趋势展示。')
+      this.noticeSection('下载量与增长',
+        '下载量、每日最高下载量和增长榜基于后端按期同步的公开快照计算，可能受到更新间隔、数据源变化和网络状态影响。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
-      this.noticeSection('外部链接与应用分发',
-        '审核方不允许应用内容引导用户前往第三方应用市场或赞助平台，因此应用移除了友情链接、赞助我们、外部应用市场及相关帮助入口。')
+      this.noticeSection('外部内容',
+        '隐私政策、应用市场详情、项目网站、友情链接和赞助页由对应第三方提供，打开后请以目标页面的条款与数据为准。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
       this.noticeSection('社区功能',
-        '具备交流和内容发布能力的社区模块需要提交安全评估报告及审核通过证明。由于未提交相关资质，当前版本不提供社区频道与用户群聊功能。')
+        '社区频道和用户群由外部平台运营，请遵守对应平台规则，不要发布个人敏感信息或不合规内容。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
       this.noticeSection('品牌表述',
-        '审核方要求避免在未获得书面授权时使用可能暗示合作关系的品牌宣传。应用因此统一使用“Dashboard应用看板”名称；本应用与华为不存在合作、授权或官方关联。')
+        '页面中出现的产品、平台和公司名称仅用于说明数据来源或跳转目标，不表示 Dashboard应用看板与其存在合作、授权或官方关联。')
       Divider().color($r('app.color.v3_chart_grid')).strokeWidth(0.5)
 
-      Text('上述调整不影响SDK、版本、分类、评分等公开信息查询。')
+      Text('查询结果仅供参考，重要决策请回到原始信息页面复核。')
         .fontSize(13)
         .fontColor($r('app.color.v3_notice_text_secondary'))
         .lineHeight(21)
@@ -164,7 +164,7 @@ export struct WarningContent {
     .backgroundColor($r('app.color.v3_surface'))
     .border({ width: 1, color: $r('app.color.nd_card_border') })
     .accessibilityGroup(true)
-    .accessibilityText('应用市场合规调整说明，包含下载量、外部链接、社区功能和品牌表述的调整原因')
+    .accessibilityText('数据口径与功能说明，包含下载量、外部内容、社区功能和品牌表述')
   }
 
   @Builder
@@ -240,7 +240,7 @@ export struct WarningContent {
           .width('100%')
           .alignItems(VerticalAlign.Top)
 
-          this.marketplaceComplianceCard()
+          this.dataScopeCard()
           this.projectPageCard()
         }
         .width('100%')
@@ -250,7 +250,7 @@ export struct WarningContent {
         Column({ space: 14 }) {
           this.primaryNoticeCard()
           this.limitationCard()
-          this.marketplaceComplianceCard()
+          this.dataScopeCard()
           this.projectPageCard()
         }
         .width('100%')

@@ -1,7 +1,7 @@
 import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { pasteboard } from '@kit.BasicServicesKit';
-// import { common, Want } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
 import { vibration } from '../common/vibration';
 import { showToastSafely } from '../common/safeUi';
 import { pressLightFieldFilter, pressVisualEffect } from '../common/visualEffects';
@@ -68,7 +68,6 @@ export struct ContactPanel {
             this.contactItem("👥 主要负责人", "shenjack", "邮箱：3695888@qq.com", "3695888@qq.com", "邮箱", 1)
             this.contactItem("🌐 T站网页负责人", "tianxiu2b2t", "邮箱：administrator@ttb-network.top", "administrator@ttb-network.top", "邮箱", 2)
             this.contactItem("📱 应用开发", "清霁·Rayawa", "邮箱：rayawa.work@outlook.com", "rayawa.work@outlook.com", "邮箱", 3)
-            /*
             this.contactItem("💬 QQ群", "Harmony Dashboard官方交流群", "群号：757273833", "757273833", "群号", 4)
 
             Column({ space: 4 }) {
@@ -114,7 +113,6 @@ export struct ContactPanel {
             .translate({ y: this.animStep >= 5 ? 0 : 20 })
             .accessibilityGroup(true)
             .accessibilityText('赞助我们，点击打开爱发电赞助页面')
-            */
         }
         .width("100%")
         .padding(5)

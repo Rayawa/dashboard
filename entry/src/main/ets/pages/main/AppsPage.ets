@@ -5,10 +5,10 @@ import {
     getContinuationState, hasPendingSearchTarget, setContinuationAppsListState, setContinuationView, setDetailTarget,
 } from '../../common/appState';
 import type { AppsListContinuationState } from '../../common/appState';
-import { fetchAppsPage } from '../../common/MarketApi';
+import { fetchAppsPage, fetchAppsQuery } from '../../common/MarketApi';
 import { formatCount } from '../../common/format';
 import { scrollByAxis } from '../../common/scroll';
-import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo } from '../../common/types';
+import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo, SearchExpression } from '../../common/types';
 import { showToastSafely } from '../../common/safeUi';
 import {
     cancelStaggerEnterAnimation,
@@ -19,6 +19,7 @@ import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEff
 import { vibration } from '../../common/vibration';
 import { OverviewSection } from '../../component/charts/OverviewSection';
 import { AppTableRow } from '../../component/apps/AppTableRow';
+import { AdvancedSearchPanel } from '../../component/apps/AdvancedSearchPanel';
 import { SearchPage } from './SearchPage';
 
 interface SortChoice { label: string; field: string; }
@@ -38,7 +39,7 @@ export struct AppsPage {
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     private pageScroller: Scroller = new Scroller();
     private readonly sortChoiceItems: SortChoice[] = [
-        { label: '更新时间', field: 'updated_at' }, /* { label: '下载量', field: 'download_count' }, */
+        { label: '更新时间', field: 'updated_at' }, { label: '下载量', field: 'download_count' },
         { label: '评分数量', field: 'total_star_rating_count' }, { label: '应用大小', field: 'size_bytes' },
         { label: '上架时间', field: 'listed_at' },
     ];
@@ -76,6 +77,8 @@ export struct AppsPage {
     @State private animStep: number = 0;
     @State private searchPressed: boolean = false;
     @State private pressedControl: string = '';
+    @State private advancedSearchExpanded: boolean = false;
+    @State private advancedSearchActive: boolean = false;
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     private restoredScroll: boolean = false;
     private restoredView: boolean = false;
@@ -86,6 +89,7 @@ export struct AppsPage {
     private enterAnimationTimers: number[] = [];
     private restoreScrollTimer: number = -1;
     private reloadTimer: number = -1;
+    private advancedExpression: SearchExpression | undefined = undefined;
 
     private onActiveChanged(): void {
         if (this.active) this.startPageAnimationOnce();
@@ -131,10 +135,6 @@ export struct AppsPage {
             if (Number.isInteger(legacyIndex) && legacyIndex >= 0 && legacyIndex < legacySortFields.length) {
                 field = legacySortFields[legacyIndex];
             }
-        }
-        // 下载量排序不再对外提供；旧状态平滑迁移到当前默认的评分数量排序。
-        if (field === 'download_count') {
-            field = 'total_star_rating_count';
         }
         for (let index = 0; index < this.sortChoices().length; index++) {
             if (this.sortChoices()[index].field === field) {
@@ -264,7 +264,13 @@ export struct AppsPage {
             }
         }
         try {
-            const result = await fetchAppsPage({
+            const result = this.advancedExpression ? await fetchAppsQuery({
+                page: this.page,
+                pageSize: this.pageSize(),
+                sort,
+                desc: this.descending,
+                force,
+            }, this.advancedExpression) : await fetchAppsPage({
                 page: this.page,
                 pageSize: this.pageSize(),
                 sort,
@@ -303,6 +309,8 @@ export struct AppsPage {
     }
     private applyFilter(): void {
         this.vibrate();
+        this.advancedExpression = undefined;
+        this.advancedSearchActive = false;
         this.appliedFilterText = this.filterText.trim();
         this.page = 1;
         this.recordListState();
@@ -310,11 +318,28 @@ export struct AppsPage {
     }
     private clearFilter(): void {
         this.vibrate();
+        this.advancedExpression = undefined;
+        this.advancedSearchActive = false;
         this.typeIndex = 0;
         this.filterText = '';
         this.appliedFilterText = '';
         this.page = 1;
         this.recordListState();
+        this.load(false);
+    }
+    private applyAdvancedSearch(expression: SearchExpression): void {
+        this.typeIndex = 0;
+        this.filterText = '';
+        this.appliedFilterText = '';
+        this.advancedExpression = expression;
+        this.advancedSearchActive = true;
+        this.page = 1;
+        this.load(false);
+    }
+    private clearAdvancedSearch(): void {
+        this.advancedExpression = undefined;
+        this.advancedSearchActive = false;
+        this.page = 1;
         this.load(false);
     }
     private jump(): void {
@@ -409,6 +434,8 @@ export struct AppsPage {
                     })
                     .onSelect((index: number) => {
                         this.vibrate();
+                        this.advancedExpression = undefined;
+                        this.advancedSearchActive = false;
                         this.typeIndex = index;
                         this.page = 1;
                         this.recordListState();
@@ -557,7 +584,24 @@ export struct AppsPage {
                         this.load(false);
                     })
                     .accessibilityText(this.descending ? '当前降序，点击改为升序' : '当前升序，点击改为降序')
+                Button(this.advancedSearchExpanded ? '收起高级搜索' : '高级组合搜索', { stateEffect: false })
+                    .height(42).margin(4)
+                    .fontColor(this.advancedSearchActive ? Color.White : $r('app.color.diff_content'))
+                    .backgroundColor(this.advancedSearchActive ?
+                        $r('app.color.diff_content') : $r('app.color.v3_surface'))
+                    .onClick(() => {
+                        this.vibrate();
+                        this.advancedSearchExpanded = !this.advancedSearchExpanded;
+                    })
+                    .accessibilityText(this.advancedSearchExpanded ? '收起高级组合搜索' : '展开高级组合搜索')
             }.width('100%')
+            if (this.advancedSearchExpanded) {
+                AdvancedSearchPanel({
+                    active: this.advancedSearchActive,
+                    onApply: (expression: SearchExpression): void => this.applyAdvancedSearch(expression),
+                    onClear: (): void => this.clearAdvancedSearch(),
+                })
+            }
         }.width('100%').accessibilityText('应用列表筛选与排序控件')
     }
 
@@ -574,7 +618,7 @@ export struct AppsPage {
                             .fontColor($r('app.color.v3_text_secondary'))
                         Text('分类').width(140).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                         Text('评分').width(70).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        // Text('下载量').width(100).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
+                        Text('下载量').width(100).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                         Text('大小').width(90).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                         Text('更新时间').width(110).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                     }

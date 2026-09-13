@@ -15,6 +15,8 @@ EntryAbility
 页面 / 组件
   ├─ MarketApi      唯一业务 API 请求入口
   ├─ AppListQuery   应用列表查询参数与 URL 构造
+  ├─ RankingQuery   排行榜、高级查询和分页 URL 构造
+  ├─ SearchExpression 高级搜索字段、操作符与 AND/OR 表达式规范化
   ├─ TelemetryService 遥测数据组装与上报边界
   ├─ CacheService   API 文件缓存与 ArkWeb 缓存清理
   ├─ storage        Preferences 设置持久化与 AppStorage 水合
@@ -36,10 +38,12 @@ EntryAbility
 - 页面路由名统一引用 `constants.ets` 的 `ROUTE_*`，同时更新 `resources/base/profile/route_map.json`。
 - 大页面优先按“可独立理解、可独立复用、拥有独立状态或生命周期”拆分组件；不要只为减少行数拆出没有语义的文件。
 - 列表行、卡片等纯展示单元放入 `component/` 对应业务目录；页面保留筛选、分页、导航和生命周期编排。
+- `component/home/` 承载首页排行榜与同步状态，`component/apps/` 承载列表行与高级搜索，`component/detail/` 承载详情页字段级展示，`component/charts/` 只处理图表和统计榜。
 
 ## 网络与遥测契约
 
 - 页面不得自行拼接应用列表 URL；使用 `AppListQuery` 的具名参数和纯函数，避免布尔筛选参数因位置变化而错位。
+- 高级搜索不得在 UI 内手写 JSON；统一使用 `SearchExpression` 规范化条件，再由 `MarketApi.fetchAppsQuery` 发送。排行榜 URL 统一由 `RankingQuery` 构造。
 - 遥测统一通过 `TelemetryService` 上报。`device_info`、`only_id`、`custom_user_agent`、请求头 `User-Agent` 及事件名属于兼容契约，重构时不得省略或改变含义。
 - `MarketApi` 负责请求、缓存和响应边界；页面只消费业务结果，不重复创建 HTTP 请求对象。
 

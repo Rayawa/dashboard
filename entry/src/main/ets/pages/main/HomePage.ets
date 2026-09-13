@@ -8,8 +8,8 @@ import {
     RESPONSIVE_BREAKPOINT_MEDIUM,
 } from '../../common/constants';
 import { getContinuationState, setContinuationView, setDetailTarget } from '../../common/appState';
-import { fetchAppsPage, fetchMarketInfo } from '../../common/MarketApi';
-import { formatDateTime, formatExactCount } from '../../common/format';
+import { fetchAppsPage, fetchDailyMaxDownloads, fetchDeveloperRanking, fetchMarketInfo } from '../../common/MarketApi';
+import { formatDateTime } from '../../common/format';
 import { showToastSafely } from '../../common/safeUi';
 import {
     cancelStaggerEnterAnimation,
@@ -20,7 +20,17 @@ import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEff
 import { scrollByAxis } from '../../common/scroll';
 import { vibration } from '../../common/vibration';
 import { getDeviceName } from '../../common/storage';
-import type { AppRouteTarget, BaseAPIResponse, MarketApp, MarketInfo, PageInfo } from '../../common/types';
+import type {
+    AppRouteTarget,
+    BaseAPIResponse,
+    DailyMaxDownloadApp,
+    DeveloperRankingEntry,
+    MarketApp,
+    MarketInfo,
+    PageInfo,
+} from '../../common/types';
+import { HomeRankings } from '../../component/home/HomeRankings';
+import { SyncStatusCard } from '../../component/home/SyncStatusCard';
 
 interface HomeStat {
     label: string;
@@ -209,6 +219,8 @@ export struct HomePage {
     @State private lastUpdated: string = '';
     @State private loaded: boolean = false;
     @State private recentApps: MarketApp[] = [];
+    @State private dailyMaxApps: DailyMaxDownloadApp[] = [];
+    @State private developerRanking: DeveloperRankingEntry[] = [];
     @State private contentWidth: number = 0;
     @State private animStep: number = 0;
     @State private displayCardPressed: string = '';
@@ -271,6 +283,7 @@ export struct HomePage {
         this.loading = true;
         this.errorMessage = '';
         const recentPromise = this.loadRecentApps(force);
+        const rankingPromise = this.loadRankings(force);
         try {
             const result = await fetchMarketInfo(force);
             const response: BaseAPIResponse<MarketInfo> = result.data;
@@ -289,6 +302,7 @@ export struct HomePage {
             showToastSafely(this.prompt, '网络不佳且没有可用缓存，请稍后重试', 2500, 'V3Home');
         } finally {
             await recentPromise;
+            await rankingPromise;
             this.loading = false;
             if (!wasLoaded && this.loaded && this.active) {
                 this.startPageAnimationOnce();
@@ -319,6 +333,30 @@ export struct HomePage {
         }
     }
 
+    private async loadRankings(force: boolean): Promise<void> {
+        try {
+            const dailyResult = await fetchDailyMaxDownloads(force);
+            if (dailyResult.data.success && dailyResult.data.data) {
+                this.dailyMaxApps = dailyResult.data.data.slice()
+                    .sort((left: DailyMaxDownloadApp, right: DailyMaxDownloadApp): number =>
+                        new Date(right.report_date).getTime() - new Date(left.report_date).getTime())
+                    .slice(0, 10);
+            }
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/HomePage][WARN]',
+                `每日下载榜加载失败: ${(error as Error).message}`);
+        }
+        try {
+            const developerResult = await fetchDeveloperRanking(10, 1, force);
+            if (developerResult.data.success && developerResult.data.data) {
+                this.developerRanking = developerResult.data.data;
+            }
+        } catch (error) {
+            console.warn('[Dashboard][pages/main/HomePage][WARN]',
+                `开发者排行加载失败: ${(error as Error).message}`);
+        }
+    }
+
     private openDetail(app: MarketApp): void {
         const target: AppRouteTarget = {
             appId: app.app_id,
@@ -330,6 +368,18 @@ export struct HomePage {
             this.onOpenAppDetail?.(target);
         } catch (error) {
             console.error('[Dashboard][pages/main/HomePage][ERROR]', `打开应用详情失败: ${JSON.stringify(error)}`);
+            showToastSafely(this.prompt, '暂时无法打开应用详情', 1800, 'HomePage');
+        }
+    }
+
+    private openRankedDetail(app: DailyMaxDownloadApp): void {
+        const target: AppRouteTarget = { appId: app.app_id, packageName: app.pkg_name };
+        try {
+            setDetailTarget(target);
+            this.onOpenAppDetail?.(target);
+        } catch (error) {
+            console.error('[Dashboard][pages/main/HomePage][ERROR]',
+                `打开排行榜应用详情失败: ${JSON.stringify(error)}`);
             showToastSafely(this.prompt, '暂时无法打开应用详情', 1800, 'HomePage');
         }
     }
@@ -419,53 +469,29 @@ export struct HomePage {
     }
 
     @Builder
-    private statusCard(): void {
-        if (this.market) {
-            Column({ space: 12 }) {
-                Row() {
-                    Text('当前状态').fontSize(18).fontWeight(FontWeight.Bold)
-                        .fontColor($r('app.color.v3_text_primary'))
-                    Blank()
-                    Text(this.market.sync_status.is_syncing_all ? '全量同步中' : '服务正常').fontSize(13)
-                        .fontColor(this.market.sync_status.is_syncing_all ?
-                            $r('app.color.v3_accent_orange') : $r('app.color.v3_accent_green'))
-                }.width('100%')
-                if (this.market.sync_status.is_syncing_all) {
-                    Text(`已处理 ${formatExactCount(this.market.sync_status.total_processed)} · 新增 ${formatExactCount(this.market.sync_status.total_inserted)} · 失败 ${formatExactCount(this.market.sync_status.total_failed)}`)
-                        .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
-                }
-                Divider().color($r('app.color.v3_chart_grid')).accessibilityText('状态分隔线')
-                Text(`最后更新时间：${formatDateTime(this.lastUpdated)}`).fontSize(13)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                Text(`后端版本：${this.market.crate_version}`).fontSize(13)
-                    .fontColor($r('app.color.v3_text_secondary'))
-            }
-            .width('100%').padding(18).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
-            .border({ width: 1, color: $r('app.color.nd_card_border') })
-            .scale({ x: this.displayCardPressed === 'status' ? 0.985 : 1,
-                y: this.displayCardPressed === 'status' ? 0.985 : 1 })
-            .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-            .visualEffect(pressVisualEffect(
-                this.displayCardPressed === 'status', hdsEffect.PointLightIlluminatedType.BORDER))
-            .compositingFilter(pressLightFieldFilter(this.displayCardPressed === 'status'))
-            .onTouch((event: TouchEvent): void => {
-                if (event.type === TouchType.Down) this.displayCardPressed = 'status';
-                else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.displayCardPressed = '';
-            })
-            .accessibilityGroup(true)
-            .accessibilityText(this.market.sync_status.is_syncing_all ? '服务当前正在全量同步' : '服务当前状态正常')
-            .opacity(this.animStep >= 2 ? 1 : 0)
-            .translate({ y: this.animStep >= 2 ? 0 : 20 })
-        }
-    }
-
-    @Builder
     private dataAndStatus(): void {
         Column({ space: 14 }) {
             this.totalRelationCard()
             this.statsGrid()
-            this.statusCard()
+            if (this.market) {
+                SyncStatusCard({
+                    status: this.market.sync_status,
+                    lastUpdated: this.lastUpdated,
+                    backendVersion: this.market.crate_version,
+                })
+                .opacity(this.animStep >= 2 ? 1 : 0)
+                .translate({ y: this.animStep >= 2 ? 0 : 20 })
+            }
         }.width('100%')
+    }
+
+    @Builder
+    private rankings(): void {
+        HomeRankings({
+            dailyApps: this.dailyMaxApps,
+            developers: this.developerRanking,
+            onOpenApp: (app: DailyMaxDownloadApp): void => this.openRankedDetail(app),
+        })
     }
 
     @Builder
@@ -642,6 +668,7 @@ export struct HomePage {
                         Scroll(this.scroller) {
                             Column({ space: 14 }) {
                                 Blank().height(110).width('100%')
+                                this.rankings()
                                 this.recentSection()
                                 Blank().height(96).width('100%')
                             }
@@ -672,6 +699,7 @@ export struct HomePage {
                         this.greetingHeader()
                         this.statusNotices()
                         this.dataAndStatus()
+                        this.rankings()
                         this.recentSection()
                         Blank().height(96).width('100%')
                     }

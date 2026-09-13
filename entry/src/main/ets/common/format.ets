@@ -59,3 +59,14 @@ export function formatDateTime(value: string | undefined): string {
     const minute = String(date.getMinutes()).padStart(2, '0');
     return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
 }
+
+export function formatDuration(seconds: number | undefined): string {
+    if (seconds === undefined || seconds === null || !Number.isFinite(seconds) || seconds < 0) return '-';
+    const total = Math.floor(seconds);
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    if (hours > 0) return `${hours}小时${minutes}分`;
+    if (minutes > 0) return `${minutes}分${secs}秒`;
+    return `${secs}秒`;
+}

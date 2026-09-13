@@ -156,41 +156,6 @@ export struct SStationPage {
         });
     }
 
-    /**
-     * 上架版隐藏网页中的赞助、投稿及测试分发入口，并统一网页自身的产品表达。
-     * 网页中的下载量模块由服务端受限配置关闭，这里额外避免帮助入口再次展示相关说明。
-     */
-    private applyMarketplaceReviewRestrictions(): void {
-        const script = `(() => {
-            const hiddenIds = ['sponsorBtn', 'hmosAppBetaBtn', 'submitBtn', 'helpBtn'];
-            hiddenIds.forEach((id) => {
-                const element = document.getElementById(id);
-                if (element) element.style.display = 'none';
-            });
-            document.querySelectorAll('a[href*="afdian.com"], a[href*="vivo.com"]')
-                .forEach((element) => element.remove());
-            const replacements = [
-                ['华为应用市场看板', 'Dashboard应用看板'],
-                ['鸿蒙应用看板', 'Dashboard应用看板'],
-                ['鸿蒙应用总数', '应用总数'],
-                ['鸿蒙元服务总数', '元服务总数'],
-                ['鸿蒙开发者总数', '开发者总数']
-            ];
-            const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-            let node;
-            while ((node = walker.nextNode())) {
-                let value = node.nodeValue || '';
-                replacements.forEach(([from, to]) => { value = value.split(from).join(to); });
-                node.nodeValue = value;
-            }
-            document.title = 'Dashboard应用看板';
-        })();`;
-        this.controller.runJavaScript(script).catch((error: Error): void => {
-            console.warn('[Dashboard][pages/main/SStationPage][WARN]',
-                `应用上架内容限制失败: ${error.message}`);
-        });
-    }
-
     private closeCurrentAppDetail(): void {
         try {
             if (this.controller.accessBackward()) {
@@ -327,7 +292,6 @@ export struct SStationPage {
         this.showLoadingIndicator = false;
         this.errorMessage = '';
         if (this.updateCurrentUrl(event.url)) this.restoreScrollPosition();
-        this.applyMarketplaceReviewRestrictions();
         this.installAppDetailObserver();
         if (this.active) this.syncShareData();
     }

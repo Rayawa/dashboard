@@ -66,7 +66,7 @@ export function defaultAppsListState(): AppsListContinuationState {
         filterText: '',
         appliedFilterText: '',
         sortIndex: 1,
-        sortField: 'total_star_rating_count',
+        sortField: 'download_count',
         descending: true,
     };
 }
