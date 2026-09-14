@@ -478,6 +478,7 @@ export struct HomePage {
                     status: this.market.sync_status,
                     lastUpdated: this.lastUpdated,
                     backendVersion: this.market.crate_version,
+                    compact: this.contentWidth >= 840,
                 })
                 .opacity(this.animStep >= 2 ? 1 : 0)
                 .translate({ y: this.animStep >= 2 ? 0 : 20 })

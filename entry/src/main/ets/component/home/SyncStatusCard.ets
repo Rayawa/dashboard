@@ -20,6 +20,7 @@ export struct SyncStatusCard {
     };
     @Prop lastUpdated: string = '';
     @Prop backendVersion: string = '';
+    @Prop compact: boolean = false;
     @State private countdown: number = -1;
     @State private pressed: boolean = false;
     @State private animStep: number = 0;
@@ -81,12 +82,13 @@ export struct SyncStatusCard {
     }
 
     build() {
-        Column({ space: 11 }) {
+        Column({ space: this.compact ? 8 : 11 }) {
             Row() {
-                Text('同步信息').fontSize(18).fontWeight(FontWeight.Bold)
+                Text('同步信息').fontSize(this.compact ? 17 : 18).fontWeight(FontWeight.Bold)
                     .fontColor($r('app.color.v3_text_primary'))
                 Blank()
-                Text(this.status.is_syncing_all ? '全量同步中' : '服务正常').fontSize(13)
+                Text(this.status.is_syncing_all ? '全量同步中' : '服务正常')
+                    .fontSize(this.compact ? 12 : 13)
                     .fontColor(this.status.is_syncing_all ?
                         $r('app.color.v3_accent_orange') : $r('app.color.v3_accent_green'))
             }.width('100%')
@@ -96,44 +98,51 @@ export struct SyncStatusCard {
                 Text(`进度 ${formatExactCount(this.progressValue())} / ${formatExactCount(this.progressTotal())}`)
                     .fontSize(12).fontColor($r('app.color.v3_text_secondary')).width('100%')
             }
-            GridRow({ columns: 2, gutter: { x: 10, y: 8 } }) {
+            GridRow({ columns: 2, gutter: { x: 10, y: this.compact ? 5 : 8 } }) {
                 GridCol({ span: 1 }) {
-                    Text(`已处理：${formatExactCount(this.status.total_processed)}`).fontSize(13)
+                    Text(`已处理：${formatExactCount(this.status.total_processed)}`)
+                        .fontSize(this.compact ? 12 : 13)
                         .fontColor($r('app.color.v3_text_secondary'))
                 }
                 GridCol({ span: 1 }) {
-                    Text(`新增：${formatExactCount(this.status.total_inserted)}`).fontSize(13)
+                    Text(`新增：${formatExactCount(this.status.total_inserted)}`)
+                        .fontSize(this.compact ? 12 : 13)
                         .fontColor($r('app.color.v3_text_secondary'))
                 }
                 GridCol({ span: 1 }) {
-                    Text(`跳过：${formatExactCount(this.status.total_skipped)}`).fontSize(13)
+                    Text(`跳过：${formatExactCount(this.status.total_skipped)}`)
+                        .fontSize(this.compact ? 12 : 13)
                         .fontColor($r('app.color.v3_text_secondary'))
                 }
                 GridCol({ span: 1 }) {
-                    Text(`失败：${formatExactCount(this.status.total_failed)}`).fontSize(13)
+                    Text(`失败：${formatExactCount(this.status.total_failed)}`)
+                        .fontSize(this.compact ? 12 : 13)
                         .fontColor(this.status.total_failed > 0 ?
                             $r('app.color.v3_accent_red') : $r('app.color.v3_text_secondary'))
                 }
                 GridCol({ span: 1 }) {
-                    Text(`已用时：${formatDuration(durationSeconds(this.status.elapsed_time))}`).fontSize(13)
+                    Text(`已用时：${formatDuration(durationSeconds(this.status.elapsed_time))}`)
+                        .fontSize(this.compact ? 12 : 13)
                         .fontColor($r('app.color.v3_text_secondary'))
                 }
                 GridCol({ span: 1 }) {
-                    Text(`预计总耗时：${formatDuration(durationSeconds(this.status.estimated_total_time))}`).fontSize(13)
+                    Text(`预计总耗时：${formatDuration(durationSeconds(this.status.estimated_total_time))}`)
+                        .fontSize(this.compact ? 12 : 13)
                         .fontColor($r('app.color.v3_text_secondary'))
                 }
             }.width('100%')
             Text(this.status.is_syncing_all ?
                 `预计剩余：${formatDuration(this.remainingSeconds())}` :
                 `下次同步：${this.countdown >= 0 ? formatDuration(this.countdown) : '等待服务安排'}`)
-                .fontSize(13).fontColor($r('app.color.v3_text_primary')).width('100%')
+                .fontSize(this.compact ? 12 : 13).fontColor($r('app.color.v3_text_primary')).width('100%')
             Divider().color($r('app.color.v3_chart_grid'))
             Text(`最后更新：${formatDateTime(this.lastUpdated)}`).fontSize(12)
                 .fontColor($r('app.color.v3_text_secondary')).width('100%')
             Text(`后端版本：${this.backendVersion || '-'}`).fontSize(12)
                 .fontColor($r('app.color.v3_text_secondary')).width('100%')
         }
-        .width('100%').padding(18).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
+        .width('100%').padding(this.compact ? 14 : 18).borderRadius(18)
+        .backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
         .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
         .animation({ duration: 130, curve: Curve.EaseOut })
