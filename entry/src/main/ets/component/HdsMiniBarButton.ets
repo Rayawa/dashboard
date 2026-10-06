@@ -2,6 +2,7 @@ import { deviceInfo } from '@kit.BasicServicesKit';
 import { hdsEffect, HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
 import { curves } from '@kit.ArkUI';
 import { pressLightFieldFilter, pressVisualEffect } from '../common/visualEffects';
+import { HDS_MATERIAL_TYPE_ADAPTIVE } from '../common/platformCompatibility';
 
 /**
  * 基于 HdsTabs 迷你栏材质的通用按钮承载层。
@@ -12,7 +13,7 @@ export struct HdsMiniBarButton {
   @Prop barWidth: number = 240;
   @Prop barHeight: number = 52;
   @StorageLink('immersiveMaterialLevel') materialLevel: number = 1;
-  @Prop materialType: number = 100;
+  @Prop materialType: number = HDS_MATERIAL_TYPE_ADAPTIVE;
   @BuilderParam buttonContent: () => void = this.defaultContent;
   public onButtonClick: (() => void) | undefined = undefined;
   private controller: HdsTabsController = new HdsTabsController();

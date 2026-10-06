@@ -49,7 +49,7 @@ import { AppRouteTarget } from '../../common/types';
 import { scrollByAxis } from '../../common/scroll';
 import {
   HDS_MATERIAL_LEVEL_GENTLE,
-  HDS_MATERIAL_TYPE_IMMERSIVE,
+  HDS_MATERIAL_TYPE_ADAPTIVE,
   HDS_TITLE_SIZE_SMALL,
   SUPPORTS_HARMONY_API_23,
 } from '../../common/platformCompatibility';
@@ -388,7 +388,7 @@ struct FriendLinksPage {
           },
         },
         systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
-          materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
+          materialType: HDS_MATERIAL_TYPE_ADAPTIVE,
           materialLevel: this.immersiveMaterialLevel
         } : undefined
       },

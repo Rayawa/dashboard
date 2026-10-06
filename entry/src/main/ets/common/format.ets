@@ -2,23 +2,10 @@ export function formatCount(value: number | undefined): string {
     if (value === undefined || value === null) {
         return '-';
     }
-    if (value >= 100000000) {
-        return `${(value / 100000000).toFixed(2)}亿`;
-    }
-    if (value >= 10000) {
-        return `${(value / 10000).toFixed(2)}万`;
-    }
     return String(value);
 }
 
-/** 下载量低于一千时不展示具体数值。 */
 export function formatDownloadCount(value: number | undefined): string {
-    if (value === undefined || value === null) {
-        return '-';
-    }
-    if (value < 1000) {
-        return '<1千';
-    }
     return formatCount(value);
 }
 
@@ -30,17 +17,8 @@ export function formatExactCount(value: number | undefined): string {
 }
 
 export function formatBytes(bytes: number | undefined): string {
-    if (!bytes || bytes <= 0) {
-        return '0 B';
-    }
-    if (bytes >= 1024 * 1024 * 1024) {
-        return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
-    }
-    if (bytes >= 1024 * 1024) {
-        return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-    }
-    if (bytes >= 1024) {
-        return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes === undefined || bytes === null) {
+        return '-';
     }
     return `${bytes} B`;
 }

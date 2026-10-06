@@ -5,9 +5,9 @@
 Dashboard est le client natif de `harmony_get_market`. Il consulte les informations publiques de SDK, de version, de catégorie et de notation via les API `/api/v0` du back-end tout en conservant l’accès ArkWeb au site S.
 
 - Nom du bundle : `top.rayawa.dashboard`
-- Version : `3.1.0`
-- Numéro de build : `30100001`
-- Version système cible et compatible : `6.1.0(23)` (API 23)
+- Version : `3.1.1`
+- Numéro de build : `30101001`
+- Version cible : `26.0.0` (HarmonyOS 7 / API 26) ; compatibilité minimale : `6.0.0(20)` (API 20)
 - Appareils : téléphone, tablette et 2in1
 - Branche : `v3.0.0(23)`, migrée depuis `shenjack`
 
@@ -43,6 +43,8 @@ Toutes les pages de données natives utilisent `common/MarketApi.ets` et ne cons
 - Les soumissions ne sont jamais mises en cache et les mises à jour en arrière-plan d’applications existantes ignorent le cache frais.
 - « Effacer le cache » supprime les fichiers API, le stockage ArkWeb et les cookies, sans supprimer le nom d’utilisateur ni les réglages.
 - La taille actuelle du cache API est affichée à côté de cette action dans Mon espace → Réglages.
+
+Depuis la version 3.1.1, les téléchargements, les nombres d’applications, les tailles en octets et les valeurs des graphiques sont affichés sans abréviation. Le classement quotidien conserve l’enregistrement le plus récent de chaque application.
 
 ## Gestion des erreurs et journalisation
 
@@ -135,8 +137,8 @@ Les routes réellement exposées par le back-end font foi. Consultez `API.md`, `
 
 ## Développement et validation
 
-1. Ouvrez le projet avec DevEco Studio 6.1 ou une version plus récente.
-2. Installez les SDK API 23 et système requis.
+1. Ouvrez le projet avec une version de DevEco Studio compatible avec le SDK HarmonyOS 26.0.0.
+2. Installez le SDK HarmonyOS 26.0.0 et conservez la compatibilité minimale avec l’API 20.
 3. Configurez un profil de signature local valide ; les chemins absolus d’un autre poste ne peuvent pas être réutilisés directement.
 4. Compilez et testez les cibles téléphone, tablette ou 2in1 sur un appareil ou un émulateur.
 5. Vérifiez le repli en réseau faible, le nettoyage du cache, les thèmes clair/sombre, les seuils 600/840vp, l’unique entrée de partage reçue, les trois modes de partage sur le site S et la page de détail, la position de continuité, le défilement et le saut de page du tableau, ainsi que la lecture par le lecteur d’écran.

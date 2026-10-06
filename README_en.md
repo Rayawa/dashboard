@@ -5,9 +5,9 @@
 Dashboard Application Viewer is the native client for `harmony_get_market`. It queries public SDK, version, category, and rating information through the back end's `/api/v0` endpoints while retaining the ArkWeb entry to the S Site.
 
 - Bundle name: `top.rayawa.dashboard`
-- Version: `3.1.0`
-- Build number: `30100001`
-- Target and compatible version: system `6.1.0(23)` (API 23)
+- Version: `3.1.1`
+- Build number: `30101001`
+- Target: `26.0.0` (HarmonyOS 7 / API 26); minimum compatible version: `6.0.0(20)` (API 20)
 - Devices: phone, tablet, and 2in1
 - Branch: `v3.0.0(23)`, migrated from `shenjack`
 
@@ -43,6 +43,8 @@ All native data pages use `common/MarketApi.ets`; pages do not construct HTTP re
 - Submission requests are never cached, and background updates for existing apps bypass fresh cache entries.
 - Clear Cache removes API cache files, ArkWeb storage, and cookies while retaining the username and settings.
 - The current API cache size is displayed beside Clear Cache under My → Settings.
+
+In 3.1.1, download counts, app counts, byte sizes, and chart counts show their original values. The daily maximum downloads list keeps the latest record for each app.
 
 ## Error handling and logging
 
@@ -135,8 +137,8 @@ The back end's runtime routes are authoritative. See `API.md`, `API_DOCS.md`, an
 
 ## Development and verification
 
-1. Open the project with DevEco Studio 6.1 or newer.
-2. Install the required API 23 and system SDKs.
+1. Open the project with a DevEco Studio release that supports HarmonyOS SDK 26.0.0.
+2. Install HarmonyOS SDK 26.0.0 and keep the minimum compatible version at API 20.
 3. Configure a valid local signing profile; absolute paths from another developer's machine cannot be reused directly.
 4. Build and test phone, tablet, or 2in1 targets on a device or emulator.
 5. Verify weak-network fallback, cache clearing, light/dark themes, 600/840vp breakpoints, the single inbound share entry, all three sharing modes on the S Site and detail page, continuation position, table scrolling/page jumps, and screen-reader output.

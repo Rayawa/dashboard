@@ -40,7 +40,7 @@ import { pushPathSafely } from '../common/safeNavigation';
 import { showToastSafely } from '../common/safeUi';
 import {
   HDS_MATERIAL_LEVEL_GENTLE,
-  HDS_MATERIAL_TYPE_IMMERSIVE,
+  HDS_MATERIAL_TYPE_ADAPTIVE,
   HDS_TITLE_SIZE_SMALL,
   SUPPORTS_HARMONY_API_23,
 } from '../common/platformCompatibility';
@@ -97,6 +97,7 @@ struct Dashboard {
     @State private sStationCommandVersion: number = 0;
     @State private sStationDetailOpen: boolean = false;
     private hasReportedTelemetry: boolean = false;
+    private warningHostReady: boolean = false;
     private pageShowToken: number = 0;
     private detailRestoreTimer: number = -1;
     private appsSegmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
@@ -251,16 +252,7 @@ struct Dashboard {
         // consumeMainTab 用于读取 Ability/接续指定页；立即写回，供各标签页恢复滚动位置。
         setMainTab(this.selectedIndex);
         this.searchRequestVersion++;
-        try {
-            const shouldShowWarning = await getFirstLaunch();
-            if (pageShowToken !== this.pageShowToken) return;
-            if (shouldShowWarning) {
-                this.warningRequiresConfirmation = true;
-                this.showWarning = true;
-            }
-        } catch (error) {
-            console.warn('[Dashboard][pages/Dashboard][WARN]', `[v3] 首启状态读取失败: ${JSON.stringify(error)}`);
-        }
+        if (this.warningHostReady) await this.checkWarning(pageShowToken);
         if (pageShowToken !== this.pageShowToken) return;
         const detail = peekDetailTarget();
         if (detail.appId || detail.packageName) {
@@ -278,6 +270,19 @@ struct Dashboard {
                 console.error('[Dashboard][pages/Dashboard][ERROR]',
                     `恢复应用详情失败: ${JSON.stringify(error)}`);
             }
+        }
+    }
+
+    private async checkWarning(pageShowToken: number): Promise<void> {
+        try {
+            const shouldShowWarning = await getFirstLaunch();
+            if (pageShowToken !== this.pageShowToken || !this.warningHostReady) return;
+            if (shouldShowWarning) {
+                this.warningRequiresConfirmation = true;
+                this.showWarning = true;
+            }
+        } catch (error) {
+            console.warn('[Dashboard][pages/Dashboard][WARN]', `[v3] 首启状态读取失败: ${JSON.stringify(error)}`);
         }
     }
 
@@ -435,7 +440,7 @@ struct Dashboard {
                 lightColor: $r('app.color.diff_content'),
                 gradientMask: { maskColor: Color.Transparent, maskHeight: 92 },
                 systemMaterialEffect: {
-                    materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
+                    materialType: HDS_MATERIAL_TYPE_ADAPTIVE,
                     materialLevel: this.immersiveMaterialLevel,
                 },
             })
@@ -464,13 +469,33 @@ struct Dashboard {
         HdsNavigation(this.pageStack) {
             Stack() {
                 this.mainTabsView()
-
             }
             .width('100%')
             .height('100%')
             .backgroundColor($r('app.color.background'))
             .accessibilityGroup(true)
             .accessibilityText('Dashboard应用看板主界面')
+            .onAppear((): void => {
+                this.warningHostReady = true;
+                this.checkWarning(this.pageShowToken);
+            })
+            .bindSheet($$this.showWarning, this.warningSheet(), {
+                title: { title: '重要提示', subtitle: '使用前请阅读以下说明' },
+                height: SheetSize.FIT_CONTENT,
+                detents: [SheetSize.FIT_CONTENT],
+                preferType: SheetType.BOTTOM,
+                showClose: !this.warningRequiresConfirmation,
+                dragBar: true,
+                maskColor: $r('app.color.v3_scrim'),
+                blurStyle: BlurStyle.COMPONENT_ULTRA_THICK,
+                scrollSizeMode: ScrollSizeMode.CONTINUOUS,
+                onWillDismiss: this.warningRequiresConfirmation ? (_action: DismissSheetAction): void => {
+                    this.preventWarningDismiss();
+                } : undefined,
+                onWillDisappear: (): void => {
+                    if (!this.warningRequiresConfirmation) this.vibrate();
+                },
+            })
         }
         .mode(NavigationMode.Stack)
         .customNavContentTransition((_from: NavContentInfo, _to: NavContentInfo,
@@ -520,7 +545,7 @@ struct Dashboard {
                     },
                 },
                 systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
-                    materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
+                    materialType: HDS_MATERIAL_TYPE_ADAPTIVE,
                     materialLevel: this.immersiveMaterialLevel,
                 } : undefined,
             },
@@ -542,24 +567,5 @@ struct Dashboard {
         .backgroundColor($r('app.color.background'))
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
         .accessibilityText('Dashboard应用导航')
-        .bindSheet($$this.showWarning, this.warningSheet(), {
-            title: { title: '重要提示', subtitle: '使用前请阅读以下说明' },
-            height: SheetSize.FIT_CONTENT,
-            detents: [SheetSize.FIT_CONTENT],
-            preferType: SheetType.BOTTOM,
-            showClose: !this.warningRequiresConfirmation,
-            dragBar: true,
-            maskColor: $r('app.color.v3_scrim'),
-            blurStyle: BlurStyle.COMPONENT_ULTRA_THICK,
-            scrollSizeMode: ScrollSizeMode.CONTINUOUS,
-            // 仅首次强制阅读时拦截关闭。普通查看让系统直接完成交互式下拉关闭，
-            // 避免在手势动画末尾再次调用 dismiss() 导致 sheet 先回弹再退出。
-            onWillDismiss: this.warningRequiresConfirmation ? (_action: DismissSheetAction): void => {
-                    this.preventWarningDismiss();
-            } : undefined,
-            onWillDisappear: (): void => {
-                if (!this.warningRequiresConfirmation) this.vibrate();
-            },
-        })
     }
 }

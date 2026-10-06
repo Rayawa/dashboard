@@ -15,7 +15,7 @@ export struct AppTableRow {
 
     private rating(): string {
         const value = Number(this.app.average_rating ?? 0);
-        return value > 0 ? value.toFixed(1) : '-';
+        return value > 0 ? String(value) : '-';
     }
 
     build() {
