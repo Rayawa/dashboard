@@ -73,7 +73,7 @@ export struct HomeRankings {
                     })
                     .transition(contentEnterTransition(6))
                     .accessibilityText(`第${index + 1}名，${app.app_name}，下载量${app.download_count}，点击查看详情`)
-                }, (app: DailyMaxDownloadApp) => `${app.report_date}-${app.app_id}`)
+                }, (app: DailyMaxDownloadApp) => app.pkg_name || app.app_id)
             }
         }
         .width('100%').padding(18).borderRadius(18).backgroundColor($r('app.color.v3_surface'))

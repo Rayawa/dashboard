@@ -8,7 +8,9 @@ import {
     operatorNeedsValue,
     operatorsForField,
 } from '../main/ets/common/SearchExpression';
-import { formatDuration } from '../main/ets/common/format';
+import { formatBytes, formatCount, formatDownloadCount, formatDuration } from '../main/ets/common/format';
+import { uniqueDailyMaxApps } from '../main/ets/common/DailyRanking';
+import type { DailyMaxDownloadApp } from '../main/ets/common/types';
 
 export default function localUnitTest() {
     describe("localUnitTest", () => {
@@ -105,6 +107,29 @@ export default function localUnitTest() {
         it('formatDurationUsesReadableUnits', 0, () => {
             expect(formatDuration(65)).assertEqual('1分5秒');
             expect(formatDuration(7200)).assertEqual('2小时0分');
+        });
+        it('numericDataKeepsOriginalValues', 0, () => {
+            expect(formatCount(123456789)).assertEqual('123456789');
+            expect(formatDownloadCount(999)).assertEqual('999');
+            expect(formatBytes(1048576)).assertEqual('1048576 B');
+        });
+        it('dailyRankingUsesLatestUniqueAppBeforeLimit', 0, () => {
+            const records: DailyMaxDownloadApp[] = [
+                { app_id: '1', app_name: 'A', pkg_name: 'app.a', download_count: 100,
+                    report_date: '2026-09-22' },
+                { app_id: '2', app_name: 'B', pkg_name: 'app.b', download_count: 200,
+                    report_date: '2026-09-23' },
+                { app_id: '1', app_name: 'A', pkg_name: 'app.a', download_count: 300,
+                    report_date: '2026-09-24' },
+                { app_id: '3', app_name: 'C', pkg_name: 'app.c', download_count: 400,
+                    report_date: '2026-09-21' },
+            ];
+            const result = uniqueDailyMaxApps(records, 3);
+            expect(result.length).assertEqual(3);
+            expect(result[0].app_id).assertEqual('1');
+            expect(result[0].download_count).assertEqual(300);
+            expect(result[1].app_id).assertEqual('2');
+            expect(result[2].app_id).assertEqual('3');
         });
     });
 }

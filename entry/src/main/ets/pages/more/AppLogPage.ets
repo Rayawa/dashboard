@@ -13,7 +13,7 @@ import { scrollByAxis } from '../../common/scroll';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import {
     HDS_MATERIAL_LEVEL_GENTLE,
-    HDS_MATERIAL_TYPE_IMMERSIVE,
+    HDS_MATERIAL_TYPE_ADAPTIVE,
     HDS_TITLE_SIZE_SMALL,
     SUPPORTS_HARMONY_API_23,
 } from '../../common/platformCompatibility';
@@ -109,6 +109,17 @@ struct AppLogPage {
     private scroller: Scroller = new Scroller();
     private enterAnimationTimers: number[] = [];
     private updateLogs: UpdateLog[] = [
+        {
+            version: "V3.1.1",
+            date: "2026-9-24",
+            type: "release",
+            isRelease: true,
+            items: [
+                "修复首次进入应用时重要提示未弹出，以及首次进入后从我的页面打开重要提示无响应的问题",
+                "下载量、应用数量、字节大小及趋势图数据改为显示原始数值，不再使用千、万、亿或换算单位省略",
+                "每日最高下载量应用排行按应用去重，避免同一应用的多日记录重复占据榜单",
+            ],
+        },
         {
             version: "V3.1.0",
             date: "2026-9-13",
@@ -540,7 +551,7 @@ struct AppLogPage {
                     },
                 },
                 systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
-                    materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
+                    materialType: HDS_MATERIAL_TYPE_ADAPTIVE,
                     materialLevel: this.immersiveMaterialLevel
                 } : undefined
             },

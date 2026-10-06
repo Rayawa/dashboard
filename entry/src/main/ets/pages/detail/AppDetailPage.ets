@@ -38,7 +38,7 @@ import { WebShareManager } from '../../common/shareControl';
 import { vibration } from '../../common/vibration';
 import {
     HDS_MATERIAL_LEVEL_GENTLE,
-    HDS_MATERIAL_TYPE_IMMERSIVE,
+    HDS_MATERIAL_TYPE_ADAPTIVE,
     HDS_TITLE_SIZE_SMALL,
     SUPPORTS_HARMONY_API_23,
 } from '../../common/platformCompatibility';
@@ -764,7 +764,7 @@ export struct AppDetailPage {
                 return {
                     label: rating.report_date,
                     value,
-                    detail: `${rating.report_date} · 平均评分 ${value.toFixed(2)} · 累计 ${formatCount(rating.cumulative_total_count)} 条评分`,
+                    detail: `${rating.report_date} · 平均评分 ${value} · 累计 ${formatCount(rating.cumulative_total_count)} 条评分`,
                 } as LineChartPoint;
             });
         return downsampleLinePoints(points, DETAIL_CHART_MAX_POINTS);
@@ -1286,7 +1286,7 @@ export struct AppDetailPage {
                     },
                 },
                 systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
-                    materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
+                    materialType: HDS_MATERIAL_TYPE_ADAPTIVE,
                     materialLevel: this.immersiveMaterialLevel,
                 } : undefined,
             },

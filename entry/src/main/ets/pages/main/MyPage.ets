@@ -332,7 +332,7 @@ export struct MyPage {
                     this.vibrate();
                     this.tapVersion();
                 })
-                .accessibilityText(`版本${APP_VERSION}，连续点击十次打开开发者信息`)
+                .accessibilityText(`版本${APP_VERSION}`)
             Text('Designed & Developed by Ray Chen (Rayawa)')
                 .fontSize(12)
                 .fontColor($r('app.color.v3_text_secondary'))

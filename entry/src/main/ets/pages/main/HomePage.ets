@@ -10,6 +10,7 @@ import {
 import { getContinuationState, setContinuationView, setDetailTarget } from '../../common/appState';
 import { fetchAppsPage, fetchDailyMaxDownloads, fetchDeveloperRanking, fetchMarketInfo } from '../../common/MarketApi';
 import { formatDateTime } from '../../common/format';
+import { uniqueDailyMaxApps } from '../../common/DailyRanking';
 import { showToastSafely } from '../../common/safeUi';
 import {
     cancelStaggerEnterAnimation,
@@ -337,10 +338,7 @@ export struct HomePage {
         try {
             const dailyResult = await fetchDailyMaxDownloads(force);
             if (dailyResult.data.success && dailyResult.data.data) {
-                this.dailyMaxApps = dailyResult.data.data.slice()
-                    .sort((left: DailyMaxDownloadApp, right: DailyMaxDownloadApp): number =>
-                        new Date(right.report_date).getTime() - new Date(left.report_date).getTime())
-                    .slice(0, 10);
+                this.dailyMaxApps = uniqueDailyMaxApps(dailyResult.data.data);
             }
         } catch (error) {
             console.warn('[Dashboard][pages/main/HomePage][WARN]',

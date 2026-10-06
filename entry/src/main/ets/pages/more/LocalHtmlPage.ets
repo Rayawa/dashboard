@@ -13,7 +13,7 @@ import { customUserAgent, ROUTE_HTML_PAGE } from '../../common/constants';
 import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
 import {
   HDS_MATERIAL_LEVEL_GENTLE,
-  HDS_MATERIAL_TYPE_IMMERSIVE,
+  HDS_MATERIAL_TYPE_ADAPTIVE,
   HDS_TITLE_SIZE_SMALL,
   SUPPORTS_HARMONY_API_23,
 } from '../../common/platformCompatibility';
@@ -171,7 +171,7 @@ export struct LocalHtmlPage {
           },
         },
         systemMaterialEffect: SUPPORTS_HARMONY_API_23 ? {
-          materialType: HDS_MATERIAL_TYPE_IMMERSIVE,
+          materialType: HDS_MATERIAL_TYPE_ADAPTIVE,
           materialLevel: this.immersiveMaterialLevel
         } : undefined
       },

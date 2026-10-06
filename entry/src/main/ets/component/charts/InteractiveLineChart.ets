@@ -222,17 +222,13 @@ export struct InteractiveLineChart {
     }
 
     private valueLabel(value: number): string {
-        if (this.unit === '%') return `${value.toFixed(1)}%`;
-        if (this.unit === '分') return value.toFixed(1);
-        if (value >= 100000000) return `${(value / 100000000).toFixed(1)}亿`;
-        if (value >= 100000) return `${Math.round(value / 10000)}万`;
-        if (value >= 10000) return `${(value / 10000).toFixed(1)}万`;
-        return String(Math.round(value));
+        return `${value}${this.unit === '%' ? '%' : ''}`;
     }
 
     private dimensions(): number[] {
-        const left = this.responsiveAxisFont && this.canvasWidth < 600 ? 50 :
-            (this.responsiveAxisFont && this.canvasWidth < 840 ? 58 : 60);
+        const labelWidth = String(Math.round(this.maximum())).length * this.axisFontSize() * 0.62 + 14;
+        const left = Math.max(this.responsiveAxisFont && this.canvasWidth < 600 ? 50 :
+            (this.responsiveAxisFont && this.canvasWidth < 840 ? 58 : 60), Math.min(150, labelWidth));
         const right = 10;
         return [left, right, Math.max(1, this.canvasWidth - left - right)];
     }
@@ -375,7 +371,10 @@ export struct InteractiveLineChart {
             this.context.lineTo(left + drawWidth, y);
             this.context.stroke();
             this.context.textAlign = 'right';
-            this.context.fillText(this.valueLabel(maximum * (4 - row) / 4), left - 8, y + 4);
+            const tick = maximum * (4 - row) / 4;
+            const tickLabel = this.unit === '%' ? `${tick.toFixed(1)}%` :
+                (this.unit === '分' ? tick.toFixed(1) : String(Math.round(tick)));
+            this.context.fillText(tickLabel, left - 8, y + 4);
         }
         this.context.setLineDash([]);
         this.context.save();
