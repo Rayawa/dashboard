@@ -63,37 +63,47 @@ export struct HdsMiniBarButton {
   build() {
     Stack({ alignContent: Alignment.Center }) {
       if (deviceInfo.distributionOSApiVersion >= 60100) {
-        HdsTabs({ controller: this.controller }) {
-          TabContent()
-            .backgroundColor(Color.Transparent)
-        }
-        .height(this.barHeight - 12)
-        .barWidth(this.barWidth)
-        .barHeight(this.barHeight - 12)
-        .barOverlap(true)
-        .barPosition(BarPosition.End)
-        .backgroundColor(Color.Transparent)
-        .barFloatingStyle({
-          barWidth: {
-            smallWidth: this.barWidth,
-            mediumWidth: this.barWidth,
-            largeWidth: this.barWidth,
-          },
-          gradientMask: { maskColor: Color.Transparent },
-          barBottomMargin: 0,
-          barSideMargin: 0,
-          lightColor: $r('app.color.diff_content'),
-          systemMaterialEffect: {
-            materialType: this.materialType,
-            materialLevel: this.materialLevel,
-          },
-          miniBar: {
-            miniBarBuilder: () => {
-              this.miniBarBackground()
+        // 浮动栏的材质阴影由 HdsTabs 内部绘制，透明背景不会关闭它。
+        // 单独裁剪背景层，避免阴影溢出胶囊；前景的按压光效仍独立绘制。
+        Stack({ alignContent: Alignment.Center }) {
+          HdsTabs({ controller: this.controller }) {
+            TabContent()
+              .backgroundColor(Color.Transparent)
+          }
+          .width(this.barWidth)
+          .height(this.barHeight - 12)
+          .barWidth(this.barWidth)
+          .barHeight(this.barHeight - 12)
+          .barOverlap(true)
+          .barPosition(BarPosition.End)
+          .backgroundColor(Color.Transparent)
+          .barFloatingStyle({
+            barWidth: {
+              smallWidth: this.barWidth,
+              mediumWidth: this.barWidth,
+              largeWidth: this.barWidth,
             },
-            miniBarStyle: 1,
-          },
-        })
+            gradientMask: { maskColor: Color.Transparent },
+            barBottomMargin: 0,
+            barSideMargin: 0,
+            lightColor: $r('app.color.diff_content'),
+            systemMaterialEffect: {
+              materialType: this.materialType,
+              materialLevel: this.materialLevel,
+            },
+            miniBar: {
+              miniBarBuilder: () => {
+                this.miniBarBackground()
+              },
+              miniBarStyle: 1,
+            },
+          })
+        }
+        .width(this.barWidth)
+        .height(this.barHeight - 12)
+        .borderRadius((this.barHeight - 12) / 2)
+        .clip(true)
+        .hitTestBehavior(HitTestMode.None)
         Column() {
           this.miniBarContent()
         }
