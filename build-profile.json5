@@ -7,11 +7,11 @@
         "material": {
           "certpath": "/Users/raychen/Develop/Dashboard/certificate/dashboard.cer",
           "keyAlias": "Rayawa",
-          "keyPassword": "0000001ED5A4FA90AD6C596E0B31A6F9B6CDFC9810CC71E00CE79B8C952DB082745DA8CD92C321CB491DBA71EC59",
+          "keyPassword": "0000001E2415E54099F253BA9D282779A48B4BF32D20854DB3B4994041EF65D5BB2D3097F66EFA5D51D0E9E40874",
           "profile": "/Users/raychen/Develop/Dashboard/certificate/dashboardRelease.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/raychen/Develop/Dashboard/certificate/Rayawa.p12",
-          "storePassword": "0000001E949F2698D72ECFD23D3F3CE1D7F08C8544C06415099E6994E66A4401FB5B94BAC184A1C6D28B30B71230"
+          "storePassword": "0000001E8F24CA02A31A239665F7BE9537BC587202B4D74392570EDA9076F730E4D21CA3BC959F5E0021F56D1DA9"
         }
       },
       {
@@ -20,18 +20,18 @@
         "material": {
           "certpath": "/Users/raychen/.ohos/config/debug_dashboard-HarmonyOS_k55T3qco-dVZUC72GrhrBJhDtrlAwf4N_kK34BNrRgg=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B0156C3C15E4B375762BCE49CFF2B8317BD33BA9539C64775E1D1F0A1D8B3C2D5887E011720B0B2",
+          "keyPassword": "0000001AB9CB612EDD174318473E333D9DD5ABCEA887109B36CDBF67FA34F069AA7C6FE990C3FC65912B",
           "profile": "/Users/raychen/.ohos/config/debug_dashboard-HarmonyOS_k55T3qco-dVZUC72GrhrBJhDtrlAwf4N_kK34BNrRgg=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/raychen/.ohos/config/debug_dashboard-HarmonyOS_k55T3qco-dVZUC72GrhrBJhDtrlAwf4N_kK34BNrRgg=.p12",
-          "storePassword": "0000001BB9F3E144DDA0F514F249CE430ED09AE22A828EE8E09FA9C2005904C725D71ADE8528EE338F1044"
+          "storePassword": "0000001AD85E4FEC5FFC35F7D788474332B7B51EB5759712F2C4A20BFC27C7B381AE85DFE3C7EE093CB0"
         }
       }
     ],
     "products": [
       {
         "name": "default",
-        "signingConfig": "release",
+        "signingConfig": "debug",
         "targetSdkVersion": "26.0.0",
         "compatibleSdkVersion": "6.0.0(20)",
         "runtimeOS": "HarmonyOS",

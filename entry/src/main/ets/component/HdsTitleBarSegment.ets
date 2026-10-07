@@ -57,6 +57,8 @@ export struct HdsTitleBarSegment {
         itemSelectedBackgroundColor: this.materialSelectedBackgroundColor(),
         itemMinHeight: LengthMetrics.vp(32),
         buttonBackgroundColor: ColorMetrics.rgba(0, 0, 0, 0),
+        // 材质统一由外层迷你栏提供，与参考项目的透明背景分支保持一致。
+        buttonBackgroundBlurStyle: BlurStyle.NONE,
         buttonMinHeight: LengthMetrics.vp(40),
         buttonPadding: LengthMetrics.vp(4),
         enableStateAnimation: true,
