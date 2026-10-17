@@ -1,3 +1,4 @@
+import { ROUTE_MY_COLLECTION } from '../../common/constants';
 import { common, Want } from '@kit.AbilityKit';
 import { PromptAction, TextModifier } from '@kit.ArkUI';
 import { HdsListItemCard, IconSize, PrefixIcon, SuffixCustomBuilder } from '@kit.UIDesignKit';
@@ -198,6 +199,7 @@ export struct MyPage {
 
     private moreItems(): MoreItem[] {
         return [
+            { title: '收藏与关注', icon: $r('app.media.app_icon'), action: () => this.pushPage(ROUTE_MY_COLLECTION) },
             {
                 title: '项目网站首页',
                 icon: $r('app.media.app_icon'),

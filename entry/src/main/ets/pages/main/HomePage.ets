@@ -1,3 +1,5 @@
+import { openMarketRanking, openMarketTopic } from '../../common/discoveryNavigation';
+import { DiscoveryShortcuts } from '../../component/discovery/DiscoveryShortcuts';
 import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 import {
@@ -10,7 +12,7 @@ import {
 import { getContinuationState, setContinuationView, setDetailTarget } from '../../common/appState';
 import { fetchAppsPage, fetchDailyMaxDownloads, fetchDeveloperRanking, fetchMarketInfo } from '../../common/MarketApi';
 import { formatDateTime } from '../../common/format';
-import { uniqueDailyMaxApps } from '../../common/DailyRanking';
+import { latestDailyMaxRecords } from '../../common/DailyRanking';
 import { showToastSafely } from '../../common/safeUi';
 import {
     cancelStaggerEnterAnimation,
@@ -93,6 +95,7 @@ struct RollingNumber {
 struct HomeStatCard {
     stat: HomeStat = { label: '', value: 0, color: $r('app.color.diff_content') };
     @State private pressed: boolean = false;
+    onOpen: () => void = (): void => {};
 
     build() {
         Column({ space: 8 }) {
@@ -127,7 +130,8 @@ struct HomeStatCard {
             }
         })
         .accessibilityGroup(true)
-        .accessibilityText(`${this.stat.label}，${this.stat.value}`)
+        .onClick((): void => this.onOpen())
+        .accessibilityText(`${this.stat.label}，${this.stat.value}，点击查看全部`)
     }
 }
 
@@ -205,6 +209,7 @@ struct RecentAppCard {
 
 @Component
 export struct HomePage {
+    @Consume('pageStack') private pageStack: NavPathStack;
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     @Prop @Watch('onActiveChanged') active: boolean = false;
     onOpenAppDetail?: (target: AppRouteTarget) => void;
@@ -338,7 +343,7 @@ export struct HomePage {
         try {
             const dailyResult = await fetchDailyMaxDownloads(force);
             if (dailyResult.data.success && dailyResult.data.data) {
-                this.dailyMaxApps = uniqueDailyMaxApps(dailyResult.data.data);
+                this.dailyMaxApps = latestDailyMaxRecords(dailyResult.data.data, 10);
             }
         } catch (error) {
             console.warn('[Dashboard][pages/main/HomePage][WARN]',
@@ -456,7 +461,10 @@ export struct HomePage {
             },
         }) {
             ForEach(this.stats(), (stat: HomeStat) => {
-                GridCol({ span: { xs: 2, sm: 4, md: 6 } }) { HomeStatCard({ stat }) }
+                GridCol({ span: { xs: 2, sm: 4, md: 6 } }) { HomeStatCard({ stat, onOpen: (): void => {
+                    if (stat.label === '开发者') openMarketRanking(this.pageStack, { kind: 'developers' });
+                    else openMarketTopic(this.pageStack);
+                } }) }
                     .transition(contentEnterTransition(10))
             }, (stat: HomeStat) => stat.label)
         }
@@ -470,6 +478,7 @@ export struct HomePage {
     private dataAndStatus(): void {
         Column({ space: 14 }) {
             this.totalRelationCard()
+            DiscoveryShortcuts()
             this.statsGrid()
             if (this.market) {
                 SyncStatusCard({

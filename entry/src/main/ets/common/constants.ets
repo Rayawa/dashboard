@@ -75,6 +75,9 @@ export const CACHE_TTL_HOME_MS = 5 * 60 * 1000;
 export const CACHE_TTL_LIST_MS = 2 * 60 * 1000;
 export const CACHE_TTL_DETAIL_MS = 30 * 60 * 1000;
 export const CACHE_TTL_CHART_MS = 30 * 60 * 1000;
+export const CACHE_MAX_BYTES = 32 * 1024 * 1024;
+export const CACHE_MAINTENANCE_INTERVAL_MS = 5 * 60 * 1000;
+export const CACHE_MAINTENANCE_DELAY_MS = 1000;
 export const CACHE_MAX_STALE_MS = 30 * 24 * 60 * 60 * 1000;
 export const BACKGROUND_REFRESH_DELAY_MS = 180;
 export const MAIN_TAB_S_STATION = 0;
@@ -215,3 +218,14 @@ export function createApiRequestHeaders(hasJsonBody: boolean = false): Record<st
 }
 
 export const SUBMIT_PLATFORM: string = `ray_dashboard/${APP_VERSION}-${deviceInfo.deviceType}`;
+
+export const ROUTE_RANKINGS = 'MarketRankingsPage';
+export const ROUTE_APP_COLLECTION = 'AppCollectionPage';
+export const ROUTE_TOPICS = 'TopicsPage';
+export const ROUTE_MY_COLLECTION = 'MyCollectionPage';
+export const STORAGE_KEY_LOCAL_COLLECTION = 'localCollection';
+export const DISCOVERY_PAGE_SIZE: number = 20;
+
+export const OVERVIEW_COLLAPSED_SDK_COUNT: number = 7;
+// 点光源反馈至少跨过一个渲染提交周期。
+export const MIN_PRESS_FEEDBACK_MS: number = 140;

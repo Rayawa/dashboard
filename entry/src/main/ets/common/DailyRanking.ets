@@ -1,19 +1,20 @@
 import type { DailyMaxDownloadApp } from './types';
 
-/** The API returns daily records, so one app may appear on several dates. */
-export function uniqueDailyMaxApps(records: DailyMaxDownloadApp[], limit: number = 10): DailyMaxDownloadApp[] {
-    const sorted = records.slice().sort((left: DailyMaxDownloadApp, right: DailyMaxDownloadApp): number => {
-        const byDate = new Date(right.report_date).getTime() - new Date(left.report_date).getTime();
-        return byDate || right.download_count - left.download_count;
-    });
-    const seen: Set<string> = new Set<string>();
-    const unique: DailyMaxDownloadApp[] = [];
+/** 每个应用仅保留最近一次最高记录；先去重，再截取首页摘要或分页。 */
+export function latestDailyMaxRecords(records: DailyMaxDownloadApp[], limit?: number): DailyMaxDownloadApp[] {
+    const sorted = records.slice().sort((a: DailyMaxDownloadApp, b: DailyMaxDownloadApp): number =>
+        b.report_date.localeCompare(a.report_date) || b.download_count - a.download_count);
+    const appIds: Set<string> = new Set<string>();
+    const packages: Set<string> = new Set<string>();
+    const result: DailyMaxDownloadApp[] = [];
     for (const app of sorted) {
-        const key = app.pkg_name?.trim() || app.app_id?.trim();
-        if (!key || seen.has(key)) continue;
-        seen.add(key);
-        unique.push(app);
-        if (unique.length >= limit) break;
+        const id = app.app_id?.trim() || '';
+        const pkg = app.pkg_name?.trim() || '';
+        if (!id && !pkg) continue;
+        if ((id && appIds.has(id)) || (pkg && packages.has(pkg))) continue;
+        if (id) appIds.add(id);
+        if (pkg) packages.add(pkg);
+        result.push(app);
     }
-    return unique;
+    return limit === undefined ? result : result.slice(0, Math.max(0, limit));
 }

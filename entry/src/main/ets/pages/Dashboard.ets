@@ -1,3 +1,9 @@
+import { RankingPage } from './discovery/RankingPage';
+import { AppCollectionPage } from './discovery/AppCollectionPage';
+import { TopicsPage } from './discovery/TopicsPage';
+import { MyCollectionPage } from './discovery/MyCollectionPage';
+import type { RankingTarget, AppCollectionTarget, TopicTarget } from '../common/types';
+import { ROUTE_RANKINGS, ROUTE_APP_COLLECTION, ROUTE_TOPICS, ROUTE_MY_COLLECTION } from '../common/constants';
 import {
   BlurStrategy,
   HdsNavigation,
@@ -330,7 +336,15 @@ struct Dashboard {
 
     @Builder
     destinationBuilder(name: string, param: Object) {
-        if (name === ROUTE_APP_DETAIL) {
+        if (name === ROUTE_RANKINGS) {
+            RankingPage({ target: param as RankingTarget })
+        } else if (name === ROUTE_APP_COLLECTION) {
+            AppCollectionPage({ target: param as AppCollectionTarget })
+        } else if (name === ROUTE_TOPICS) {
+            TopicsPage({ target: param as TopicTarget })
+        } else if (name === ROUTE_MY_COLLECTION) {
+            MyCollectionPage()
+        } else if (name === ROUTE_APP_DETAIL) {
             AppDetailPage({ routeTarget: param as AppRouteTarget })
         } else if (name === ROUTE_WEB_PAGE) {
             WebPageBuilder(param as WebPageParams)

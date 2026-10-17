@@ -1,5 +1,14 @@
+import { DetailTag } from '../../component/detail/DetailTag';
+import type { DetailField } from '../../component/detail/DetailTag';
+import { ScreenshotCarousel } from '../../component/detail/ScreenshotCarousel';
+import { DiscoveryButtonStyle } from '../../common/DiscoveryTheme';
+import { VersionTimeline } from '../../component/detail/VersionTimeline';
+import { versionChanges } from '../../common/DiscoveryQuery';
+import { getLocalCollection, saveCollectedApp } from '../../common/storage';
+import { openAppCollection } from '../../common/discoveryNavigation';
+import type { VersionChange, SavedApp } from '../../common/types';
 import { common, Want } from '@kit.AbilityKit';
-import { curves, LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { LengthMetrics, PromptAction } from '@kit.ArkUI';
 import {
     hdsEffect,
     HdsNavDestination,
@@ -10,6 +19,7 @@ import {
     BACKGROUND_REFRESH_DELAY_MS,
     CONTENT_MAX_WIDTH,
     CONTINUATION_ROUTE_DETAIL,
+    ROUTE_APP_DETAIL,
     HUAWEI_APP_DETAIL_URL_PREFIX,
     RESPONSIVE_BREAKPOINT_LARGE,
     RESPONSIVE_BREAKPOINT_MEDIUM,
@@ -27,7 +37,7 @@ import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory
 import { formatBytes, formatCount, formatDateTime, formatDownloadCount } from '../../common/format';
 import { scrollByAxis } from '../../common/scroll';
 import { showToastSafely } from '../../common/safeUi';
-import { popPathSafely } from '../../common/safeNavigation';
+import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
 import {
     cancelStaggerEnterAnimation,
     contentEnterTransition,
@@ -60,374 +70,6 @@ import { downsampleLinePoints, filterDownloadOutliers } from '../../component/ch
 
 const DETAIL_CHART_MAX_POINTS: number = 360;
 
-interface DetailField {
-    label: string;
-    value: string;
-}
-
-@Component
-struct DetailTag {
-    field: DetailField = { label: '', value: '-' };
-    @State private pressed: boolean = false;
-
-    build() {
-        Row({ space: 7 }) {
-            Text(this.field.label)
-                .fontSize(11)
-                .fontWeight(FontWeight.Medium)
-                .fontColor($r('app.color.diff_content'))
-                .flexShrink(0)
-                .accessibilityText(this.field.label)
-            Scroll() {
-                Row() {
-                    Text(this.field.value)
-                        .fontSize(12)
-                        .fontColor($r('app.color.v3_text_primary'))
-                        .maxLines(1)
-                        .textAlign(TextAlign.Start)
-                        .accessibilityText(`${this.field.label}${this.field.value}`)
-                }
-                .constraintSize({ minWidth: '100%' })
-                .justifyContent(FlexAlign.Start)
-            }
-                .layoutWeight(1)
-                .height(20)
-                .scrollable(ScrollDirection.Horizontal)
-                .scrollBar(BarState.Off)
-                .edgeEffect(EdgeEffect.None)
-                .accessibilityText(`${this.field.label}详情，可左右滑动查看`)
-        }
-        .alignItems(VerticalAlign.Center)
-        .padding({ left: 10, right: 10, top: 7, bottom: 7 })
-        .width('100%')
-        .height(36)
-        .borderRadius(14)
-        .backgroundColor($r('app.color.v3_surface_alt'))
-        .border({ width: 1, color: $r('app.color.v3_chart_grid') })
-        .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
-        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(pressVisualEffect(
-            this.pressed, hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
-        .compositingFilter(pressLightFieldFilter(this.pressed))
-        .onTouch((event: TouchEvent): void => {
-            if (event.type === TouchType.Down) this.pressed = true;
-            else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressed = false;
-        })
-        .accessibilityGroup(true)
-        .accessibilityText(`${this.field.label}，${this.field.value}`)
-    }
-}
-
-@Component
-struct ScreenshotCarousel {
-    @Prop @Watch('onScreenshotsChanged') screenshots: ScreenshotInfo[] = [];
-    @Prop compact: boolean = false;
-    @State private currentIndex: number = 0;
-    @State private dragOffset: number = 0;
-    @State private frameWidth: number = 0;
-    private autoPlayTimer: number = -1;
-    private switching: boolean = false;
-    private active: boolean = false;
-    private settledScreenshotKeys: string[] = [];
-
-    private onScreenshotsChanged(): void {
-        if (this.currentIndex >= this.screenshots.length) {
-            this.currentIndex = 0;
-        }
-        this.restartAutoPlay();
-    }
-
-    private isLandscape(): boolean {
-        if (this.screenshots.length === 0) {
-            return false;
-        }
-        const shot = this.screenshots[0];
-        const normalized = shot.resolution.replace('×', '*').replace('x', '*').replace('X', '*');
-        const parts = normalized.split('*');
-        if (parts.length < 2) {
-            return false;
-        }
-        let width = Number(parts[0]);
-        let height = Number(parts[1]);
-        if (width <= 0 || height <= 0) {
-            return false;
-        }
-        if (shot.rotated !== 0) {
-            const originalWidth = width;
-            width = height;
-            height = originalWidth;
-        }
-        return width > height;
-    }
-
-    private relativePosition(index: number): number {
-        const count = this.screenshots.length;
-        if (count <= 1 || index === this.currentIndex) {
-            return 0;
-        }
-        const forward = (index - this.currentIndex + count) % count;
-        if (forward === 1) {
-            return 1;
-        }
-        if (forward === count - 1) {
-            return -1;
-        }
-        return 2;
-    }
-
-    private cardPosition(index: number, leftCopy: boolean): number {
-        if (leftCopy && this.screenshots.length === 2) {
-            return index === this.currentIndex ? 2 : -1;
-        }
-        return this.relativePosition(index);
-    }
-
-    private revealProgress(): number {
-        return Math.min(1, Math.abs(this.dragOffset) / Math.max(1, this.frameWidth));
-    }
-
-    private screenshotKey(shot: ScreenshotInfo, index: number): string {
-        return `${shot.url}-${index}`;
-    }
-
-    private markScreenshotSettled(shot: ScreenshotInfo, index: number): void {
-        const key = this.screenshotKey(shot, index);
-        if (!this.settledScreenshotKeys.includes(key)) {
-            this.settledScreenshotKeys.push(key);
-        }
-        if (this.allScreenshotsSettled()) {
-            this.restartAutoPlay();
-        }
-    }
-
-    private allScreenshotsSettled(): boolean {
-        for (let index = 0; index < this.screenshots.length; index++) {
-            if (!this.settledScreenshotKeys.includes(this.screenshotKey(this.screenshots[index], index))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private cardScale(position: number): number {
-        if (position === 0) {
-            return 1;
-        }
-        if (Math.abs(position) > 1) {
-            return 0.9;
-        }
-        const revealing = (this.dragOffset < 0 && position === 1) || (this.dragOffset > 0 && position === -1);
-        return revealing ? 0.9 + this.revealProgress() * 0.1 : 0.9;
-    }
-
-    private cardTranslateX(position: number): number {
-        if (position === 0) {
-            return this.dragOffset;
-        }
-        if (Math.abs(position) > 1) {
-            return this.frameWidth * 2;
-        }
-        const sideOffset = this.frameWidth * (this.isLandscape() ? 0.12 : 0.32);
-        if ((this.dragOffset < 0 && position === 1) || (this.dragOffset > 0 && position === -1)) {
-            return position * sideOffset * (1 - this.revealProgress());
-        }
-        return position * sideOffset;
-    }
-
-    private cardOpacity(position: number): number {
-        if (position === 0) {
-            return 1;
-        }
-        if (Math.abs(position) > 1) {
-            return 0;
-        }
-        const revealing = (this.dragOffset < 0 && position === 1) || (this.dragOffset > 0 && position === -1);
-        return revealing ? 0.68 + this.revealProgress() * 0.32 : 0.68;
-    }
-
-    private cardZIndex(position: number): number {
-        if (position === 0) {
-            return 3;
-        }
-        if (Math.abs(position) > 1) {
-            return 0;
-        }
-        const revealing = (this.dragOffset < 0 && position === 1) || (this.dragOffset > 0 && position === -1);
-        return revealing ? 2 : 1;
-    }
-
-    private stopAutoPlay(): void {
-        if (this.autoPlayTimer >= 0) {
-            clearInterval(this.autoPlayTimer);
-            this.autoPlayTimer = -1;
-        }
-    }
-
-    private restartAutoPlay(): void {
-        this.stopAutoPlay();
-        if (!this.active || this.screenshots.length <= 1 || !this.allScreenshotsSettled()) {
-            return;
-        }
-        this.autoPlayTimer = setInterval((): void => this.completeSwitch(1), 2500);
-    }
-
-    private completeSwitch(direction: number, restartTimer: boolean = true): void {
-        if (this.switching || this.screenshots.length <= 1) {
-            return;
-        }
-        this.stopAutoPlay();
-        this.switching = true;
-        const count = this.screenshots.length;
-        const targetOffset = direction > 0 ? -Math.max(280, this.frameWidth) : Math.max(280, this.frameWidth);
-        this.getUIContext().animateTo({
-            duration: 280,
-            curve: curves.springMotion(0.42, 0.88),
-            onFinish: (): void => {
-                this.currentIndex = (this.currentIndex + direction + count) % count;
-                this.dragOffset = 0;
-                this.switching = false;
-                if (restartTimer) {
-                    this.restartAutoPlay();
-                }
-            },
-        }, (): void => {
-            this.dragOffset = targetOffset;
-        });
-    }
-
-    private restoreCurrentCard(): void {
-        this.getUIContext().animateTo({
-            duration: 220,
-            curve: curves.springMotion(0.42, 0.88),
-            onFinish: (): void => this.restartAutoPlay(),
-        }, (): void => {
-            this.dragOffset = 0;
-        });
-    }
-
-    private selectPage(index: number): void {
-        if (index === this.currentIndex || this.switching) {
-            return;
-        }
-        this.stopAutoPlay();
-        this.getUIContext().animateTo({
-            duration: 260,
-            curve: curves.springMotion(0.42, 0.88),
-            onFinish: (): void => this.restartAutoPlay(),
-        }, (): void => {
-            this.currentIndex = index;
-            this.dragOffset = 0;
-        });
-    }
-
-    aboutToAppear(): void {
-        this.active = true;
-    }
-
-    aboutToDisappear(): void {
-        this.active = false;
-        this.stopAutoPlay();
-    }
-
-    @Builder
-    private screenshotCard(shot: ScreenshotInfo, index: number, leftCopy: boolean = false): void {
-        Image(shot.url)
-            .width(this.isLandscape() ? '88%' : (this.compact ? '91%' : '52%'))
-            .aspectRatio(this.isLandscape() ? 16 / 9 : 9 / 16)
-            .objectFit(ImageFit.Contain)
-            .borderRadius(16)
-            .clip(true)
-            .backgroundColor($r('app.color.v3_surface_alt'))
-            .border({ width: 1, color: $r('app.color.nd_card_border') })
-            .alt($r('app.media.startIcon'))
-            .onComplete((): void => this.markScreenshotSettled(shot, index))
-            .onError((): void => this.markScreenshotSettled(shot, index))
-            .translate({ x: this.cardTranslateX(this.cardPosition(index, leftCopy)) })
-            .scale({
-                x: this.cardScale(this.cardPosition(index, leftCopy)),
-                y: this.cardScale(this.cardPosition(index, leftCopy)),
-            })
-            .opacity(this.cardOpacity(this.cardPosition(index, leftCopy)))
-            .zIndex(this.cardZIndex(this.cardPosition(index, leftCopy)))
-            .accessibilityText(`第${index + 1}张应用截图`)
-    }
-
-    build() {
-        Column({ space: 12 }) {
-            Stack({ alignContent: Alignment.Center }) {
-                ForEach(this.screenshots, (shot: ScreenshotInfo, index: number) => {
-                    this.screenshotCard(shot, index)
-                }, (shot: ScreenshotInfo, index: number) => this.screenshotKey(shot, index))
-                if (this.screenshots.length === 2) {
-                    ForEach(this.screenshots, (shot: ScreenshotInfo, index: number) => {
-                        this.screenshotCard(shot, index, true)
-                    }, (shot: ScreenshotInfo, index: number) => `${this.screenshotKey(shot, index)}-left-copy`)
-                }
-            }
-            .width('100%')
-            .constraintSize({ maxWidth: 760 })
-            .aspectRatio(this.isLandscape() ? 2 : (this.compact ? 0.62 : 1.1))
-            .clip(true)
-            .onAreaChange((_oldValue: Area, newValue: Area): void => {
-                this.frameWidth = Number(newValue.width);
-            })
-            .onAppear((): void => this.restartAutoPlay())
-            .gesture(
-                PanGesture({ fingers: 1, direction: PanDirection.Horizontal })
-                    .onActionStart((): void => {
-                        if (!this.switching) {
-                            this.stopAutoPlay();
-                        }
-                    })
-                    .onActionUpdate((event: GestureEvent): void => {
-                        if (!this.switching) {
-                            const limit = Math.max(280, this.frameWidth);
-                            this.dragOffset = Math.max(-limit, Math.min(limit, event.offsetX));
-                        }
-                    })
-                    .onActionEnd((event: GestureEvent): void => {
-                        if (this.switching) {
-                            return;
-                        }
-                        const threshold = Math.max(52, this.frameWidth * 0.18);
-                        if (this.dragOffset < -threshold || event.velocityX < -900) {
-                            this.completeSwitch(1);
-                        } else if (this.dragOffset > threshold || event.velocityX > 900) {
-                            this.completeSwitch(-1);
-                        } else {
-                            this.restoreCurrentCard();
-                        }
-                    })
-                    .onActionCancel((): void => this.restoreCurrentCard())
-            )
-
-            if (this.screenshots.length > 1) {
-                Row({ space: 7 }) {
-                    ForEach(this.screenshots, (_shot: ScreenshotInfo, index: number) => {
-                        Row()
-                            .width(index === this.currentIndex ? 22 : 7)
-                            .height(7)
-                            .borderRadius(4)
-                            .backgroundColor(index === this.currentIndex ?
-                                $r('app.color.diff_content') : $r('app.color.v3_chart_grid'))
-                            .animation({ duration: 180, curve: Curve.EaseOut })
-                            .onClick((): void => this.selectPage(index))
-                            .accessibilityText(`切换到第${index + 1}张应用截图`)
-                    }, (_shot: ScreenshotInfo, index: number) => `indicator-${index}`)
-                }
-                .justifyContent(FlexAlign.Center)
-                .width('100%')
-                .accessibilityText(`当前为第${this.currentIndex + 1}张，共${this.screenshots.length}张应用截图`)
-            }
-        }
-        .width('100%')
-        .alignItems(HorizontalAlign.Center)
-        .accessibilityGroup(true)
-        .accessibilityText('可自动播放和左右滑动的叠加应用截图')
-    }
-}
-
-
 @Component
 export struct AppDetailPage {
     @Consume('pageStack') private pageStack: NavPathStack;
@@ -440,6 +82,14 @@ export struct AppDetailPage {
     private readonly shareOwnerId: number = WebShareManager.createOwnerId();
     private target: AppRouteTarget = {};
     @State private app: MarketApp | undefined = undefined;
+    @State private versions: VersionChange[] = [];
+    @State private metricsLoading: boolean = false;
+    @State private metricsError: string = '';
+    @State private metricsStale: boolean = false;
+    @State private saved: boolean = false;
+    @State private saving: boolean = false;
+    private savedToken: number = 0;
+    private metricsToken: number = 0;
     @State private downloadChartPoints: LineChartPoint[] = [];
     @State private ratingChartPoints: LineChartPoint[] = [];
     @State private loading: boolean = true;
@@ -547,16 +197,20 @@ export struct AppDetailPage {
         if (!this.app) {
             return;
         }
-        const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-        this.shareManager = WebShareManager.getInstance(context);
-        this.shareManager.updateShareData(
-            this.shareUrl(),
-            `${this.app.name}｜Dashboard应用看板`,
-            `${this.app.developer_name || '未知开发者'} · ${this.app.pkg_name}`,
-            undefined,
-            this.shareOwnerId,
-        );
-        this.shareManager.enablePassiveShare(this.shareOwnerId);
+        try {
+            const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+            this.shareManager = WebShareManager.getInstance(context);
+            this.shareManager.updateShareData(
+                this.shareUrl(),
+                `${this.app.name}｜Dashboard应用看板`,
+                `${this.app.developer_name || '未知开发者'} · ${this.app.pkg_name}`,
+                undefined,
+                this.shareOwnerId,
+            );
+            this.shareManager.enablePassiveShare(this.shareOwnerId);
+        } catch (error) {
+            console.warn('[Dashboard][AppDetailPage][WARN]', `分享能力暂不可用: ${JSON.stringify(error)}`);
+        }
     }
 
     private showShare(): void {
@@ -600,7 +254,9 @@ export struct AppDetailPage {
         this.started = true;
         const pendingTarget = consumeDetailTarget();
         if (!this.target.appId && !this.target.packageName) {
-            this.target = pendingTarget;
+            const routeParams = getPathParamsSafely<AppRouteTarget>(this.pageStack, ROUTE_APP_DETAIL);
+            const routed = routeParams.length > 0 ? routeParams[routeParams.length - 1] : this.routeTarget;
+            this.target = routed?.appId || routed?.packageName ? routed : pendingTarget;
             this.app = this.target.previewApp;
         }
         const continuation = getContinuationState();
@@ -663,12 +319,9 @@ export struct AppDetailPage {
             this.fromCache = result.stale;
             this.startPageAnimationForEntry();
             this.syncShareData();
+            this.refreshSaved();
             if (this.app.pkg_name) {
-                fetchAppMetrics(this.app.pkg_name, force).then((metricResult) => {
-                    if (this.active && version === this.requestVersion && metricResult.data.success) {
-                        this.downloadChartPoints = this.prepareDownloadPoints(metricResult.data.data ?? []);
-                    }
-                }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `指标加载失败: ${error.message}`));
+                this.loadMetrics(this.app.pkg_name, force, version);
                 fetchAppRatingHistory(this.app.pkg_name, force).then((ratingResult) => {
                     if (this.active && version === this.requestVersion && ratingResult.data.success) {
                         this.ratingChartPoints = this.prepareRatingPoints(ratingResult.data.data ?? []);
@@ -692,6 +345,58 @@ export struct AppDetailPage {
             this.loading = false;
             this.refreshing = false;
         });
+    }
+
+    private async loadMetrics(packageName: string, force: boolean, version: number): Promise<void> {
+        const token = ++this.metricsToken;
+        this.metricsLoading = true;
+        this.metricsError = '';
+        try {
+            const result = await fetchAppMetrics(packageName, force);
+            if (!this.active || version !== this.requestVersion || token !== this.metricsToken) return;
+            if (!result.data.success) throw new Error('历史指标暂不可用');
+            const metrics = result.data.data || [];
+            this.downloadChartPoints = this.prepareDownloadPoints(metrics);
+            this.versions = versionChanges(metrics);
+            this.metricsStale = result.stale;
+        } catch (error) {
+            if (this.active && version === this.requestVersion && token === this.metricsToken) this.metricsError = (error as Error).message;
+        } finally {
+            if (this.active && version === this.requestVersion && token === this.metricsToken) this.metricsLoading = false;
+        }
+    }
+
+    private async refreshSaved(): Promise<void> {
+        if (this.saving) return;
+        const token = ++this.savedToken;
+        try {
+            const collection = await getLocalCollection();
+            if (this.active && token === this.savedToken) {
+                this.saved = collection.apps.some((item: SavedApp) => item.appId === this.app?.app_id);
+            }
+        } catch (_) {
+            console.warn('[Dashboard][AppDetailPage][WARN]', '读取收藏失败');
+        }
+    }
+
+    private async toggleSaved(): Promise<void> {
+        if (!this.app || this.saving) return;
+        this.saving = true;
+        this.savedToken++;
+        const next = !this.saved;
+        try {
+            await saveCollectedApp({ appId: this.app.app_id, packageName: this.app.pkg_name,
+                name: this.app.name, iconUrl: this.app.icon_url }, next);
+            if (this.active) this.saved = next;
+        } catch (_) {
+            showToastSafely(this.prompt, '保存收藏失败，请重试');
+        } finally { if (this.active) this.saving = false; }
+    }
+
+    private openDeveloper(): void {
+        if (!this.app) return;
+        openAppCollection(this.pageStack, { title: this.app.developer_name || '开发者应用',
+            developerId: this.app.dev_id, developerName: this.app.developer_name });
     }
 
     private fields(): DetailField[] {
@@ -818,7 +523,8 @@ export struct AppDetailPage {
                 .textAlign(TextAlign.Center)
                 .maxLines(2)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .accessibilityText(`开发公司${this.app?.developer_name || '未知'}`)
+                .onClick((): void => this.openDeveloper())
+                .accessibilityText(`开发公司${this.app?.developer_name || '未知'}，点击查看全部应用`)
         }
         .width('100%')
         .padding({ top: 18, bottom: 18, left: 12, right: 12 })
@@ -908,6 +614,7 @@ export struct AppDetailPage {
             .border({ width: 1, color: $r('app.color.nd_card_border') })
             .accessibilityText('以标签形式展示的应用详细字段')
 
+            Button('查看开发者的全部应用').attributeModifier(new DiscoveryButtonStyle()).onClick((): void => this.openDeveloper())
             RatingBreakdown({ app: this.app! })
 
             if (this.contentWidth >= 840) {
@@ -1038,6 +745,10 @@ export struct AppDetailPage {
             }
             this.downloadChart()
             this.ratingChart()
+            VersionTimeline({ changes: this.versions, loading: this.metricsLoading, error: this.metricsError, stale: this.metricsStale,
+                onRetry: (): void => {
+                    if (this.app?.pkg_name) this.loadMetrics(this.app.pkg_name, true, this.requestVersion);
+                } })
         }
         .width('100%')
         .alignItems(HorizontalAlign.Center)
@@ -1267,7 +978,7 @@ export struct AppDetailPage {
                         },
                         menuStyle: {
                             backgroundColor: $r('sys.color.comp_background_tertiary'),
-                            iconColor: $r('sys.color.icon_primary'),
+                            iconColor: $r('app.color.diff_content'),
                         },
                     },
                 },
@@ -1281,7 +992,7 @@ export struct AppDetailPage {
                         },
                         menuStyle: {
                             backgroundColor: $r('sys.color.comp_background_tertiary'),
-                            iconColor: $r('sys.color.icon_primary'),
+                            iconColor: $r('app.color.diff_content'),
                         },
                     },
                 },
@@ -1299,6 +1010,14 @@ export struct AppDetailPage {
                     value: [
                         {
                             content: {
+                                label: this.saved ? '取消收藏' : '收藏应用',
+                                icon: this.saved ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'),
+                                isEnabled: this.app !== undefined && !this.saving,
+                                action: (): void => { this.vibrate(); this.toggleSaved(); },
+                            },
+                        },
+                        {
+                            content: {
                                 label: '分享应用详情',
                                 icon: $r('sys.symbol.share'),
                                 isEnabled: this.app !== undefined,
@@ -1311,6 +1030,11 @@ export struct AppDetailPage {
                     action: () => this.closePage(),
                 },
             },
+        })
+        .onShown((): void => {
+            this.refreshSaved();
+            this.syncShareData();
+            this.saveScrollPosition(this.contentWidth >= 840 ? this.rightScroller : this.scroller);
         })
         .titleMode(HdsNavDestinationTitleMode.MINI)
         .width('100%')

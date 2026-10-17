@@ -126,6 +126,10 @@ export struct SettingsPanel {
     private readonly vibrationSupported: boolean = vibration.isSupported();
     private attemptedUnsupportedHighLight: boolean = false;
     private cacheSizeTimer: number = -1;
+    private cacheSizeToken: number = 0;
+    private alive: boolean = false;
+
+    aboutToAppear(): void { this.alive = true; }
 
     private vibrationPrefixItem: PrefixIcon = new PrefixIcon({
         iconSize: IconSize.SYSTEM_ICON,
@@ -154,18 +158,35 @@ export struct SettingsPanel {
 
     private onActiveChanged(): void {
         if (this.active) this.scheduleCacheSizeRefresh();
+        else {
+            this.cacheSizeToken++;
+            if (this.cacheSizeTimer >= 0) { clearTimeout(this.cacheSizeTimer); this.cacheSizeTimer = -1; }
+        }
     }
 
     private scheduleCacheSizeRefresh(): void {
+        if (!this.alive || !this.active) return;
         if (this.cacheSizeTimer >= 0) clearTimeout(this.cacheSizeTimer);
+        const token = ++this.cacheSizeToken;
         this.cacheSizeTimer = setTimeout((): void => {
             this.cacheSizeTimer = -1;
-            const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-            this.cacheSize = formatBytes(getCacheSizeBytes(context));
+            this.refreshCacheSize(token);
         }, 0);
     }
 
+    private async refreshCacheSize(token: number): Promise<void> {
+        try {
+            const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+            const size = await getCacheSizeBytes(context);
+            if (this.alive && this.active && token === this.cacheSizeToken) this.cacheSize = formatBytes(size);
+        } catch (error) {
+            console.warn('[Dashboard][component/SettingsPanel][WARN]', `缓存容量读取失败: ${JSON.stringify(error)}`);
+        }
+    }
+
     aboutToDisappear(): void {
+        this.alive = false;
+        this.cacheSizeToken++;
         if (this.cacheSizeTimer >= 0) {
             clearTimeout(this.cacheSizeTimer);
             this.cacheSizeTimer = -1;
@@ -226,8 +247,7 @@ export struct SettingsPanel {
                             );
                         }
 
-                        this.cacheSize =
-                            formatBytes(getCacheSizeBytes(context));
+                        if (this.active) this.scheduleCacheSizeRefresh();
                     },
                 },
             });

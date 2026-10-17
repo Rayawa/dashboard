@@ -1,4 +1,4 @@
-import type { AdvancedAppsQuery, DownloadGrowthQuery } from './types';
+import type { AdvancedAppsQuery, DownloadGrowthQuery, CategoryGrowthQuery } from './types';
 
 function appendNumber(query: string, key: string, value: number | undefined): string {
     if (value === undefined || !Number.isFinite(value)) return query;
@@ -26,4 +26,16 @@ export function buildDownloadGrowthPath(options: DownloadGrowthQuery = {}): stri
 
 export function buildDeveloperRankingPath(limit: number = 10, page: number = 1): string {
     return `rankings/developers?limit=${Math.max(1, Math.floor(limit))}&page=${Math.max(1, Math.floor(page))}`;
+}
+
+export function buildCategoryGrowthPath(options: CategoryGrowthQuery): string {
+    const endpoint = options.kind === 'early' ? 'new_app_download_growth' : `${options.kind}_download_growth`;
+    let path = `rankings/${endpoint}?days=${Math.max(1, Math.floor(options.days))}` +
+        `&page=${Math.max(1, Math.floor(options.page))}&limit=${Math.max(1, Math.floor(options.limit))}`;
+    if (options.kind === 'early') path += '&level=segment&min_downloads=1000&max_downloads=100000';
+    return path;
+}
+export function buildTopicsPath(page: number, pageSize: number): string {
+    return `substance/list/${Math.max(1, Math.floor(page))}?page_size=${Math.max(1, Math.floor(pageSize))}` +
+        '&sort=created_at&desc=true';
 }
