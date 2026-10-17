@@ -9,7 +9,7 @@ Dashboard est le client natif de `harmony_get_market`. Il consulte les informati
 - Numéro de build : `30101001`
 - Version cible : `26.0.0` (HarmonyOS 7 / API 26) ; compatibilité minimale : `6.0.0(20)` (API 20)
 - Appareils : téléphone, tablette et 2in1
-- Branche : `v3.0.0(23)`, migrée depuis `shenjack`
+- Branche de développement actuelle : `v3.0.0(20)`
 
 ## Interface de la version 3.0.0
 

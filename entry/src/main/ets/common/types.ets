@@ -79,6 +79,7 @@ export interface AppInfo {
     created_at: string;
     description: string;
     dev_en_name: string;
+    dev_id?: string;
     developer_name: string;
     download_count: number;
     kind_name: string;
@@ -274,6 +275,8 @@ export interface RatingDistribution {
 }
 
 export interface AppMetric {
+    new_features?: string;
+    upgrade_msg?: string;
     version: string;
     version_code: number;
     size_bytes: number;
@@ -330,4 +333,77 @@ export interface SearchTarget extends AppRouteTarget {
     autoRun?: boolean;
     openDetailOnSuccess?: boolean;
     recordHistory?: boolean;
+}
+
+
+export type RankingKind = 'downloads' | 'growth' | 'developers' | 'daily' | 'category' | 'segment' | 'early';
+export interface RankingTarget { kind?: RankingKind; }
+export interface AppCollectionTarget {
+    title: string;
+    developerId?: string;
+    developerName?: string;
+    category?: string;
+    segment?: string;
+    early?: boolean;
+    preset?: string;
+}
+export interface CategoryGrowth {
+    rank_type: string;
+    kind_id: number;
+    kind_name: string;
+    segment_name?: string;
+    app_count: number;
+    downloads_increase: number;
+    avg_increase_per_app: number;
+    growing_app_pct: number;
+    no_baseline_apps: number;
+    max_single_app_share_pct?: number;
+}
+export interface CategoryGrowthQuery {
+    kind: 'category' | 'segment' | 'early';
+    days: number;
+    page: number;
+    limit: number;
+    force?: boolean;
+}
+export interface TopicSummary {
+    substance_id: string;
+    title: string;
+    subtitle?: string;
+    created_at: string;
+}
+export interface TopicApp {
+    app_id: string;
+    pkg_name: string;
+    name: string;
+    icon_url: string;
+}
+export interface TopicDetail extends TopicSummary { apps: TopicApp[]; }
+export interface TopicTarget { topicId?: string; title?: string; }
+export interface SavedApp {
+    appId: string;
+    packageName: string;
+    name: string;
+    iconUrl: string;
+}
+export interface FollowedDeveloper {
+    developerId: string;
+    developerName: string;
+}
+export interface LocalCollection {
+    apps: SavedApp[];
+    developers: FollowedDeveloper[];
+}
+export interface VersionChange {
+    key: string;
+    version: string;
+    observedAt: string;
+    summary: string;
+    notes: string;
+}
+
+/** 用于分类标签回退等需要嵌套逻辑的固定查询。 */
+export interface CollectionSearchExpression {
+    and?: (SearchCondition | CollectionSearchExpression)[];
+    or?: (SearchCondition | CollectionSearchExpression)[];
 }

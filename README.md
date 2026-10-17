@@ -9,7 +9,7 @@ Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过�
 - 构建号：`30101001`
 - 目标版本：`26.0.0`（HarmonyOS 7 / API 26）；最低兼容版本：`6.0.0(20)`（API 20）
 - 设备：phone、tablet、2in1
-- 分支：`v3.0.0(23)`（从 `shenjack` 迁出）
+- 当前开发分支：`v3.0.0(20)`
 
 ## 3.0.0 界面结构
 
@@ -41,6 +41,10 @@ Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过�
 - 缓存过期后请求网络；网络失败时最多回退到 30 天内的旧缓存。
 - 页面会明确显示“离线缓存”状态和缓存时间，避免把旧数据误认为实时结果。
 - 投稿接口不写缓存；已有应用的后台更新会绕过新鲜缓存。
+- 仅缓存业务成功且包含对象或数组数据的响应；失败响应不会覆盖成功缓存，历史失败缓存也不会用于回退。
+- 相同请求会合并进行中的网络访问；强制刷新与普通读取分别处理，避免刷新复用旧请求。
+- 文件读写、容量统计与清理均使用异步接口。API 缓存延后维护，删除过期、损坏和遗留临时文件，并按保存时间淘汰最旧数据，容量预算为 32 MiB；ArkWeb 缓存不计入该 API 预算。
+- 缓存先写临时文件再替换；清除缓存会使此前请求的缓存写入失效，避免旧请求结束后恢复已清理数据。
 - “清除缓存”会删除 API 文件缓存、ArkWeb 存储与 Cookie，同时保留用户名和设置。
 - “我的 → 设置 → 清除缓存”右侧会实时显示缓存文件总大小。
 
@@ -96,6 +100,9 @@ entry/src/main/ets/
 ├── ability/                  EntryAbility、分享会话加载页与唯一 shareAbility
 ├── common/
 │   ├── MarketApi.ets         统一 API 客户端
+│   ├── MarketRequest.ets     HTTP 传输与平台缓存适配
+│   ├── CachedRequest.ets     响应校验、请求合并与失败回退
+│   ├── CachePolicy.ets       过期与容量淘汰策略
 │   ├── CacheService.ets      文件缓存、容量统计与完整清理
 │   ├── appState.ets          跨 Ability 瞬态状态
 │   ├── storage.ets           Preferences 与 AppStorage 水合
@@ -127,6 +134,10 @@ entry/src/main/ets/
 ```
 
 更完整的模块边界、状态约束、生命周期和资源释放规则见 [ARCHITECTURE.md](ARCHITECTURE.md)。
+
+发布签名的 product 绑定、证书材料和构建命令见 [SIGNING.md](SIGNING.md)。构建模式 `release` 与签名方案 `release` 需分别配置。
+
+本机快速构建：`./scripts/build.sh debug` 生成调试 HAP，`./scripts/build.sh release` 生成已签名发布 APP。脚本会同时选择正确的 product 与构建模式。
 
 ## API 对照
 

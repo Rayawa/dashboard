@@ -24,6 +24,26 @@
       "name": "AppLogPage",
       "pageSourceFile": "src/main/ets/pages/more/AppLogPage.ets",
       "buildFunction": "AppLogBuilder"
+    },
+    {
+      "name": "MarketRankingsPage",
+      "pageSourceFile": "src/main/ets/pages/discovery/RankingPage.ets",
+      "buildFunction": "MarketRankingsPageBuilder"
+    },
+    {
+      "name": "AppCollectionPage",
+      "pageSourceFile": "src/main/ets/pages/discovery/AppCollectionPage.ets",
+      "buildFunction": "AppCollectionPageBuilder"
+    },
+    {
+      "name": "TopicsPage",
+      "pageSourceFile": "src/main/ets/pages/discovery/TopicsPage.ets",
+      "buildFunction": "TopicsPageBuilder"
+    },
+    {
+      "name": "MyCollectionPage",
+      "pageSourceFile": "src/main/ets/pages/discovery/MyCollectionPage.ets",
+      "buildFunction": "MyCollectionPageBuilder"
     }
   ]
 }

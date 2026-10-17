@@ -9,7 +9,7 @@ Dashboard Application Viewer is the native client for `harmony_get_market`. It q
 - Build number: `30101001`
 - Target: `26.0.0` (HarmonyOS 7 / API 26); minimum compatible version: `6.0.0(20)` (API 20)
 - Devices: phone, tablet, and 2in1
-- Branch: `v3.0.0(23)`, migrated from `shenjack`
+- Current development branch: `v3.0.0(20)`
 
 ## Version 3.0.0 interface
 

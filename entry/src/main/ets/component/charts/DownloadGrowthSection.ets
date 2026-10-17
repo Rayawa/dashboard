@@ -1,6 +1,9 @@
+import { DiscoveryButtonStyle, DiscoverySelectStyle } from '../../common/DiscoveryTheme';
+import { AppIcon } from '../apps/AppIcon';
+import { openDiscoveryApp, openMarketRanking } from '../../common/discoveryNavigation';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { fetchDownloadGrowth } from '../../common/MarketApi';
-import { formatDateTime, formatExactCount } from '../../common/format';
+import { formatExactCount } from '../../common/format';
 import type { BaseAPIResponse, DownloadGrowthApp } from '../../common/types';
 import { cancelStaggerEnterAnimation, contentEnterTransition, startStaggerEnterAnimation } from '../../common/motion';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
@@ -8,6 +11,7 @@ import { vibration } from '../../common/vibration';
 
 @Component
 export struct DownloadGrowthSection {
+    @Consume('pageStack') private pageStack: NavPathStack;
     @State private apps: DownloadGrowthApp[] = [];
     @State private loading: boolean = false;
     @State private loaded: boolean = false;
@@ -79,7 +83,7 @@ export struct DownloadGrowthSection {
                     Text('按快照周期对比下载量增量').fontSize(12)
                         .fontColor($r('app.color.v3_text_secondary'))
                 }.alignItems(HorizontalAlign.Start).layoutWeight(1)
-                Select(this.periodOptions).selected(this.periodIndex).value(this.periodOptions[this.periodIndex].value)
+                Select(this.periodOptions).attributeModifier(new DiscoverySelectStyle()).selected(this.periodIndex).value(this.periodOptions[this.periodIndex].value)
                     .height(38).backgroundColor($r('app.color.v3_surface_alt'))
                     .scale({ x: this.pressedControl === 'period' ? 0.97 : 1,
                         y: this.pressedControl === 'period' ? 0.97 : 1 })
@@ -94,6 +98,9 @@ export struct DownloadGrowthSection {
                         this.load(false);
                     })
             }.width('100%')
+            Button('查看完整增长榜').attributeModifier(new DiscoveryButtonStyle()).fontSize(13).onClick((): void => {
+                openMarketRanking(this.pageStack, { kind: 'growth' });
+            })
             if (this.loading && !this.loaded) {
                 LoadingProgress().width(30).height(30).color($r('app.color.diff_content')).margin(24)
             } else if (this.errorMessage.length > 0) {
@@ -120,11 +127,12 @@ export struct DownloadGrowthSection {
                     Row({ space: 10 }) {
                         Text(String(index + 1)).width(24).fontSize(13).fontWeight(FontWeight.Bold)
                             .fontColor($r('app.color.diff_content')).textAlign(TextAlign.Center)
+                        AppIcon({ appId: app.app_id, packageName: app.pkg_name })
                         Column({ space: 3 }) {
                             Text(app.name || '未知应用').fontSize(14).fontWeight(FontWeight.Medium)
                                 .fontColor($r('app.color.v3_text_primary')).maxLines(1)
                                 .textOverflow({ overflow: TextOverflow.Ellipsis })
-                            Text(`${formatDateTime(app.prior_period_date)} → ${formatDateTime(app.current_period_date)}`)
+                            Text(`${app.prior_period_date} → ${app.current_period_date}`)
                                 .fontSize(11).fontColor($r('app.color.v3_text_secondary'))
                         }.alignItems(HorizontalAlign.Start).layoutWeight(1)
                         Column({ space: 2 }) {
@@ -143,6 +151,10 @@ export struct DownloadGrowthSection {
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 4, 72))
                     .compositingFilter(pressLightFieldFilter(this.pressedControl === `growth-${app.app_id}`))
                     .onTouch((event: TouchEvent): void => this.updatePressed(`growth-${app.app_id}`, event))
+                    .onClick((): void => {
+                        this.vibrate();
+                        openDiscoveryApp(this.pageStack, { appId: app.app_id, packageName: app.pkg_name });
+                    })
                     .transition(contentEnterTransition(6))
                     .accessibilityText(`第${index + 1}名，${app.name}，下载增长${app.download_increment}`)
                 }, (app: DownloadGrowthApp) => `${app.app_id}-${app.current_period_date}`)

@@ -4,20 +4,24 @@ import {
     CACHE_TTL_DETAIL_MS,
     CACHE_TTL_HOME_MS,
     CACHE_TTL_LIST_MS,
-    createApiRequestHeaders,
-    DEFAULT_NETWORK_TIMEOUT_MS,
-    SAPIBaseURL,
     SUBMIT_PLATFORM,
 } from './constants';
-import { readCache, writeCache } from './CacheService';
+import { requestJson, postNoCache } from './MarketRequest';
 import { buildAppsPagePath } from './AppListQuery';
 import type { AppsPageQuery } from './AppListQuery';
 import {
     buildAdvancedAppsQueryPath,
+    buildCategoryGrowthPath,
+    buildTopicsPath,
     buildDeveloperRankingPath,
     buildDownloadGrowthPath,
 } from './RankingQuery';
 import type {
+    CollectionSearchExpression,
+    CategoryGrowth,
+    CategoryGrowthQuery,
+    TopicSummary,
+    TopicDetail,
     AdvancedAppsQuery,
     ApiDataResult,
     AppDetailPayload,
@@ -39,90 +43,6 @@ import type {
 type SdkDistribution = number[][];
 type ApiHistory = object[];
 
-async function requestJson<T>(
-    path: string,
-    ttlMs: number,
-    forceNetwork: boolean = false,
-    method: http.RequestMethod = http.RequestMethod.GET,
-    body?: object,
-    cacheIdentity?: string,
-): Promise<ApiDataResult<T>> {
-    const cacheKey = cacheIdentity ?? `${method}:${path}:${body ? JSON.stringify(body) : ''}`;
-    const cached = readCache<T>(cacheKey, ttlMs);
-    if (!forceNetwork && cached?.fresh) {
-        return { data: cached.data, fromCache: true, cachedAt: cached.savedAt, stale: false };
-    }
-
-    let request: http.HttpRequest | undefined = undefined;
-    try {
-        request = http.createHttp();
-        const options: http.HttpRequestOptions = {
-            method,
-            header: createApiRequestHeaders(body !== undefined),
-            expectDataType: http.HttpDataType.STRING,
-            usingCache: false,
-            connectTimeout: DEFAULT_NETWORK_TIMEOUT_MS,
-            readTimeout: DEFAULT_NETWORK_TIMEOUT_MS,
-        };
-        if (body) {
-            options.extraData = JSON.stringify(body);
-        }
-        const response = await request.request(`${SAPIBaseURL.toString()}${path}`, options);
-        if (response.responseCode < 200 || response.responseCode >= 300) {
-            throw new Error(`服务器返回 ${response.responseCode}`);
-        }
-        const parsed = JSON.parse(response.result.toString()) as T;
-        writeCache(cacheKey, parsed);
-        return { data: parsed, fromCache: false, cachedAt: Date.now(), stale: false };
-    } catch (error) {
-        if (cached) {
-            console.warn('[Dashboard][common/MarketApi][WARN]', `API 请求失败，使用离线缓存 ${path}: ${JSON.stringify(error)}`);
-            return { data: cached.data, fromCache: true, cachedAt: cached.savedAt, stale: true };
-        }
-        console.error('[Dashboard][common/MarketApi][ERROR]', `API 请求失败且无可用缓存 ${path}: ${JSON.stringify(error)}`);
-        throw error as Error;
-    } finally {
-        if (request) {
-            try {
-                request.destroy();
-            } catch (error) {
-                console.warn('[Dashboard][common/MarketApi][WARN]', `HTTP 请求对象释放失败 ${path}: ${JSON.stringify(error)}`);
-            }
-        }
-    }
-}
-
-async function postNoCache<T>(path: string, body: object): Promise<T> {
-    let request: http.HttpRequest | undefined = undefined;
-    try {
-        request = http.createHttp();
-        const response = await request.request(`${SAPIBaseURL.toString()}${path}`, {
-            method: http.RequestMethod.POST,
-            header: createApiRequestHeaders(true),
-            extraData: JSON.stringify(body),
-            expectDataType: http.HttpDataType.STRING,
-            usingCache: false,
-            connectTimeout: DEFAULT_NETWORK_TIMEOUT_MS,
-            readTimeout: DEFAULT_NETWORK_TIMEOUT_MS,
-        });
-        if (response.responseCode < 200 || response.responseCode >= 300) {
-            throw new Error(`服务器返回 ${response.responseCode}`);
-        }
-        return JSON.parse(response.result.toString()) as T;
-    } catch (error) {
-        console.error('[Dashboard][common/MarketApi][ERROR]', `API 写操作失败 ${path}: ${JSON.stringify(error)}`);
-        throw new Error('网络连接失败，本次操作未提交，请稍后重试');
-    } finally {
-        if (request) {
-            try {
-                request.destroy();
-            } catch (error) {
-                console.warn('[Dashboard][common/MarketApi][WARN]', `HTTP 写请求对象释放失败 ${path}: ${JSON.stringify(error)}`);
-            }
-        }
-    }
-}
-
 export function fetchMarketInfo(force: boolean = false): Promise<ApiDataResult<BaseAPIResponse<MarketInfo>>> {
     return requestJson<BaseAPIResponse<MarketInfo>>('market_info', CACHE_TTL_HOME_MS, force);
 }
@@ -139,7 +59,7 @@ export function fetchAppsPage(
 
 export function fetchAppsQuery(
     options: AdvancedAppsQuery,
-    expression: SearchExpression,
+    expression: SearchExpression | CollectionSearchExpression,
 ): Promise<ApiDataResult<BaseAPIResponse<PageInfo<MarketApp>>>> {
     return requestJson<BaseAPIResponse<PageInfo<MarketApp>>>(
         buildAdvancedAppsQueryPath(options),
@@ -264,4 +184,21 @@ export async function submitApp(data: SubmitAppBody): Promise<BaseAPIResponse<Ap
         },
     };
     return postNoCache<BaseAPIResponse<AppDetailPayload>>('submit', body);
+}
+
+export function fetchCategoryGrowth(options: CategoryGrowthQuery): Promise<ApiDataResult<BaseAPIResponse<CategoryGrowth[]>>> {
+    return requestJson<BaseAPIResponse<CategoryGrowth[]>>(
+        buildCategoryGrowthPath(options), CACHE_TTL_CHART_MS, options.force ?? false,
+    );
+}
+export function fetchTopics(page: number, pageSize: number, force: boolean = false):
+    Promise<ApiDataResult<BaseAPIResponse<PageInfo<TopicSummary>>>> {
+    return requestJson<BaseAPIResponse<PageInfo<TopicSummary>>>(
+        buildTopicsPath(page, pageSize), CACHE_TTL_LIST_MS, force,
+    );
+}
+export function fetchTopic(id: string, force: boolean = false): Promise<ApiDataResult<BaseAPIResponse<TopicDetail>>> {
+    return requestJson<BaseAPIResponse<TopicDetail>>(
+        `substance/${encodeURIComponent(id)}`, CACHE_TTL_DETAIL_MS, force,
+    );
 }

@@ -6,6 +6,7 @@
 import { common } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import getDiskStorageInstance, { DiskStorageInstance } from './DiskStorage';
+import { parseLocalCollection } from './LocalCollection';
 import {
     APP_VERSION,
     DEFAULT_BUTTON_RIGHT,
@@ -25,9 +26,12 @@ import {
     STORAGE_KEY_LEGACY_MIGRATED,
     STORAGE_KEY_NOTICE_VERSION,
     STORAGE_KEY_SEARCH_HISTORY,
+    STORAGE_KEY_LOCAL_COLLECTION,
     STORAGE_KEY_USERNAME,
     STORAGE_KEY_VIBRATION_LEVEL,
 } from './constants';
+
+import type { LocalCollection, SavedApp, FollowedDeveloper } from './types';
 
 // ===== 偏好 key（唯一事实来源，同时是对应的 AppStorage key 名）=====
 const STORE_NAME = STORAGE_FILE_NAME;
@@ -382,4 +386,38 @@ export async function loadPersistedState(ctx?: common.Context): Promise<void> {
     } catch (error) {
         console.error('[Dashboard][common/storage][ERROR]', `[storage] AppStorage 水合失败: ${JSON.stringify(error)}`);
     }
+}
+
+// 收藏与关注共用一个文档；串行执行读改写，避免多个页面同时保存时丢失数据。
+let collectionWrites: Promise<void> = Promise.resolve();
+async function readLocalCollection(): Promise<LocalCollection> {
+    const s = await ensureReady();
+    const raw = await s.get(STORAGE_KEY_LOCAL_COLLECTION, '{}') as string;
+    return parseLocalCollection(raw);
+}
+export async function getLocalCollection(): Promise<LocalCollection> {
+    await collectionWrites;
+    return readLocalCollection();
+}
+function editLocalCollection(edit: (value: LocalCollection) => void): Promise<void> {
+    const pending = collectionWrites.then(async (): Promise<void> => {
+        const value = await readLocalCollection();
+        edit(value);
+        const s = await ensureReady();
+        await s.set(STORAGE_KEY_LOCAL_COLLECTION, JSON.stringify(value));
+    });
+    collectionWrites = pending.catch((): void => {});
+    return pending;
+}
+export function saveCollectedApp(app: SavedApp, saved: boolean): Promise<void> {
+    return editLocalCollection((value: LocalCollection): void => {
+        value.apps = value.apps.filter((item: SavedApp) => item.appId !== app.appId);
+        if (saved) value.apps.unshift(app);
+    });
+}
+export function saveFollowedDeveloper(developer: FollowedDeveloper, followed: boolean): Promise<void> {
+    return editLocalCollection((value: LocalCollection): void => {
+        value.developers = value.developers.filter((item: FollowedDeveloper) => item.developerId !== developer.developerId);
+        if (followed) value.developers.unshift(developer);
+    });
 }
