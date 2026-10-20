@@ -1,3 +1,4 @@
+import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DiscoveryButtonStyle, DiscoverySelectStyle } from '../../common/DiscoveryTheme';
 import { appCollectionSubtitle } from '../../common/AppListPresentation';
 import { showToastSafely } from '../../common/safeUi';
@@ -17,6 +18,7 @@ export function AppCollectionPageBuilder() { AppCollectionPage() }
 
 @Component
 export struct AppCollectionPage {
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
     @Consume('pageStack') private pageStack: NavPathStack;
     target: AppCollectionTarget = { title: '应用列表' };
     @State private apps: MarketApp[] = [];
@@ -37,7 +39,7 @@ export struct AppCollectionPage {
 
     private alive: boolean = false;
     aboutToAppear(): void { this.alive = true; }
-    aboutToDisappear(): void { this.alive = false; this.token++; }
+    aboutToDisappear(): void { this.interaction.dispose(); this.alive = false; this.token++; }
     private shown(): void {
         if (!this.initialized) {
             this.initialized = true;
@@ -91,8 +93,9 @@ export struct AppCollectionPage {
     private content(): void {
         Column({ space: 12 }) {
             if (this.target.developerId) {
-                Button(this.followed ? '已关注 · 点击取消' : '关注开发者').attributeModifier(new DiscoveryButtonStyle()).enabled(!this.saving)
-                    .onClick((): void => { this.follow(); })
+                Button(this.followed ? '已关注 · 点击取消' : '关注开发者', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'discovery-0'))
+                    .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-0', event)).enabled(!this.saving)
+                    .onClick((): void => { this.interaction.activate('discovery-0'); this.follow(); })
             }
             if (this.target.preset === 'rated') {
                 Text('评分至少 4.5，且至少有 100 条评分').fontSize(13).fontColor($r('app.color.v3_text_secondary'))
@@ -102,14 +105,16 @@ export struct AppCollectionPage {
                     .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
             }
             Row({ space: 12 }) {
-                Select(this.sortOptions).attributeModifier(new DiscoverySelectStyle()).selected(this.sortIndex).value(this.sortOptions[this.sortIndex].value)
-                    .onSelect((index: number): void => { this.sortIndex = index; this.page = 1; this.load(false); }).attributeModifier(new DiscoverySelectStyle())
-                Button('刷新').attributeModifier(new DiscoveryButtonStyle()).enabled(!this.loading).onClick((): void => { this.load(true); })
+                Select(this.sortOptions).attributeModifier(new DiscoverySelectStyle(this.interaction.pressedKey === 'discovery-1'))
+                    .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-1', event)).selected(this.sortIndex).value(this.sortOptions[this.sortIndex].value)
+                    .onSelect((index: number): void => { this.interaction.activate('discovery-1'); this.sortIndex = index; this.page = 1; this.load(false); })
+                Button('刷新', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'discovery-2'))
+                    .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-2', event)).enabled(!this.loading).onClick((): void => { this.interaction.activate('discovery-2'); this.load(true); })
             }.width('100%')
             BrowserStatus({ loading: this.loading, error: this.error, stale: this.stale,
                 empty: this.apps.length === 0, onRetry: (): void => { this.load(true); } })
-            ForEach(this.apps, (app: MarketApp) => {
-                AppSummaryRow({ appId: app.app_id, packageName: app.pkg_name, name: app.name, iconUrl: app.icon_url,
+            ForEach(this.apps, (app: MarketApp, index: number) => {
+                AppSummaryRow({ enterOrder: index, appId: app.app_id, packageName: app.pkg_name, name: app.name, iconUrl: app.icon_url,
                     subtitle: appCollectionSubtitle(app, this.target),
                     value: `${formatCount(app.download_count)} 次`,
                     onOpen: (): void => {

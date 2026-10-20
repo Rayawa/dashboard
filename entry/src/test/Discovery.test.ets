@@ -3,9 +3,10 @@ import { appCollectionSubtitle } from '../main/ets/common/AppListPresentation';
 import { parseLocalCollection } from '../main/ets/common/LocalCollection';
 import { describe, it, expect } from '@ohos/hypium';
 import { collectionExpression, collectionSort, versionChanges } from '../main/ets/common/DiscoveryQuery';
-import { buildCategoryGrowthPath, buildTopicsPath } from '../main/ets/common/RankingQuery';
+import { reputationSubtitle, reputationValue } from '../main/ets/common/ReputationPresentation';
+import { buildReputationPath, buildCategoryGrowthPath, buildTopicsPath } from '../main/ets/common/RankingQuery';
 import { latestDailyMaxRecords } from '../main/ets/common/DailyRanking';
-import type { AppMetric, DailyMaxDownloadApp, MarketApp } from '../main/ets/common/types';
+import type { ReputationItem, AppMetric, DailyMaxDownloadApp, MarketApp } from '../main/ets/common/types';
 
 function listApp(): MarketApp {
     return { app_id: 'a', icon_url: '', created_at: '', description: '', dev_en_name: '', developer_name: '开发者甲',
@@ -21,6 +22,31 @@ function metric(date: string, version: string = '1.0', size: number = 100, price
 }
 export default function discoveryTests() {
     describe('discovery', () => {
+        it('reputationQueryEncodesCategoriesAndOmitsPagination', 0, () => {
+            const path = buildReputationPath({ days: 30, minSamples: 100, sort: 'raw', kindName: ' 工具 & 效率 ', tagName: 'A/B+C' });
+            expect(path).assertEqual('rankings/reputation?days=30&min_samples=100&sort=raw&kind_name=' +
+                encodeURIComponent('工具 & 效率') + '&tag_name=A%2FB%2BC');
+            expect(path.includes('page=')).assertFalse();
+            expect(path.includes('limit=')).assertFalse();
+            expect(buildReputationPath({ days: 2, minSamples: 20, kindName: ' ' }))
+                .assertEqual('rankings/reputation?days=1&min_samples=10&sort=weighted');
+        });
+        it('reputationShowsUnclampedMetricsCorrectionsAndActualSpan', 0, () => {
+            const item: ReputationItem = {
+                app_id: 'a', name: '应用', pkg_name: 'a', developer_name: '开发者', icon_url: '',
+                kind_name: '工具', tag_name: null, snapshot_date: '2026-10-19', baseline_date: '2026-10-11',
+                actual_days: 8, sample_count: 10, positive_sample_count: 30,
+                rating: 7.5, weighted_score: -0.25, confidence_weight: 0.6, has_correction: true,
+            };
+            expect(reputationValue(item)).assertEqual('加权得分 -0.25\n评分指标 7.5');
+            const subtitle = reputationSubtitle(item);
+            expect(subtitle).assertContain('开发者 · 工具');
+            expect(subtitle).assertContain('2026-10-11 → 2026-10-19（实际 8 天）');
+            expect(subtitle).assertContain('净样本 10 · 正样本 30');
+            expect(subtitle).assertContain('含数据修正');
+            item.has_correction = false;
+            expect(reputationSubtitle(item).includes('含数据修正')).assertFalse();
+        });
         it('developerScopeUsesStableIdRatherThanName', 0, () => {
             const query = JSON.stringify(collectionExpression({ title: '同名开发者', developerId: 'a&b', developerName: '同名开发者' }));
             expect(query).assertContain('"key":"dev_id","op":"eq","value":"a&b"');

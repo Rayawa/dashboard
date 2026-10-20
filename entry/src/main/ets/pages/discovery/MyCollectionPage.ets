@@ -1,3 +1,4 @@
+import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DiscoveryButtonStyle } from '../../common/DiscoveryTheme';
 import { showToastSafely } from '../../common/safeUi';
 import { openDiscoveryApp, openAppCollection } from '../../common/discoveryNavigation';
@@ -12,6 +13,7 @@ export function MyCollectionPageBuilder() { MyCollectionPage() }
 
 @Component
 export struct MyCollectionPage {
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
     @Consume('pageStack') private pageStack: NavPathStack;
     @State private apps: SavedApp[] = [];
     @State private developers: FollowedDeveloper[] = [];
@@ -21,7 +23,7 @@ export struct MyCollectionPage {
     private token: number = 0;
     private alive: boolean = false;
     aboutToAppear(): void { this.alive = true; }
-    aboutToDisappear(): void { this.alive = false; this.token++; }
+    aboutToDisappear(): void { this.interaction.dispose(); this.alive = false; this.token++; }
     private async load(): Promise<void> {
         const token = ++this.token;
         this.loading = true; this.error = '';
@@ -58,25 +60,27 @@ export struct MyCollectionPage {
                 onRetry: (): void => { this.load(); } })
             Text(`收藏应用 · ${this.apps.length}`).fontSize(18).fontWeight(FontWeight.Bold)
                 .fontColor($r('app.color.v3_text_primary')).width('100%')
-            ForEach(this.apps, (app: SavedApp) => {
+            ForEach(this.apps, (app: SavedApp, index: number) => {
                 Column({ space: 6 }) {
-                    AppSummaryRow({ appId: app.appId, packageName: app.packageName, name: app.name, iconUrl: app.iconUrl, subtitle: '已收藏 · 点击查看应用详情',
+                    AppSummaryRow({ enterOrder: index, appId: app.appId, packageName: app.packageName, name: app.name, iconUrl: app.iconUrl, subtitle: '已收藏 · 点击查看应用详情',
                         onOpen: (): void => {
                             openDiscoveryApp(this.pageStack, { appId: app.appId, packageName: app.packageName });
                         } })
-                    Button('取消收藏').attributeModifier(new DiscoveryButtonStyle()).enabled(!this.saving).onClick((): void => { this.removeApp(app); })
+                    Button('取消收藏', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === ('remove-app-' + app.appId)))
+                    .onTouch((event: TouchEvent): void => this.interaction.touch('remove-app-' + app.appId, event)).enabled(!this.saving).onClick((): void => { this.interaction.activate('remove-app-' + app.appId); this.removeApp(app); })
                 }.width('100%').alignItems(HorizontalAlign.End)
             }, (app: SavedApp) => app.appId)
             Text(`关注开发者 · ${this.developers.length}`).fontSize(18).fontWeight(FontWeight.Bold)
                 .fontColor($r('app.color.v3_text_primary')).width('100%')
-            ForEach(this.developers, (developer: FollowedDeveloper) => {
+            ForEach(this.developers, (developer: FollowedDeveloper, index: number) => {
                 Column({ space: 6 }) {
-                    AppSummaryRow({ showIcon: false, name: developer.developerName, subtitle: '查看开发者当前收录的应用',
+                    AppSummaryRow({ enterOrder: index, showIcon: false, name: developer.developerName, subtitle: '查看开发者当前收录的应用',
                         onOpen: (): void => {
                             openAppCollection(this.pageStack, { title: developer.developerName,
                                 developerId: developer.developerId, developerName: developer.developerName });
                         } })
-                    Button('取消关注').attributeModifier(new DiscoveryButtonStyle()).enabled(!this.saving).onClick((): void => { this.removeDeveloper(developer); })
+                    Button('取消关注', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === ('remove-developer-' + developer.developerId)))
+                    .onTouch((event: TouchEvent): void => this.interaction.touch('remove-developer-' + developer.developerId, event)).enabled(!this.saving).onClick((): void => { this.interaction.activate('remove-developer-' + developer.developerId); this.removeDeveloper(developer); })
                 }.width('100%').alignItems(HorizontalAlign.End)
             }, (developer: FollowedDeveloper) => developer.developerId)
         }.width('100%')
