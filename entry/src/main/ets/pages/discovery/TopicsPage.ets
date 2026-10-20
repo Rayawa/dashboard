@@ -1,3 +1,4 @@
+import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DiscoveryButtonStyle } from '../../common/DiscoveryTheme';
 import { openDiscoveryApp, openMarketTopic } from '../../common/discoveryNavigation';
 import { MarketPageFrame } from '../../component/discovery/MarketPageFrame';
@@ -13,6 +14,7 @@ export function TopicsPageBuilder() { TopicsPage() }
 
 @Component
 export struct TopicsPage {
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
     @Consume('pageStack') private pageStack: NavPathStack;
     target: TopicTarget = {};
     @State private topics: TopicSummary[] = [];
@@ -25,7 +27,7 @@ export struct TopicsPage {
     @State private stale: boolean = false;
     private token: number = 0;
     private initialized: boolean = false;
-    aboutToDisappear(): void { this.token++; }
+    aboutToDisappear(): void { this.interaction.dispose(); this.token++; }
     private async load(force: boolean): Promise<void> {
         const token = ++this.token;
         this.loading = true; this.error = ''; this.topics = []; this.apps = [];
@@ -55,20 +57,21 @@ export struct TopicsPage {
             if (this.subtitle) {
                 Text(this.subtitle).fontSize(14).fontColor($r('app.color.v3_text_secondary')).width('100%')
             }
-            Button('刷新').attributeModifier(new DiscoveryButtonStyle()).enabled(!this.loading).onClick((): void => { this.load(true); })
+            Button('刷新', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'discovery-0'))
+                    .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-0', event)).enabled(!this.loading).onClick((): void => { this.interaction.activate('discovery-0'); this.load(true); })
             BrowserStatus({ loading: this.loading, error: this.error, stale: this.stale,
                 empty: this.apps.length + this.topics.length === 0,
                 emptyText: this.target.topicId ? '专题暂无已收录应用' : '暂无专题',
                 onRetry: (): void => { this.load(true); } })
-            ForEach(this.topics, (topic: TopicSummary) => {
-                AppSummaryRow({ showIcon: false, name: topic.title || '未命名专题',
+            ForEach(this.topics, (topic: TopicSummary, index: number) => {
+                AppSummaryRow({ enterOrder: index, showIcon: false, name: topic.title || '未命名专题',
                     subtitle: `${topic.subtitle || ''}\n收录于 ${formatDateTime(topic.created_at)}`.trim(),
                     onOpen: (): void => {
                         openMarketTopic(this.pageStack, { topicId: topic.substance_id, title: topic.title });
                     } })
             }, (topic: TopicSummary) => topic.substance_id)
-            ForEach(this.apps.slice((this.page - 1) * DISCOVERY_PAGE_SIZE, this.page * DISCOVERY_PAGE_SIZE), (app: TopicApp) => {
-                AppSummaryRow({ appId: app.app_id, packageName: app.pkg_name, name: app.name, iconUrl: app.icon_url, subtitle: `专题：${this.target.title || '当前专题'}`,
+            ForEach(this.apps.slice((this.page - 1) * DISCOVERY_PAGE_SIZE, this.page * DISCOVERY_PAGE_SIZE), (app: TopicApp, index: number) => {
+                AppSummaryRow({ enterOrder: index, appId: app.app_id, packageName: app.pkg_name, name: app.name, iconUrl: app.icon_url, subtitle: `专题：${this.target.title || '当前专题'}`,
                     onOpen: (): void => {
                         openDiscoveryApp(this.pageStack, { appId: app.app_id, packageName: app.pkg_name });
                     } })

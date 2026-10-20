@@ -10,6 +10,7 @@ import { requestJson, postNoCache } from './MarketRequest';
 import { buildAppsPagePath } from './AppListQuery';
 import type { AppsPageQuery } from './AppListQuery';
 import {
+    buildReputationPath,
     buildAdvancedAppsQueryPath,
     buildCategoryGrowthPath,
     buildTopicsPath,
@@ -17,6 +18,8 @@ import {
     buildDownloadGrowthPath,
 } from './RankingQuery';
 import type {
+    ReputationPayload,
+    ReputationQuery,
     CollectionSearchExpression,
     CategoryGrowth,
     CategoryGrowthQuery,
@@ -200,5 +203,11 @@ export function fetchTopics(page: number, pageSize: number, force: boolean = fal
 export function fetchTopic(id: string, force: boolean = false): Promise<ApiDataResult<BaseAPIResponse<TopicDetail>>> {
     return requestJson<BaseAPIResponse<TopicDetail>>(
         `substance/${encodeURIComponent(id)}`, CACHE_TTL_DETAIL_MS, force,
+    );
+}
+
+export function fetchReputation(options: ReputationQuery = {}): Promise<ApiDataResult<BaseAPIResponse<ReputationPayload>>> {
+    return requestJson<BaseAPIResponse<ReputationPayload>>(
+        buildReputationPath(options), CACHE_TTL_HOME_MS, options.force ?? false,
     );
 }

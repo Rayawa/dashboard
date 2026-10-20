@@ -1,3 +1,4 @@
+import { HomeReputationCard } from '../../component/home/HomeReputationCard';
 import { openMarketRanking, openMarketTopic } from '../../common/discoveryNavigation';
 import { DiscoveryShortcuts } from '../../component/discovery/DiscoveryShortcuts';
 import { curves, PromptAction } from '@kit.ArkUI';
@@ -226,6 +227,7 @@ export struct HomePage {
     @State private loaded: boolean = false;
     @State private recentApps: MarketApp[] = [];
     @State private dailyMaxApps: DailyMaxDownloadApp[] = [];
+    @State private reputationRefreshVersion: number = 0;
     @State private developerRanking: DeveloperRankingEntry[] = [];
     @State private contentWidth: number = 0;
     @State private animStep: number = 0;
@@ -288,6 +290,7 @@ export struct HomePage {
         const wasLoaded = this.loaded;
         this.loading = true;
         this.errorMessage = '';
+        if (force) this.reputationRefreshVersion++;
         const recentPromise = this.loadRecentApps(force);
         const rankingPromise = this.loadRankings(force);
         try {
@@ -495,11 +498,14 @@ export struct HomePage {
 
     @Builder
     private rankings(): void {
-        HomeRankings({
-            dailyApps: this.dailyMaxApps,
-            developers: this.developerRanking,
-            onOpenApp: (app: DailyMaxDownloadApp): void => this.openRankedDetail(app),
-        })
+        Column({ space: 14 }) {
+            HomeReputationCard({ refreshVersion: this.reputationRefreshVersion })
+            HomeRankings({
+                dailyApps: this.dailyMaxApps,
+                developers: this.developerRanking,
+                onOpenApp: (app: DailyMaxDownloadApp): void => this.openRankedDetail(app),
+            })
+        }.width('100%')
     }
 
     @Builder

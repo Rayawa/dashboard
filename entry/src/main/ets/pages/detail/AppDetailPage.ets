@@ -1,3 +1,4 @@
+import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DetailTag } from '../../component/detail/DetailTag';
 import type { DetailField } from '../../component/detail/DetailTag';
 import { ScreenshotCarousel } from '../../component/detail/ScreenshotCarousel';
@@ -72,6 +73,7 @@ const DETAIL_CHART_MAX_POINTS: number = 360;
 
 @Component
 export struct AppDetailPage {
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
     @Consume('pageStack') private pageStack: NavPathStack;
     routeTarget: AppRouteTarget = {};
     private prompt: PromptAction = this.getUIContext().getPromptAction();
@@ -523,7 +525,14 @@ export struct AppDetailPage {
                 .textAlign(TextAlign.Center)
                 .maxLines(2)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .onClick((): void => this.openDeveloper())
+                .scale({ x: this.interaction.pressedKey === 'developer-link' ? 0.97 : 1,
+                    y: this.interaction.pressedKey === 'developer-link' ? 0.97 : 1 })
+                .animation({ duration: 120, curve: Curve.EaseOut })
+                .visualEffect(pressVisualEffect(this.interaction.pressedKey === 'developer-link',
+                    hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                .compositingFilter(pressLightFieldFilter(this.interaction.pressedKey === 'developer-link'))
+                .onTouch((event: TouchEvent): void => this.interaction.touch('developer-link', event))
+                .onClick((): void => { this.interaction.activate('developer-link'); this.openDeveloper(); })
                 .accessibilityText(`开发公司${this.app?.developer_name || '未知'}，点击查看全部应用`)
         }
         .width('100%')
@@ -614,7 +623,8 @@ export struct AppDetailPage {
             .border({ width: 1, color: $r('app.color.nd_card_border') })
             .accessibilityText('以标签形式展示的应用详细字段')
 
-            Button('查看开发者的全部应用').attributeModifier(new DiscoveryButtonStyle()).onClick((): void => this.openDeveloper())
+            Button('查看开发者的全部应用', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'discovery-0'))
+                    .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-0', event)).onClick((): void => { this.interaction.activate('discovery-0'); this.openDeveloper(); })
             RatingBreakdown({ app: this.app! })
 
             if (this.contentWidth >= 840) {
@@ -848,7 +858,7 @@ export struct AppDetailPage {
         .alignItems(HorizontalAlign.Center)
     }
 
-    aboutToDisappear(): void {
+    aboutToDisappear(): void { this.interaction.dispose();
         this.active = false;
         this.requestVersion++;
         cancelStaggerEnterAnimation(this.enterAnimationTimers);
