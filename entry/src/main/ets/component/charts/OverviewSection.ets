@@ -3,7 +3,6 @@ import type { DistributionChart } from './DistributionPanel';
 import { ApiHistoryChart } from './ApiHistoryChart';
 import type { HistoryPoint } from './ApiHistoryChart';
 import { OVERVIEW_COLLAPSED_SDK_COUNT, MIN_PRESS_FEEDBACK_MS } from '../../common/constants';
-import { DiscoveryShortcuts } from '../discovery/DiscoveryShortcuts';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { getContinuationState, setContinuationOverviewState } from '../../common/appState';
 import { fetchApiHistory, fetchRatingDistribution, fetchSdkDistribution } from '../../common/MarketApi';
@@ -441,7 +440,6 @@ export struct OverviewSection {
                 LoadingProgress().width(34).height(34).color($r('app.color.diff_content')).margin(50)
                     .accessibilityText('概况图表加载中')
             }
-            DiscoveryShortcuts()
             DownloadGrowthSection()
             if (this.contentWidth >= 840) {
                 Row({ space: 12 }) {

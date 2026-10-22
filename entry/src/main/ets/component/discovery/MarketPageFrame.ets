@@ -1,3 +1,5 @@
+import { vibration } from '../../common/vibration';
+import { DiscoveryEnter } from './DiscoveryEnter';
 import { getContinuationState, setContinuationView } from '../../common/appState';
 import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
 import { LengthMetrics } from '@kit.ArkUI';
@@ -26,7 +28,7 @@ export struct MarketPageFrame {
             Scroll(this.scroller) {
                 Column({ space: 14 }) {
                     Blank().height(100)
-                    this.content()
+                    DiscoveryEnter({ content: (): void => { this.content(); } })
                     Blank().height(40)
                 }
                 .width('100%').constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
@@ -88,6 +90,7 @@ export struct MarketPageFrame {
             },
           },
         })
+        .onBackPressed((): boolean => { vibration.backVibration(); return false; })
         .titleMode(HdsNavDestinationTitleMode.MINI)
         .transition(pageTransition())
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
