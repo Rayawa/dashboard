@@ -1,3 +1,4 @@
+import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DiscoveryButtonStyle } from '../../common/DiscoveryTheme';
 import { AppIcon } from '../apps/AppIcon';
 import { openAppCollection, openMarketRanking } from '../../common/discoveryNavigation';
@@ -10,6 +11,7 @@ import { vibration } from '../../common/vibration';
 
 @Component
 export struct HomeRankings {
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
     @Consume('pageStack') private pageStack: NavPathStack;
     @Prop dailyApps: DailyMaxDownloadApp[] = [];
     @Prop developers: DeveloperRankingEntry[] = [];
@@ -32,7 +34,7 @@ export struct HomeRankings {
         });
     }
 
-    aboutToDisappear(): void {
+    aboutToDisappear(): void { this.interaction.dispose();
         cancelStaggerEnterAnimation(this.enterAnimationTimers);
         this.enterAnimationTimers = [];
     }
@@ -43,7 +45,8 @@ export struct HomeRankings {
             Row({ space: 8 }) {
                 Text('每日累计下载最高记录').fontSize(18).fontWeight(FontWeight.Bold)
                     .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
-                Button('查看全部').attributeModifier(new DiscoveryButtonStyle()).fontSize(12).onClick((): void => {
+                Button('查看全部', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'discovery-0'))
+                    .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-0', event)).fontSize(12).onClick((): void => { this.interaction.activate('discovery-0');
                     openMarketRanking(this.pageStack, { kind: 'daily' });
                 })
             }.width('100%')
@@ -99,7 +102,8 @@ export struct HomeRankings {
             Row({ space: 8 }) {
                 Text('开发者应用数量排行').fontSize(18).fontWeight(FontWeight.Bold)
                     .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
-                Button('查看全部').attributeModifier(new DiscoveryButtonStyle()).fontSize(12).onClick((): void => {
+                Button('查看全部', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'discovery-1'))
+                    .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-1', event)).fontSize(12).onClick((): void => { this.interaction.activate('discovery-1');
                     openMarketRanking(this.pageStack, { kind: 'developers' });
                 })
             }.width('100%')

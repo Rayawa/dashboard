@@ -1,3 +1,4 @@
+import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DiscoveryButtonStyle, DiscoverySelectStyle } from '../../common/DiscoveryTheme';
 import { AppIcon } from '../apps/AppIcon';
 import { openDiscoveryApp, openMarketRanking } from '../../common/discoveryNavigation';
@@ -11,6 +12,7 @@ import { vibration } from '../../common/vibration';
 
 @Component
 export struct DownloadGrowthSection {
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
     @Consume('pageStack') private pageStack: NavPathStack;
     @State private apps: DownloadGrowthApp[] = [];
     @State private loading: boolean = false;
@@ -45,6 +47,7 @@ export struct DownloadGrowthSection {
     }
 
     aboutToDisappear(): void {
+        this.interaction.dispose();
         this.loadToken++;
         cancelStaggerEnterAnimation(this.enterAnimationTimers);
         this.enterAnimationTimers = [];
@@ -98,7 +101,10 @@ export struct DownloadGrowthSection {
                         this.load(false);
                     })
             }.width('100%')
-            Button('查看完整增长榜').attributeModifier(new DiscoveryButtonStyle()).fontSize(13).onClick((): void => {
+            Button('查看完整增长榜', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'full-ranking'))
+                .onTouch((event: TouchEvent): void => this.interaction.touch('full-ranking', event))
+                .fontSize(13).onClick((): void => {
+                this.interaction.activate('full-ranking');
                 openMarketRanking(this.pageStack, { kind: 'growth' });
             })
             if (this.loading && !this.loaded) {

@@ -336,8 +336,8 @@ export interface SearchTarget extends AppRouteTarget {
 }
 
 
-export type RankingKind = 'downloads' | 'growth' | 'developers' | 'daily' | 'category' | 'segment' | 'early';
-export interface RankingTarget { kind?: RankingKind; }
+export type RankingKind = 'downloads' | 'growth' | 'developers' | 'daily' | 'category' | 'segment' | 'early' | 'reputation';
+export interface RankingTarget { kind?: RankingKind; days?: number; }
 export interface AppCollectionTarget {
     title: string;
     developerId?: string;
@@ -406,4 +406,49 @@ export interface VersionChange {
 export interface CollectionSearchExpression {
     and?: (SearchCondition | CollectionSearchExpression)[];
     or?: (SearchCondition | CollectionSearchExpression)[];
+}
+
+/** 口碑榜指标是评分净变化，不是累计星级均分。 */
+export interface ReputationItem {
+    app_id: string;
+    name: string;
+    pkg_name: string;
+    developer_name: string;
+    icon_url: string;
+    kind_name: string;
+    tag_name: string | null;
+    snapshot_date: string;
+    baseline_date: string;
+    actual_days: number;
+    sample_count: number;
+    positive_sample_count: number;
+    rating: number;
+    weighted_score: number;
+    confidence_weight: number;
+    has_correction: boolean;
+}
+export interface ReputationCategory {
+    kind_name: string;
+    tag_name: string | null;
+}
+export interface ReputationPayload {
+    items: ReputationItem[];
+    report_date: string | null;
+    window_days: number;
+    min_samples: number;
+    sort: string;
+    generated_at: string;
+    data_stale: boolean;
+    weight_formula: string;
+    weight_prior: number;
+    weight_strength: number;
+    categories: ReputationCategory[];
+}
+export interface ReputationQuery {
+    days?: number;
+    minSamples?: number;
+    sort?: 'weighted' | 'raw';
+    kindName?: string;
+    tagName?: string;
+    force?: boolean;
 }

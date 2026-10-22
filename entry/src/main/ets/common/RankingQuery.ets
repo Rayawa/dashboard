@@ -1,4 +1,4 @@
-import type { AdvancedAppsQuery, DownloadGrowthQuery, CategoryGrowthQuery } from './types';
+import type { AdvancedAppsQuery, DownloadGrowthQuery, CategoryGrowthQuery, ReputationQuery } from './types';
 
 function appendNumber(query: string, key: string, value: number | undefined): string {
     if (value === undefined || !Number.isFinite(value)) return query;
@@ -38,4 +38,14 @@ export function buildCategoryGrowthPath(options: CategoryGrowthQuery): string {
 export function buildTopicsPath(page: number, pageSize: number): string {
     return `substance/list/${Math.max(1, Math.floor(page))}?page_size=${Math.max(1, Math.floor(pageSize))}` +
         '&sort=created_at&desc=true';
+}
+
+/** 固定 Top 100；分类必须在服务端筛选后截断，不发送分页参数。 */
+export function buildReputationPath(options: ReputationQuery = {}): string {
+    const days = options.days === 7 || options.days === 30 ? options.days : 1;
+    const samples = options.minSamples === 50 || options.minSamples === 100 ? options.minSamples : 10;
+    let path = `rankings/reputation?days=${days}&min_samples=${samples}&sort=${options.sort === 'raw' ? 'raw' : 'weighted'}`;
+    if (options.kindName?.trim()) path += `&kind_name=${encodeURIComponent(options.kindName.trim())}`;
+    if (options.tagName?.trim()) path += `&tag_name=${encodeURIComponent(options.tagName.trim())}`;
+    return path;
 }
