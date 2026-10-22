@@ -22,6 +22,17 @@ function metric(date: string, version: string = '1.0', size: number = 100, price
 }
 export default function discoveryTests() {
     describe('discovery', () => {
+        it('reputationQuerySupportsEveryDocumentedCombination', 0, () => {
+            const sorts: ('weighted' | 'raw')[] = ['weighted', 'raw'];
+            for (const days of [1, 7, 30]) {
+                for (const minSamples of [10, 50, 100]) {
+                    for (const sort of sorts) {
+                        expect(buildReputationPath({ days, minSamples, sort }))
+                            .assertEqual(`rankings/reputation?days=${days}&min_samples=${minSamples}&sort=${sort}`);
+                    }
+                }
+            }
+        });
         it('reputationQueryEncodesCategoriesAndOmitsPagination', 0, () => {
             const path = buildReputationPath({ days: 30, minSamples: 100, sort: 'raw', kindName: ' 工具 & 效率 ', tagName: 'A/B+C' });
             expect(path).assertEqual('rankings/reputation?days=30&min_samples=100&sort=raw&kind_name=' +
@@ -46,6 +57,9 @@ export default function discoveryTests() {
             expect(subtitle).assertContain('含数据修正');
             item.has_correction = false;
             expect(reputationSubtitle(item).includes('含数据修正')).assertFalse();
+            item.rating = -2.5;
+            item.weighted_score = 0;
+            expect(reputationValue(item)).assertEqual('加权得分 0\n评分指标 -2.5');
         });
         it('developerScopeUsesStableIdRatherThanName', 0, () => {
             const query = JSON.stringify(collectionExpression({ title: '同名开发者', developerId: 'a&b', developerName: '同名开发者' }));
