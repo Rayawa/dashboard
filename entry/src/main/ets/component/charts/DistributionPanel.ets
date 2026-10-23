@@ -1,15 +1,31 @@
+import { formatSdkLabel } from '../../common/format';
 import { common } from '@kit.AbilityKit';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { formatCount } from '../../common/format';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import { vibration } from '../../common/vibration';
 import { OVERVIEW_COLLAPSED_SDK_COUNT, MIN_PRESS_FEEDBACK_MS } from '../../common/constants';
+import { chartLegendColumns } from './chartLayout';
 
 export interface DistributionChart { title: string; labels: string[]; values: number[]; total: number; }
 
 @Component
 export struct DistributionPanel {
     @Prop @Watch('onChartChanged') chart: DistributionChart = { title: '', labels: [], values: [], total: 1 };
+    @Prop @Watch('onActivityChanged') active: boolean = true;
+    private inViewport: boolean = false;
+    private entrancePlayed: boolean = false;
+    private colorCache: Map<number, number> = new Map();
+    private onActivityChanged(): void {
+        if (!this.active || !this.inViewport) {
+            this.animationToken++;
+            if (this.animationTimer >= 0) clearTimeout(this.animationTimer);
+            this.animationTimer = -1;
+            this.drawProgress = 1; this.detailProgress = this.expanded ? 1 : 0;
+        } else if (!this.entrancePlayed) this.animatePie();
+        else this.draw();
+    }
+    onWillApplyTheme(_theme: Theme): void { this.colorCache.clear(); this.draw(); }
     @Prop horizontalLegend: boolean = false;
     @Prop showLegend: boolean = true;
     @Prop collapsible: boolean = false;
@@ -26,6 +42,7 @@ export struct DistributionPanel {
     onSelect?: (label: string) => void;
     @State private selected: number = 0;
     @State private canvasSize: number = 220;
+    @State private panelWidth: number = 320;
     @State private pressed: boolean = false;
     @State private pressedControl: string = '';
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
@@ -109,6 +126,8 @@ export struct DistributionPanel {
         }, delay);
     }
     private animatePie(): void {
+        if (!this.active || !this.inViewport) return;
+        this.entrancePlayed = true;
         if (!this.canvasReady || this.chart.total <= 0) {
             this.draw();
             return;
@@ -192,7 +211,7 @@ export struct DistributionPanel {
     }
     private sourceLabels(): string[] {
         return this.usesSharedLabels() ?
-            this.colorLabels.filter((label: string): boolean => this.chart.labels.indexOf(label) >= 0) :
+            this.colorLabels :
             this.chart.labels;
     }
     private displayLabels(): string[] {
@@ -261,7 +280,7 @@ export struct DistributionPanel {
         if (index < 0) return '未选择当前图表中的版本';
         const value = values[index] ?? 0;
         const percent = this.chart.total > 0 ? value / this.chart.total * 100 : 0;
-        return `${labels[index]}：${formatCount(value)}，${percent.toFixed(1)}%`;
+        return `${formatSdkLabel(labels[index])}：${formatCount(value)}，${percent.toFixed(1)}%`;
     }
 
     private legendText(index: number): string {
@@ -270,10 +289,21 @@ export struct DistributionPanel {
         return `${formatCount(value)} · ${percent.toFixed(1)}%`;
     }
 
+    private useHorizontalLegend(): boolean { return this.horizontalLegend && this.panelWidth >= 560; }
+
+    private legendColumns(): number {
+        const available = this.panelWidth - (this.embedded ? 0 : 28) -
+            (this.useHorizontalLegend() ? this.canvasSize + 10 : 0);
+        return chartLegendColumns(available, 136, 4);
+    }
+
     private resolvedColor(resource: Resource): number {
+        const cached = this.colorCache.get(resource.id);
+        if (cached !== undefined) return cached;
         const host = this.getUIContext().getHostContext() as common.UIAbilityContext;
         try {
-            return host.resourceManager.getColorSync(resource.id);
+            const color = host.resourceManager.getColorSync(resource.id);
+            this.colorCache.set(resource.id, color); return color;
         } catch (error) {
             console.warn('[Dashboard][component/charts/OverviewSection][WARN]',
                 `饼图颜色读取失败: ${JSON.stringify(error)}`);
@@ -303,6 +333,7 @@ export struct DistributionPanel {
     }
 
     private draw(): void {
+        if (!this.active || !this.inViewport || !this.canvasReady) return;
         const size = this.canvasSize;
         this.context.clearRect(0, 0, size, size);
         const values = this.visibleValues();
@@ -431,18 +462,22 @@ export struct DistributionPanel {
                 GridCol({ span: 1 }) {
                     Row({ space: 5 }) {
                         Row().width(8).height(8).borderRadius(4)
+                            .flexShrink(0)
                             .backgroundColor(this.colorAt(index))
                         Column({ space: 1 }) {
                             if (label === '其他') {
                                 Text('其他（点击展开）').fontSize(13).fontWeight(FontWeight.Medium)
-                                    .fontColor($r('app.color.v3_text_primary')).maxLines(1)
+                                    .fontColor($r('app.color.v3_text_primary')).width('100%')
+                                    .wordBreak(WordBreak.BREAK_ALL)
                             } else {
-                                Text(label).fontSize(13).fontWeight(FontWeight.Medium)
-                                    .fontColor($r('app.color.v3_text_primary')).maxLines(1)
+                                Text(formatSdkLabel(label)).fontSize(13).fontWeight(FontWeight.Medium)
+                                    .fontColor($r('app.color.v3_text_primary')).width('100%')
+                                    .wordBreak(WordBreak.BREAK_ALL)
                             }
                             Text(this.legendText(index)).fontSize(11)
-                                .fontColor($r('app.color.v3_text_secondary')).maxLines(1)
-                        }.alignItems(HorizontalAlign.Start).layoutWeight(1)
+                                .fontColor($r('app.color.v3_text_secondary')).width('100%')
+                                .wordBreak(WordBreak.BREAK_ALL)
+                        }.alignItems(HorizontalAlign.Start).layoutWeight(1).constraintSize({ minWidth: 0 })
                     }
                     .width('100%').padding({ left: 6, right: 6, top: 5, bottom: 5 }).borderRadius(8)
                     .border({ width: 1, color: $r('app.color.nd_card_border') })
@@ -478,7 +513,7 @@ export struct DistributionPanel {
                         TransitionEffect.scale({ x: 0.94, y: 0.94 })))
                     .accessibilityText(label === '其他' ?
                         `其他，${this.legendText(index)}，点击展开全部` :
-                        `${label}，${this.legendText(index)}`)
+                        `${formatSdkLabel(label)}，${this.legendText(index)}`)
                 }
             }, (label: string) => `${this.chart.title}-${label}`)
         }
@@ -525,7 +560,7 @@ export struct DistributionPanel {
             }
             if (this.chartCaption.length > 0 || this.reserveCaptionSpace) {
                 Text(this.chartCaption)
-                    .height(20)
+                    .constraintSize({ minHeight: 20 })
                     .fontSize(13)
                     .fontWeight(FontWeight.Medium)
                     .fontColor(this.chartCaption.length > 0 ?
@@ -535,14 +570,14 @@ export struct DistributionPanel {
                     .accessibilityText(this.chartCaption)
             }
             if (this.chart.values.length > 0) {
-                if (this.horizontalLegend) {
+                if (this.useHorizontalLegend()) {
                     Row({ space: 10 }) {
                         this.pieCanvas()
                         if (this.showLegend) {
                             Column() {
-                                this.legendGrid(2)
+                                this.legendGrid(this.legendColumns())
                             }
-                            .layoutWeight(1)
+                            .layoutWeight(1).constraintSize({ minWidth: 0 })
                             .alignItems(HorizontalAlign.Start)
                         }
                     }
@@ -550,7 +585,7 @@ export struct DistributionPanel {
                     .alignItems(VerticalAlign.Center)
                 } else {
                     this.pieCanvas()
-                    if (this.showLegend) this.legendGrid(2)
+                    if (this.showLegend) this.legendGrid(this.legendColumns())
                 }
             } else {
                 Text('暂无数据').fontColor($r('app.color.v3_text_secondary')).padding(30)
@@ -563,9 +598,10 @@ export struct DistributionPanel {
         .onAreaChange((_oldArea: Area, area: Area): void => {
             const width = Number(area.width);
             if (width > 0) {
-                this.canvasSize = this.horizontalLegend ?
+                this.panelWidth = width;
+                this.canvasSize = this.useHorizontalLegend() ?
                     Math.max(154, Math.min(196, width * 0.36)) :
-                    Math.max(164, Math.min(220, width - (this.embedded ? 24 : 44)));
+                    Math.max(1, Math.min(220, width - (this.embedded ? 0 : 28)));
                 if (this.drawTimer >= 0) clearTimeout(this.drawTimer);
                 this.drawTimer = setTimeout((): void => {
                     this.drawTimer = -1;
@@ -573,8 +609,10 @@ export struct DistributionPanel {
                 }, 0);
             }
         })
-        .onAppear(() => this.animatePie())
-        .accessibilityGroup(true).accessibilityText(`${this.chart.title}，${this.selectedText()}`)
+        .onVisibleAreaChange([0, 0.01], (visible: boolean, ratio: number): void => {
+            this.inViewport = visible && ratio > 0; this.onActivityChanged();
+        })
+        .accessibilityGroup(false).accessibilityLevel('no').accessibilityText(`${this.chart.title}，${this.selectedText()}`)
     }
 }
 

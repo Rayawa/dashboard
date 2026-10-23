@@ -3,6 +3,8 @@ import preferences from "@ohos.data.preferences";
 import { BusinessError } from "@ohos.base";
 import { common } from "@kit.AbilityKit";
 
+export interface StorageUpdate { key: string; value: preferences.ValueType; }
+
 const instances: Map<string, DiskStorage> = new Map();
 
 class DiskStorage {
@@ -14,6 +16,7 @@ class DiskStorage {
     // 存储上下文引用
     private _context: common.Context | undefined = undefined;
     private _initializationPromise?: Promise<void>;
+    private writes: Promise<void> = Promise.resolve();
     private _cache: Map<string, preferences.ValueType> = new Map();
 
     constructor(preference_name: string, context?: common.Context) {
@@ -99,20 +102,34 @@ class DiskStorage {
     }
 
     async set(key: string, value: preferences.ValueType): Promise<void> {
-        await this.ensureInitialized();
-        if (!this._preference) {
-            throw new Error("DiskStorage: Storage not available");
-        }
-        try {
-            await this._preference.put(key, value);
-            await this._preference.flush();
-            this._cache.set(key, value);
-        } catch (e) {
-            throw new Error("DiskStorage: Failed to set value");
-        }
+        await this.setMany([{ key, value }]);
     }
 
-    async remove(key: string): Promise<void> {
+    setMany(updates: StorageUpdate[]): Promise<void> {
+        if (updates.length === 0) return Promise.resolve();
+        const pending = this.writes.then((): Promise<void> => this.writeMany(updates));
+        this.writes = pending.catch((): void => {});
+        return pending;
+    }
+
+    private async writeMany(updates: StorageUpdate[]): Promise<void> {
+        await this.ensureInitialized();
+        const preference = this._preference;
+        if (!preference) throw new Error('DiskStorage: Storage not available');
+        try {
+            for (const update of updates) await preference.put(update.key, update.value);
+            await preference.flush();
+            for (const update of updates) this._cache.set(update.key, update.value);
+        } catch (_) { throw new Error('DiskStorage: Failed to save values'); }
+    }
+
+    remove(key: string): Promise<void> {
+        const pending = this.writes.then((): Promise<void> => this.removeValue(key));
+        this.writes = pending.catch((): void => {});
+        return pending;
+    }
+
+    private async removeValue(key: string): Promise<void> {
         await this.ensureInitialized();
         if (!this._preference) {
             throw new Error("DiskStorage: Storage not available");

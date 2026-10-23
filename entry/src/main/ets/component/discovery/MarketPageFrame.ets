@@ -1,7 +1,7 @@
 import { vibration } from '../../common/vibration';
 import { DiscoveryEnter } from './DiscoveryEnter';
 import { getContinuationState, setContinuationView } from '../../common/appState';
-import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit';
+import { HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType, HdsNavigationMenuItemOptions } from '@kit.UIDesignKit';
 import { LengthMetrics } from '@kit.ArkUI';
 import { CONTENT_MAX_WIDTH } from '../../common/constants';
 import { pageTransition } from '../../common/motion';
@@ -14,6 +14,10 @@ function emptyContent(): void {}
 @Component
 export struct MarketPageFrame {
     @Prop title: string = '';
+    @Prop subtitle: string = '';
+    @Prop busy: boolean = false;
+    menuProvider: (busy: boolean) => HdsNavigationMenuItemOptions[] =
+        (_busy: boolean): HdsNavigationMenuItemOptions[] => [];
     @Prop @Watch('resetScroll') resetKey: string = '';
     @BuilderParam content: () => void = emptyContent;
     onShown: () => void = (): void => {};
@@ -28,7 +32,7 @@ export struct MarketPageFrame {
             Scroll(this.scroller) {
                 Column({ space: 14 }) {
                     Blank().height(100)
-                    DiscoveryEnter({ content: (): void => { this.content(); } })
+                    DiscoveryEnter({ speed: 2, content: (): void => { this.content(); } })
                     Blank().height(40)
                 }
                 .width('100%').constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
@@ -59,8 +63,8 @@ export struct MarketPageFrame {
                   mainTitleColor: $r('app.color.v3_text_primary'),
                 },
                 menuStyle: {
-                  backgroundColor: $r('app.color.v3_surface_alt'),
-                  iconColor: $r('app.color.diff_content'),
+                  backgroundColor: $r('sys.color.comp_background_tertiary'),
+                  iconColor: $r('sys.color.icon_primary'),
                 },
               },
             },
@@ -73,8 +77,8 @@ export struct MarketPageFrame {
                   mainTitleColor: $r('app.color.v3_text_primary'),
                 },
                 menuStyle: {
-                  backgroundColor: $r('app.color.v3_surface_alt'),
-                  iconColor: $r('app.color.diff_content'),
+                  backgroundColor: $r('sys.color.comp_background_tertiary'),
+                  iconColor: $r('sys.color.icon_primary'),
                 },
               },
             },
@@ -86,13 +90,15 @@ export struct MarketPageFrame {
           content: {
             title: {
               mainTitle: this.title,
+              subTitle: this.subtitle,
               mainTitleSize: SUPPORTS_HARMONY_API_23 ? HDS_TITLE_SIZE_SMALL : undefined,
             },
+            menu: { value: this.menuProvider(this.busy) },
           },
         })
         .onBackPressed((): boolean => { vibration.backVibration(); return false; })
         .titleMode(HdsNavDestinationTitleMode.MINI)
-        .transition(pageTransition())
+        .transition(pageTransition(2))
         .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
 
     }

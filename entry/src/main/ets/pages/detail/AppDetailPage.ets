@@ -1,15 +1,20 @@
+import { PerformanceTrace } from '../../common/PerformanceTrace';
+import { RequestScope } from '../../common/CachedRequest';
+import { getMainTabIndex, setContinuationScrollDistance } from '../../common/appState';
+import { flushContinuationScroll } from '../../common/appState';
+import { DeferredDetailSection } from '../../component/detail/DeferredDetailSection';
 import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DetailTag } from '../../component/detail/DetailTag';
 import type { DetailField } from '../../component/detail/DetailTag';
 import { ScreenshotCarousel } from '../../component/detail/ScreenshotCarousel';
 import { DiscoveryButtonStyle } from '../../common/DiscoveryTheme';
 import { VersionTimeline } from '../../component/detail/VersionTimeline';
-import { versionChanges } from '../../common/DiscoveryQuery';
+import { sortAppMetrics, versionChanges } from '../../common/DiscoveryQuery';
 import { getLocalCollection, saveCollectedApp } from '../../common/storage';
 import { openAppCollection } from '../../common/discoveryNavigation';
 import type { VersionChange, SavedApp } from '../../common/types';
 import { common, Want } from '@kit.AbilityKit';
-import { LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { LengthMetrics, PromptAction, SymbolGlyphModifier } from '@kit.ArkUI';
 import {
     hdsEffect,
     HdsNavDestination,
@@ -35,7 +40,7 @@ import {
     setContinuationView,
 } from '../../common/appState';
 import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory } from '../../common/MarketApi';
-import { formatBytes, formatCount, formatDateTime, formatDownloadCount } from '../../common/format';
+import { formatSdkVersion, formatBytes, formatCount, formatDateTime, formatDownloadCount } from '../../common/format';
 import { scrollByAxis } from '../../common/scroll';
 import { showToastSafely } from '../../common/safeUi';
 import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
@@ -69,11 +74,13 @@ import { RatingBreakdown } from '../../component/detail/RatingBreakdown';
 import type { LineChartPoint } from '../../component/charts/InteractiveLineChart';
 import { downsampleLinePoints, filterDownloadOutliers } from '../../component/charts/chartDataProcessing';
 
+interface TimedRating { rating: AppRatingHistory; time: number; value: number; }
+
 const DETAIL_CHART_MAX_POINTS: number = 360;
 
 @Component
 export struct AppDetailPage {
-    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction(this.getUIContext());
     @Consume('pageStack') private pageStack: NavPathStack;
     routeTarget: AppRouteTarget = {};
     private prompt: PromptAction = this.getUIContext().getPromptAction();
@@ -82,8 +89,21 @@ export struct AppDetailPage {
     private rightScroller: Scroller = new Scroller();
     private shareManager?: WebShareManager;
     private readonly shareOwnerId: number = WebShareManager.createOwnerId();
+    private requestScope: RequestScope = new RequestScope();
     private target: AppRouteTarget = {};
-    @State private app: MarketApp | undefined = undefined;
+    @State @Watch('preparePresentation') private app: MarketApp | undefined = undefined;
+    @State private fieldsCache: DetailField[] = [];
+    @State private screenshotCache: ScreenshotInfo[] = [];
+    @State private screenshotsVisible: boolean = false;
+    @State private downloadsVisible: boolean = false;
+    @State private ratingsVisible: boolean = false;
+    @State private pageVisible: boolean = true;
+    @State private featuresExpanded: boolean = false;
+    @State private descriptionExpanded: boolean = false;
+    private historyRequested: boolean = false;
+    private historyRequestVersion: number = -1;
+    private historyPackage: string = '';
+    private historyActivated: boolean = false;
     @State private versions: VersionChange[] = [];
     @State private metricsLoading: boolean = false;
     @State private metricsError: string = '';
@@ -104,12 +124,14 @@ export struct AppDetailPage {
     @State private downloadChartViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
     @State private ratingChartViewport: ChartViewportState = { zoom: 1, panRatio: 0 };
     @State private pressedAction: string = '';
+    @StorageLink('applicationActive') @Watch('onApplicationActiveChanged') private applicationActive: boolean = true;
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
     private active: boolean = false;
     private requestVersion: number = 0;
     private initialLoadTimer: number = -1;
     private restoreScrollTimer: number = -1;
+    private pendingRestoreDistance: number = -1;
     private backgroundRefreshTimer: number = -1;
     private enterAnimationPending: boolean = true;
     private enterAnimationTimers: number[] = [];
@@ -127,33 +149,24 @@ export struct AppDetailPage {
         this.enterAnimationPending = false;
         cancelStaggerEnterAnimation(this.enterAnimationTimers);
         this.animStep = 0;
-        this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 6, (step: number): void => {
+        this.enterAnimationTimers = startStaggerEnterAnimation(this.getUIContext(), 2, (step: number): void => {
             this.animStep = step;
         });
     }
 
     private requiredStep(group: string): number {
-        if (this.contentWidth >= 840) {
-            if (group === 'identity' || group === 'description') return 1;
-            if (group === 'information' || group === 'screenshots') return 2;
-            if (group === 'downloadChart') return 3;
-            return 4;
-        }
-        if (group === 'identity') return 1;
-        if (group === 'information') return 2;
-        if (group === 'description') return 3;
-        if (group === 'screenshots') return 4;
-        if (group === 'downloadChart') return 5;
-        return 6;
+        return group === 'identity' || group === 'information' ? 1 : 2;
     }
 
     aboutToAppear(): void {
+        this.requestScope = new RequestScope();
         this.active = true;
         this.enterAnimationPending = true;
         this.animStep = 0;
         const fallbackTarget = peekDetailTarget();
         this.target = (this.routeTarget.appId || this.routeTarget.packageName) ? this.routeTarget : fallbackTarget;
         this.app = this.target.previewApp;
+        this.preparePresentation();
         const chartState = getContinuationState().detailChartsState;
         if (chartState.targetKey === this.detailTargetKey()) {
             this.downloadChartViewport = chartState.downloadViewport ?? { zoom: 1, panRatio: 0 };
@@ -215,6 +228,16 @@ export struct AppDetailPage {
         }
     }
 
+    private suspendShare(): void {
+        this.shareManager?.clearShareDataProvider(this.shareOwnerId);
+        this.shareManager?.disablePassiveShare(this.shareOwnerId);
+    }
+
+    private onApplicationActiveChanged(): void {
+        if (!this.applicationActive) this.suspendShare();
+        else if (this.active && this.pageVisible) this.syncShareData();
+    }
+
     private showShare(): void {
         this.vibrate();
         if (!this.app) {
@@ -234,15 +257,9 @@ export struct AppDetailPage {
     }
 
     private saveScrollPosition(scroller: Scroller): void {
+        if (!this.pageVisible || !this.applicationActive) return;
         try {
-            const continuation = getContinuationState();
-            setContinuationView(
-                continuation.mainTab,
-                scroller.currentOffset().yOffset,
-                CONTINUATION_ROUTE_DETAIL,
-                this.target,
-                this.shareUrl(),
-            );
+            setContinuationScrollDistance(scroller.currentOffset().yOffset);
         } catch (error) {
             console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]',
                 `保存详情页滚动位置失败: ${JSON.stringify(error)}`);
@@ -274,78 +291,85 @@ export struct AppDetailPage {
             if (!this.active) return;
             this.load(false);
         }, 0);
-        if (continuation.routeName === CONTINUATION_ROUTE_DETAIL && continuation.scrollDistance > 0) {
-            this.restoreScrollTimer = setTimeout((): void => {
-                this.restoreScrollTimer = -1;
-                if (!this.active) return;
-                try {
-                    const targetScroller = this.contentWidth >= 840 ? this.rightScroller : this.scroller;
-                    targetScroller.scrollTo({
-                        xOffset: 0,
-                        yOffset: continuation.scrollDistance,
-                        animation: { duration: 0 },
-                    });
-                } catch (error) {
-                    console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]',
-                        `恢复滚动位置失败: ${JSON.stringify(error)}`);
-                }
-            }, 80);
+        const sameTarget = (!!this.target.appId && this.target.appId === continuation.detailAppId) ||
+            (!!this.target.packageName && this.target.packageName === continuation.detailPackageName);
+        if (sameTarget && continuation.routeName === CONTINUATION_ROUTE_DETAIL && continuation.scrollDistance > 0) {
+            this.pendingRestoreDistance = continuation.scrollDistance;
+            this.restorePendingScroll();
         }
+    }
+
+    private restorePendingScroll(): void {
+        if (this.pendingRestoreDistance < 0 || !this.app || !this.pageVisible) return;
+        if (this.restoreScrollTimer >= 0) clearTimeout(this.restoreScrollTimer);
+        this.restoreScrollTimer = setTimeout((): void => {
+            this.restoreScrollTimer = -1;
+            if (!this.active || !this.pageVisible || this.pendingRestoreDistance < 0) return;
+            try {
+                const scroller = this.contentWidth >= 840 ? this.rightScroller : this.scroller;
+                scroller.scrollTo({ xOffset: 0, yOffset: this.pendingRestoreDistance, animation: { duration: 0 } });
+                this.pendingRestoreDistance = -1;
+            } catch (_) { /* Retry when the page is shown or data becomes available. */ }
+        }, 80);
     }
 
     private request(force: boolean): Promise<ApiDataResult<BaseAPIResponse<AppDetailPayload>>> {
         if (this.target.appId) {
-            return fetchAppById(this.target.appId, force);
+            return fetchAppById(this.target.appId, force, this.requestScope);
         }
         if (this.target.packageName) {
-            return fetchAppByPackage(this.target.packageName, force);
+            return fetchAppByPackage(this.target.packageName, force, this.requestScope);
         }
         return Promise.reject(new Error('缺少应用标识'));
     }
 
     private load(force: boolean, background: boolean = false, showRefreshing: boolean = false): void {
+        this.requestScope.cancel(); this.requestScope = new RequestScope();
+        const trace = PerformanceTrace.begin('Dashboard.Detail.Data');
         const version = ++this.requestVersion;
-        if (showRefreshing) {
-            this.refreshing = true;
-        }
-        if (!background) {
-            this.loading = true;
-            this.errorMessage = '';
-        }
+        if (showRefreshing) this.refreshing = true;
+        if (!background) { this.loading = true; this.errorMessage = ''; }
         this.request(force).then((result) => {
-            if (!this.active || version !== this.requestVersion) return;
-            if (!result.data.success || !result.data.data?.full_info) {
-                throw new Error('未找到该应用');
-            }
-            this.app = result.data.data.full_info;
-            this.fromCache = result.stale;
-            this.startPageAnimationForEntry();
-            this.syncShareData();
-            this.refreshSaved();
-            if (this.app.pkg_name) {
-                this.loadMetrics(this.app.pkg_name, force, version);
-                fetchAppRatingHistory(this.app.pkg_name, force).then((ratingResult) => {
-                    if (this.active && version === this.requestVersion && ratingResult.data.success) {
-                        this.ratingChartPoints = this.prepareRatingPoints(ratingResult.data.data ?? []);
-                    }
-                }).catch((error: Error) => console.warn('[Dashboard][pages/detail/AppDetailPage][WARN]', `评分趋势加载失败: ${error.message}`));
-            }
-            if (!force && !this.target.backgroundRefreshHandled) {
-                if (this.backgroundRefreshTimer >= 0) clearTimeout(this.backgroundRefreshTimer);
-                this.backgroundRefreshTimer = setTimeout((): void => {
-                    this.backgroundRefreshTimer = -1;
-                    if (!this.active || version !== this.requestVersion) return;
-                    this.load(true, true);
-                }, BACKGROUND_REFRESH_DELAY_MS);
-            }
+            this.applyDetailResult(result, version, force && (!background || showRefreshing));
         }).catch((error: Error) => {
-            if (this.active && version === this.requestVersion && !background) {
-                this.errorMessage = `详情加载失败：${error.message}`;
-            }
-        }).finally(() => {
+            if (this.active && version === this.requestVersion && !background) this.errorMessage = `详情加载失败：${error.message}`;
+        }).finally((): void => {
+            PerformanceTrace.finish('Dashboard.Detail.Data', trace);
             if (!this.active || version !== this.requestVersion) return;
             this.loading = false;
             this.refreshing = false;
+        });
+    }
+
+    private applyDetailResult(result: ApiDataResult<BaseAPIResponse<AppDetailPayload>>, version: number,
+        refreshHistory: boolean): void {
+        if (!this.active || version !== this.requestVersion) return;
+        if (!result.data.success || !result.data.data?.full_info) throw new Error('未找到该应用');
+        this.app = result.data.data.full_info;
+        this.restorePendingScroll();
+        this.fromCache = result.stale;
+        this.startPageAnimationForEntry();
+        this.syncShareData();
+        this.refreshSaved();
+        if (this.historyActivated && this.app.pkg_name) {
+            this.requestHistory(refreshHistory, version);
+        }
+        result.revalidated?.then((fresh) => {
+            if (!fresh.stale) this.applyDetailResult(fresh, version, false);
+        }).catch((): void => {});
+    }
+
+    private loadRatings(packageName: string, force: boolean, version: number): void {
+        fetchAppRatingHistory(packageName, force, this.requestScope).then((result) => {
+            if (!this.active || version !== this.requestVersion || !result.data.success) return;
+            this.ratingChartPoints = this.prepareRatingPoints(result.data.data || []);
+            result.revalidated?.then((fresh) => {
+                if (this.active && version === this.requestVersion && !fresh.stale) {
+                    this.ratingChartPoints = this.prepareRatingPoints(fresh.data.data || []);
+                }
+            }).catch((): void => {});
+        }).catch((error: Error): void => {
+            console.warn('[Dashboard][AppDetailPage][WARN]', `评分趋势加载失败: ${error.message}`);
         });
     }
 
@@ -354,13 +378,20 @@ export struct AppDetailPage {
         this.metricsLoading = true;
         this.metricsError = '';
         try {
-            const result = await fetchAppMetrics(packageName, force);
+            const result = await fetchAppMetrics(packageName, force, this.requestScope);
             if (!this.active || version !== this.requestVersion || token !== this.metricsToken) return;
             if (!result.data.success) throw new Error('历史指标暂不可用');
-            const metrics = result.data.data || [];
+            const metrics = PerformanceTrace.measure('Dashboard.Detail.SortHistory', (): AppMetric[] => sortAppMetrics(result.data.data || []));
             this.downloadChartPoints = this.prepareDownloadPoints(metrics);
-            this.versions = versionChanges(metrics);
+            this.versions = versionChanges(metrics, true);
             this.metricsStale = result.stale;
+            result.revalidated?.then((fresh) => {
+                if (!this.active || version !== this.requestVersion || token !== this.metricsToken || fresh.stale) return;
+                const metrics = sortAppMetrics(fresh.data.data || []);
+                this.downloadChartPoints = this.prepareDownloadPoints(metrics);
+                this.versions = versionChanges(metrics, true);
+                this.metricsStale = false;
+            }).catch((): void => {});
         } catch (error) {
             if (this.active && version === this.requestVersion && token === this.metricsToken) this.metricsError = (error as Error).message;
         } finally {
@@ -401,7 +432,7 @@ export struct AppDetailPage {
             developerId: this.app.dev_id, developerName: this.app.developer_name });
     }
 
-    private fields(): DetailField[] {
+    private createFields(): DetailField[] {
         if (!this.app) {
             return [];
         }
@@ -412,9 +443,9 @@ export struct AppDetailPage {
             { label: '分类', value: `${this.app.kind_type_name || '-'} · ${this.app.kind_name || '-'}` },
             { label: '版本', value: `${this.app.version || '-'} (${this.app.version_code || 0})` },
             { label: '应用大小', value: formatBytes(this.app.size_bytes) },
-            { label: '最低 SDK', value: String(this.app.minsdk ?? '-') },
-            { label: '目标 SDK', value: String(this.app.target_sdk ?? '-') },
-            { label: '编译 SDK', value: String(this.app.compile_sdk_version ?? '-') },
+            { label: '最低 SDK', value: formatSdkVersion(this.app.minsdk) },
+            { label: '目标 SDK', value: formatSdkVersion(this.app.target_sdk) },
+            { label: '编译 SDK', value: formatSdkVersion(this.app.compile_sdk_version) },
             { label: '最低 API 版本', value: String(this.app.min_hmos_api_level ?? '-') },
             { label: '下载量', value: formatDownloadCount(this.app.download_count) },
             { label: '评分', value: this.app.average_rating ? `${this.app.average_rating} / 5` : '-' },
@@ -433,7 +464,7 @@ export struct AppDetailPage {
         ];
     }
 
-    private screenshots(): ScreenshotInfo[] {
+    private createScreenshots(): ScreenshotInfo[] {
         if (!this.app) {
             return [];
         }
@@ -447,34 +478,57 @@ export struct AppDetailPage {
         } as ScreenshotInfo));
     }
 
+    private preparePresentation(): void {
+        this.fieldsCache = this.createFields();
+        this.screenshotCache = this.createScreenshots();
+    }
+
+    private fields(): DetailField[] { return this.fieldsCache; }
+    private screenshots(): ScreenshotInfo[] { return this.screenshotCache; }
+
+    private activateHistory(visible: boolean): void {
+        if (!visible) return;
+        this.historyActivated = true;
+        this.requestHistory(false, this.requestVersion);
+    }
+
+    private requestHistory(force: boolean, version: number): void {
+        if (!this.active || !this.app?.pkg_name) return;
+        if (!force && this.historyRequested && this.historyRequestVersion === version &&
+            this.historyPackage === this.app.pkg_name) return;
+        this.historyRequested = true;
+        this.historyRequestVersion = version;
+        this.historyPackage = this.app.pkg_name;
+        this.loadMetrics(this.app.pkg_name, force, version);
+        this.loadRatings(this.app.pkg_name, force, version);
+    }
+
     private prepareDownloadPoints(metrics: AppMetric[]): LineChartPoint[] {
         const points = metrics.filter((metric: AppMetric): boolean =>
-            Number.isFinite(new Date(metric.created_at).getTime()) &&
             Number.isFinite(Number(metric.download_count)) && Number(metric.download_count) >= 0)
-            .sort((left: AppMetric, right: AppMetric) =>
-                new Date(left.created_at).getTime() - new Date(right.created_at).getTime())
-            .map((metric: AppMetric) => ({
-                label: formatDateTime(metric.created_at).split(' ')[0],
-                value: Number(metric.download_count ?? 0),
-                detail: `${formatDateTime(metric.created_at)} · 下载量 ${formatDownloadCount(metric.download_count)} · 版本 ${metric.version || '-'}`,
-            } as LineChartPoint));
-        return downsampleLinePoints(filterDownloadOutliers(points), DETAIL_CHART_MAX_POINTS);
+            .map((metric: AppMetric): LineChartPoint => ({
+                label: metric.created_at, value: Number(metric.download_count), detail: metric.version || '-',
+            }));
+        return downsampleLinePoints(filterDownloadOutliers(points), DETAIL_CHART_MAX_POINTS)
+            .map((point: LineChartPoint): LineChartPoint => ({
+                label: formatDateTime(point.label).split(' ')[0], value: point.value,
+                detail: `${formatDateTime(point.label)} · 下载量 ${formatDownloadCount(point.value)} · 版本 ${point.detail}`,
+            }));
     }
 
     private prepareRatingPoints(ratingHistory: AppRatingHistory[]): LineChartPoint[] {
-        const points = ratingHistory.filter((rating: AppRatingHistory): boolean => {
-            const value = Number(rating.cumulative_avg_rating_high_prec ?? rating.cumulative_avg_rating_origin ?? 0);
-            return Number.isFinite(new Date(rating.report_date).getTime()) && Number.isFinite(value) && value >= 0 && value <= 5;
-        }).sort((left: AppRatingHistory, right: AppRatingHistory) =>
-            new Date(left.report_date).getTime() - new Date(right.report_date).getTime()).map((rating: AppRatingHistory) => {
-                const value = Number(rating.cumulative_avg_rating_high_prec ?? rating.cumulative_avg_rating_origin ?? 0);
-                return {
-                    label: rating.report_date,
-                    value,
-                    detail: `${rating.report_date} · 平均评分 ${value} · 累计 ${formatCount(rating.cumulative_total_count)} 条评分`,
-                } as LineChartPoint;
-            });
-        return downsampleLinePoints(points, DETAIL_CHART_MAX_POINTS);
+        const timed = ratingHistory.map((rating: AppRatingHistory): TimedRating => ({ rating,
+            time: new Date(rating.report_date).getTime(),
+            value: Number(rating.cumulative_avg_rating_high_prec ?? rating.cumulative_avg_rating_origin ?? 0),
+        })).filter((item: TimedRating): boolean => Number.isFinite(item.time) &&
+            Number.isFinite(item.value) && item.value >= 0 && item.value <= 5)
+            .sort((left: TimedRating, right: TimedRating): number => left.time - right.time);
+        const points = timed.map((item: TimedRating): LineChartPoint => ({ label: item.rating.report_date,
+            value: item.value, detail: String(item.rating.cumulative_total_count ?? 0) }));
+        return downsampleLinePoints(points, DETAIL_CHART_MAX_POINTS).map((point: LineChartPoint): LineChartPoint => ({
+            label: point.label, value: point.value,
+            detail: `${point.label} · 平均评分 ${point.value} · 累计 ${point.detail} 条评分`,
+        }));
     }
 
     private async openExternal(uri: string, failureMessage: string): Promise<void> {
@@ -539,7 +593,7 @@ export struct AppDetailPage {
         .padding({ top: 18, bottom: 18, left: 12, right: 12 })
         .opacity(this.animStep >= this.requiredStep('identity') ? 1 : 0)
         .translate({ y: this.animStep >= this.requiredStep('identity') ? 0 : 20 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText(`${this.app?.name || '未知应用'}的图标、名称和开发公司`)
     }
 
@@ -634,7 +688,7 @@ export struct AppDetailPage {
         .width('100%')
         .opacity(this.animStep >= this.requiredStep('information') ? 1 : 0)
         .translate({ y: this.animStep >= this.requiredStep('information') ? 0 : 20 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('应用详细信息和操作')
     }
 
@@ -648,11 +702,17 @@ export struct AppDetailPage {
                 .width('100%')
                 .accessibilityText('应用介绍')
             Text(this.app?.description || '暂无介绍')
+                .maxLines(this.descriptionExpanded ? 10000 : 8)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .fontSize(14)
                 .lineHeight(22)
                 .fontColor($r('app.color.v3_text_primary'))
                 .width('100%')
                 .accessibilityText(this.app?.description || '暂无应用介绍')
+            if ((this.app?.description?.length || 0) > 240) {
+                Button(this.descriptionExpanded ? '收起介绍' : '展开完整介绍')
+                    .onClick((): void => { this.descriptionExpanded = !this.descriptionExpanded; })
+            }
             if (this.app?.new_features) {
                 Divider().color($r('app.color.v3_chart_grid')).accessibilityText('内容分隔线')
                 Text('新版特性')
@@ -662,11 +722,17 @@ export struct AppDetailPage {
                     .width('100%')
                     .accessibilityText('新版特性')
                 Text(this.app.new_features)
+                    .maxLines(this.featuresExpanded ? 10000 : 6)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
                     .fontSize(14)
                     .lineHeight(22)
                     .fontColor($r('app.color.v3_text_primary'))
                     .width('100%')
                     .accessibilityText(this.app.new_features)
+                if (this.app.new_features.length > 180) {
+                    Button(this.featuresExpanded ? '收起新版特性' : '展开新版特性')
+                        .onClick((): void => { this.featuresExpanded = !this.featuresExpanded; })
+                }
             }
         }
         .width('100%')
@@ -676,7 +742,7 @@ export struct AppDetailPage {
         .border({ width: 1, color: $r('app.color.nd_card_border') })
         .opacity(this.animStep >= this.requiredStep('description') ? 1 : 0)
         .translate({ y: this.animStep >= this.requiredStep('description') ? 0 : 20 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('应用介绍和新版特性')
     }
 
@@ -689,7 +755,7 @@ export struct AppDetailPage {
                 .fontColor($r('app.color.v3_text_primary'))
                 .width('100%')
                 .accessibilityText('应用截图')
-            ScreenshotCarousel({ screenshots: this.screenshots(), compact: this.contentWidth < 840 })
+            ScreenshotCarousel({ active: this.applicationActive && this.pageVisible && this.screenshotsVisible, screenshots: this.screenshots(), compact: this.contentWidth < 840 })
         }
         .width('100%')
         .padding(18)
@@ -698,13 +764,14 @@ export struct AppDetailPage {
         .border({ width: 1, color: $r('app.color.nd_card_border') })
         .opacity(this.animStep >= this.requiredStep('screenshots') ? 1 : 0)
         .translate({ y: this.animStep >= this.requiredStep('screenshots') ? 0 : 20 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('应用截图区域')
     }
 
     @Builder
     private downloadChart(): void {
         InteractiveLineChart({
+            active: this.applicationActive && this.pageVisible && this.downloadsVisible,
             title: '下载量趋势',
             unit: '次',
             points: this.downloadChartPoints,
@@ -720,6 +787,7 @@ export struct AppDetailPage {
     @Builder
     private ratingChart(): void {
         InteractiveLineChart({
+            active: this.applicationActive && this.pageVisible && this.ratingsVisible,
             title: '评分趋势',
             unit: '分',
             points: this.ratingChartPoints,
@@ -747,18 +815,34 @@ export struct AppDetailPage {
     }
 
     @Builder
+    private versionTimeline(): void {
+        VersionTimeline({ changes: this.versions, loading: this.metricsLoading, error: this.metricsError,
+            stale: this.metricsStale, onRetry: (): void => {
+                if (this.app?.pkg_name) this.loadMetrics(this.app.pkg_name, true, this.requestVersion);
+            } })
+    }
+
+    @Builder
     private descriptionScreenshotsAndCharts(): void {
         Column({ space: 14 }) {
-            this.appDescription()
+            DeferredDetailSection({ active: this.applicationActive && this.pageVisible, placeholderHeight: 240,
+                content: (): void => { this.appDescription(); } })
             if (this.screenshots().length > 0) {
-                this.appScreenshots()
+                DeferredDetailSection({ active: this.applicationActive && this.pageVisible, placeholderHeight: 460,
+                    onVisibilityChanged: (visible: boolean): void => { this.screenshotsVisible = visible; },
+                    content: (): void => { this.appScreenshots(); } })
             }
-            this.downloadChart()
-            this.ratingChart()
-            VersionTimeline({ changes: this.versions, loading: this.metricsLoading, error: this.metricsError, stale: this.metricsStale,
-                onRetry: (): void => {
-                    if (this.app?.pkg_name) this.loadMetrics(this.app.pkg_name, true, this.requestVersion);
-                } })
+            DeferredDetailSection({ active: this.applicationActive && this.pageVisible,
+                onVisibilityChanged: (visible: boolean): void => {
+                    this.downloadsVisible = visible; this.activateHistory(visible);
+                }, content: (): void => { this.downloadChart(); } })
+            DeferredDetailSection({ active: this.applicationActive && this.pageVisible,
+                onVisibilityChanged: (visible: boolean): void => {
+                    this.ratingsVisible = visible; this.activateHistory(visible);
+                }, content: (): void => { this.ratingChart(); } })
+            DeferredDetailSection({ active: this.applicationActive && this.pageVisible,
+                onVisibilityChanged: (visible: boolean): void => this.activateHistory(visible),
+                content: (): void => { this.versionTimeline(); } })
         }
         .width('100%')
         .alignItems(HorizontalAlign.Center)
@@ -771,7 +855,7 @@ export struct AppDetailPage {
             this.descriptionScreenshotsAndCharts()
         }
         .width('100%')
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('纵向排列的应用信息、介绍、截图和趋势图表')
     }
 
@@ -835,6 +919,7 @@ export struct AppDetailPage {
                     .scrollBar(BarState.Off)
                     .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true, effectEdge: EffectEdge.END })
                     .onDidScroll((): void => this.saveScrollPosition(this.rightScroller))
+                    .onScrollStop((): void => flushContinuationScroll())
                     .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.rightScroller, event))
                     .accessibilityText('可独立滚动的应用介绍、截图和趋势图表栏')
                 }
@@ -850,7 +935,7 @@ export struct AppDetailPage {
             .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
             .padding({ left: 14, right: 14 })
             .alignItems(VerticalAlign.Top)
-            .accessibilityGroup(true)
+            .accessibilityGroup(false).accessibilityLevel('no')
             .accessibilityText('左右两栏可分别滚动的应用详情')
         }
         .width('100%')
@@ -858,7 +943,9 @@ export struct AppDetailPage {
         .alignItems(HorizontalAlign.Center)
     }
 
-    aboutToDisappear(): void { this.interaction.dispose();
+    aboutToDisappear(): void {
+        flushContinuationScroll(); this.interaction.dispose();
+        this.requestScope.cancel();
         this.active = false;
         this.requestVersion++;
         cancelStaggerEnterAnimation(this.enterAnimationTimers);
@@ -920,7 +1007,7 @@ export struct AppDetailPage {
                         }
                         .height(360)
                         .justifyContent(FlexAlign.Center)
-                        .accessibilityGroup(true)
+                        .accessibilityGroup(false).accessibilityLevel('no')
                         .accessibilityText(this.errorMessage)
                         .transition(contentEnterTransition())
                     } else if (this.app) {
@@ -949,6 +1036,7 @@ export struct AppDetailPage {
               .scrollBar(BarState.Off)
               .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true, effectEdge: EffectEdge.END })
               .onDidScroll((): void => this.saveScrollPosition(this.scroller))
+              .onScrollStop((): void => flushContinuationScroll())
               .backgroundColor($r('app.color.background'))
               .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
               .accessibilityText('可下拉刷新的公用应用详情页')
@@ -988,7 +1076,7 @@ export struct AppDetailPage {
                         },
                         menuStyle: {
                             backgroundColor: $r('sys.color.comp_background_tertiary'),
-                            iconColor: $r('app.color.diff_content'),
+                            iconColor: $r('sys.color.icon_primary'),
                         },
                     },
                 },
@@ -1002,7 +1090,7 @@ export struct AppDetailPage {
                         },
                         menuStyle: {
                             backgroundColor: $r('sys.color.comp_background_tertiary'),
-                            iconColor: $r('app.color.diff_content'),
+                            iconColor: $r('sys.color.icon_primary'),
                         },
                     },
                 },
@@ -1021,7 +1109,8 @@ export struct AppDetailPage {
                         {
                             content: {
                                 label: this.saved ? '取消收藏' : '收藏应用',
-                                icon: this.saved ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'),
+                                icon: new SymbolGlyphModifier(this.saved ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'))
+                                    .fontColor([this.saved ? $r('app.color.diff_content') : $r('sys.color.icon_primary')]),
                                 isEnabled: this.app !== undefined && !this.saving,
                                 action: (): void => { this.vibrate(); this.toggleSaved(); },
                             },
@@ -1041,7 +1130,22 @@ export struct AppDetailPage {
                 },
             },
         })
+        .onHidden((): void => {
+            this.pageVisible = false; flushContinuationScroll();
+            this.suspendShare();
+            this.requestScope.cancel(); this.requestVersion++; this.historyRequested = false;
+            this.loading = false; this.refreshing = false; this.metricsLoading = false;
+        })
         .onShown((): void => {
+            this.pageVisible = true;
+            setContinuationView(getMainTabIndex(), getContinuationState().scrollDistance,
+                CONTINUATION_ROUTE_DETAIL, this.target, this.shareUrl());
+            this.restorePendingScroll();
+            if (this.requestScope.cancelled) {
+                this.requestScope = new RequestScope();
+                if (!this.app) this.load(false);
+                else if (this.historyActivated) this.activateHistory(true);
+            }
             this.refreshSaved();
             this.syncShareData();
             this.saveScrollPosition(this.contentWidth >= 840 ? this.rightScroller : this.scroller);

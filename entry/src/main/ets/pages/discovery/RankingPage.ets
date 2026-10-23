@@ -1,3 +1,4 @@
+import { HdsNavigationMenuItemOptions } from '@kit.UIDesignKit';
 import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DiscoveryButtonStyle, DiscoverySelectStyle, DiscoveryToggleStyle } from '../../common/DiscoveryTheme';
 import { reputationSubtitle, reputationValue } from '../../common/ReputationPresentation';
@@ -16,7 +17,7 @@ import {
     fetchCategoryGrowth
 } from '../../common/MarketApi';
 import { DISCOVERY_PAGE_SIZE } from '../../common/constants';
-import { formatCount } from '../../common/format';
+import { formatCount, formatDateTime } from '../../common/format';
 import type {
     ReputationItem,
     ReputationCategory,
@@ -36,7 +37,7 @@ export function MarketRankingsPageBuilder() { RankingPage() }
 
 @Component
 export struct RankingPage {
-    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction(this.getUIContext());
     @Consume('pageStack') private pageStack: NavPathStack;
     target: RankingTarget = {};
     @State private index: number = 0;
@@ -64,6 +65,7 @@ export struct RankingPage {
     private readonly sortOptions: SelectOption[] = [{ value: '按样本加权得分' }, { value: '按评分指标' }];
     private token: number = 0;
     private initialized: boolean = false;
+    @State private showFilters: boolean = false;
     private readonly kinds: RankingKind[] = ['downloads', 'growth', 'developers', 'daily', 'category', 'segment', 'early', 'reputation'];
     private readonly options: SelectOption[] = [
         { value: '累计下载榜' }, { value: '下载增长榜' }, { value: '开发者应用数量榜' },
@@ -173,28 +175,29 @@ export struct RankingPage {
             Select(this.options).attributeModifier(new DiscoverySelectStyle(this.interaction.pressedKey === 'discovery-0'))
                     .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-0', event)).selected(this.index).value(this.options[this.index].value)
                 .onSelect((index: number): void => { this.interaction.activate('discovery-0'); this.index = index; this.reset(); })
-                .accessibilityText('选择排行榜')
+                .accessibilityText(`选择排行榜，当前${this.options[this.index].value}`)
             if (this.kind() === 'growth' || this.kind() === 'category' || this.kind() === 'segment' || this.kind() === 'early' || this.kind() === 'reputation') {
                 Select(this.periodOptions).attributeModifier(new DiscoverySelectStyle(this.interaction.pressedKey === 'discovery-1'))
                     .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-1', event)).selected(this.period).value(this.periodOptions[this.period].value)
                     .onSelect((index: number): void => { this.interaction.activate('discovery-1'); this.changePeriod(index); })
+                    .accessibilityText(`统计窗口，当前${this.periodOptions[this.period].value}`)
             }
             if (this.kind() === 'reputation') {
                 Select(this.sampleOptions).attributeModifier(new DiscoverySelectStyle(this.interaction.pressedKey === 'discovery-2'))
                     .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-2', event))
                     .selected(this.sampleIndex).value(this.sampleOptions[this.sampleIndex].value)
                     .onSelect((index: number): void => { this.interaction.activate('discovery-2'); this.sampleIndex = index; this.reset(); })
-                    .accessibilityText('口碑榜净样本门槛')
+                    .accessibilityText(`口碑榜净样本门槛，当前${this.sampleOptions[this.sampleIndex].value}`)
                 Select(this.sortOptions).attributeModifier(new DiscoverySelectStyle(this.interaction.pressedKey === 'discovery-3'))
                     .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-3', event))
                     .selected(this.sortIndex).value(this.sortOptions[this.sortIndex].value)
                     .onSelect((index: number): void => { this.interaction.activate('discovery-3'); this.sortIndex = index; this.reset(); })
-                    .accessibilityText('口碑榜排序方式')
+                    .accessibilityText(`口碑榜排序方式，当前${this.sortOptions[this.sortIndex].value}`)
                 Select(this.categoryOptions()).attributeModifier(new DiscoverySelectStyle(this.interaction.pressedKey === 'discovery-4'))
                     .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-4', event))
                     .selected(this.categoryIndex).value(this.categoryOptions()[this.categoryIndex].value)
                     .onSelect((index: number): void => { this.interaction.activate('discovery-4'); this.categoryIndex = index; this.reset(); })
-                    .accessibilityText('口碑榜大分类或细分类')
+                    .accessibilityText(`口碑榜分类，当前${this.categoryOptions()[this.categoryIndex].value}`)
                 Text('报告日固定为北京时间昨天，最多展示前 100 名，当日无数据时为空榜。1 天逐档截零；7／30 天保留带符号净变化，评分指标可能超出 1～5，不代表累计星级均分。')
                     .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
                 if (this.reputationInfo) {
@@ -204,7 +207,6 @@ export struct RankingPage {
                         Text('服务端暂不可用，当前为服务端旧数据，生成时间如上。')
                             .fontSize(13).fontColor($r('app.color.v3_accent_orange'))
                     }
-                    Text(this.reputationInfo.weight_formula).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
                 }
             }
             if (this.kind() === 'downloads' || this.kind() === 'growth') {
@@ -215,6 +217,7 @@ export struct RankingPage {
                             .attributeModifier(new DiscoveryToggleStyle(this.interaction.pressedKey === 'excludeHuawei'))
                             .onTouch((event: TouchEvent): void => this.interaction.touch('excludeHuawei', event))
                             .onChange((value: boolean): void => { this.interaction.activate('excludeHuawei'); this.excludeHuawei = value; this.reset(); })
+                            .accessibilityText('排除华为应用')
                     }
                     Row({ space: 6 }) {
                         Text('排除元服务').fontSize(13).fontColor($r('app.color.v3_text_primary'))
@@ -222,6 +225,7 @@ export struct RankingPage {
                             .attributeModifier(new DiscoveryToggleStyle(this.interaction.pressedKey === 'excludeAtomic'))
                             .onTouch((event: TouchEvent): void => this.interaction.touch('excludeAtomic', event))
                             .onChange((value: boolean): void => { this.interaction.activate('excludeAtomic'); this.excludeAtomic = value; this.reset(); })
+                            .accessibilityText('排除元服务')
                     }
                 }
             }
@@ -238,42 +242,40 @@ export struct RankingPage {
                 Text('按统计快照窗口内新增下载量排序。缺少基线的应用按 0 计算；点击查看该分类当前收录应用。')
                     .fontSize(13).fontColor($r('app.color.v3_text_secondary'))
             }
-            Button('刷新', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'discovery-5'))
-                    .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-5', event)).enabled(!this.loading).onClick((): void => { this.interaction.activate('discovery-5'); this.load(true); })
         }.width('100%').alignItems(HorizontalAlign.Start)
     }
     @Builder
     private rows(): void {
         ForEach(this.reputation, (item: ReputationItem, i: number) => {
-            AppSummaryRow({ enterOrder: i, name: `${i + 1}. ${item.name}`, appId: item.app_id, packageName: item.pkg_name,
+            AppSummaryRow({ enterSpeed: 2, enterOrder: i, name: `${i + 1}. ${item.name}`, appId: item.app_id, packageName: item.pkg_name,
                 iconUrl: item.icon_url, subtitle: reputationSubtitle(item), subtitleMaxLines: 8,
                 value: reputationValue(item),
                 onOpen: (): void => this.openApp(item.app_id, item.pkg_name) })
         }, (item: ReputationItem) => item.app_id)
         ForEach(this.apps, (app: MarketApp, i: number) => {
-            AppSummaryRow({ enterOrder: i, name: `${(this.page - 1) * DISCOVERY_PAGE_SIZE + i + 1}. ${app.name}`,
+            AppSummaryRow({ enterSpeed: 2, enterOrder: i, name: `${(this.page - 1) * DISCOVERY_PAGE_SIZE + i + 1}. ${app.name}`,
                 appId: app.app_id, packageName: app.pkg_name, iconUrl: app.icon_url, subtitle: app.developer_name, value: `${formatCount(app.download_count)} 次`,
                 onOpen: (): void => this.openApp(app.app_id, app.pkg_name) })
         }, (app: MarketApp) => app.app_id)
         ForEach(this.growth, (app: DownloadGrowthApp, i: number) => {
-            AppSummaryRow({ enterOrder: i, appId: app.app_id, packageName: app.pkg_name, name: `${(this.page - 1) * DISCOVERY_PAGE_SIZE + i + 1}. ${app.name}`,
+            AppSummaryRow({ enterSpeed: 2, enterOrder: i, appId: app.app_id, packageName: app.pkg_name, name: `${(this.page - 1) * DISCOVERY_PAGE_SIZE + i + 1}. ${app.name}`,
                 subtitle: `${app.prior_period_date} → ${app.current_period_date}\n累计 ${formatCount(app.current_download_count)} 次`,
                 value: `+${formatCount(app.download_increment)}`,
                 onOpen: (): void => this.openApp(app.app_id, app.pkg_name) })
         }, (app: DownloadGrowthApp) => app.app_id)
         ForEach(this.daily, (app: DailyMaxDownloadApp, i: number) => {
-            AppSummaryRow({ enterOrder: i, appId: app.app_id, packageName: app.pkg_name, name: app.app_name, subtitle: `最近记录：${app.report_date}`,
+            AppSummaryRow({ enterSpeed: 2, enterOrder: i, appId: app.app_id, packageName: app.pkg_name, name: app.app_name, subtitle: `最近记录：${app.report_date}`,
                 value: `${formatCount(app.download_count)} 次`, onOpen: (): void => this.openApp(app.app_id, app.pkg_name) })
         }, (app: DailyMaxDownloadApp) => `${app.report_date}-${app.app_id}`)
         ForEach(this.developers, (developer: DeveloperRankingEntry, i: number) => {
-            AppSummaryRow({ enterOrder: i, showIcon: false, name: `${(this.page - 1) * DISCOVERY_PAGE_SIZE + i + 1}. ${developer.developerName}`,
+            AppSummaryRow({ enterSpeed: 2, enterOrder: i, showIcon: false, name: `${(this.page - 1) * DISCOVERY_PAGE_SIZE + i + 1}. ${developer.developerName}`,
                 value: `${developer.appCount} 款`, onOpen: (): void => {
                     openAppCollection(this.pageStack, { title: developer.developerName,
                         developerId: developer.developerId, developerName: developer.developerName });
                 } })
         }, (developer: DeveloperRankingEntry) => `${developer.developerId}-${developer.developerName}`)
         ForEach(this.categories, (item: CategoryGrowth, i: number) => {
-            AppSummaryRow({ enterOrder: i, showIcon: false, name: `${(this.page - 1) * DISCOVERY_PAGE_SIZE + i + 1}. ${item.segment_name || item.kind_name}`,
+            AppSummaryRow({ enterSpeed: 2, enterOrder: i, showIcon: false, name: `${(this.page - 1) * DISCOVERY_PAGE_SIZE + i + 1}. ${item.segment_name || item.kind_name}`,
                 subtitle: `${item.kind_name} · ${item.app_count} 款 · ${item.growing_app_pct}% 应用增长\n${item.no_baseline_apps} 款无基线`,
                 value: `+${formatCount(item.downloads_increase)}`, onOpen: (): void => this.openCategory(item) })
         }, (item: CategoryGrowth) => `${item.kind_id}-${item.segment_name || ''}`)
@@ -281,17 +283,49 @@ export struct RankingPage {
     @Builder
     private content(): void {
         Column({ space: 12 }) {
-            this.controls()
-            BrowserStatus({ loading: this.loading, error: this.error, stale: this.stale, empty: this.empty(),
+            if (this.kind() === 'reputation' && this.reputationInfo) {
+                Text(`报告日 ${this.reputationInfo.report_date || '暂无'} · 更新 ${formatDateTime(this.reputationInfo.generated_at)}`)
+                    .fontSize(12).fontColor($r('app.color.v3_text_secondary')).width('100%')
+                if (this.reputationInfo.data_stale) {
+                    Text('服务端旧数据').fontSize(12).fontColor($r('app.color.v3_accent_orange')).width('100%')
+                }
+            }
+            BrowserStatus({ enterSpeed: 2, loading: this.loading, error: this.error, stale: this.stale, empty: this.empty(),
                 emptyText: '当前条件暂无可用数据', onRetry: (): void => { this.load(true); } })
             this.rows()
             if (this.kind() !== 'reputation') {
-                BrowserPagination({ page: this.page, total: this.total, pageSize: DISCOVERY_PAGE_SIZE,
+                BrowserPagination({ enterSpeed: 2, page: this.page, total: this.total, pageSize: DISCOVERY_PAGE_SIZE,
                     loading: this.loading, onPage: (page: number): void => { this.page = page; this.load(false); } })
             }
         }.width('100%')
     }
+    @Builder
+    private filtersSheet(): void {
+        Scroll() { this.controls() }
+            .width('100%').height('100%').padding({ left: 20, right: 20, top: 12, bottom: 24 })
+            .scrollBar(BarState.Auto)
+    }
+    private pageTitle(): string {
+        const titles: string[] = ['累计下载', '下载增长', '开发者榜', '每日记录', '分类增长', '细分赛道', '早期应用', '口碑榜'];
+        return titles[this.index];
+    }
+    private filterSummary(): string {
+        if (this.kind() === 'reputation') return `${this.periodOptions[this.period].value} · ${this.samples[this.sampleIndex]} 个净样本起 · ${this.sortIndex === 1 ? '评分指标' : '样本加权'}`;
+        if (this.kind() === 'growth' || this.kind() === 'category' || this.kind() === 'segment' || this.kind() === 'early') return String(this.periodOptions[this.period].value);
+        return '';
+    }
     build() {
-        MarketPageFrame({ resetKey: `${this.index}-${this.period}-${this.excludeHuawei}-${this.excludeAtomic}-${this.sampleIndex}-${this.sortIndex}-${this.categoryIndex}-${this.page}`, title: '排行榜', content: (): void => { this.content(); }, onShown: (): void => this.shown() })
+        MarketPageFrame({ resetKey: `${this.index}-${this.period}-${this.excludeHuawei}-${this.excludeAtomic}-${this.sampleIndex}-${this.sortIndex}-${this.categoryIndex}-${this.page}`, title: this.pageTitle(), subtitle: this.filterSummary(),
+            busy: this.loading, menuProvider: (_busy: boolean): HdsNavigationMenuItemOptions[] => [
+                { content: { label: '筛选排行榜', icon: $r('sys.symbol.slider_horizontal_2_square'),
+                    action: (): void => { this.interaction.activate('filter'); this.showFilters = true; } } },
+                { content: { label: '刷新排行榜', icon: $r('sys.symbol.arrow_clockwise'), isEnabled: !this.loading,
+                    action: (): void => { this.interaction.activate('refresh'); this.load(true); } } },
+            ], content: (): void => { this.content(); }, onShown: (): void => this.shown() })
+            .bindSheet($$this.showFilters, this.filtersSheet(), {
+                title: { title: '筛选排行榜' }, height: SheetSize.LARGE,
+                detents: [SheetSize.MEDIUM, SheetSize.LARGE], showClose: true, dragBar: true,
+                enableOutsideInteractive: false, backgroundColor: $r('app.color.background'),
+            })
     }
 }

@@ -11,6 +11,7 @@ import { privacyManager } from '@kit.StoreKit';
 import { showToastSafely } from '../../common/safeUi';
 import { customUserAgent, ROUTE_HTML_PAGE } from '../../common/constants';
 import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
+import { WebActivity } from '../../common/WebActivity';
 import {
   HDS_MATERIAL_LEVEL_GENTLE,
   HDS_MATERIAL_TYPE_ADAPTIVE,
@@ -23,6 +24,9 @@ export struct LocalHtmlPage {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
+  @StorageLink('applicationActive') @Watch('syncActivity') private applicationActive: boolean = true;
+  private pageVisible: boolean = false;
+  private readonly webOwnerId: number = WebActivity.createOwner();
   controller: webview.WebviewController = new webview.WebviewController();
   @State params: WebViewParam = new WebViewParam('', '');
   @State private topPlaceholderHeight: number = 100;
@@ -35,6 +39,20 @@ export struct LocalHtmlPage {
     }
   }
   private prompt: PromptAction = this.getUIContext().getPromptAction();
+
+  aboutToDisappear(): void {
+    this.pageVisible = false;
+    WebActivity.setActive(this.webOwnerId, false);
+  }
+
+  private syncActivity(): void {
+    const active: boolean = this.applicationActive && this.pageVisible;
+    WebActivity.setActive(this.webOwnerId, active);
+    try {
+      if (active) this.controller.onActive();
+      else this.controller.onInactive();
+    } catch (_) { /* A destination can become visible before its controller attaches. */ }
+  }
 
   private async closePage() {
     try {
@@ -92,6 +110,7 @@ export struct LocalHtmlPage {
             .onControllerAttached(() => {
               try {
                 this.controller.setCustomUserAgent(customUserAgent);
+                this.syncActivity();
               } catch (error) {
                 console.warn('[Dashboard][pages/more/LocalHtmlPage][WARN]',
                   `设置网页User-Agent失败: ${JSON.stringify(error)}`);
@@ -119,6 +138,8 @@ export struct LocalHtmlPage {
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .titleMode(HdsNavDestinationTitleMode.MINI)
     .transition(pageTransition())
+    .onShown((): void => { this.pageVisible = true; this.syncActivity(); })
+    .onHidden((): void => { this.pageVisible = false; this.syncActivity(); })
     .onBackPressed(() => {
       if(this.vibrationLevel > 0) vibration.backVibration()
       popPathSafely(this.pageStack, 'pages/more/LocalHtmlPage');

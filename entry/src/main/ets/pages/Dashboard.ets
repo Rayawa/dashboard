@@ -1,7 +1,8 @@
-import { RankingPage } from './discovery/RankingPage';
-import { AppCollectionPage } from './discovery/AppCollectionPage';
-import { TopicsPage } from './discovery/TopicsPage';
-import { MyCollectionPage } from './discovery/MyCollectionPage';
+import { IdleTask } from '../common/FrameScheduler';
+import lazy { RankingPage } from './discovery/RankingPage';
+import lazy { AppCollectionPage } from './discovery/AppCollectionPage';
+import lazy { TopicsPage } from './discovery/TopicsPage';
+import lazy { MyCollectionPage } from './discovery/MyCollectionPage';
 import type { RankingTarget, AppCollectionTarget, TopicTarget } from '../common/types';
 import { ROUTE_RANKINGS, ROUTE_APP_COLLECTION, ROUTE_TOPICS, ROUTE_MY_COLLECTION } from '../common/constants';
 import {
@@ -12,7 +13,7 @@ import {
   HdsTabsController,
   ScrollEffectType,
 } from '@kit.UIDesignKit';
-import { curves, LengthMetrics, PromptAction, SegmentButtonV2Items } from '@kit.ArkUI';
+import { curves, LengthMetrics, PromptAction, SegmentButtonV2Items, SymbolGlyphModifier } from '@kit.ArkUI';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { getFirstLaunch } from '../common/storage';
 import {
@@ -51,17 +52,18 @@ import {
   SUPPORTS_HARMONY_API_23,
 } from '../common/platformCompatibility';
 import { HomePage } from './main/HomePage';
-import { AppsPage } from './main/AppsPage';
-import { MyPage } from './main/MyPage';
-import { AppDetailPage } from './detail/AppDetailPage';
-import { AppLogBuilder } from './more/AppLogPage';
-import { HTMLBuilder } from './more/LocalHtmlPage';
-import { TutorialPageBuilder } from './more/TutorialPage';
-import { FriendPageBuilder } from './more/FriendLinksPage';
-import { DeveloperPage } from './more/DeveloperPage';
-import { WebPageBuilder, WebPageParams } from './more/WebPage';
+import lazy { AppsPage } from './main/AppsPage';
+import lazy { MyPage } from './main/MyPage';
+import lazy { AppDetailPage } from './detail/AppDetailPage';
+import lazy { AppLogBuilder } from './more/AppLogPage';
+import lazy { HTMLBuilder } from './more/LocalHtmlPage';
+import lazy { TutorialPageBuilder } from './more/TutorialPage';
+import lazy { FriendPageBuilder } from './more/FriendLinksPage';
+import lazy { DeveloperPage } from './more/DeveloperPage';
+import lazy { WebPageBuilder } from './more/WebPage';
+import type { WebPageParams } from './more/WebPage';
 import { HdsTitleBarSegment } from '../component/HdsTitleBarSegment';
-import { SStationNodeParams, SStationPreloadNodeController } from '../component/SStationPreloadNode';
+import lazy { SStationNodeParams, SStationPreloadNodeController } from '../component/SStationPreloadNode';
 import { reportUserTelemetry } from '../common/TelemetryService';
 
 interface MainTab {
@@ -85,7 +87,12 @@ interface MainTitleMenuItem {
 struct Dashboard {
     @Provide('pageStack') pageStack: NavPathStack = new NavPathStack();
     private tabsController: HdsTabsController = new HdsTabsController();
-    private sStationNodeController: SStationPreloadNodeController = new SStationPreloadNodeController();
+    private sStationNodeController?: SStationPreloadNodeController;
+    @State private stationInitialized: boolean = false;
+    @State private mainVisible: boolean = true;
+    @StorageLink('applicationActive') @Watch('onApplicationActivityChanged') private applicationActive: boolean = true;
+    private stationPreload?: IdleTask;
+    private telemetryTask?: IdleTask;
     private prompt: PromptAction = this.getUIContext().getPromptAction();
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
     @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
@@ -95,6 +102,7 @@ struct Dashboard {
     @State private warningRequiresConfirmation: boolean = true;
     @State private mainActionIndex: number = -1;
     @State private mainActionVersion: number = 0;
+    @State private homeRefreshVersion: number = 0;
     @State private appsSearchCommandVersion: number = 0;
     @State private appsSearchOpen: boolean = false;
     @State private appsViewIndexes: number[] = [0];
@@ -111,11 +119,22 @@ struct Dashboard {
         { text: '总表', accessibilityText: '总表' },
     ]);
     private readonly mainTabs: MainTab[] = [
-        { label: 'S站', icon: $r('sys.media.wifi_router_fill') },
-        { label: '首页', icon: $r('sys.media.return_home_fill') },
-        { label: '详情', icon: $r('sys.media.rectangle_filled_and_line_horizontal_and_rectangle') },
-        { label: '我的', icon: $r('sys.media.person_badge_waveform') },
+        { label: 'S站', icon: $r('sys.symbol.wifi_router') },
+        { label: '首页', icon: $r('sys.symbol.house') },
+        { label: '详情', icon: $r('sys.symbol.square_grid_2x2') },
+        { label: '我的', icon: $r('sys.symbol.person') },
     ];
+
+    private mainTabStyle(tab: MainTab): BottomTabBarStyle {
+        return new BottomTabBarStyle({
+            normal: new SymbolGlyphModifier(tab.icon).fontColor([$r('app.color.v3_text_secondary')]),
+            selected: new SymbolGlyphModifier(tab.icon).fontColor([$r('app.color.diff_content')]),
+        }, tab.label)
+            .labelStyle({
+                selectedColor: $r('app.color.diff_content'),
+                unselectedColor: $r('app.color.v3_text_secondary'),
+            });
+    }
 
     @Builder
     private appsTitleSegment(): void {
@@ -173,7 +192,7 @@ struct Dashboard {
         return {
             command: this.sStationCommand,
             commandVersion: this.sStationCommandVersion,
-            active: this.selectedIndex === MAIN_TAB_S_STATION,
+            active: this.applicationActive && this.mainVisible && this.selectedIndex === MAIN_TAB_S_STATION,
             onDetailOpenChanged: (open: boolean): void => {
                 this.sStationDetailOpen = open;
             },
@@ -181,7 +200,7 @@ struct Dashboard {
     }
 
     private updateSStationNode(): void {
-        this.sStationNodeController.update(this.sStationNodeParams());
+        this.sStationNodeController?.update(this.sStationNodeParams());
     }
 
     private handleTabBarClick(index: number): void {
@@ -220,6 +239,10 @@ struct Dashboard {
         }
         if (this.selectedIndex === MAIN_TAB_HOME) {
             return [
+                { content: {
+                    label: '刷新首页', icon: $r('sys.symbol.arrow_clockwise'), isEnabled: true,
+                    action: (): void => { this.vibrate(); this.homeRefreshVersion++; },
+                } },
                 {
                     content: {
                         label: '打开教程',
@@ -295,22 +318,50 @@ struct Dashboard {
     onPageShow(): void {
         this.handlePageShow(++this.pageShowToken);
         if (!this.hasReportedTelemetry) {
-            this.hasReportedTelemetry = true;
-            reportUserTelemetry(customUserAgent);
+            this.telemetryTask?.cancel();
+            this.telemetryTask = new IdleTask(this.getUIContext(), (): void => {
+                if (!this.applicationActive) return;
+                this.hasReportedTelemetry = true;
+                reportUserTelemetry(customUserAgent);
+            });
         }
     }
 
     aboutToDisappear(): void {
         this.pageShowToken++;
+        this.stationPreload?.cancel(); this.telemetryTask?.cancel();
+        this.sStationNodeController?.dispose(); this.sStationNodeController = undefined;
+        this.stationInitialized = false;
         if (this.detailRestoreTimer >= 0) {
             clearTimeout(this.detailRestoreTimer);
             this.detailRestoreTimer = -1;
         }
     }
 
-    aboutToAppear(): void {
-        // BuilderNode 会立即创建并加载 Web；首次点击 S 站时仅执行节点挂载。
+    private onApplicationActivityChanged(): void {
+        this.updateSStationNode();
+        if (this.applicationActive && this.mainVisible) this.scheduleStationPreload();
+        else { this.stationPreload?.cancel(); this.telemetryTask?.cancel(); }
+    }
+
+    private initializeStation(): void {
+        if (this.stationInitialized) return;
+        this.sStationNodeController = new SStationPreloadNodeController();
         this.sStationNodeController.initialize(this.getUIContext(), this.sStationNodeParams());
+        this.stationInitialized = true;
+    }
+
+    aboutToAppear(): void {
+        this.selectedIndex = getContinuationState().mainTab;
+        this.mainVisible = !(peekDetailTarget().appId || peekDetailTarget().packageName);
+        if (this.selectedIndex === MAIN_TAB_S_STATION && this.mainVisible) this.initializeStation();
+    }
+
+    private scheduleStationPreload(): void {
+        this.stationPreload?.cancel();
+        this.stationPreload = new IdleTask(this.getUIContext(), (): void => {
+            if (this.applicationActive && this.mainVisible) this.initializeStation();
+        }, 2500);
     }
 
     onBackPress(): boolean {
@@ -369,11 +420,13 @@ struct Dashboard {
     @Builder
     private mainTabContents(): void {
         TabContent() {
-            NodeContainer(this.sStationNodeController)
-                .width('100%')
-                .height('100%')
+            if (this.stationInitialized) {
+                NodeContainer(this.sStationNodeController!).width('100%').height('100%')
+            } else {
+                Column().width('100%').height('100%').backgroundColor($r('app.color.s_station_placeholder'))
+            }
         }
-        .tabBar(new BottomTabBarStyle(this.mainTabs[0].icon, this.mainTabs[0].label))
+        .tabBar(this.mainTabStyle(this.mainTabs[0]))
         .opacity(this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.92)
         .scale({ x: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985,
             y: this.selectedIndex === MAIN_TAB_S_STATION ? 1 : 0.985 })
@@ -382,17 +435,18 @@ struct Dashboard {
 
         TabContent() {
             HomePage({
-                active: this.selectedIndex === MAIN_TAB_HOME,
+                refreshVersion: this.homeRefreshVersion,
+                active: this.applicationActive && this.mainVisible && this.selectedIndex === MAIN_TAB_HOME,
                 scrollToTopVersion: this.mainActionIndex === MAIN_TAB_HOME ? this.mainActionVersion : 0,
                 onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
             })
         }
-        .tabBar(new BottomTabBarStyle(this.mainTabs[1].icon, this.mainTabs[1].label))
+        .tabBar(this.mainTabStyle(this.mainTabs[1]))
         .accessibilityText('首页标签页')
 
         TabContent() {
             AppsPage({
-                active: this.selectedIndex === MAIN_TAB_APPS,
+                active: this.applicationActive && this.mainVisible && this.selectedIndex === MAIN_TAB_APPS,
                 selectedIndexes: $appsViewIndexes,
                 scrollToTopVersion: this.mainActionIndex === MAIN_TAB_APPS ? this.mainActionVersion : 0,
                 requestVersion: this.searchRequestVersion,
@@ -404,12 +458,12 @@ struct Dashboard {
                 onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
             })
         }
-        .tabBar(new BottomTabBarStyle(this.mainTabs[2].icon, this.mainTabs[2].label))
+        .tabBar(this.mainTabStyle(this.mainTabs[2]))
         .accessibilityText('详情标签页')
 
         TabContent() {
             MyPage({
-                active: this.selectedIndex === MAIN_TAB_MY,
+                active: this.applicationActive && this.mainVisible && this.selectedIndex === MAIN_TAB_MY,
                 scrollToTopVersion: this.mainActionIndex === MAIN_TAB_MY ? this.mainActionVersion : 0,
                 onShowWarning: (): void => {
                     this.warningRequiresConfirmation = false;
@@ -417,12 +471,13 @@ struct Dashboard {
                 },
             })
         }
-        .tabBar(new BottomTabBarStyle(this.mainTabs[3].icon, this.mainTabs[3].label))
+        .tabBar(this.mainTabStyle(this.mainTabs[3]))
         .accessibilityText('我的标签页')
     }
 
     private onMainTabChanged(index: number): void {
         this.selectedIndex = index;
+        if (index === MAIN_TAB_S_STATION) this.initializeStation();
         this.updateSStationNode();
         setMainTab(index);
         const continuation = getContinuationState();
@@ -487,9 +542,10 @@ struct Dashboard {
             .width('100%')
             .height('100%')
             .backgroundColor($r('app.color.background'))
-            .accessibilityGroup(true)
+            .accessibilityGroup(false).accessibilityLevel('no')
             .accessibilityText('Dashboard应用看板主界面')
             .onAppear((): void => {
+                this.scheduleStationPreload();
                 this.warningHostReady = true;
                 this.checkWarning(this.pageShowToken);
             })
@@ -511,6 +567,12 @@ struct Dashboard {
                 },
             })
         }
+        .onNavBarStateChange((visible: boolean): void => {
+            const pending = peekDetailTarget();
+            this.mainVisible = visible && !pending.appId && !pending.packageName;
+            this.updateSStationNode();
+            if (visible) this.scheduleStationPreload();
+        })
         .mode(NavigationMode.Stack)
         .customNavContentTransition((_from: NavContentInfo, _to: NavContentInfo,
             operation: NavigationOperation) => {

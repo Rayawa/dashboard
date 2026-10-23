@@ -107,7 +107,7 @@ struct UsernameEditor {
         }
         .padding({ right: 7 })
         .width('100%')
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText(`用户名设置，当前${this.draftUsername || getDeviceName()}`)
     }
 }
@@ -329,7 +329,7 @@ export struct SettingsPanel {
         .onAreaChange((_oldValue: Area, newValue: Area): void => {
             this.contentWidth = Number(newValue.width);
         })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('应用设置')
     }
 
@@ -432,7 +432,7 @@ export struct SettingsPanel {
         }
         .width('100%')
         .padding({ right: 2 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText(
             `振动强度，当前${this.vibrationLevelName()}`
         )
@@ -579,7 +579,7 @@ export struct SettingsPanel {
         }
         .width('100%')
         .padding({ right: 2 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText(`光场视效，当前${this.lightFieldLevelName()}`)
     }
 
@@ -701,7 +701,7 @@ export struct SettingsPanel {
         }
         .width('100%')
         .padding({ right: 2 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText(
             `材质等级，当前${this.materialLevelName()}`
         )
@@ -839,7 +839,7 @@ export struct SettingsPanel {
         }
         .width('100%')
         .padding({ right: 7 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText(
             `清除缓存，当前缓存文件总大小${this.cacheSize}`
         )

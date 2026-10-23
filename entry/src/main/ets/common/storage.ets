@@ -5,7 +5,7 @@
 // - 瞬态 key（winWidth、pageUrl、nativeRefreshTick 等）不属于本模块，只活在 AppStorage 里
 import { common } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
-import getDiskStorageInstance, { DiskStorageInstance } from './DiskStorage';
+import getDiskStorageInstance, { DiskStorageInstance, StorageUpdate } from './DiskStorage';
 import { parseLocalCollection } from './LocalCollection';
 import {
     APP_VERSION,
@@ -103,40 +103,33 @@ async function migrateLegacyData(ctx?: common.Context): Promise<void> {
     if (await target.has(KEY_MIGRATED)) {
         return;
     }
-    const copied: string[] = [];
-    // 旧 profile 文件：用户名（唯一必须保住的旧数据）
-    if (await copyLegacyKey(target, LEGACY_PROFILE_FILE_NAME, KEY_USERNAME, ctx) ||
-        await copyLegacyKey(target, LEGACY_PROFILE_FILE_NAME, 'userName', ctx, KEY_USERNAME)) {
-        copied.push(KEY_USERNAME);
-    }
-    // 旧 settings 文件：设置开关（新旧 key 同名）
-    const settingKeys: string[] = [LEGACY_KEY_VIBRATION_ENABLED, KEY_HOLD_CHECK, KEY_BUTTON_RIGHT];
-    for (const key of settingKeys) {
-        if (await copyLegacyKey(target, LEGACY_SETTINGS_FILE_NAME, key, ctx)) {
-            copied.push(key);
+    const updates: StorageUpdate[] = [];
+    const copied: Set<string> = new Set();
+    const sources: LegacySetting[] = [
+        { file: LEGACY_PROFILE_FILE_NAME, key: KEY_USERNAME, target: KEY_USERNAME },
+        { file: LEGACY_PROFILE_FILE_NAME, key: 'userName', target: KEY_USERNAME },
+        { file: LEGACY_SETTINGS_FILE_NAME, key: LEGACY_KEY_VIBRATION_ENABLED, target: LEGACY_KEY_VIBRATION_ENABLED },
+        { file: LEGACY_SETTINGS_FILE_NAME, key: KEY_HOLD_CHECK, target: KEY_HOLD_CHECK },
+        { file: LEGACY_SETTINGS_FILE_NAME, key: KEY_BUTTON_RIGHT, target: KEY_BUTTON_RIGHT },
+        { file: LEGACY_APP_SETTINGS_FILE_NAME, key: KEY_FIRST_LAUNCH, target: KEY_FIRST_LAUNCH },
+    ];
+    for (const source of sources) {
+        try {
+            if (copied.has(source.target) || await target.has(source.target)) continue;
+            const legacy = getDiskStorageInstance(source.file, ctx);
+            if (legacy && await legacy.has(source.key)) {
+                updates.push({ key: source.target, value: await legacy.get(source.key, '') });
+                copied.add(source.target);
+            }
+        } catch (_) {
+            console.warn('[Dashboard][storage][WARN]', `跳过无法读取的旧设置: ${source.file}/${source.key}`);
         }
     }
-    // 旧 myAppSettings 文件：首启标志
-    if (await copyLegacyKey(target, LEGACY_APP_SETTINGS_FILE_NAME, KEY_FIRST_LAUNCH, ctx)) {
-        copied.push(KEY_FIRST_LAUNCH);
-    }
-    await target.set(KEY_MIGRATED, true);
-    console.info('[Dashboard][common/storage][INFO]', `[storage] 旧数据迁移完成: ${copied.length > 0 ? copied.join(', ') : '全新安装，无需迁移'}`);
+    updates.push({ key: KEY_MIGRATED, value: true });
+    await target.setMany(updates);
 }
 
-async function copyLegacyKey(target: DiskStorageInstance, legacyFile: string, key: string, ctx?: common.Context, targetKey: string = key): Promise<boolean> {
-    try {
-        const legacy = getDiskStorageInstance(legacyFile, ctx);
-        if (legacy && await legacy.has(key)) {
-            const value = await legacy.get(key, '');
-            await target.set(targetKey, value);
-            return true;
-        }
-    } catch (error) {
-        console.warn('[Dashboard][common/storage][WARN]', `[storage] 跳过旧文件 ${legacyFile} 的 ${key}: ${JSON.stringify(error)}`);
-    }
-    return false;
-}
+interface LegacySetting { file: string; key: string; target: string; }
 
 // ===== 初始化（幂等；也可以完全不调用，首次读写会自动初始化并迁移）=====
 export function initializeSettings(ctx?: common.Context): void {
@@ -160,8 +153,7 @@ export async function getFirstLaunch(): Promise<boolean> {
 
 export async function setFirstLaunch(first: boolean): Promise<void> {
     const s = await ensureReady();
-    await s.set(KEY_FIRST_LAUNCH, first);
-    await s.set(KEY_NOTICE_VERSION, first ? '' : APP_VERSION);
+    await s.setMany([{ key: KEY_FIRST_LAUNCH, value: first }, { key: KEY_NOTICE_VERSION, value: first ? '' : APP_VERSION }]);
 }
 
 // ===== 用户名（原 profile 文件 / username）=====
@@ -316,21 +308,18 @@ export async function getAllSettings(): Promise<AppSettings> {
 }
 
 export async function updateSettings(settings: Partial<AppSettings>): Promise<void> {
-    if (settings.vibrationLevel !== undefined) {
-        await setVibrationLevel(settings.vibrationLevel);
-    }
-    if (settings.lightFieldLevel !== undefined) {
-        await setLightFieldLevel(settings.lightFieldLevel);
-    }
-    if (settings.holdCheckON !== undefined) {
-        await setHoldCheckEnabled(settings.holdCheckON);
-    }
-    if (settings.buttonPositionRIGHT !== undefined) {
-        await setButtonPosition(settings.buttonPositionRIGHT);
-    }
-    if (settings.immersiveMaterialLevel !== undefined) {
-        await setImmersiveMaterialLevel(settings.immersiveMaterialLevel);
-    }
+    const updates: StorageUpdate[] = [];
+    if (settings.vibrationLevel !== undefined) updates.push({ key: KEY_VIBRATION_LEVEL,
+        value: [0, 1, 2].includes(settings.vibrationLevel) ? settings.vibrationLevel : DEFAULT_SETTINGS.vibrationLevel });
+    if (settings.lightFieldLevel !== undefined) updates.push({ key: KEY_LIGHT_FIELD_LEVEL,
+        value: [0, 1, 2].includes(settings.lightFieldLevel) ? settings.lightFieldLevel : DEFAULT_SETTINGS.lightFieldLevel });
+    if (settings.immersiveMaterialLevel !== undefined) updates.push({ key: KEY_IMMERSIVE_MATERIAL_LEVEL,
+        value: [0, 1, 2].includes(settings.immersiveMaterialLevel) ? settings.immersiveMaterialLevel : DEFAULT_SETTINGS.immersiveMaterialLevel });
+    if (settings.holdCheckON !== undefined) updates.push({ key: KEY_HOLD_CHECK, value: settings.holdCheckON });
+    if (settings.buttonPositionRIGHT !== undefined) updates.push({ key: KEY_BUTTON_RIGHT, value: settings.buttonPositionRIGHT });
+    const s = await ensureReady();
+    await s.setMany(updates);
+    for (const update of updates) AppStorage.setOrCreate(update.key, update.value);
 }
 
 // ===== 搜索历史 =====
@@ -376,13 +365,13 @@ export async function loadPersistedState(ctx?: common.Context): Promise<void> {
         const settingsPromise = getAllSettings();
         const usernamePromise = getUsername();
         const settings = await settingsPromise;
-        const username = await usernamePromise;
+        usernamePromise.then((username: string): void => { AppStorage.setOrCreate(KEY_USERNAME, username); })
+            .catch((): void => {});
         AppStorage.setOrCreate(KEY_VIBRATION_LEVEL, settings.vibrationLevel);
         AppStorage.setOrCreate(KEY_LIGHT_FIELD_LEVEL, settings.lightFieldLevel);
         AppStorage.setOrCreate(KEY_HOLD_CHECK, settings.holdCheckON);
         AppStorage.setOrCreate(KEY_BUTTON_RIGHT, settings.buttonPositionRIGHT);
         AppStorage.setOrCreate(KEY_IMMERSIVE_MATERIAL_LEVEL, settings.immersiveMaterialLevel);
-        AppStorage.setOrCreate(KEY_USERNAME, username);
     } catch (error) {
         console.error('[Dashboard][common/storage][ERROR]', `[storage] AppStorage 水合失败: ${JSON.stringify(error)}`);
     }
@@ -390,10 +379,15 @@ export async function loadPersistedState(ctx?: common.Context): Promise<void> {
 
 // 收藏与关注共用一个文档；串行执行读改写，避免多个页面同时保存时丢失数据。
 let collectionWrites: Promise<void> = Promise.resolve();
+let lastCollectionRaw: string | undefined = undefined;
+let lastCollection: LocalCollection | undefined = undefined;
 async function readLocalCollection(): Promise<LocalCollection> {
     const s = await ensureReady();
     const raw = await s.get(STORAGE_KEY_LOCAL_COLLECTION, '{}') as string;
-    return parseLocalCollection(raw);
+    if (raw !== lastCollectionRaw || !lastCollection) {
+        lastCollection = parseLocalCollection(raw); lastCollectionRaw = raw;
+    }
+    return lastCollection;
 }
 export async function getLocalCollection(): Promise<LocalCollection> {
     await collectionWrites;
@@ -401,7 +395,8 @@ export async function getLocalCollection(): Promise<LocalCollection> {
 }
 function editLocalCollection(edit: (value: LocalCollection) => void): Promise<void> {
     const pending = collectionWrites.then(async (): Promise<void> => {
-        const value = await readLocalCollection();
+        const current = await readLocalCollection();
+        const value: LocalCollection = { apps: current.apps.slice(), developers: current.developers.slice() };
         edit(value);
         const s = await ensureReady();
         await s.set(STORAGE_KEY_LOCAL_COLLECTION, JSON.stringify(value));

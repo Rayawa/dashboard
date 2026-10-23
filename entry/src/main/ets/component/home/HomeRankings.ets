@@ -11,7 +11,7 @@ import { vibration } from '../../common/vibration';
 
 @Component
 export struct HomeRankings {
-    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction(this.getUIContext());
     @Consume('pageStack') private pageStack: NavPathStack;
     @Prop dailyApps: DailyMaxDownloadApp[] = [];
     @Prop developers: DeveloperRankingEntry[] = [];

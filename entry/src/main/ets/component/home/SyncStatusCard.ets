@@ -18,6 +18,9 @@ export struct SyncStatusCard {
         total_processed: 0,
         total_skipped: 0,
     };
+    @Prop @Watch('startCountdown') active: boolean = true;
+    private inViewport: boolean = false;
+    private deadline: number = 0;
     @Prop lastUpdated: string = '';
     @Prop backendVersion: string = '';
     @Prop compact: boolean = false;
@@ -35,15 +38,19 @@ export struct SyncStatusCard {
         }
         const value = Number(this.status.next_sync_countdown);
         this.countdown = Number.isFinite(value) && value >= 0 ? Math.floor(value) : -1;
+        this.deadline = this.countdown >= 0 ? Date.now() + this.countdown * 1000 : 0;
         this.startCountdown();
     }
 
     private startCountdown(): void {
         if (this.countdownTimer >= 0) clearInterval(this.countdownTimer);
         this.countdownTimer = -1;
-        if (this.countdown < 0 || this.status.is_syncing_all) return;
+        if (!this.active || !this.inViewport || this.countdown < 0 || this.status.is_syncing_all) return;
+        this.countdown = Math.max(0, Math.ceil((this.deadline - Date.now()) / 1000));
+        if (this.countdown === 0) return;
         this.countdownTimer = setInterval((): void => {
-            if (this.countdown > 0) this.countdown--;
+            this.countdown = Math.max(0, Math.ceil((this.deadline - Date.now()) / 1000));
+            if (this.countdown === 0) { clearInterval(this.countdownTimer); this.countdownTimer = -1; }
         }, 1000);
     }
 
@@ -154,6 +161,10 @@ export struct SyncStatusCard {
         })
         .opacity(this.animStep >= 1 ? 1 : 0)
         .translate({ y: this.animStep >= 1 ? 0 : 20 })
+        .onVisibleAreaChange([0, 0.01], (visible: boolean, ratio: number): void => {
+            this.inViewport = visible && ratio > 0;
+            this.startCountdown();
+        })
         .accessibilityGroup(true)
         .accessibilityText(this.status.is_syncing_all ? '服务当前正在全量同步' : '服务当前状态正常')
     }

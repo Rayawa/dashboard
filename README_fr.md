@@ -5,8 +5,8 @@
 Dashboard est le client natif de `harmony_get_market`. Il consulte les informations publiques de SDK, de version, de catégorie et de notation via les API `/api/v0` du back-end tout en conservant l’accès ArkWeb au site S.
 
 - Nom du bundle : `top.rayawa.dashboard`
-- Version : `3.1.1`
-- Numéro de build : `30101001`
+- Version : `3.2.0`
+- Numéro de build : `30200001`
 - Version cible : `26.0.0` (HarmonyOS 7 / API 26) ; compatibilité minimale : `6.0.0(20)` (API 20)
 - Appareils : téléphone, tablette et 2in1
 - Branche de développement actuelle : `v3.0.0(20)`
@@ -32,6 +32,8 @@ La continuité inter-appareils mémorise l’onglet principal, la sous-vue Déta
 
 L’Accueil et les Détails des applications prennent en charge l’actualisation depuis le haut. Lors du partage, la barre de titre du site S lit l’URL ArkWeb courante : les trois modes de partage envoient donc toujours la page affichée. Lorsqu’une fenêtre de détail du site est ouverte, l’action Retour du système ou le geste de retour ferme d’abord cette fenêtre. Un nouvel appui sur l’onglet Site S sélectionné revient à la page d’accueil du site.
 
+La version 3.2.0 ajoute le classement de réputation, le chargement différé des détails, le rendu linéaire des graphiques, la recherche paginée et des optimisations du démarrage, du cache et des listes. Voir [PERFORMANCE_3.2.0.md](PERFORMANCE_3.2.0.md) pour les limites de validation.
+
 ## Données, cache et réseau faible
 
 Toutes les pages de données natives utilisent `common/MarketApi.ets` et ne construisent pas directement de requêtes HTTP. Chaque requête API inclut le même User-Agent de l’application.
@@ -45,6 +47,8 @@ Toutes les pages de données natives utilisent `common/MarketApi.ets` et ne cons
 - La taille actuelle du cache API est affichée à côté de cette action dans Mon espace → Réglages.
 
 Depuis la version 3.1.1, les téléchargements, les nombres d’applications, les tailles en octets et les valeurs des graphiques sont affichés sans abréviation. Le classement quotidien conserve l’enregistrement le plus récent de chaque application.
+
+Depuis la version 3.2.0, les axes utilisent des unités compactes, les dates occupent deux lignes et les légendes s’adaptent à la largeur disponible. Les détails des téléchargements et les champs des applications conservent leurs valeurs exactes ; les pourcentages utilisent au plus deux décimales et les parts non nulles très faibles sont indiquées comme inférieures à 0,01 %.
 
 ## Gestion des erreurs et journalisation
 

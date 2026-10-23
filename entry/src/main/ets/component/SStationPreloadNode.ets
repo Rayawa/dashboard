@@ -1,3 +1,5 @@
+import { webview } from '@kit.ArkWeb';
+import { SBaseURL } from '../common/constants';
 import { BuilderNode, FrameNode, NodeController, UIContext } from '@kit.ArkUI';
 import { S_STATION_COMMAND_NONE } from '../common/constants';
 import { SStationPage } from '../pages/main/SStationPage';
@@ -33,9 +35,15 @@ export class SStationPreloadNodeController extends NodeController {
       this.rootNode.update(params);
       return;
     }
+    try {
+      webview.WebviewController.initializeWebEngine();
+      webview.WebviewController.prepareForPageLoad(SBaseURL.toString(), true, 2);
+    } catch (_) { /* The visible Web component can initialize itself if prewarming is unavailable. */ }
     this.rootNode = new BuilderNode<SStationNodeParams[]>(uiContext);
     this.rootNode.build(S_STATION_NODE_BUILDER, params);
   }
+
+  dispose(): void { this.rootNode?.dispose(); this.rootNode = null; }
 
   update(params: SStationNodeParams): void {
     this.rootNode?.update(params);

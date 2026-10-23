@@ -1,3 +1,4 @@
+import { HdsNavigationMenuItemOptions } from '@kit.UIDesignKit';
 import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DiscoveryButtonStyle } from '../../common/DiscoveryTheme';
 import { showToastSafely } from '../../common/safeUi';
@@ -13,7 +14,7 @@ export function MyCollectionPageBuilder() { MyCollectionPage() }
 
 @Component
 export struct MyCollectionPage {
-    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction(this.getUIContext());
     @Consume('pageStack') private pageStack: NavPathStack;
     @State private apps: SavedApp[] = [];
     @State private developers: FollowedDeveloper[] = [];
@@ -54,7 +55,7 @@ export struct MyCollectionPage {
         Column({ space: 12 }) {
             Text('收藏与关注保存在本机。打开应用或开发者时获取最新数据。')
                 .fontSize(13).fontColor($r('app.color.v3_text_secondary')).width('100%')
-            BrowserStatus({ loading: this.loading, error: this.error,
+            BrowserStatus({ enterSpeed: 2, loading: this.loading, error: this.error,
                 empty: this.apps.length + this.developers.length === 0,
                 emptyText: '还没有收藏。在应用详情中收藏应用，或在开发者应用页添加关注。',
                 onRetry: (): void => { this.load(); } })
@@ -62,30 +63,33 @@ export struct MyCollectionPage {
                 .fontColor($r('app.color.v3_text_primary')).width('100%')
             ForEach(this.apps, (app: SavedApp, index: number) => {
                 Column({ space: 6 }) {
-                    AppSummaryRow({ enterOrder: index, appId: app.appId, packageName: app.packageName, name: app.name, iconUrl: app.iconUrl, subtitle: '已收藏 · 点击查看应用详情',
+                    AppSummaryRow({ enterSpeed: 2, enterOrder: index, appId: app.appId, packageName: app.packageName, name: app.name, iconUrl: app.iconUrl, subtitle: '已收藏 · 点击查看应用详情',
                         onOpen: (): void => {
                             openDiscoveryApp(this.pageStack, { appId: app.appId, packageName: app.packageName });
                         } })
                     Button('取消收藏', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === ('remove-app-' + app.appId)))
                     .onTouch((event: TouchEvent): void => this.interaction.touch('remove-app-' + app.appId, event)).enabled(!this.saving).onClick((): void => { this.interaction.activate('remove-app-' + app.appId); this.removeApp(app); })
+                    .accessibilityText(`取消收藏${app.name}`)
                 }.width('100%').alignItems(HorizontalAlign.End)
             }, (app: SavedApp) => app.appId)
             Text(`关注开发者 · ${this.developers.length}`).fontSize(18).fontWeight(FontWeight.Bold)
                 .fontColor($r('app.color.v3_text_primary')).width('100%')
             ForEach(this.developers, (developer: FollowedDeveloper, index: number) => {
                 Column({ space: 6 }) {
-                    AppSummaryRow({ enterOrder: index, showIcon: false, name: developer.developerName, subtitle: '查看开发者当前收录的应用',
+                    AppSummaryRow({ enterSpeed: 2, enterOrder: index, showIcon: false, name: developer.developerName, subtitle: '查看开发者当前收录的应用',
                         onOpen: (): void => {
                             openAppCollection(this.pageStack, { title: developer.developerName,
                                 developerId: developer.developerId, developerName: developer.developerName });
                         } })
                     Button('取消关注', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === ('remove-developer-' + developer.developerId)))
                     .onTouch((event: TouchEvent): void => this.interaction.touch('remove-developer-' + developer.developerId, event)).enabled(!this.saving).onClick((): void => { this.interaction.activate('remove-developer-' + developer.developerId); this.removeDeveloper(developer); })
+                    .accessibilityText(`取消关注${developer.developerName}`)
                 }.width('100%').alignItems(HorizontalAlign.End)
             }, (developer: FollowedDeveloper) => developer.developerId)
         }.width('100%')
     }
     build() {
-        MarketPageFrame({ title: '收藏与关注', content: (): void => { this.content(); }, onShown: (): void => { this.load(); } })
+        MarketPageFrame({ title: '收藏与关注', busy: this.loading, menuProvider: (_busy: boolean): HdsNavigationMenuItemOptions[] => [{ content: { label: '刷新收藏与关注', icon: $r('sys.symbol.arrow_clockwise'), isEnabled: !this.loading,
+                action: (): void => { this.interaction.activate('refresh'); this.load(); } } }], content: (): void => { this.content(); }, onShown: (): void => { this.load(); } })
     }
 }

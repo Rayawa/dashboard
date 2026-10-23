@@ -3,7 +3,6 @@ import { pressLightFieldFilter, pressVisualEffect } from './visualEffects';
 
 function applyFeedback(attribute: CommonAttribute, pressed: boolean): void {
     attribute.scale({ x: pressed ? 0.97 : 1, y: pressed ? 0.97 : 1 })
-        .animation({ duration: 120, curve: Curve.EaseOut })
         .visualEffect(pressVisualEffect(pressed, hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
         .compositingFilter(pressLightFieldFilter(pressed));
 }

@@ -94,7 +94,7 @@ struct UpdateLogCard {
         .opacity(this.animStep >= this.enterStep ? 1 : 0)
         .translate({ y: this.animStep >= this.enterStep ? 0 : 20 })
         .accessibilityGroup(true)
-        .accessibilityText(`${this.log.version}，${this.log.date}，更新日志`)
+        .accessibilityText(`${this.log.version}，${this.log.date}，${this.log.isRelease ? '正式版，' : ''}${this.log.items.join('；')}`)
     }
 }
 
@@ -109,6 +109,23 @@ struct AppLogPage {
     private scroller: Scroller = new Scroller();
     private enterAnimationTimers: number[] = [];
     private updateLogs: UpdateLog[] = [
+        {
+            version: "V3.2.0",
+            date: "2026-10-23",
+            type: "release",
+            isRelease: true,
+            items: [
+                "新增口碑榜，可查看不同时间段的应用评分变化与口碑排行",
+                "新增应用发现、专题浏览、应用收藏与开发者关注功能",
+                "应用详情新增版本变化时间线，应用介绍与更新说明支持展开查看",
+                "优化应用启动、首页加载与S站切换，减少页面等待",
+                "优化详情与截图浏览体验，改善图表卡顿、图例溢出和坐标显示不全的问题",
+                "搜索结果支持分页浏览，优化应用列表的加载与刷新体验",
+                "优化数据缓存与后台刷新，改善弱网和离线时的浏览体验",
+                "优化页面动画、设置保存与滚动位置恢复，减少后台资源占用",
+                "修复部分页面返回、分享与数据更新异常，提升应用稳定性",
+            ],
+        },
         {
             version: "V3.1.1",
             date: "2026-9-24",

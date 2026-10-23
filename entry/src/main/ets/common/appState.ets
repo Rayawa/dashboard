@@ -1,4 +1,5 @@
 import {
+    APP_STATE_KEY_FOREGROUND,
     APP_STATE_KEY_PAGE_URL,
     APP_STATE_KEY_DETAIL_TARGET,
     APP_STATE_KEY_MAIN_TAB,
@@ -93,10 +94,32 @@ export function defaultDetailChartsState(): DetailChartsContinuationState {
  * 唯一的跨 UIAbility 瞬态状态边界。
  * 页面和 Ability 均通过这些函数访问，避免应用代码散落地操作 AppStorage。
  */
+let pendingScrollDistance: number | undefined = undefined;
+let scrollSaveTimer: number = -1;
+
+export function flushContinuationScroll(): void {
+    if (scrollSaveTimer >= 0) clearTimeout(scrollSaveTimer);
+    scrollSaveTimer = -1;
+    if (pendingScrollDistance === undefined) return;
+    const value = pendingScrollDistance;
+    pendingScrollDistance = undefined;
+    if (AppStorage.get<number>(APP_STATE_KEY_SCROLL_DISTANCE) !== value) {
+        AppStorage.setOrCreate(APP_STATE_KEY_SCROLL_DISTANCE, value);
+    }
+}
+
+export function getMainTabIndex(): number {
+    return AppStorage.get<number>(APP_STATE_KEY_MAIN_TAB) ?? MAIN_TAB_DEFAULT;
+}
+
+function setChanged<T>(key: string, value: T): void {
+    if (AppStorage.get<T>(key) !== value) AppStorage.setOrCreate(key, value);
+}
+
 export function getContinuationState(): ContinuationState {
     return {
         pageUrl: AppStorage.get<string>(APP_STATE_KEY_PAGE_URL) ?? '',
-        scrollDistance: AppStorage.get<number>(APP_STATE_KEY_SCROLL_DISTANCE) ?? DEFAULT_SCROLL_DISTANCE,
+        scrollDistance: pendingScrollDistance ?? AppStorage.get<number>(APP_STATE_KEY_SCROLL_DISTANCE) ?? DEFAULT_SCROLL_DISTANCE,
         mainTab: AppStorage.get<number>(APP_STATE_KEY_MAIN_TAB) ?? MAIN_TAB_DEFAULT,
         routeName: AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_ROUTE) ?? CONTINUATION_ROUTE_MAIN,
         detailAppId: AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_DETAIL_ID) ?? '',
@@ -113,6 +136,7 @@ export function getContinuationState(): ContinuationState {
 }
 
 export function setContinuationState(state: ContinuationState): void {
+    flushContinuationScroll();
     AppStorage.setOrCreate(APP_STATE_KEY_PAGE_URL, state.pageUrl);
     AppStorage.setOrCreate(APP_STATE_KEY_SCROLL_DISTANCE, state.scrollDistance);
     AppStorage.setOrCreate(APP_STATE_KEY_MAIN_TAB, state.mainTab);
@@ -132,24 +156,17 @@ export function setContinuationView(
     detail: AppRouteTarget = {},
     pageUrl?: string,
 ): void {
-    const resolvedPageUrl = pageUrl === undefined ?
-        (AppStorage.get<string>(APP_STATE_KEY_PAGE_URL) ?? '') : pageUrl;
-    setContinuationState({
-        pageUrl: resolvedPageUrl,
-        scrollDistance,
-        mainTab,
-        routeName,
-        detailAppId: detail.appId ?? '',
-        detailPackageName: detail.packageName ?? '',
-        appsViewIndex: AppStorage.get<number>(APP_STATE_KEY_APPS_VIEW) ?? 0,
-        appsListState: AppStorage.get<AppsListContinuationState>(APP_STATE_KEY_CONTINUATION_APPS_LIST) ??
-            defaultAppsListState(),
-        overviewState: AppStorage.get<OverviewContinuationState>(APP_STATE_KEY_CONTINUATION_OVERVIEW) ??
-            defaultOverviewState(),
-        detailChartsState:
-            AppStorage.get<DetailChartsContinuationState>(APP_STATE_KEY_CONTINUATION_DETAIL_CHARTS) ??
-                defaultDetailChartsState(),
-    });
+    const routeChanged = AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_ROUTE) !== routeName ||
+        getMainTabIndex() !== mainTab || AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_DETAIL_ID) !== (detail.appId ?? '') ||
+        AppStorage.get<string>(APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE) !== (detail.packageName ?? '');
+    if (routeChanged) flushContinuationScroll();
+    setChanged(APP_STATE_KEY_MAIN_TAB, mainTab);
+    setChanged(APP_STATE_KEY_CONTINUATION_ROUTE, routeName);
+    setChanged(APP_STATE_KEY_CONTINUATION_DETAIL_ID, detail.appId ?? '');
+    setChanged(APP_STATE_KEY_CONTINUATION_DETAIL_PACKAGE, detail.packageName ?? '');
+    if (pageUrl !== undefined) setChanged(APP_STATE_KEY_PAGE_URL, pageUrl);
+    setContinuationScrollDistance(scrollDistance);
+
 }
 
 export function setContinuationAppsListState(state: AppsListContinuationState): void {
@@ -169,7 +186,9 @@ export function setContinuationPageUrl(pageUrl: string): void {
 }
 
 export function setContinuationScrollDistance(scrollDistance: number): void {
-    AppStorage.setOrCreate(APP_STATE_KEY_SCROLL_DISTANCE, scrollDistance);
+    if (!Number.isFinite(scrollDistance)) return;
+    pendingScrollDistance = scrollDistance;
+    if (scrollSaveTimer < 0) scrollSaveTimer = setTimeout((): void => flushContinuationScroll(), 120);
 }
 
 export function setDetailTarget(target: AppRouteTarget): void {
@@ -215,3 +234,5 @@ export function consumeMainTab(defaultIndex: number = MAIN_TAB_DEFAULT): number 
     AppStorage.setOrCreate<number>(APP_STATE_KEY_MAIN_TAB, defaultIndex);
     return index;
 }
+
+export function setApplicationActive(active: boolean): void { setChanged(APP_STATE_KEY_FOREGROUND, active); }
