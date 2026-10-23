@@ -8,7 +8,7 @@ import type { DiscoveryPreset } from '../../common/DiscoveryQuery';
 
 @Component
 export struct DiscoveryShortcuts {
-    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction(this.getUIContext());
     @Consume('pageStack') private pageStack: NavPathStack;
     aboutToDisappear(): void { this.interaction.dispose(); }
     @Builder

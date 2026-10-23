@@ -1,3 +1,7 @@
+import { RequestScope } from '../../common/CachedRequest';
+import { setContinuationScrollDistance } from '../../common/appState';
+import { IdleTask } from '../../common/FrameScheduler';
+import { flushContinuationScroll } from '../../common/appState';
 import { HomeReputationCard } from '../../component/home/HomeReputationCard';
 import { openMarketRanking, openMarketTopic } from '../../common/discoveryNavigation';
 import { DiscoveryShortcuts } from '../../component/discovery/DiscoveryShortcuts';
@@ -71,6 +75,7 @@ struct RollingNumber {
     }
 
     aboutToDisappear(): void {
+        flushContinuationScroll();
         this.animationToken++;
         if (this.animationTimer >= 0) {
             clearTimeout(this.animationTimer);
@@ -210,6 +215,8 @@ struct RecentAppCard {
 
 @Component
 export struct HomePage {
+    @Prop @Watch('onRefreshRequested') refreshVersion: number = 0;
+    private onRefreshRequested(): void { if (this.refreshVersion > 0) this.load(true); }
     @Consume('pageStack') private pageStack: NavPathStack;
     @Prop @Watch('onScrollToTopVersionChanged') scrollToTopVersion: number = 0;
     @Prop @Watch('onActiveChanged') active: boolean = false;
@@ -232,14 +239,39 @@ export struct HomePage {
     @State private contentWidth: number = 0;
     @State private animStep: number = 0;
     @State private displayCardPressed: string = '';
+    private requestScope: RequestScope = new RequestScope();
+    private alive: boolean = false;
+    private loadToken: number = 0;
+    private auxiliaryTask?: IdleTask;
+    private auxiliaryStarted: boolean = false;
+    private lastScrollOffset: number = 0;
     private restoredScroll: boolean = false;
     private reloadAfterCurrent: boolean = false;
     private enterAnimationPlayed: boolean = false;
     private enterAnimationTimers: number[] = [];
     private restoreScrollTimer: number = -1;
 
+    aboutToAppear(): void { this.alive = true; if (this.requestScope.cancelled) this.requestScope = new RequestScope(); }
+
     private onActiveChanged(): void {
-        if (this.active && this.loaded) this.startPageAnimationOnce();
+        if (this.active) setContinuationView(MAIN_TAB_HOME, this.lastScrollOffset);
+        if (!this.active) {
+            this.auxiliaryTask?.cancel(); this.requestScope.cancel(); this.loadToken++;
+            this.loading = false; this.reloadAfterCurrent = false; this.auxiliaryStarted = false; return;
+        }
+        if (this.requestScope.cancelled) this.requestScope = new RequestScope();
+        if (this.loaded) {
+            this.startPageAnimationOnce();
+            if (!this.auxiliaryStarted) {
+                const token = this.loadToken;
+                this.auxiliaryTask = new IdleTask(this.getUIContext(), (): void => {
+                    if (!this.alive || !this.active || token !== this.loadToken) return;
+                    this.auxiliaryStarted = true;
+                    this.loadRecentApps(false, token); this.loadRankings(false, token);
+                });
+            }
+        }
+        else if (this.alive) this.load(false);
     }
 
     private startPageAnimationOnce(): void {
@@ -252,6 +284,9 @@ export struct HomePage {
     }
 
     aboutToDisappear(): void {
+        this.requestScope.cancel();
+        this.alive = false; this.loadToken++; this.auxiliaryTask?.cancel();
+        flushContinuationScroll();
         cancelStaggerEnterAnimation(this.enterAnimationTimers);
         this.enterAnimationTimers = [];
         if (this.restoreScrollTimer >= 0) {
@@ -283,47 +318,37 @@ export struct HomePage {
     }
 
     private async load(force: boolean): Promise<void> {
-        if (this.loading) {
-            this.reloadAfterCurrent = this.reloadAfterCurrent || force;
-            return;
-        }
-        const wasLoaded = this.loaded;
-        this.loading = true;
-        this.errorMessage = '';
+        if (!this.alive || !this.active) return;
+        if (this.loading) { this.reloadAfterCurrent = this.reloadAfterCurrent || force; return; }
+        const token = ++this.loadToken;
+        this.loading = true; this.errorMessage = '';
         if (force) this.reputationRefreshVersion++;
-        const recentPromise = this.loadRecentApps(force);
-        const rankingPromise = this.loadRankings(force);
         try {
-            const result = await fetchMarketInfo(force);
-            const response: BaseAPIResponse<MarketInfo> = result.data;
-            if (!response.success || !response.data) {
-                throw new Error('市场概览数据不可用');
-            }
-            this.market = response.data;
-            this.stale = result.stale;
-            this.cachedAt = result.cachedAt;
-            this.lastUpdated = response.timestamp;
-            this.loaded = true;
+            const result = await fetchMarketInfo(force, this.requestScope);
+            if (!this.alive || token !== this.loadToken) return;
+            if (!result.data.success || !result.data.data) throw new Error('市场概览数据不可用');
+            this.market = result.data.data; this.stale = result.stale;
+            this.cachedAt = result.cachedAt; this.lastUpdated = result.data.timestamp; this.loaded = true;
+            this.startPageAnimationOnce();
         } catch (error) {
-            const message = (error as Error).message;
-            this.errorMessage = `加载失败：${message}`;
-            console.error('[Dashboard][pages/main/HomePage][ERROR]', `首页数据加载失败且无缓存: ${message}`);
-            showToastSafely(this.prompt, '网络不佳且没有可用缓存，请稍后重试', 2500, 'V3Home');
+            if (!this.alive || token !== this.loadToken) return;
+            this.errorMessage = `加载失败：${(error as Error).message}`;
         } finally {
-            await recentPromise;
-            await rankingPromise;
-            this.loading = false;
-            if (!wasLoaded && this.loaded && this.active) {
-                this.startPageAnimationOnce();
-            }
-            if (this.reloadAfterCurrent) {
-                this.reloadAfterCurrent = false;
-                setTimeout((): void => { this.load(true); }, 0);
+            if (this.alive && token === this.loadToken) {
+                this.loading = false;
+                this.auxiliaryTask?.cancel();
+                this.auxiliaryTask = new IdleTask(this.getUIContext(), (): void => {
+                    if (!this.alive || !this.active || token !== this.loadToken) return;
+                    this.auxiliaryStarted = true;
+                    this.loadRecentApps(force, token);
+                    this.loadRankings(force, token);
+                });
+                if (this.reloadAfterCurrent) { this.reloadAfterCurrent = false; this.load(true); }
             }
         }
     }
 
-    private async loadRecentApps(force: boolean): Promise<void> {
+    private async loadRecentApps(force: boolean, token: number): Promise<void> {
         try {
             const result = await fetchAppsPage({
                 page: 1,
@@ -331,7 +356,8 @@ export struct HomePage {
                 sort: 'listed_at',
                 desc: true,
                 force,
-            });
+            }, this.requestScope);
+            if (!this.alive || token !== this.loadToken) return;
             const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
             if (response.success && response.data) {
                 this.recentApps = response.data.data ?? [];
@@ -342,25 +368,16 @@ export struct HomePage {
         }
     }
 
-    private async loadRankings(force: boolean): Promise<void> {
-        try {
-            const dailyResult = await fetchDailyMaxDownloads(force);
-            if (dailyResult.data.success && dailyResult.data.data) {
-                this.dailyMaxApps = latestDailyMaxRecords(dailyResult.data.data, 10);
+    private async loadRankings(force: boolean, token: number): Promise<void> {
+        const daily = fetchDailyMaxDownloads(force, this.requestScope).then((result): void => {
+            if (this.alive && token === this.loadToken && result.data.success) {
+                this.dailyMaxApps = latestDailyMaxRecords(result.data.data || [], 10);
             }
-        } catch (error) {
-            console.warn('[Dashboard][pages/main/HomePage][WARN]',
-                `每日下载榜加载失败: ${(error as Error).message}`);
-        }
-        try {
-            const developerResult = await fetchDeveloperRanking(10, 1, force);
-            if (developerResult.data.success && developerResult.data.data) {
-                this.developerRanking = developerResult.data.data;
-            }
-        } catch (error) {
-            console.warn('[Dashboard][pages/main/HomePage][WARN]',
-                `开发者排行加载失败: ${(error as Error).message}`);
-        }
+        });
+        const developers = fetchDeveloperRanking(10, 1, force, this.requestScope).then((result): void => {
+            if (this.alive && token === this.loadToken && result.data.success) this.developerRanking = result.data.data || [];
+        });
+        await Promise.allSettled([daily, developers]);
     }
 
     private openDetail(app: MarketApp): void {
@@ -481,10 +498,13 @@ export struct HomePage {
     private dataAndStatus(): void {
         Column({ space: 14 }) {
             this.totalRelationCard()
-            DiscoveryShortcuts()
-            this.statsGrid()
+            Column({ space: 10 }) {
+                this.statsGrid()
+                DiscoveryShortcuts()
+            }.width('100%')
             if (this.market) {
                 SyncStatusCard({
+                    active: this.active,
                     status: this.market.sync_status,
                     lastUpdated: this.lastUpdated,
                     backendVersion: this.market.crate_version,
@@ -499,7 +519,7 @@ export struct HomePage {
     @Builder
     private rankings(): void {
         Column({ space: 14 }) {
-            HomeReputationCard({ refreshVersion: this.reputationRefreshVersion })
+            HomeReputationCard({ active: this.active, refreshVersion: this.reputationRefreshVersion })
             HomeRankings({
                 dailyApps: this.dailyMaxApps,
                 developers: this.developerRanking,
@@ -527,7 +547,7 @@ export struct HomePage {
             .width('100%')
             .opacity(this.animStep >= (this.contentWidth >= 840 ? 1 : 3) ? 1 : 0)
             .translate({ y: this.animStep >= (this.contentWidth >= 840 ? 1 : 3) ? 0 : 20 })
-            .accessibilityGroup(true)
+            .accessibilityGroup(false).accessibilityLevel('no')
             .accessibilityText('最近收录的应用')
         }
     }
@@ -607,7 +627,7 @@ export struct HomePage {
             .width('100%')
             .borderRadius(14)
             .backgroundColor($r('app.color.v3_surface'))
-            .accessibilityGroup(true)
+            .accessibilityGroup(false).accessibilityLevel('no')
             .accessibilityText(this.errorMessage)
             .transition(contentEnterTransition(8))
         }
@@ -619,6 +639,7 @@ export struct HomePage {
         const continuation = getContinuationState();
         if (continuation.mainTab !== MAIN_TAB_HOME || continuation.routeName !== CONTINUATION_ROUTE_MAIN ||
             continuation.scrollDistance <= 0) return;
+        this.lastScrollOffset = continuation.scrollDistance;
         this.restoreScrollTimer = setTimeout((): void => {
             this.restoreScrollTimer = -1;
             try {
@@ -636,13 +657,15 @@ export struct HomePage {
 
     private handleAppear(): void {
         if (this.active && this.loaded) this.startPageAnimationOnce();
-        if (!this.loaded) this.load(false);
+        if (this.active && !this.loaded) this.load(false);
         this.restoreScrollPosition();
     }
 
     private saveScrollPosition(): void {
+        if (!this.active) return;
         try {
-            setContinuationView(MAIN_TAB_HOME, this.scroller.currentOffset().yOffset);
+            this.lastScrollOffset = this.scroller.currentOffset().yOffset;
+            setContinuationScrollDistance(this.lastScrollOffset);
         } catch (error) {
             console.warn('[Dashboard][pages/main/HomePage][WARN]',
                 `保存滚动位置失败: ${JSON.stringify(error)}`);
@@ -670,7 +693,7 @@ export struct HomePage {
                         .layoutWeight(4)
                         .height('100%')
                         .padding({ left: 14, right: 14 })
-                        .accessibilityGroup(true)
+                        .accessibilityGroup(false).accessibilityLevel('no')
                         .accessibilityText('固定显示的市场数据和状态')
 
                         Divider()
@@ -694,6 +717,7 @@ export struct HomePage {
                         .scrollBar(BarState.Off)
                         .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
                         .onDidScroll((): void => this.saveScrollPosition())
+                        .onScrollStop((): void => flushContinuationScroll())
                         .accessibilityText('可上下滚动的最近收录应用')
                     }
                     .width('100%')
@@ -726,6 +750,7 @@ export struct HomePage {
                 .scrollBar(BarState.Off)
                 .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
                 .onDidScroll((): void => this.saveScrollPosition())
+                .onScrollStop((): void => flushContinuationScroll())
                 .backgroundColor($r('app.color.background'))
                 .accessibilityText('可滚动的首页')
             }

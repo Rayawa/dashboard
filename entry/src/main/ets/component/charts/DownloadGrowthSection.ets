@@ -12,7 +12,7 @@ import { vibration } from '../../common/vibration';
 
 @Component
 export struct DownloadGrowthSection {
-    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction(this.getUIContext());
     @Consume('pageStack') private pageStack: NavPathStack;
     @State private apps: DownloadGrowthApp[] = [];
     @State private loading: boolean = false;

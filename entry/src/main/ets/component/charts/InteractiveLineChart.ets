@@ -1,8 +1,12 @@
+import { PerformanceTrace } from '../../common/PerformanceTrace';
+import { FrameScheduler } from '../../common/FrameScheduler';
 import { common } from '@kit.AbilityKit';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { vibration } from '../../common/vibration';
 import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
 import type { ChartViewportState } from '../../common/types';
+import { chartAxisScale, chartDateLines, chartDateIndices, chartLegendColumns, chartPercentLabel } from './chartLayout';
+import type { ChartAxisScale } from './chartLayout';
 
 export interface LineChartPoint {
     label: string;
@@ -18,23 +22,34 @@ export interface LineChartSeries {
 
 @Component
 export struct InteractiveLineChart {
-    @Prop title: string = '';
-    @Prop unit: string = '';
+    @Prop @Watch('onDataChanged') title: string = '';
+    @Prop @Watch('onDataChanged') unit: string = '';
     @Prop @Watch('onDataChanged') points: LineChartPoint[] = [];
     @Prop @Watch('onDataChanged') series: LineChartSeries[] = [];
-    @Prop lineColor: Resource = $r('app.color.diff_content');
+    @Prop @Watch('onDataChanged') lineColor: Resource = $r('app.color.diff_content');
     @Prop showTitle: boolean = true;
     @Prop chartHeight: number = 250;
     @Prop responsiveAxisFont: boolean = false;
     @Prop enablePressEffect: boolean = true;
     @Prop @Watch('onViewportPropChanged') viewport: ChartViewportState = { zoom: 1, panRatio: 0 };
+    @Prop @Watch('onVisibilityChanged') active: boolean = true;
+    private inViewport: boolean = false;
+    private alive: boolean = false;
+    private frameScheduler: FrameScheduler = new FrameScheduler();
+    private dataMaximum: number = 1;
+    private axisScale: ChartAxisScale = chartAxisScale(1, '');
+    @State private singleSeries: LineChartSeries[] = [];
+    private layoutKey: string = '';
+    private plotDimensions: number[] = [60, 10, 250];
+    private colors: Map<number, number> = new Map();
+    private animationStartedAt: number = 0;
     onViewportChange?: (viewport: ChartViewportState) => void;
     private settings: RenderingContextSettings = new RenderingContextSettings(true);
     private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
     @State private canvasWidth: number = 320;
     @State private selected: number = 0;
-    @State private zoom: number = 1;
-    @State private panOffset: number = 0;
+    private zoom: number = 1;
+    private panOffset: number = 0;
     @State private pressed: boolean = false;
     @State private pressedLegend: string = '';
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
@@ -42,12 +57,9 @@ export struct InteractiveLineChart {
     private panAtGestureStart: number = 0;
     private canvasReady: boolean = false;
     private drawProgress: number = 1;
-    private animationToken: number = 0;
     private animatedDataSignature: string = '';
     private legendPressToken: number = 0;
     private legendPressTimer: number = -1;
-    private animationTimer: number = -1;
-    private drawTimer: number = -1;
 
     private beginLegendPress(label: string): void {
         const token = ++this.legendPressToken;
@@ -72,7 +84,7 @@ export struct InteractiveLineChart {
 
     private sourceSeries(): LineChartSeries[] {
         if (this.series.length > 0) return this.series;
-        return [{ label: this.title, color: this.lineColor, points: this.points } as LineChartSeries];
+        return this.singleSeries;
     }
 
     private pointCount(): number {
@@ -96,18 +108,54 @@ export struct InteractiveLineChart {
         return parts.join('\u0001');
     }
 
-    private onDataChanged(): void {
-        if (this.dataSignature() === this.animatedDataSignature) {
-            this.draw();
-            return;
+    aboutToAppear(): void {
+        this.alive = true;
+        this.rebuildModel();
+    }
+
+    private rebuildModel(): void {
+        this.singleSeries = [{ label: this.title, color: this.lineColor, points: this.points }];
+        this.dataMaximum = 1;
+        for (const series of this.sourceSeries()) {
+            for (const point of series.points) {
+                const value = point.value;
+                if (Number.isFinite(value)) this.dataMaximum = Math.max(this.dataMaximum, value);
+            }
         }
-        this.selected = Math.max(0, this.pointCount() - 1);
+        this.axisScale = chartAxisScale(this.dataMaximum, this.unit);
+        this.layoutKey = '';
+    }
+
+    private onDataChanged(): void {
+        this.rebuildModel();
+        if (this.pointCount() === 0) { this.canvasReady = false; this.frameScheduler.cancel(); }
+        this.selected = Math.min(this.selected, Math.max(0, this.pointCount() - 1));
         this.applyViewportState(false);
-        if (this.animationTimer >= 0) clearTimeout(this.animationTimer);
-        this.animationTimer = setTimeout((): void => {
-            this.animationTimer = -1;
-            this.startEntranceAnimation();
-        }, 0);
+        this.startEntranceAnimation();
+    }
+
+    private onVisibilityChanged(): void {
+        if (this.active && this.inViewport) this.startEntranceAnimation();
+        else {
+            this.frameScheduler.cancel();
+            this.endLegendPress(); this.pressed = false;
+            this.animationStartedAt = 0;
+            this.drawProgress = 1;
+        }
+    }
+
+    private requestDraw(): void {
+        if (!this.alive || !this.canvasReady || !this.active || !this.inViewport) return;
+        this.frameScheduler.request(this.getUIContext(), (): void => {
+            if (!this.alive || !this.active || !this.inViewport) return;
+            if (this.animationStartedAt > 0) {
+                const elapsed = Math.min(1, (Date.now() - this.animationStartedAt) / 280);
+                this.drawProgress = 1 - Math.pow(1 - elapsed, 3);
+                if (elapsed >= 1) this.animationStartedAt = 0;
+            }
+            PerformanceTrace.measure('Dashboard.Chart.Draw', (): void => this.draw());
+            if (this.animationStartedAt > 0) this.requestDraw();
+        });
     }
 
     private onViewportPropChanged(): void {
@@ -127,7 +175,7 @@ export struct InteractiveLineChart {
     private applyViewportState(redraw: boolean = true): void {
         this.zoom = this.viewportZoom();
         this.panOffset = this.clampPan(this.maxPan(this.zoom) * this.viewportPanRatio(), this.zoom);
-        if (redraw) this.draw();
+        if (redraw) this.requestDraw();
     }
 
     private emitViewport(): void {
@@ -140,37 +188,17 @@ export struct InteractiveLineChart {
     }
 
     private startEntranceAnimation(): void {
-        if (!this.canvasReady || this.pointCount() === 0) {
-            this.draw();
-            return;
-        }
+        if (!this.canvasReady || !this.active || !this.inViewport) return;
         const signature = this.dataSignature();
-        if (signature === this.animatedDataSignature) {
-            this.draw();
-            return;
+        if (signature !== this.animatedDataSignature) {
+            const firstDraw = this.animatedDataSignature.length === 0;
+            this.animatedDataSignature = signature;
+            this.selected = Math.max(0, this.pointCount() - 1);
+            // Background data replacement stays stable; animate only the first small, visible chart.
+            this.animationStartedAt = firstDraw && this.pointCount() <= 180 && this.sourceSeries().length === 1 ? Date.now() : 0;
+            this.drawProgress = this.animationStartedAt > 0 ? 0 : 1;
         }
-        this.animatedDataSignature = signature;
-        if (this.pointCount() > 180) {
-            this.drawProgress = 1;
-            this.draw();
-            return;
-        }
-        const token = ++this.animationToken;
-        const startedAt = Date.now();
-        this.drawProgress = 0;
-        const tick = (): void => {
-            if (token !== this.animationToken) return;
-            const elapsed = Math.min(1, (Date.now() - startedAt) / 800);
-            this.drawProgress = 1 - Math.pow(1 - elapsed, 3);
-            this.draw();
-            if (elapsed < 1) {
-                this.animationTimer = setTimeout((): void => {
-                    this.animationTimer = -1;
-                    tick();
-                }, 16);
-            }
-        };
-        tick();
+        this.requestDraw();
     }
 
     private rgba(color: number, alpha: number): string {
@@ -189,8 +217,12 @@ export struct InteractiveLineChart {
 
     private traceSmoothLine(points: LineChartPoint[], top: number, drawHeight: number, maximum: number): void {
         if (points.length === 0) return;
-        this.context.moveTo(this.pointX(0), this.pointY(points, 0, top, drawHeight, maximum));
-        for (let index = 1; index < points.length; index++) {
+        const width = this.dimensions()[2];
+        const step = width * this.zoom / Math.max(1, this.pointCount() - 1);
+        const first = Math.max(0, Math.floor(this.panOffset / Math.max(0.001, step)) - 1);
+        const last = Math.min(points.length - 1, Math.ceil((this.panOffset + width) / Math.max(0.001, step)) + 1);
+        this.context.moveTo(this.pointX(first), this.pointY(points, first, top, drawHeight, maximum));
+        for (let index = first + 1; index <= last; index++) {
             const previousX = this.pointX(index - 1);
             const previousY = this.pointY(points, index - 1, top, drawHeight, maximum);
             const x = this.pointX(index);
@@ -201,77 +233,50 @@ export struct InteractiveLineChart {
     }
 
     aboutToDisappear(): void {
-        this.animationToken++;
+        this.alive = false;
+        this.frameScheduler.cancel();
         this.endLegendPress();
-        if (this.animationTimer >= 0) {
-            clearTimeout(this.animationTimer);
-            this.animationTimer = -1;
-        }
-        if (this.drawTimer >= 0) {
-            clearTimeout(this.drawTimer);
-            this.drawTimer = -1;
-        }
     }
 
+    onWillApplyTheme(_theme: Theme): void { this.colors.clear(); this.requestDraw(); }
+
     private maximum(): number {
-        let maximum = this.unit === '分' ? 5 : 1;
-        for (const chartSeries of this.sourceSeries()) {
-            for (const point of chartSeries.points) maximum = Math.max(maximum, point.value);
-        }
-        return maximum;
+        return this.axisScale.maximum;
     }
 
     private valueLabel(value: number): string {
-        return `${value}${this.unit === '%' ? '%' : ''}`;
+        return this.unit === '%' ? chartPercentLabel(value) : String(value);
     }
 
     private dimensions(): number[] {
-        const labelWidth = String(Math.round(this.maximum())).length * this.axisFontSize() * 0.62 + 14;
-        const left = Math.max(this.responsiveAxisFont && this.canvasWidth < 600 ? 50 :
-            (this.responsiveAxisFont && this.canvasWidth < 840 ? 58 : 60), Math.min(150, labelWidth));
-        const right = 10;
-        return [left, right, Math.max(1, this.canvasWidth - left - right)];
+        const key = `${this.canvasWidth}:${this.maximum()}:${this.unit}:${this.responsiveAxisFont}`;
+        if (key === this.layoutKey) return this.plotDimensions;
+        this.layoutKey = key;
+        this.context.font = `${this.axisFontSize()}vp sans-serif`;
+        let labelWidth = 0;
+        for (const label of this.axisScale.labels) labelWidth = Math.max(labelWidth, this.context.measureText(label).width);
+        const left = Math.min(this.canvasWidth * 0.32, Math.max(36, Math.ceil(labelWidth) + 12));
+        const right = 12;
+        this.plotDimensions = [left, right, Math.max(1, this.canvasWidth - left - right)];
+        return this.plotDimensions;
     }
 
     private axisFontSize(): number {
-        if (!this.responsiveAxisFont) return 15;
-        if (this.canvasWidth < 600) return 11;
+        if (this.canvasWidth < 600) return this.responsiveAxisFont ? 11 : 12;
         if (this.canvasWidth < 840) return 13;
         return 14;
     }
 
     private dateFontSize(): number {
-        if (!this.responsiveAxisFont) return 15;
-        if (this.canvasWidth < 600) return 10;
-        if (this.canvasWidth < 840) return 12;
-        return 13;
+        return this.canvasWidth < 600 ? 11 : 12;
     }
 
     private bottomAxisSpace(): number {
-        if (!this.responsiveAxisFont) return 58;
-        if (this.canvasWidth < 600) return 46;
-        if (this.canvasWidth < 840) return 52;
-        return 56;
-    }
-
-    private dateBaselineInset(): number {
-        if (!this.responsiveAxisFont) return 14;
-        if (this.canvasWidth < 600) return 22;
-        if (this.canvasWidth < 840) return 25;
-        return 28;
-    }
-
-    private dateLabelSpacing(): number {
-        if (!this.responsiveAxisFont) return 82;
-        if (this.canvasWidth < 600) return 96;
-        if (this.canvasWidth < 840) return 88;
-        return 82;
+        return this.dateFontSize() * 2 + 18;
     }
 
     private summaryColumns(): number {
-        if (this.canvasWidth < 600) return 2;
-        if (this.canvasWidth < 840) return 4;
-        return 6;
+        return chartLegendColumns(this.canvasWidth);
     }
 
     private maxPan(zoom: number = this.zoom): number {
@@ -284,7 +289,7 @@ export struct InteractiveLineChart {
     }
 
     private pointX(index: number): number {
-        const dimensions = this.dimensions();
+        const dimensions = this.plotDimensions;
         const virtualWidth = dimensions[2] * this.zoom;
         return dimensions[0] + virtualWidth * index / Math.max(1, this.pointCount() - 1) - this.panOffset;
     }
@@ -295,15 +300,20 @@ export struct InteractiveLineChart {
         const virtualX = x - dimensions[0] + this.panOffset;
         const ratio = Math.max(0, Math.min(1, virtualX / Math.max(1, dimensions[2] * this.zoom)));
         const index = Math.round(ratio * Math.max(0, this.pointCount() - 1));
-        if (index !== this.selected && this.vibrationLevel > 0) vibration.dotVibration();
+        if (index === this.selected) return;
+        if (this.vibrationLevel > 0) vibration.dotVibration();
         this.selected = index;
-        this.draw();
+        this.requestDraw();
     }
 
     private resolveColor(resource: Resource): number {
+        const cached = this.colors.get(resource.id);
+        if (cached !== undefined) return cached;
         const host = this.getUIContext().getHostContext() as common.UIAbilityContext;
         try {
-            return host.resourceManager.getColorSync(resource.id);
+            const color = host.resourceManager.getColorSync(resource.id);
+            this.colors.set(resource.id, color);
+            return color;
         } catch (error) {
             console.warn('[Dashboard][component/charts/InteractiveLineChart][WARN]',
                 `折线颜色读取失败: ${JSON.stringify(error)}`);
@@ -329,24 +339,30 @@ export struct InteractiveLineChart {
         return labels.length > 0 ? labels[Math.min(this.selected, labels.length - 1)].label : '';
     }
 
-    private selectedSeriesValue(chartSeries: LineChartSeries): string {
-        const point = chartSeries.points[Math.min(this.selected, chartSeries.points.length - 1)];
+    private selectedSeriesValue(label: string): string {
+        // Read the reactive source inside the Text binding, rather than capturing a stale keyed row object.
+        const series = this.sourceSeries().find((item: LineChartSeries): boolean => item.label === label);
+        const point = series?.points[Math.min(this.selected, series.points.length - 1)];
         return this.valueLabel(point?.value ?? 0);
     }
 
+    private selectedSeriesColor(label: string): Resource {
+        return this.sourceSeries().find((item: LineChartSeries): boolean => item.label === label)?.color ?? this.lineColor;
+    }
+
     private draw(): void {
+        if (!this.canvasReady || !this.active || !this.inViewport) return;
         const width = this.canvasWidth;
         const height = this.chartHeight;
         this.context.clearRect(0, 0, width, height);
         const source = this.sourceSeries();
         const labels = this.labels();
         if (source.length === 0 || labels.length === 0) return;
-        const host = this.getUIContext().getHostContext() as common.UIAbilityContext;
         let gridColor = 0x33334455;
         let textColor = 0xFF666666;
         try {
-            gridColor = host.resourceManager.getColorSync($r('app.color.v3_chart_grid').id);
-            textColor = host.resourceManager.getColorSync($r('app.color.v3_text_secondary').id);
+            gridColor = this.resolveColor($r('app.color.v3_chart_grid'));
+            textColor = this.resolveColor($r('app.color.v3_text_secondary'));
         } catch (error) {
             console.warn('[Dashboard][component/charts/InteractiveLineChart][WARN]',
                 `图表颜色读取失败: ${JSON.stringify(error)}`);
@@ -364,22 +380,20 @@ export struct InteractiveLineChart {
         this.context.lineWidth = 1;
         this.context.font = `${this.axisFontSize()}vp sans-serif`;
         this.context.setLineDash([5, 6]);
-        for (let row = 0; row <= 4; row++) {
-            const y = top + drawHeight * row / 4;
+        this.context.textBaseline = 'middle';
+        for (let row = 0; row <= this.axisScale.intervals; row++) {
+            const y = top + drawHeight * row / this.axisScale.intervals;
             this.context.beginPath();
             this.context.moveTo(left, y);
             this.context.lineTo(left + drawWidth, y);
             this.context.stroke();
             this.context.textAlign = 'right';
-            const tick = maximum * (4 - row) / 4;
-            const tickLabel = this.unit === '%' ? `${tick.toFixed(1)}%` :
-                (this.unit === '分' ? tick.toFixed(1) : String(Math.round(tick)));
-            this.context.fillText(tickLabel, left - 8, y + 4);
+            this.context.fillText(this.axisScale.labels[row], left - 8, y, Math.max(1, left - 12));
         }
         this.context.setLineDash([]);
         this.context.save();
         this.context.beginPath();
-        this.context.rect(left, 0, drawWidth, height);
+        this.context.rect(left, top, drawWidth, drawHeight);
         this.context.clip();
 
         for (const chartSeries of source) {
@@ -425,22 +439,6 @@ export struct InteractiveLineChart {
             }
         }
 
-        this.context.font = `${this.dateFontSize()}vp sans-serif`;
-        const labelStep = Math.max(1,
-            Math.ceil(labels.length / Math.max(2, Math.floor(drawWidth / this.dateLabelSpacing()))));
-        for (let index = 0; index < labels.length; index++) {
-            const x = this.pointX(index);
-            if (x < left - 6 || x > left + drawWidth + 6) continue;
-            if (index % labelStep === 0 || index === labels.length - 1) {
-                this.context.fillStyle = textColor;
-                this.context.textAlign = 'center';
-                this.context.save();
-                this.context.translate(x, height - this.dateBaselineInset());
-                this.context.rotate(-Math.PI / 5);
-                this.context.fillText(labels[index].label, 0, 0);
-                this.context.restore();
-            }
-        }
         if (this.selected >= 0 && this.selected < labels.length) {
             const selectedX = this.pointX(this.selected);
             if (selectedX >= left && selectedX <= left + drawWidth) {
@@ -455,6 +453,26 @@ export struct InteractiveLineChart {
             }
         }
         this.context.restore();
+        // Dates are outside the curve clip. Horizontal month/day + year has a bounded footprint.
+        this.context.font = `${this.dateFontSize()}vp sans-serif`;
+        this.context.textAlign = 'center';
+        this.context.textBaseline = 'top';
+        this.context.fillStyle = textColor;
+        const indices = chartDateIndices(labels.length, drawWidth, this.zoom, this.panOffset);
+        const lineHeight = this.dateFontSize() + 2;
+        let previousRight = -1;
+        for (const index of indices) {
+            const lines = chartDateLines(labels[index].label);
+            let labelWidth = 0;
+            for (const line of lines) labelWidth = Math.max(labelWidth, this.context.measureText(line).width);
+            labelWidth = Math.min(72, labelWidth);
+            const x = Math.max(8 + labelWidth / 2, Math.min(width - 8 - labelWidth / 2, this.pointX(index)));
+            if (x - labelWidth / 2 < previousRight + 8) continue;
+            for (let line = 0; line < lines.length; line++) {
+                this.context.fillText(lines[line], x, baseline + 8 + line * lineHeight, 72);
+            }
+            previousRight = x + labelWidth / 2;
+        }
     }
 
     @Builder
@@ -467,11 +485,13 @@ export struct InteractiveLineChart {
             ForEach(this.sourceSeries(), (chartSeries: LineChartSeries) => {
               GridCol({ span: 1 }) {
                 Row({ space: 7 }) {
-                  Row().width(10).height(10).borderRadius(5).backgroundColor(chartSeries.color)
-                  Text(chartSeries.label).fontSize(13).fontColor($r('app.color.v3_text_secondary'))
-                  Blank()
-                  Text(this.selectedSeriesValue(chartSeries)).fontSize(13).fontWeight(FontWeight.Medium)
-                    .fontColor($r('app.color.v3_text_primary'))
+                  Row().width(10).height(10).flexShrink(0).borderRadius(5).backgroundColor(this.selectedSeriesColor(chartSeries.label))
+                  Column({ space: 3 }) {
+                    Text(chartSeries.label).fontSize(13).fontColor($r('app.color.v3_text_secondary'))
+                      .width('100%').wordBreak(WordBreak.BREAK_ALL)
+                    Text(this.selectedSeriesValue(chartSeries.label)).fontSize(13).fontWeight(FontWeight.Medium)
+                      .fontColor($r('app.color.v3_text_primary')).width('100%').wordBreak(WordBreak.BREAK_ALL)
+                  }.layoutWeight(1).constraintSize({ minWidth: 0 }).alignItems(HorizontalAlign.Start)
                 }
                 .width('100%').padding({ left: 8, right: 8, top: 7, bottom: 7 })
                 .borderRadius(10).backgroundColor($r('app.color.v3_surface_alt'))
@@ -489,7 +509,7 @@ export struct InteractiveLineChart {
                     }
                 })
                 .onClick((): void => this.endLegendPress())
-                .accessibilityText(`${chartSeries.label}，${this.selectedSeriesValue(chartSeries)}`)
+                .accessibilityText(`${chartSeries.label}，${this.selectedSeriesValue(chartSeries.label)}`)
               }
             }, (chartSeries: LineChartSeries) => chartSeries.label)
           }
@@ -521,14 +541,10 @@ export struct InteractiveLineChart {
                     })
                     .onAreaChange((_oldArea: Area, newArea: Area): void => {
                         const width = Number(newArea.width);
-                        if (width > 0) {
+                        if (width > 0 && width !== this.canvasWidth) {
                             this.canvasWidth = width;
                             this.applyViewportState(false);
-                            if (this.drawTimer >= 0) clearTimeout(this.drawTimer);
-                            this.drawTimer = setTimeout((): void => {
-                                this.drawTimer = -1;
-                                this.draw();
-                            }, 0);
+                            this.requestDraw();
                         }
                     })
                     .onTouch((event: TouchEvent): void => {
@@ -550,7 +566,7 @@ export struct InteractiveLineChart {
                             })
                             .onActionUpdate((event: GestureEvent): void => {
                                 this.panOffset = this.clampPan(this.panAtGestureStart - event.offsetX);
-                                this.draw();
+                                this.requestDraw();
                             })
                             .onActionEnd((): void => this.emitViewport()),
                         PinchGesture({ fingers: 2, distance: 4 })
@@ -564,7 +580,7 @@ export struct InteractiveLineChart {
                                 const ratio = oldMax > 0 ? this.panOffset / oldMax : 0.5;
                                 this.zoom = nextZoom;
                                 this.panOffset = this.clampPan(this.maxPan(nextZoom) * ratio, nextZoom);
-                                this.draw();
+                                this.requestDraw();
                             })
                             .onActionEnd((): void => this.emitViewport())
                     ))
@@ -583,6 +599,10 @@ export struct InteractiveLineChart {
         }
         .width('100%').padding(14).borderRadius(18).backgroundColor($r('app.color.v3_surface'))
         .border({ width: 1, color: $r('app.color.nd_card_border') })
+        .onVisibleAreaChange([0, 0.01], (visible: boolean, ratio: number): void => {
+            this.inViewport = visible && ratio > 0;
+            this.onVisibilityChanged();
+        })
         .accessibilityGroup(true)
         .accessibilityText(this.pointCount() > 0 ? `${this.title}，${this.selectedDetail()}` : `${this.title}暂无数据`)
     }

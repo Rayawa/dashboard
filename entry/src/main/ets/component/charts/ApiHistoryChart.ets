@@ -1,4 +1,5 @@
 import type { ChartViewportState } from '../../common/types';
+import { sdkDataLabel } from '../../common/SdkData';
 import { InteractiveLineChart } from './InteractiveLineChart';
 import type { LineChartPoint, LineChartSeries } from './InteractiveLineChart';
 
@@ -6,10 +7,14 @@ export interface HistoryPoint { date: string; values: Record<string, number>; }
 
 @Component
 export struct ApiHistoryChart {
-    @Prop history: HistoryPoint[] = [];
-    @Prop apiKeys: string[] = [];
+    @Prop @Watch('prepareSeries') history: HistoryPoint[] = [];
+    @Prop @Watch('prepareSeries') apiKeys: string[] = [];
     @Prop viewport: ChartViewportState = { zoom: 1, panRatio: 0 };
     onViewportChange?: (viewport: ChartViewportState) => void;
+
+    @Prop active: boolean = true;
+    @State private preparedSeries: LineChartSeries[] = [];
+    aboutToAppear(): void { this.prepareSeries(); }
 
     private palette(): Resource[] {
         return [
@@ -32,17 +37,23 @@ export struct ApiHistoryChart {
         ];
     }
 
-    private chartSeries(): LineChartSeries[] {
+    private prepareSeries(): void {
         const colors = this.palette();
-        return this.apiKeys.map((key: string, index: number): LineChartSeries => ({
-            label: `API ${key}`,
+        // All series use the same dates so cross-series selection stays aligned.
+        const count = Math.min(360, this.history.length);
+        const history: HistoryPoint[] = [];
+        for (let i = 0; i < count; i++) {
+            history.push(this.history[Math.round(i * (this.history.length - 1) / Math.max(1, count - 1))]);
+        }
+        this.preparedSeries = this.apiKeys.map((key: string, index: number): LineChartSeries => ({
+            label: sdkDataLabel(key),
             color: colors[index % colors.length],
-            points: this.history.map((point: HistoryPoint): LineChartPoint => {
+            points: history.map((point: HistoryPoint): LineChartPoint => {
                 const value = Number(point.values[key] ?? 0);
                 return {
                     label: point.date,
                     value,
-                    detail: `${point.date} · API ${key} 占比 ${value.toFixed(2)}%`,
+                    detail: `${point.date} · ${sdkDataLabel(key)} 占比 ${value.toFixed(2)}%`,
                 } as LineChartPoint;
             }),
         } as LineChartSeries));
@@ -57,7 +68,8 @@ export struct ApiHistoryChart {
             InteractiveLineChart({
                 title: 'API版本占比历史',
                 unit: '%',
-                series: this.chartSeries(),
+                series: this.preparedSeries,
+                active: this.active,
                 showTitle: false,
                 chartHeight: 280,
                 responsiveAxisFont: true,

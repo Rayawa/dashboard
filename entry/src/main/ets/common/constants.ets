@@ -18,6 +18,7 @@ export const STORAGE_KEY_HOLD_CHECK = 'holdCheckON';
 export const STORAGE_KEY_BUTTON_RIGHT = 'buttonPositionRIGHT';
 export const STORAGE_KEY_IMMERSIVE_MATERIAL_LEVEL = 'immersiveMaterialLevel';
 export const STORAGE_KEY_SEARCH_HISTORY = 'searchHistory';
+export const APP_STATE_KEY_FOREGROUND = 'applicationActive';
 export const APP_STATE_KEY_PAGE_URL = 'pageUrl';
 export const APP_STATE_KEY_SCROLL_DISTANCE = 'scrollDistance';
 export const APP_STATE_KEY_DETAIL_TARGET = 'detailTarget';
@@ -77,7 +78,7 @@ export const CACHE_TTL_DETAIL_MS = 30 * 60 * 1000;
 export const CACHE_TTL_CHART_MS = 30 * 60 * 1000;
 export const CACHE_MAX_BYTES = 32 * 1024 * 1024;
 export const CACHE_MAINTENANCE_INTERVAL_MS = 5 * 60 * 1000;
-export const CACHE_MAINTENANCE_DELAY_MS = 1000;
+export const CACHE_MAINTENANCE_DELAY_MS = 5000;
 export const CACHE_MAX_STALE_MS = 30 * 24 * 60 * 60 * 1000;
 export const BACKGROUND_REFRESH_DELAY_MS = 180;
 export const MAIN_TAB_S_STATION = 0;
@@ -126,8 +127,8 @@ export const NEXTStoreURL = new URL("https://next.vcck.cn/#/");
 export const FANGZHOU_URL = new URL("https://fangzhou.club/");
 
 // dev
-export const APP_VERSION: string = "3.1.1";
-export const APP_BUILD_NUMBER: number = 30101001;
+export const APP_VERSION: string = "3.2.0";
+export const APP_BUILD_NUMBER: number = 30200001;
 export const APP_BUNDLE_NAME: string = "top.rayawa.dashboard"
 export const SAPIBaseURL = new URL("/api/v0/", SBaseURL);
 export const MEOW_CHANNEL_URL = new URL("https://www.chuckfang.com/MeoW/appLinking?channelId=8bbba7f53bf9458284a41d04f295450b");

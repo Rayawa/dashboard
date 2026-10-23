@@ -1,5 +1,5 @@
 import type { AppCollectionTarget, SearchCondition, CollectionSearchExpression, AppMetric, VersionChange } from './types';
-import { formatBytes } from './format';
+import { formatBytes, formatSdkVersion } from './format';
 
 export interface DiscoveryPreset { key: string; title: string; }
 export const DISCOVERY_PRESETS: DiscoveryPreset[] = [
@@ -51,9 +51,17 @@ export function collectionSort(target: AppCollectionTarget): string {
 }
 
 /** 相邻采集记录只在版本、体积、SDK 或价格发生变化时保留，避免逐日重复。 */
-export function versionChanges(metrics: AppMetric[]): VersionChange[] {
-    const sorted = metrics.filter((m: AppMetric) => !!m.created_at && Number.isFinite(new Date(m.created_at).getTime()))
-        .slice().sort((a: AppMetric, b: AppMetric) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+interface TimedAppMetric { metric: AppMetric; time: number; }
+
+export function sortAppMetrics(metrics: AppMetric[]): AppMetric[] {
+    return metrics.map((metric: AppMetric): TimedAppMetric => ({ metric, time: new Date(metric.created_at).getTime() }))
+        .filter((item: TimedAppMetric): boolean => Number.isFinite(item.time))
+        .sort((a: TimedAppMetric, b: TimedAppMetric): number => a.time - b.time)
+        .map((item: TimedAppMetric): AppMetric => item.metric);
+}
+
+export function versionChanges(metrics: AppMetric[], alreadySorted: boolean = false): VersionChange[] {
+    const sorted = alreadySorted ? metrics : sortAppMetrics(metrics);
     const changes: VersionChange[] = [];
     let prior: AppMetric | undefined = undefined;
     for (const metric of sorted) {
@@ -62,9 +70,9 @@ export function versionChanges(metrics: AppMetric[]): VersionChange[] {
         else {
             if (metric.version !== prior.version || metric.version_code !== prior.version_code) fields.push('版本更新');
             if (metric.size_bytes !== prior.size_bytes) fields.push(`大小 ${formatBytes(prior.size_bytes)} → ${formatBytes(metric.size_bytes)}`);
-            if (metric.minsdk !== prior.minsdk) fields.push(`最低 SDK ${prior.minsdk} → ${metric.minsdk}`);
-            if (metric.target_sdk !== prior.target_sdk) fields.push(`目标 SDK ${prior.target_sdk} → ${metric.target_sdk}`);
-            if (metric.compile_sdk_version !== prior.compile_sdk_version) fields.push(`编译 SDK ${prior.compile_sdk_version} → ${metric.compile_sdk_version}`);
+            if (metric.minsdk !== prior.minsdk) fields.push(`最低 SDK ${formatSdkVersion(prior.minsdk)} → ${formatSdkVersion(metric.minsdk)}`);
+            if (metric.target_sdk !== prior.target_sdk) fields.push(`目标 SDK ${formatSdkVersion(prior.target_sdk)} → ${formatSdkVersion(metric.target_sdk)}`);
+            if (metric.compile_sdk_version !== prior.compile_sdk_version) fields.push(`编译 SDK ${formatSdkVersion(prior.compile_sdk_version)} → ${formatSdkVersion(metric.compile_sdk_version)}`);
             if (metric.min_hmos_api_level !== prior.min_hmos_api_level) fields.push(`最低 API ${prior.min_hmos_api_level} → ${metric.min_hmos_api_level}`);
             if (Number(metric.price) !== Number(prior.price)) fields.push(`价格 ${prior.price} → ${metric.price}`);
         }

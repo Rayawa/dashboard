@@ -3,7 +3,8 @@ import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
 import { DiscoveryButtonStyle } from '../../common/DiscoveryTheme';
 @Component
 export struct BrowserStatus {
-    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
+    @Prop enterSpeed: number = 1;
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction(this.getUIContext());
     @Prop loading: boolean = false;
     @Prop error: string = '';
     @Prop stale: boolean = false;
@@ -14,7 +15,7 @@ export struct BrowserStatus {
     @Builder
     private body(): void {
         Column({ space: 10 }) {
-            if (this.loading) { LoadingProgress().width(32).height(32).color($r('app.color.diff_content')) }
+            if (this.loading) { LoadingProgress().width(32).height(32).color($r('app.color.diff_content')).accessibilityText('正在加载数据') }
             if (this.error) {
                 Text(this.error).fontColor($r('app.color.v3_accent_red')).fontSize(14)
                 Button('重试', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'discovery-0'))
@@ -28,12 +29,13 @@ export struct BrowserStatus {
         }.width('100%')
     }
     build() {
-        DiscoveryEnter({ order: 0, content: (): void => { this.body(); } })
+        DiscoveryEnter({ order: 0, speed: this.enterSpeed, content: (): void => { this.body(); } })
     }
 }
 @Component
 export struct BrowserPagination {
-    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
+    @Prop enterSpeed: number = 1;
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction(this.getUIContext());
     @Prop page: number = 1;
     @Prop total: number = 0;
     @Prop pageSize: number = 20;
@@ -54,6 +56,6 @@ export struct BrowserPagination {
         }.width('100%')
     }
     build() {
-        DiscoveryEnter({ order: 0, content: (): void => { this.body(); } })
+        DiscoveryEnter({ order: 0, speed: this.enterSpeed, content: (): void => { this.body(); } })
     }
 }

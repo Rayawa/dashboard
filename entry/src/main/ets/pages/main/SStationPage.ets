@@ -1,3 +1,4 @@
+import { flushContinuationScroll } from '../../common/appState';
 import { common } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { webview } from '@kit.ArkWeb';
@@ -22,6 +23,7 @@ import { contentEnterTransition, runPageEnterAnimation } from '../../common/moti
 import { WebShareManager } from '../../common/shareControl';
 import type { WebShareData } from '../../common/shareControl';
 import { scrollByAxis } from '../../common/scroll';
+import { WebActivity } from '../../common/WebActivity';
 
 class SStationWebBridge {
     private onDetailOpenChanged: (open: boolean) => void;
@@ -44,6 +46,7 @@ export struct SStationPage {
     @Prop @Watch('onActiveChanged') active: boolean = false;
     onDetailOpenChanged?: (open: boolean) => void;
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
+    @StorageLink('applicationActive') @Watch('syncWebActivity') private applicationActive: boolean = true;
     @State private progress: number = 0;
     @State private loading: boolean = true;
     @State private showLoadingIndicator: boolean = false;
@@ -57,6 +60,7 @@ export struct SStationPage {
     private restoreScrollTimer: number = -1;
     private shareManager?: WebShareManager;
     private readonly shareOwnerId: number = WebShareManager.createOwnerId();
+    private readonly webOwnerId: number = WebActivity.createOwner();
     private webBridge: SStationWebBridge = new SStationWebBridge((open: boolean): void => {
         this.onDetailOpenChanged?.(open);
     });
@@ -84,6 +88,8 @@ export struct SStationPage {
     }
 
     aboutToDisappear(): void {
+        WebActivity.setActive(this.webOwnerId, false);
+        flushContinuationScroll();
         if (this.restoreScrollTimer >= 0) {
             clearTimeout(this.restoreScrollTimer);
             this.restoreScrollTimer = -1;
@@ -222,7 +228,15 @@ export struct SStationPage {
         this.shareManager?.showSystemShare();
     }
 
+    private syncWebActivity(): void {
+        // Permit the initial preload to finish, then suspend its hidden polling.
+        WebActivity.setActive(this.webOwnerId, this.applicationActive && (this.active || this.loading));
+    }
+
     private onActiveChanged(): void {
+        this.syncWebActivity();
+        try { if (this.active) this.controller.onActive(); else this.controller.onInactive(); }
+        catch (_) { /* Controller may still be attaching during deferred initialization. */ }
         if (this.active) {
             this.syncShareData();
             return;
@@ -273,6 +287,7 @@ export struct SStationPage {
     private handleControllerAttached(): void {
         try {
             this.controller.setCustomUserAgent(customUserAgent);
+            this.onActiveChanged();
         } catch (error) {
             console.warn('[Dashboard][pages/main/SStationPage][WARN]',
                 `初始化ArkWeb失败: ${JSON.stringify(error)}`);
@@ -281,6 +296,7 @@ export struct SStationPage {
 
     private handlePageBegin(event: OnPageBeginEvent): void {
         this.loading = true;
+        this.syncWebActivity();
         // 后台预加载保持无感；用户主动在S站内导航时才展示加载进度。
         this.showLoadingIndicator = this.active;
         this.errorMessage = '';
@@ -289,6 +305,7 @@ export struct SStationPage {
 
     private handlePageEnd(event: OnPageEndEvent): void {
         this.loading = false;
+        this.syncWebActivity();
         this.showLoadingIndicator = false;
         this.errorMessage = '';
         if (this.updateCurrentUrl(event.url)) this.restoreScrollPosition();
@@ -305,6 +322,7 @@ export struct SStationPage {
             return;
         }
         this.loading = false;
+        this.syncWebActivity();
         this.showLoadingIndicator = false;
         this.errorMessage = '网页主页面加载失败，请检查网络连接后重试';
         console.warn('[Dashboard][pages/main/SStationPage][WARN]',
@@ -438,7 +456,7 @@ export struct SStationPage {
                 .backgroundColor($r('app.color.v3_surface'))
                 .position({ x: '10%', y: '35%' })
                 .width('80%')
-                .accessibilityGroup(true)
+                .accessibilityGroup(false).accessibilityLevel('no')
                 .accessibilityText('S站主页面网络错误提示')
                 .transition(contentEnterTransition())
             }
@@ -449,7 +467,7 @@ export struct SStationPage {
         .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
         .opacity(this.pageVisible ? 1 : 0.01)
         .translate({ y: this.pageVisible ? 0 : 10 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('S站页面')
     }
 

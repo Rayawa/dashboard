@@ -118,7 +118,7 @@ export struct ContactPanel {
         .padding(5)
         .margin({ bottom: 20 })
         .onAppear((): void => this.startEnterAnimation())
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('联系我们')
     }
 

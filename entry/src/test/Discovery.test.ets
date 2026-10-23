@@ -3,7 +3,7 @@ import { appCollectionSubtitle } from '../main/ets/common/AppListPresentation';
 import { parseLocalCollection } from '../main/ets/common/LocalCollection';
 import { describe, it, expect } from '@ohos/hypium';
 import { collectionExpression, collectionSort, versionChanges } from '../main/ets/common/DiscoveryQuery';
-import { reputationSubtitle, reputationValue } from '../main/ets/common/ReputationPresentation';
+import { reputationSubtitle, reputationValue, reputationSummary } from '../main/ets/common/ReputationPresentation';
 import { buildReputationPath, buildCategoryGrowthPath, buildTopicsPath } from '../main/ets/common/RankingQuery';
 import { latestDailyMaxRecords } from '../main/ets/common/DailyRanking';
 import type { ReputationItem, AppMetric, DailyMaxDownloadApp, MarketApp } from '../main/ets/common/types';
@@ -42,24 +42,25 @@ export default function discoveryTests() {
             expect(buildReputationPath({ days: 2, minSamples: 20, kindName: ' ' }))
                 .assertEqual('rankings/reputation?days=1&min_samples=10&sort=weighted');
         });
-        it('reputationShowsUnclampedMetricsCorrectionsAndActualSpan', 0, () => {
+        it('reputationRoundsMetricsWithoutClampingCorrectionsOrActualSpan', 0, () => {
             const item: ReputationItem = {
                 app_id: 'a', name: '应用', pkg_name: 'a', developer_name: '开发者', icon_url: '',
                 kind_name: '工具', tag_name: null, snapshot_date: '2026-10-19', baseline_date: '2026-10-11',
                 actual_days: 8, sample_count: 10, positive_sample_count: 30,
                 rating: 7.5, weighted_score: -0.25, confidence_weight: 0.6, has_correction: true,
             };
-            expect(reputationValue(item)).assertEqual('加权得分 -0.25\n评分指标 7.5');
+            expect(reputationValue(item)).assertEqual('加权 -0.25\n指标 7.50');
             const subtitle = reputationSubtitle(item);
             expect(subtitle).assertContain('开发者 · 工具');
             expect(subtitle).assertContain('2026-10-11 → 2026-10-19（实际 8 天）');
             expect(subtitle).assertContain('净样本 10 · 正样本 30');
             expect(subtitle).assertContain('含数据修正');
+            expect(reputationSummary(item)).assertEqual('工具 · 10 个净样本 · 含修正');
             item.has_correction = false;
             expect(reputationSubtitle(item).includes('含数据修正')).assertFalse();
             item.rating = -2.5;
             item.weighted_score = 0;
-            expect(reputationValue(item)).assertEqual('加权得分 0\n评分指标 -2.5');
+            expect(reputationValue(item)).assertEqual('加权 0.00\n指标 -2.50');
         });
         it('developerScopeUsesStableIdRatherThanName', 0, () => {
             const query = JSON.stringify(collectionExpression({ title: '同名开发者', developerId: 'a&b', developerName: '同名开发者' }));
@@ -181,7 +182,7 @@ export default function discoveryTests() {
             const second = metric('2026-10-02', '1.0', 100, '0.00');
             expect(versionChanges([first, second]).length).assertEqual(1);
             second.compile_sdk_version = 26;
-            expect(versionChanges([first, second])[0].summary).assertContain('编译 SDK 20 → 26');
+            expect(versionChanges([first, second])[0].summary).assertContain('编译 SDK 6.0.0 (API 20) → 26.0.0 (API 26)');
         });
         it('timelineKeepsVersionRollbacks', 0, () => {
             const changes = versionChanges([metric('2026-10-01', '1.0'), metric('2026-10-02', '2.0'), metric('2026-10-03', '1.0')]);

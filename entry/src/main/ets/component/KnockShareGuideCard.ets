@@ -25,7 +25,7 @@ export interface CardRes {
 @Reusable
 @Component
 export struct KnockShareSingleGuideCard {
-    @Prop running: boolean = false;
+    @Prop @Watch('onActivityChanged') running: boolean = false;
     @Require res: CardRes;
     @Require minHeight: number;
     @Require hasIndicator: boolean;
@@ -34,16 +34,32 @@ export struct KnockShareSingleGuideCard {
     private animFrames: ImageFrameInfo[] = [];
     private staticFrame: ImageFrameInfo[] = [];
     private loadToken: number = 0;
+    private alive: boolean = false;
+    private inViewport: boolean = false;
+    private loading: boolean = false;
+
+    private onActivityChanged(): void {
+        if (!this.alive) return;
+        if (!this.running || !this.inViewport) {
+            this.loadToken++; this.loading = false; this.animReady = false;
+            this.releaseAnimationFrames(); return;
+        }
+        if (this.animReady || this.loading) return;
+        this.loading = true;
+        const token = ++this.loadToken;
+        this.loadPixels(token).catch((error: Error): void => {
+            Logger.warn(`Guide animation loading failed: ${error.message}`);
+        }).finally((): void => { if (token === this.loadToken) this.loading = false; });
+    }
 
     aboutToAppear(): void {
         this.staticFrame = [{ src: RAWFILE_SRC_PREFIX + this.getPath(1) }];
-        const token = ++this.loadToken;
-        this.loadPixels(token).catch((error: Error) => {
-            Logger.error(`Guide animation loading failed: ${error.message}`);
-        });
+        this.alive = true;
+        this.onActivityChanged();
     }
 
     aboutToDisappear(): void {
+        this.alive = false;
         this.loadToken++;
         this.animReady = false;
         this.releaseAnimationFrames();
@@ -136,6 +152,9 @@ export struct KnockShareSingleGuideCard {
         .height("auto")
         .margin({ left: 16, right: 16 })
         .accessibilityGroup(true)
+        .onVisibleAreaChange([0, 0.01], (visible: boolean, ratio: number): void => {
+            this.inViewport = visible && ratio > 0; this.onActivityChanged();
+        })
         .accessibilityText('碰一碰分享操作说明');
     }
 
@@ -166,8 +185,10 @@ export struct KnockShareSingleGuideCard {
     private async loadPixels(token: number): Promise<void> {
         const frames: ImageFrameInfo[] = [];
         // Decode sequentially to avoid opening and decoding up to 128 images at once.
-        for (let i = 1; i <= this.res.framesCount; i++) {
-            const frame = await this.loadByRawfile(i);
+        const count = Math.ceil(this.res.framesCount / 2);
+        for (let ordinal = 0; ordinal < count; ordinal++) {
+            const index = ordinal === count - 1 ? this.res.framesCount : ordinal * 2 + 1;
+            const frame = await this.loadByRawfile(index);
             if (token !== this.loadToken) {
                 this.releaseFrame(frame);
                 this.releaseFrames(frames);
@@ -207,8 +228,9 @@ export struct KnockShareSingleGuideCard {
         try {
             const fd = await contextFaker.resourceManager.getRawFd(path);
             imageSource = image.createImageSource(fd);
-            const decodingOptions: image.DecodingOptions = {};
-            src = await imageSource.createPixelMapUsingAllocator(decodingOptions, image.AllocatorType.DMA);
+            const height = Math.min(192, Math.ceil(uiContext.vp2px(this.minHeight)));
+            const decodingOptions: image.DecodingOptions = { desiredSize: { width: Math.ceil(height * 1.5), height } };
+            src = await imageSource.createPixelMap(decodingOptions);
         } catch (err) {
             Logger.error(`Failed to load by rawfile: ${err?.code}, ${err?.message}`);
         } finally {
@@ -222,7 +244,7 @@ export struct KnockShareSingleGuideCard {
         return {
             src: src,
             duration:
-            Math.floor(1000 / (this.res.fps ?? 30)) +
+            Math.floor(2000 / (this.res.fps ?? 30)) +
                 (index === 1
                     ? (this.res.startDelay ?? 0)
                     : index === this.res.framesCount
@@ -237,6 +259,7 @@ export struct KnockShareSingleGuideCard {
 }
 @Component
 export default struct KnockShareGuideCard {
+    @Prop active: boolean = true;
     @Require cardSwiperResources: CardRes[];
     @Provide swiperIndex: number = 0;
     private indicatorController: IndicatorComponentController = new IndicatorComponentController();
@@ -250,7 +273,7 @@ export default struct KnockShareGuideCard {
     build() {
         if (this.cardSwiperResources.length === 1) {
             KnockShareSingleGuideCard({
-                running: true,
+                running: this.active,
                 res: this.cardSwiperResources[0],
                 minHeight: GUIDE_CARD_SINGLE_MIN_HEIGHT,
                 hasIndicator: false,
@@ -260,7 +283,7 @@ export default struct KnockShareGuideCard {
                 Swiper() {
                     ForEach(this.cardSwiperResources, (item: CardRes, index: number) => {
                         KnockShareSingleGuideCard({
-                            running: this.swiperIndex === index,
+                            running: this.active && this.swiperIndex === index,
                             res: item,
                             minHeight: GUIDE_CARD_MULTIPLE_MIN_HEIGHT,
                             hasIndicator: true,

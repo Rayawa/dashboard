@@ -13,33 +13,33 @@ import {
  *
  * 交互反馈保持短促，页面/组件进出使用无明显回弹的弹簧。
  */
-export function contentEnterTransition(offsetY: number = 12): TransitionEffect {
+export function contentEnterTransition(offsetY: number = 12, speed: number = 1): TransitionEffect {
   return TransitionEffect.OPACITY
     .combine(TransitionEffect.translate({ y: offsetY }))
     .combine(TransitionEffect.scale({ x: 0.985, y: 0.985 }))
     .animation({
-      duration: CONTENT_ENTER_DURATION_MS,
-      curve: curves.springMotion(0.42, 0.92),
+      duration: CONTENT_ENTER_DURATION_MS / speed,
+      curve: curves.springMotion(0.42 / speed, 0.92),
     });
 }
 
-export function pageTransition(): TransitionEffect {
+export function pageTransition(speed: number = 1): TransitionEffect {
   return TransitionEffect.asymmetric(
     TransitionEffect.OPACITY
       .combine(TransitionEffect.translate({ x: 16 }))
       .combine(TransitionEffect.scale({ x: 0.992, y: 0.992 }))
-      .animation({ duration: PAGE_TRANSITION_DURATION_MS, curve: curves.springMotion(0.45, 0.94) }),
+      .animation({ duration: PAGE_TRANSITION_DURATION_MS / speed, curve: curves.springMotion(0.45 / speed, 0.94) }),
     TransitionEffect.OPACITY
       .combine(TransitionEffect.translate({ x: 10 }))
       .combine(TransitionEffect.scale({ x: 0.992, y: 0.992 }))
-      .animation({ duration: PAGE_EXIT_DURATION_MS, curve: Curve.EaseInOut }),
+      .animation({ duration: PAGE_EXIT_DURATION_MS / speed, curve: Curve.EaseInOut }),
   );
 }
 
-export function runPageEnterAnimation(context: UIContext, update: () => void): void {
+export function runPageEnterAnimation(context: UIContext, update: () => void, speed: number = 1): void {
   context.animateTo({
-    duration: CONTENT_ENTER_DURATION_MS,
-    curve: curves.springMotion(0.42, 0.92),
+    duration: CONTENT_ENTER_DURATION_MS / speed,
+    curve: curves.springMotion(0.42 / speed, 0.92),
   }, update);
 }
 

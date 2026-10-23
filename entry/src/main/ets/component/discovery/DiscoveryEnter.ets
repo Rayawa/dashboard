@@ -9,6 +9,7 @@ function emptyDiscoveryContent(): void {}
 export struct DiscoveryEnter {
     @BuilderParam content: () => void = emptyDiscoveryContent;
     @Prop order: number = 0;
+    @Prop speed: number = 1;
     @State private entered: boolean = false;
     private timer: number = -1;
     private start(): void {
@@ -16,8 +17,8 @@ export struct DiscoveryEnter {
         if (this.timer >= 0) clearTimeout(this.timer);
         this.timer = setTimeout((): void => {
             this.timer = -1;
-            runPageEnterAnimation(this.getUIContext(), (): void => { this.entered = true; });
-        }, STAGGER_ENTER_DELAY_MS + Math.min(6, Math.max(0, this.order)) * STAGGER_ENTER_INTERVAL_MS);
+            runPageEnterAnimation(this.getUIContext(), (): void => { this.entered = true; }, this.speed);
+        }, (STAGGER_ENTER_DELAY_MS + Math.min(6, Math.max(0, this.order)) * STAGGER_ENTER_INTERVAL_MS) / this.speed);
     }
     aboutToDisappear(): void {
         if (this.timer >= 0) clearTimeout(this.timer);
@@ -28,7 +29,7 @@ export struct DiscoveryEnter {
             .width('100%')
             .opacity(this.entered ? 1 : 0)
             .translate({ y: this.entered ? 0 : 20 })
-            .transition(contentEnterTransition(10))
+            .transition(contentEnterTransition(10, this.speed))
             .onAppear((): void => this.start())
     }
 }

@@ -309,6 +309,7 @@ export interface ApiDataResult<T> {
     fromCache: boolean;
     cachedAt: number;
     stale: boolean;
+    revalidated?: Promise<ApiDataResult<T>>;
 }
 
 export interface AppRouteTarget {

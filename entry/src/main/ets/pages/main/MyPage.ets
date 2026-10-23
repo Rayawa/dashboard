@@ -1,3 +1,5 @@
+import { setContinuationScrollDistance } from '../../common/appState';
+import { flushContinuationScroll } from '../../common/appState';
 import { ROUTE_MY_COLLECTION } from '../../common/constants';
 import { common, Want } from '@kit.AbilityKit';
 import { PromptAction, TextModifier } from '@kit.ArkUI';
@@ -115,12 +117,14 @@ export struct MyPage {
     @State private contentWidth: number = 0;
     @State private animStep: number = 0;
     private versionTapTimer: number = -1;
+    private lastScrollOffset: number = 0;
     private restoredScroll: boolean = false;
     private enterAnimationPlayed: boolean = false;
     private enterAnimationTimers: number[] = [];
     private restoreScrollTimer: number = -1;
 
     private onActiveChanged(): void {
+        if (this.active) setContinuationView(MAIN_TAB_MY, this.lastScrollOffset);
         if (this.active) this.startPageAnimationOnce();
     }
 
@@ -134,6 +138,7 @@ export struct MyPage {
     }
 
     aboutToDisappear(): void {
+        flushContinuationScroll();
         cancelStaggerEnterAnimation(this.enterAnimationTimers);
         this.enterAnimationTimers = [];
         if (this.versionTapTimer >= 0) {
@@ -364,7 +369,7 @@ export struct MyPage {
         .padding({ top: 14 })
         .opacity(this.animStep >= this.requiredStep('information') ? 1 : 0)
         .translate({ y: this.animStep >= this.requiredStep('information') ? 0 : 20 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('版本版权和备案信息')
     }
 
@@ -397,7 +402,7 @@ export struct MyPage {
             .backgroundColor($r('app.color.v3_surface'))
             .shadow({ radius: 8, color: $r('app.color.v3_shadow'), offsetY: 2 })
             .clip(true)
-            .accessibilityGroup(true)
+            .accessibilityGroup(false).accessibilityLevel('no')
             .accessibilityText(`${title}栏目`)
         }
         .width('100%')
@@ -420,7 +425,7 @@ export struct MyPage {
         .width('100%')
         .opacity(this.animStep >= this.requiredStep('settings') ? 1 : 0)
         .translate({ y: this.animStep >= this.requiredStep('settings') ? 0 : 20 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('设置')
     }
 
@@ -457,6 +462,7 @@ export struct MyPage {
         const continuation = getContinuationState();
         if (continuation.mainTab !== MAIN_TAB_MY || continuation.routeName !== CONTINUATION_ROUTE_MAIN ||
             continuation.scrollDistance <= 0) return;
+        this.lastScrollOffset = continuation.scrollDistance;
         this.restoreScrollTimer = setTimeout((): void => {
             this.restoreScrollTimer = -1;
             try {
@@ -473,8 +479,10 @@ export struct MyPage {
     }
 
     private saveScrollPosition(): void {
+        if (!this.active) return;
         try {
-            setContinuationView(MAIN_TAB_MY, this.scroller.currentOffset().yOffset);
+            this.lastScrollOffset = this.scroller.currentOffset().yOffset;
+            setContinuationScrollDistance(this.lastScrollOffset);
         } catch (error) {
             console.warn('[Dashboard][pages/main/MyPage][WARN]',
                 `保存滚动位置失败: ${JSON.stringify(error)}`);
@@ -505,7 +513,7 @@ export struct MyPage {
                         .layoutWeight(4)
                         .height('100%')
                         .padding({ left: LIST_PAGE_HORIZONTAL_PADDING, right: LIST_PAGE_HORIZONTAL_PADDING })
-                        .accessibilityGroup(true)
+                        .accessibilityGroup(false).accessibilityLevel('no')
                         .accessibilityText('固定显示的应用名称和版本信息')
 
                         Divider()
@@ -529,6 +537,7 @@ export struct MyPage {
                         .scrollBar(BarState.Off)
                         .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
                         .onDidScroll((): void => this.saveScrollPosition())
+                        .onScrollStop((): void => flushContinuationScroll())
                         .accessibilityText('可滚动的设置、更多与帮助列表')
                     }
                     .layoutWeight(1)
@@ -536,7 +545,7 @@ export struct MyPage {
                     .constraintSize({ maxWidth: CONTENT_MAX_WIDTH })
                     .padding({ left: LIST_PAGE_HORIZONTAL_PADDING, right: LIST_PAGE_HORIZONTAL_PADDING })
                     .alignItems(VerticalAlign.Top)
-                    .accessibilityGroup(true)
+                    .accessibilityGroup(false).accessibilityLevel('no')
                     .accessibilityText('左侧固定应用信息，右侧可滚动功能列表')
                 }
                 .width('100%')
@@ -570,6 +579,7 @@ export struct MyPage {
                 .scrollBar(BarState.Off)
                 .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
                 .onDidScroll((): void => this.saveScrollPosition())
+                .onScrollStop((): void => flushContinuationScroll())
                 .backgroundColor($r('app.color.background'))
                 .accessibilityText('可滚动的我的页面')
             }

@@ -1,5 +1,5 @@
+import { HdsNavigationMenuItemOptions } from '@kit.UIDesignKit';
 import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
-import { DiscoveryButtonStyle } from '../../common/DiscoveryTheme';
 import { openDiscoveryApp, openMarketTopic } from '../../common/discoveryNavigation';
 import { MarketPageFrame } from '../../component/discovery/MarketPageFrame';
 import { AppSummaryRow } from '../../component/discovery/AppSummaryRow';
@@ -14,7 +14,7 @@ export function TopicsPageBuilder() { TopicsPage() }
 
 @Component
 export struct TopicsPage {
-    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction();
+    @State private interaction: DiscoveryInteraction = new DiscoveryInteraction(this.getUIContext());
     @Consume('pageStack') private pageStack: NavPathStack;
     target: TopicTarget = {};
     @State private topics: TopicSummary[] = [];
@@ -57,26 +57,24 @@ export struct TopicsPage {
             if (this.subtitle) {
                 Text(this.subtitle).fontSize(14).fontColor($r('app.color.v3_text_secondary')).width('100%')
             }
-            Button('刷新', { stateEffect: false }).attributeModifier(new DiscoveryButtonStyle(this.interaction.pressedKey === 'discovery-0'))
-                    .onTouch((event: TouchEvent): void => this.interaction.touch('discovery-0', event)).enabled(!this.loading).onClick((): void => { this.interaction.activate('discovery-0'); this.load(true); })
-            BrowserStatus({ loading: this.loading, error: this.error, stale: this.stale,
+            BrowserStatus({ enterSpeed: 2, loading: this.loading, error: this.error, stale: this.stale,
                 empty: this.apps.length + this.topics.length === 0,
                 emptyText: this.target.topicId ? '专题暂无已收录应用' : '暂无专题',
                 onRetry: (): void => { this.load(true); } })
             ForEach(this.topics, (topic: TopicSummary, index: number) => {
-                AppSummaryRow({ enterOrder: index, showIcon: false, name: topic.title || '未命名专题',
+                AppSummaryRow({ enterSpeed: 2, enterOrder: index, showIcon: false, name: topic.title || '未命名专题',
                     subtitle: `${topic.subtitle || ''}\n收录于 ${formatDateTime(topic.created_at)}`.trim(),
                     onOpen: (): void => {
                         openMarketTopic(this.pageStack, { topicId: topic.substance_id, title: topic.title });
                     } })
             }, (topic: TopicSummary) => topic.substance_id)
             ForEach(this.apps.slice((this.page - 1) * DISCOVERY_PAGE_SIZE, this.page * DISCOVERY_PAGE_SIZE), (app: TopicApp, index: number) => {
-                AppSummaryRow({ enterOrder: index, appId: app.app_id, packageName: app.pkg_name, name: app.name, iconUrl: app.icon_url, subtitle: `专题：${this.target.title || '当前专题'}`,
+                AppSummaryRow({ enterSpeed: 2, enterOrder: index, appId: app.app_id, packageName: app.pkg_name, name: app.name, iconUrl: app.icon_url, subtitle: `专题：${this.target.title || '当前专题'}`,
                     onOpen: (): void => {
                         openDiscoveryApp(this.pageStack, { appId: app.app_id, packageName: app.pkg_name });
                     } })
             }, (app: TopicApp) => app.app_id)
-            BrowserPagination({ page: this.page, total: this.target.topicId ? this.apps.length : this.total,
+            BrowserPagination({ enterSpeed: 2, page: this.page, total: this.target.topicId ? this.apps.length : this.total,
                 pageSize: DISCOVERY_PAGE_SIZE, loading: this.loading,
                 onPage: (page: number): void => {
                     this.page = page;
@@ -85,7 +83,9 @@ export struct TopicsPage {
         }.width('100%')
     }
     build() {
-        MarketPageFrame({ resetKey: String(this.page), title: this.target.title || '专题浏览', content: (): void => { this.content(); },
+        MarketPageFrame({ resetKey: String(this.page), title: this.target.title || '专题浏览',
+            busy: this.loading, menuProvider: (_busy: boolean): HdsNavigationMenuItemOptions[] => [{ content: { label: '刷新专题', icon: $r('sys.symbol.arrow_clockwise'), isEnabled: !this.loading,
+                action: (): void => { this.interaction.activate('refresh'); this.load(true); } } }], content: (): void => { this.content(); },
             onShown: (): void => {
                 if (!this.initialized) { this.initialized = true; this.load(false); }
             } })

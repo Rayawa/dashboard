@@ -1,5 +1,6 @@
+import { PerformanceTrace } from '../common/PerformanceTrace';
+import { flushContinuationScroll, setApplicationActive } from '../common/appState';
 import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
-import { webview } from '@kit.ArkWeb';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { loadPersistedState } from '../common/storage';
@@ -11,7 +12,6 @@ import {
     DEFAULT_WINDOW_WIDTH,
     LOCAL_STORAGE_KEY_WINDOW_HEIGHT,
     LOCAL_STORAGE_KEY_WINDOW_WIDTH,
-    SBaseURL,
 } from '../common/constants';
 import {
     defaultAppsListState,
@@ -34,6 +34,7 @@ const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
     storage: LocalStorage = new LocalStorage();
+    private startupTrace: number = -1;
     private isContinuation: boolean = false;
     private startupTask: Promise<void> = Promise.resolve();
     private mainWindow?: window.Window;
@@ -54,6 +55,7 @@ export default class EntryAbility extends UIAbility {
                 `目标设备应用版本过低，拒绝接续: ${targetVersion} < ${CONTINUATION_MIN_VERSION_CODE}`);
             return AbilityConstant.OnContinueResult.MISMATCH;
         }
+        flushContinuationScroll();
         const current = getContinuationState();
 
         wantParam['targetUrl'] = current.pageUrl;
@@ -105,13 +107,7 @@ export default class EntryAbility extends UIAbility {
     }
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-        // 在页面树创建前加载 ArkWeb 内核并预连接 S 站，缩短隐藏标签页首次加载时间。
-        try {
-            webview.WebviewController.initializeWebEngine();
-            webview.WebviewController.prepareForPageLoad(SBaseURL.toString(), true, 2);
-        } catch (error) {
-            console.warn('[Dashboard][ability/entry][WARN]', `预热S站失败: ${JSON.stringify(error)}`);
-        }
+        this.startupTrace = PerformanceTrace.begin('Dashboard.Startup.Content');
         this.restoreContinuationParams(want, launchParam);
         if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
             try {
@@ -170,8 +166,7 @@ export default class EntryAbility extends UIAbility {
     }
     onWindowStageCreate(windowStage: window.WindowStage): void {
         console.info('[Dashboard][ability/entry][INFO]', 'Ability onWindowStageCreate.');
-        this.startupTask
-            .then(() => this.bindWindowStorage(windowStage))
+        Promise.all([this.startupTask, this.bindWindowStorage(windowStage)])
             .then(() => this.loadCurrentPage(windowStage))
             .catch((error: Error) => {
                 console.error('[Dashboard][ability/entry][ERROR]', `窗口初始化失败，继续使用默认尺寸: ${error.message}`);
@@ -179,8 +174,7 @@ export default class EntryAbility extends UIAbility {
             });
     }
     onWindowStageRestore(windowStage: window.WindowStage): void {
-        this.startupTask
-            .then(() => this.bindWindowStorage(windowStage))
+        Promise.all([this.startupTask, this.bindWindowStorage(windowStage)])
             .then(() => this.loadCurrentPage(windowStage))
             .catch((error: Error) => {
                 console.error('[Dashboard][ability/entry][ERROR]', `窗口恢复失败，继续使用默认尺寸: ${error.message}`);
@@ -218,12 +212,19 @@ export default class EntryAbility extends UIAbility {
         }
     }
 
+    onForeground(): void { setApplicationActive(true); }
+    onBackground(): void { setApplicationActive(false); flushContinuationScroll(); }
+
     onWindowStageDestroy(): void {
         this.detachWindowSizeListener();
     }
     private loadContent(windowStage: window.WindowStage, path: string): void {
         try {
             windowStage.loadContent(path, this.storage, (err) => {
+                if (this.startupTrace >= 0) {
+                    PerformanceTrace.finish('Dashboard.Startup.Content', this.startupTrace);
+                    this.startupTrace = -1;
+                }
                 if (err.code) {
                     hilog.error(DOMAIN, "EntryAbility", `Failed to load ${path}. Cause: %{public}s`, JSON.stringify(err));
                     return;

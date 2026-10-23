@@ -5,8 +5,8 @@
 Dashboard Application Viewer is the native client for `harmony_get_market`. It queries public SDK, version, category, and rating information through the back end's `/api/v0` endpoints while retaining the ArkWeb entry to the S Site.
 
 - Bundle name: `top.rayawa.dashboard`
-- Version: `3.1.1`
-- Build number: `30101001`
+- Version: `3.2.0`
+- Build number: `30200001`
 - Target: `26.0.0` (HarmonyOS 7 / API 26); minimum compatible version: `6.0.0(20)` (API 20)
 - Devices: phone, tablet, and 2in1
 - Current development branch: `v3.0.0(20)`
@@ -32,6 +32,8 @@ Cross-device continuation saves the selected main tab, App Details subview, nati
 
 Home and App Details support pull-to-refresh from the top. The S Site title bar reads the current ArkWeb URL at share time, so system sharing, Knock-to-Share, and air-gesture sharing always send the current page. While an in-page detail dialog is open, the system Back action or back-swipe closes that dialog first. Re-tapping the selected S Site tab returns to the S Site home page.
 
+Version 3.2.0 adds reputation rankings, deferred detail sections, linear chart drawing with frame coalescing, paginated search, lazy app rows, and startup/cache/lifecycle improvements. See [PERFORMANCE_3.2.0.md](PERFORMANCE_3.2.0.md) for implementation and validation boundaries.
+
 ## Data, cache, and weak-network behavior
 
 All native data pages use `common/MarketApi.ets`; pages do not construct HTTP requests directly. Every API request includes the same app User-Agent.
@@ -45,6 +47,8 @@ All native data pages use `common/MarketApi.ets`; pages do not construct HTTP re
 - The current API cache size is displayed beside Clear Cache under My → Settings.
 
 In 3.1.1, download counts, app counts, byte sizes, and chart counts show their original values. The daily maximum downloads list keeps the latest record for each app.
+
+In 3.2.0, chart axes use compact units, dates use two lines, and legends adapt to their available width. Download details and application fields retain exact values; percentages use up to two decimals, with tiny nonzero shares shown as less than 0.01%.
 
 ## Error handling and logging
 

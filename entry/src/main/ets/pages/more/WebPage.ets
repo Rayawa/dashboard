@@ -22,6 +22,7 @@ import { scrollByAxis } from '../../common/scroll';
 import type { WebShareData } from '../../common/shareControl';
 import { showToastSafely } from '../../common/safeUi';
 import { vibration } from '../../common/vibration';
+import { WebActivity } from '../../common/WebActivity';
 import {
   HDS_MATERIAL_LEVEL_GENTLE,
   HDS_MATERIAL_TYPE_ADAPTIVE,
@@ -50,6 +51,7 @@ export struct WebPage {
   @Prop contentInsetTop: number = WEB_PAGE_DEFAULT_TOP_INSET;
   @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') private immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
+  @StorageLink('applicationActive') @Watch('syncActivity') private applicationActive: boolean = true;
   @State private progress: number = 0;
   @State private loading: boolean = true;
   @State private errorMessage: string = '';
@@ -60,6 +62,8 @@ export struct WebPage {
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   private shareManager?: WebShareManager;
   private readonly shareOwnerId: number = WebShareManager.createOwnerId();
+  private readonly webOwnerId: number = WebActivity.createOwner();
+  private pageVisible: boolean = false;
 
   aboutToAppear(): void {
     // Keep component creation light. ArkWeb and passive sharing are initialized
@@ -68,9 +72,25 @@ export struct WebPage {
   }
 
   aboutToDisappear(): void {
+    this.pageVisible = false;
+    WebActivity.setActive(this.webOwnerId, false);
     this.shareManager?.clearShareDataProvider(this.shareOwnerId);
     this.shareManager?.disablePassiveShare(this.shareOwnerId);
     this.shareManager = undefined;
+  }
+
+  private syncActivity(): void {
+    const active: boolean = this.applicationActive && this.pageVisible;
+    WebActivity.setActive(this.webOwnerId, active);
+    try {
+      if (active) this.controller.onActive();
+      else this.controller.onInactive();
+    } catch (_) { /* The controller may not be attached during navigation. */ }
+    if (active) this.syncShareData();
+    else {
+      this.shareManager?.clearShareDataProvider(this.shareOwnerId);
+      this.shareManager?.disablePassiveShare(this.shareOwnerId);
+    }
   }
 
   private displayTitle(): string {
@@ -129,7 +149,7 @@ export struct WebPage {
   private handleControllerAttached(): void {
     try {
       this.controller.setCustomUserAgent(customUserAgent);
-      this.syncShareData();
+      this.syncActivity();
     } catch (error) {
       this.errorMessage = '网页初始化失败';
       console.error('[Dashboard][pages/web/WebPage][ERROR]', `初始化失败: ${JSON.stringify(error)}`);
@@ -146,7 +166,7 @@ export struct WebPage {
     this.loading = false;
     this.errorMessage = '';
     this.updateCurrentUrl(event.url);
-    this.syncShareData();
+    if (this.applicationActive && this.pageVisible) this.syncShareData();
   }
 
   private handleErrorReceive(event: OnErrorReceiveEvent): void {
@@ -281,7 +301,7 @@ export struct WebPage {
           .backgroundColor($r('app.color.v3_surface'))
           .position({ x: '10%', y: '35%' })
           .width('80%')
-          .accessibilityGroup(true)
+          .accessibilityGroup(false).accessibilityLevel('no')
           .accessibilityText(this.errorMessage)
           .transition(contentEnterTransition())
         }
@@ -295,6 +315,8 @@ export struct WebPage {
     .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .onBackPressed(() => this.goBack())
+    .onShown((): void => { this.pageVisible = true; this.syncActivity(); })
+    .onHidden((): void => { this.pageVisible = false; this.syncActivity(); })
     .titleBar({
       style: {
         scrollEffectOpts: {

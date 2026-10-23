@@ -147,7 +147,7 @@ export struct PrivacyConfirmationButtons {
         }
         .width("100%")
         .margin({ top: 2 })
-        .accessibilityGroup(true)
+        .accessibilityGroup(false).accessibilityLevel('no')
         .accessibilityText('重要提示确认按钮');
     }
 }

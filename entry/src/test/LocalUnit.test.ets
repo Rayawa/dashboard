@@ -8,7 +8,7 @@ import {
     operatorNeedsValue,
     operatorsForField,
 } from '../main/ets/common/SearchExpression';
-import { formatBytes, formatCount, formatDownloadCount, formatDuration } from '../main/ets/common/format';
+import { formatBytes, formatCount, formatDownloadCount, formatDuration, formatSdkVersion, formatSdkLabel, formatScore } from '../main/ets/common/format';
 
 export default function localUnitTest() {
     describe("localUnitTest", () => {
@@ -105,6 +105,30 @@ export default function localUnitTest() {
         it('formatDurationUsesReadableUnits', 0, () => {
             expect(formatDuration(65)).assertEqual('1分5秒');
             expect(formatDuration(7200)).assertEqual('2小时0分');
+        });
+        it('sdkVersionsDecodeApiLevelsAndPackedVersions', 0, () => {
+            expect(formatSdkVersion(12)).assertEqual('5.0.0 (API 12)');
+            expect(formatSdkVersion(26)).assertEqual('26.0.0 (API 26)');
+            expect(formatSdkVersion(260000)).assertEqual('26.0.0');
+            expect(formatSdkVersion(60101)).assertEqual('6.1.1');
+            expect(formatSdkVersion(60000020)).assertEqual('6.0.0 (API 20)');
+            expect(formatSdkVersion(260000026)).assertEqual('26.0.0 (API 26)');
+            expect(formatSdkVersion(27)).assertEqual('API 27');
+            expect(formatSdkVersion(undefined)).assertEqual('-');
+            expect(formatSdkVersion(0)).assertEqual('-');
+            expect(formatSdkVersion(-1)).assertEqual('-');
+            expect(formatSdkVersion(Number.NaN)).assertEqual('-');
+            expect(formatSdkLabel('API 20')).assertEqual('6.0.0 (API 20)');
+            expect(formatSdkLabel('其他')).assertEqual('其他');
+            expect(formatSdkLabel('API 0')).assertEqual('未知 SDK');
+            expect(formatSdkLabel('API -1')).assertEqual('未知 SDK');
+        });
+        it('scoresUseTwoDecimalsAndKeepSignedMetrics', 0, () => {
+            expect(formatScore(4.950819672131147)).assertEqual('4.95');
+            expect(formatScore(7.5)).assertEqual('7.50');
+            expect(formatScore(-5.668)).assertEqual('-5.67');
+            expect(formatScore(-0.0001)).assertEqual('0.00');
+            expect(formatScore(Number.POSITIVE_INFINITY)).assertEqual('-');
         });
         it('numericDataKeepsOriginalValues', 0, () => {
             expect(formatCount(123456789)).assertEqual('123456789');

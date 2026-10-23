@@ -17,6 +17,8 @@ const HIGH_INTENSITY_RATIO = 1.25;
 const HIGH_HEIGHT_RATIO = 1.12;
 const HDR_BRIGHTNESS_RATIO = 1.5;
 let hdrFailureLogged = false;
+const inactiveEffects: Map<string, VisualEffect> = new Map();
+let inactiveFilter: uiEffect.Filter | undefined = undefined;
 
 // SDK 23 的类型定义不含 API 24 方法。通过窄接口隔离符号，并在调用前做运行时版本判断。
 interface Api24HdrFilter extends uiEffect.Filter {
@@ -47,6 +49,11 @@ export function pressVisualEffect(
     height: number = 110,
 ): VisualEffect {
     const level = getLightFieldLevel();
+    const cacheKey = `${level}:${illuminatedType}:${intensity}:${height}`;
+    if (!pressed) {
+        const cached = inactiveEffects.get(cacheKey);
+        if (cached) return cached;
+    }
     const resolvedIntensity = level === LIGHT_FIELD_LEVEL_DIM ? intensity * DIM_INTENSITY_RATIO :
         level === LIGHT_FIELD_LEVEL_HIGH ? intensity * HIGH_INTENSITY_RATIO : intensity;
     const resolvedHeight = level === LIGHT_FIELD_LEVEL_DIM ? height * DIM_HEIGHT_RATIO :
@@ -54,7 +61,7 @@ export function pressVisualEffect(
     const resolvedBloom = !pressed ? 0 :
         level === LIGHT_FIELD_LEVEL_DIM ? DIM_BLOOM : BRIGHT_BLOOM;
 
-    return new hdsEffect.HdsEffectBuilder()
+    const effect = new hdsEffect.HdsEffectBuilder()
         .pointLight({
             sourceType: !pressed ? hdsEffect.PointLightSourceType.NONE :
                 level === LIGHT_FIELD_LEVEL_DIM ? hdsEffect.PointLightSourceType.SOFT :
@@ -68,6 +75,8 @@ export function pressVisualEffect(
             },
         })
         .buildEffect();
+    if (!pressed) inactiveEffects.set(cacheKey, effect);
+    return effect;
 }
 
 /**
@@ -75,10 +84,11 @@ export function pressVisualEffect(
  * API 23 只会创建空滤镜，不会解析或执行 API 24 方法。
  */
 export function pressLightFieldFilter(pressed: boolean): uiEffect.Filter {
-    const filter = uiEffect.createFilter();
     if (!pressed || getLightFieldLevel() !== LIGHT_FIELD_LEVEL_HIGH || !isHdrLightFieldSupported()) {
-        return filter;
+        if (!inactiveFilter) inactiveFilter = uiEffect.createFilter();
+        return inactiveFilter;
     }
+    const filter = uiEffect.createFilter();
 
     try {
         return (filter as Api24HdrFilter).hdrBrightnessRatio(HDR_BRIGHTNESS_RATIO);

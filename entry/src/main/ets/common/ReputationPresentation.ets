@@ -1,4 +1,5 @@
 import type { ReputationItem } from './types';
+import { formatScore } from './format';
 
 /** 保留带符号指标原值，修正标记与实际基线跨度必须可见。 */
 export function reputationSubtitle(item: ReputationItem): string {
@@ -9,5 +10,10 @@ export function reputationSubtitle(item: ReputationItem): string {
         (item.has_correction ? '\n含数据修正' : '');
 }
 export function reputationValue(item: ReputationItem): string {
-    return `加权得分 ${item.weighted_score}\n评分指标 ${item.rating}`;
+    return `加权 ${formatScore(item.weighted_score)}\n指标 ${formatScore(item.rating)}`;
+}
+
+export function reputationSummary(item: ReputationItem): string {
+    return `${item.tag_name || item.kind_name} · ${item.sample_count} 个净样本` +
+        (item.has_correction ? ' · 含修正' : '');
 }

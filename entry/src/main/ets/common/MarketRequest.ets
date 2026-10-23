@@ -1,7 +1,8 @@
+import { PerformanceTrace } from './PerformanceTrace';
 import { http } from '@kit.NetworkKit';
 import { createApiRequestHeaders, DEFAULT_NETWORK_TIMEOUT_MS, SAPIBaseURL } from './constants';
 import { readCache, writeCache, getCacheGeneration } from './CacheService';
-import { CachedRequest, validApiResponse } from './CachedRequest';
+import { CachedRequest, RequestScope, validApiResponse } from './CachedRequest';
 import type { RequestCache, CachedValue } from './CachedRequest';
 import type { ApiDataResult, BaseAPIResponse } from './types';
 
@@ -18,17 +19,23 @@ const client = new CachedRequest<BaseAPIResponse>(new ApiResponseCache(), validA
 
 export function requestJson<T>(
     path: string, ttlMs: number, forceNetwork: boolean = false,
-    method: http.RequestMethod = http.RequestMethod.GET, body?: object, cacheIdentity?: string,
+    method: http.RequestMethod = http.RequestMethod.GET, body?: object, cacheIdentity?: string, scope?: RequestScope,
 ): Promise<ApiDataResult<T>> {
     const cacheKey = cacheIdentity ?? `${method}:${path}:${body ? JSON.stringify(body) : ''}`;
     return client.request(cacheKey, ttlMs, forceNetwork,
-        (): Promise<BaseAPIResponse> => fetchJson(path, method, body)) as Promise<ApiDataResult<T>>;
+        (cancellation: RequestScope, refresh: boolean): Promise<BaseAPIResponse> =>
+            fetchJson(refresh ? path.replace('use_cache=true', 'use_cache=false') : path, method, body, cancellation),
+        path.startsWith('apps/app_id/') || path.startsWith('apps/pkg_name/') || path.startsWith('apps/metrics/') || path.startsWith('rankings/rate_history'), scope) as Promise<ApiDataResult<T>>;
 }
 
-async function fetchJson(path: string, method: http.RequestMethod, body?: object): Promise<BaseAPIResponse> {
+async function fetchJson(path: string, method: http.RequestMethod, body?: object, scope?: RequestScope): Promise<BaseAPIResponse> {
     let request: http.HttpRequest | undefined = undefined;
+    const trace = PerformanceTrace.begin('Dashboard.API.Request');
+    let unsubscribe: (() => void) | undefined = undefined;
     try {
         request = http.createHttp();
+        const currentRequest = request;
+        unsubscribe = scope?.onCancel((): void => { currentRequest.destroy(); });
         const options: http.HttpRequestOptions = {
             method,
             header: createApiRequestHeaders(body !== undefined),
@@ -40,17 +47,20 @@ async function fetchJson(path: string, method: http.RequestMethod, body?: object
         if (body) {
             options.extraData = JSON.stringify(body);
         }
-        const response = await request.request(`${SAPIBaseURL.toString()}${path}`, options);
+        const operation = request.request(`${SAPIBaseURL.toString()}${path}`, options);
+        const response = await (scope ? scope.waitFor(operation) : operation);
         if (response.responseCode < 200 || response.responseCode >= 300) {
             throw new Error(`服务器返回 ${response.responseCode}`);
         }
-        const parsed = JSON.parse(response.result.toString()) as BaseAPIResponse;
+        const parsed = PerformanceTrace.measure('Dashboard.API.Parse', (): BaseAPIResponse => JSON.parse(response.result.toString()) as BaseAPIResponse);
         return parsed;
     } catch (error) {
-        console.warn('[Dashboard][common/MarketRequest][WARN]', `API 请求失败 ${path}: ${JSON.stringify(error)}`);
+        if (!scope?.cancelled) console.warn('[Dashboard][common/MarketRequest][WARN]', `API 请求失败 ${path}: ${JSON.stringify(error)}`);
         throw error as Error;
     } finally {
-        if (request) {
+        PerformanceTrace.finish('Dashboard.API.Request', trace);
+        unsubscribe?.();
+        if (request && !scope?.cancelled) {
             try {
                 request.destroy();
             } catch (error) {

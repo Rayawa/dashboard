@@ -31,6 +31,8 @@ export struct TutorialPage {
   @Consume('pageStack') pageStack: NavPathStack;
   @StorageLink('vibrationLevel') vibrationLevel: number = 1;
   @StorageLink('immersiveMaterialLevel') immersiveMaterialLevel: number = HDS_MATERIAL_LEVEL_GENTLE;
+  @StorageLink('applicationActive') private applicationActive: boolean = true;
+  @State private pageVisible: boolean = true;
   private prompt: PromptAction = this.getUIContext().getPromptAction();
   private scroller: Scroller = new Scroller();
   @State private pressedCard: string = '';
@@ -265,7 +267,7 @@ export struct TutorialPage {
     })
     .opacity(this.animStep >= this.enterStep(1, 1) ? 1 : 0)
     .translate({ y: this.animStep >= this.enterStep(1, 1) ? 0 : 20 })
-    .accessibilityGroup(true)
+    .accessibilityGroup(false).accessibilityLevel('no')
     .accessibilityText('应用介绍')
   }
 
@@ -300,7 +302,7 @@ export struct TutorialPage {
     })
     .opacity(this.animStep >= this.enterStep(2, 1) ? 1 : 0)
     .translate({ y: this.animStep >= this.enterStep(2, 1) ? 0 : 20 })
-    .accessibilityGroup(true)
+    .accessibilityGroup(false).accessibilityLevel('no')
     .accessibilityText('应用功能')
   }
 
@@ -353,7 +355,7 @@ export struct TutorialPage {
     })
     .opacity(this.animStep >= this.enterStep(3, 2) ? 1 : 0)
     .translate({ y: this.animStep >= this.enterStep(3, 2) ? 0 : 20 })
-    .accessibilityGroup(true)
+    .accessibilityGroup(false).accessibilityLevel('no')
     .accessibilityText('查询功能')
   }
 
@@ -362,7 +364,7 @@ export struct TutorialPage {
     Column({ space: 8 }) {
       Text('碰一碰分享')
         .fontSize(13).fontWeight(FontWeight.Medium).fontColor($r('app.color.v3_text_primary')).width('100%')
-      KnockShareGuideCard({ cardSwiperResources: this.cardSwiperResourcesPhone })
+      KnockShareGuideCard({ active: this.applicationActive && this.pageVisible, cardSwiperResources: this.cardSwiperResourcesPhone })
     }
     .alignItems(HorizontalAlign.Start)
     .width('100%')
@@ -437,7 +439,7 @@ export struct TutorialPage {
     })
     .opacity(this.animStep >= this.enterStep(4, 3) ? 1 : 0)
     .translate({ y: this.animStep >= this.enterStep(4, 3) ? 0 : 20 })
-    .accessibilityGroup(true)
+    .accessibilityGroup(false).accessibilityLevel('no')
     .accessibilityText('分享功能')
   }
 
@@ -476,7 +478,7 @@ export struct TutorialPage {
       }
       .layoutWeight(4)
       .height('100%')
-      .accessibilityGroup(true)
+      .accessibilityGroup(false).accessibilityLevel('no')
       .accessibilityText('固定显示的应用介绍与联系方式')
 
       Divider()
@@ -527,7 +529,9 @@ export struct TutorialPage {
         this.startPageAnimationForEntry(nextWidth >= TUTORIAL_COLUMN_BREAKPOINT ? 3 : 4);
       })
     }
-    .titleMode(HdsNavDestinationTitleMode.MINI)
+    .onHidden((): void => { this.pageVisible = false; })
+      .onShown((): void => { this.pageVisible = true; })
+      .titleMode(HdsNavDestinationTitleMode.MINI)
     .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.scroller, event))
     .transition(pageTransition())
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])

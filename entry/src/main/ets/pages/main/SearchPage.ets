@@ -1,3 +1,4 @@
+import { RequestScope } from '../../common/CachedRequest';
 import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { BACKGROUND_REFRESH_DELAY_MS, SEARCH_SHARED_GEOMETRY_ID } from '../../common/constants';
@@ -21,10 +22,14 @@ import { vibration } from '../../common/vibration';
 import { scrollByAxis } from '../../common/scroll';
 
 const SEARCH_DISMISS_SWIPE_DISTANCE_VP: number = 96;
+// HdsTabs floats above its content: 56vp bar + 28vp bottom margin + 16vp clearance.
+const SEARCH_BOTTOM_CLEARANCE_VP: number = 100;
 
 interface NameSearchResult {
     apps: MarketApp[];
     stale: boolean;
+    totalPages: number;
+    total: number;
 }
 
 class SearchResultDataSource implements IDataSource {
@@ -73,6 +78,11 @@ export struct SearchPage {
     @State private pressedCardId: string = '';
     @State private pressedControl: string = '';
     @State private animStep: number = 0;
+    @State private namePage: number = 1;
+    @State private namePages: number = 0;
+    @State private nameTotal: number = 0;
+    private nameQuery: string = '';
+    private requestScope: RequestScope = new RequestScope();
     private activeTarget: AppRouteTarget = {};
     private openDetailAfterSearch: boolean = false;
     private backgroundUpdateToken: number = 0;
@@ -83,6 +93,7 @@ export struct SearchPage {
     private resultScroller: Scroller = new Scroller();
 
     aboutToDisappear(): void {
+        this.requestScope.cancel();
         this.visible = false;
         this.lifecycleToken++;
         this.searchRequestToken++;
@@ -192,45 +203,42 @@ export struct SearchPage {
         if (packageName.includes(normalized)) return 4;
         return 5;
     }
-    private async findByName(name: string): Promise<NameSearchResult> {
-        const firstResult = await fetchAppsPage({
-            page: 1,
-            pageSize: 100,
-            sort: 'download_count',
-            desc: true,
-            searchKey: 'name',
-            searchValue: name,
-            exact: false,
-            force: true,
-        });
-        const response = firstResult.data as BaseAPIResponse<PageInfo<MarketApp>>;
-        let matches: MarketApp[] = response.data?.data ?? [];
+    private async findByName(name: string, page: number = 1): Promise<NameSearchResult> {
+        const result = await fetchAppsPage({ page, pageSize: 40, sort: 'download_count', desc: true,
+            searchKey: 'name', searchValue: name, exact: false, force: false }, this.requestScope);
+        const response = result.data;
+        const matches = response.data?.data ?? [];
         if (!response.success || matches.length === 0) {
             throw new Error('未找到同名应用；如需投稿，请输入包名、App ID 或应用市场链接');
         }
-        const totalPages = response.data?.total_pages ?? 1;
-        let stale = firstResult.stale;
-        for (let page = 2; page <= totalPages; page++) {
-            const nextResult = await fetchAppsPage({
-                page,
-                pageSize: 100,
-                sort: 'download_count',
-                desc: true,
-                searchKey: 'name',
-                searchValue: name,
-                exact: false,
-                force: true,
-            });
-            const nextResponse = nextResult.data as BaseAPIResponse<PageInfo<MarketApp>>;
-            if (nextResponse.success && nextResponse.data) matches = matches.concat(nextResponse.data.data ?? []);
-            stale = stale || nextResult.stale;
-        }
-        return {
-            apps: matches.sort((left: MarketApp, right: MarketApp) =>
-                this.relevance(left, name) - this.relevance(right, name)),
-            stale,
-        };
+        return { apps: matches.slice().sort((left: MarketApp, right: MarketApp): number =>
+            this.relevance(left, name) - this.relevance(right, name)), stale: result.stale,
+            totalPages: response.data?.total_pages ?? 1, total: response.data?.total_count ?? matches.length };
     }
+
+    private async changeNamePage(page: number): Promise<void> {
+        if (this.loading || page < 1 || page > this.namePages) return;
+        const query = this.nameQuery;
+        this.requestScope.cancel(); this.requestScope = new RequestScope();
+        const token = ++this.searchRequestToken;
+        const lifecycle = this.lifecycleToken;
+        this.loading = true;
+        try {
+            const result = await this.findByName(query, page);
+            if (!this.isSearchCurrent(token, lifecycle)) return;
+            this.setResults(result.apps);
+            this.resultApp = result.apps[0];
+            this.namePage = page;
+            this.namePages = result.totalPages;
+            this.nameTotal = result.total;
+            this.fromCache = result.stale;
+            this.status = `第 ${page} / ${this.namePages} 页，共 ${this.nameTotal} 个结果`;
+            this.resultScroller.scrollTo({ xOffset: 0, yOffset: 0 });
+        } catch (error) {
+            if (this.isSearchCurrent(token, lifecycle)) showToastSafely(this.prompt, (error as Error).message);
+        } finally { if (this.isSearchCurrent(token, lifecycle)) this.loading = false; }
+    }
+
     private async remember(raw: string): Promise<void> {
         const next = [raw].concat(this.history.filter((item: string) => item !== raw)).slice(0, 10);
         this.history = next;
@@ -283,11 +291,13 @@ export struct SearchPage {
             if (!raw) showToastSafely(this.prompt, '请输入应用信息', 1500, 'V3Search');
             return;
         }
+        this.requestScope.cancel(); this.requestScope = new RequestScope();
         const searchToken = ++this.searchRequestToken;
         const lifecycleToken = this.lifecycleToken;
         this.loading = true;
         this.backgroundUpdateToken++;
         this.errorMessage = '';
+        this.nameQuery = ''; this.namePages = 0; this.namePage = 1;
         this.setResults([]);
         this.resultApp = undefined;
         this.status = '正在查找应用…';
@@ -300,13 +310,14 @@ export struct SearchPage {
             if (!target.appId && !target.packageName) {
                 const searchResult = await this.findByName(raw);
                 if (!this.isSearchCurrent(searchToken, lifecycleToken)) return;
+                this.nameQuery = raw;
+                this.namePages = searchResult.totalPages;
+                this.nameTotal = searchResult.total;
                 this.setResults(searchResult.apps);
                 this.resultApp = searchResult.apps[0];
                 this.activeTarget = { appId: this.resultApp.app_id, packageName: this.resultApp.pkg_name };
                 this.fromCache = searchResult.stale;
-                this.status = searchResult.stale ? `已从缓存加载 ${this.resultCount} 个结果` :
-                    `已加载全部 ${this.resultCount} 个结果`;
-                this.updateExisting();
+                this.status = `第 1 / ${this.namePages} 页，共 ${this.nameTotal} 个结果${searchResult.stale ? '（离线缓存）' : ''}`;
                 this.openDetailIfRequested();
                 return;
             }
@@ -615,9 +626,19 @@ export struct SearchPage {
                 })
                 .accessibilityText(`搜索结果，共${this.resultCount}项`)
                 .transition(contentEnterTransition(10))
+                if (this.namePages > 1) {
+                    Row({ space: 12 }) {
+                        Button('上一页').enabled(!this.loading && this.namePage > 1)
+                            .onClick((): void => { this.changeNamePage(this.namePage - 1); })
+                        Text(`${this.namePage} / ${this.namePages}`).fontColor($r('app.color.v3_text_secondary'))
+                        Button('下一页').enabled(!this.loading && this.namePage < this.namePages)
+                            .onClick((): void => { this.changeNamePage(this.namePage + 1); })
+                    }.width('100%').justifyContent(FlexAlign.Center).padding({ bottom: 24 })
+                }
             }
         }
         .width('100%').height('100%').backgroundColor($r('app.color.background'))
+        .padding({ bottom: SEARCH_BOTTOM_CLEARANCE_VP })
         .onAxisEvent((event: AxisEvent): void => scrollByAxis(this.resultScroller, event))
         .transition(this.transitionEffect)
         .gesture(

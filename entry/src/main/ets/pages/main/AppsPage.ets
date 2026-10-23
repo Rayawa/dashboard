@@ -1,3 +1,6 @@
+import { setContinuationScrollDistance } from '../../common/appState';
+import { AppDataSource, AppTableItem } from '../../common/AppDataSource';
+import { flushContinuationScroll } from '../../common/appState';
 import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 import { CONTINUATION_ROUTE_MAIN, MAIN_TAB_APPS, SEARCH_SHARED_GEOMETRY_ID } from '../../common/constants';
@@ -37,6 +40,8 @@ export struct AppsPage {
     onOpenAppDetail?: (target: AppRouteTarget) => void;
     @Link selectedIndexes: number[];
     private prompt: PromptAction = this.getUIContext().getPromptAction();
+    private appSource: AppDataSource = new AppDataSource();
+    private tableScroller: Scroller = new Scroller();
     private pageScroller: Scroller = new Scroller();
     private readonly sortChoiceItems: SortChoice[] = [
         { label: '更新时间', field: 'updated_at' }, { label: '下载量', field: 'download_count' },
@@ -59,7 +64,7 @@ export struct AppsPage {
         .map((size: number) => ({ value: `每页 ${size} 条` } as SelectOption));
     @State private searchExpanded: boolean = false;
     @State private searchPullRefreshing: boolean = false;
-    @State private apps: MarketApp[] = [];
+    @State @Watch('updateAppSource') private apps: MarketApp[] = [];
     @State private page: number = 1;
     @State private total: number = 0;
     @State private loading: boolean = false;
@@ -80,6 +85,7 @@ export struct AppsPage {
     @State private advancedSearchExpanded: boolean = false;
     @State private advancedSearchActive: boolean = false;
     @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
+    private lastScrollOffset: number = 0;
     private restoredScroll: boolean = false;
     private restoredView: boolean = false;
     private reloadAfterCurrent: boolean = false;
@@ -91,7 +97,13 @@ export struct AppsPage {
     private reloadTimer: number = -1;
     private advancedExpression: SearchExpression | undefined = undefined;
 
+    private updateAppSource(): void {
+        this.appSource.replace(this.apps, (this.page - 1) * this.pageSize());
+        this.tableScroller.scrollTo({ xOffset: 0, yOffset: 0 });
+    }
+
     private onActiveChanged(): void {
+        if (this.active) setContinuationView(MAIN_TAB_APPS, this.lastScrollOffset);
         if (this.active) this.startPageAnimationOnce();
     }
 
@@ -105,6 +117,7 @@ export struct AppsPage {
     }
 
     aboutToDisappear(): void {
+        flushContinuationScroll();
         this.listLoadToken++;
         this.reloadAfterCurrent = false;
         this.reloadForce = false;
@@ -370,9 +383,11 @@ export struct AppsPage {
         }
     }
     private recordScroll(scroller: Scroller): void {
+        if (!this.active) return;
         try {
             const offset = scroller.currentOffset().yOffset;
-            setContinuationView(MAIN_TAB_APPS, offset);
+            this.lastScrollOffset = offset;
+            setContinuationScrollDistance(offset);
         } catch (error) {
             console.warn('[Dashboard][pages/main/AppsPage][WARN]', `保存滚动位置失败: ${JSON.stringify(error)}`);
         }
@@ -624,14 +639,18 @@ export struct AppsPage {
                     }
                     .height(42).width(this.tableWidth()).padding({ left: 8, right: 8 })
                     .backgroundColor($r('app.color.v3_surface_alt')).accessibilityText('应用列表表头')
-                    ForEach(this.apps, (app: MarketApp, index: number) => {
-                        AppTableRow({
-                            app, index: (this.page - 1) * this.pageSize() + index + 1,
-                            tableWidth: this.tableWidth(), developerWidth: this.developerWidth(),
-                            onOpen: (target: MarketApp) => this.openDetail(target),
-                        })
-                        .transition(contentEnterTransition(6))
-                    }, (app: MarketApp) => `${app.app_id}-${app.updated_at}`)
+                    List({ scroller: this.tableScroller }) {
+                        LazyForEach(this.appSource, (item: AppTableItem) => {
+                            ListItem() {
+                                AppTableRow({ item,
+                                    tableWidth: this.tableWidth(), developerWidth: this.developerWidth(),
+                                    onOpen: (target: MarketApp): void => this.openDetail(target) })
+                            }
+                        }, (item: AppTableItem) => item.app.app_id)
+                    }
+                    .width(this.tableWidth()).height(Math.min(10, Math.max(1, this.apps.length)) * 58)
+                    .cachedCount(4).scrollBar(BarState.Auto)
+                    .nestedScroll({ scrollForward: NestedScrollMode.SELF_FIRST, scrollBackward: NestedScrollMode.SELF_FIRST })
                 }.width(this.tableWidth())
             }
             .scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Auto).edgeEffect(EdgeEffect.None)
@@ -746,7 +765,7 @@ export struct AppsPage {
                         }
                         if (this.selectedIndexes[0] === 0) {
                             Column({ space: 12 }) {
-                                OverviewSection({ enterStep: this.animStep })
+                                OverviewSection({ active: this.active && !this.searchExpanded, enterStep: this.animStep })
                                 Blank().height(110).width('100%')
                             }
                             .width('100%')
@@ -784,6 +803,7 @@ export struct AppsPage {
                             const continuation = getContinuationState();
                             if (continuation.mainTab === MAIN_TAB_APPS &&
                                 continuation.routeName === CONTINUATION_ROUTE_MAIN && continuation.scrollDistance > 0) {
+                                this.lastScrollOffset = continuation.scrollDistance;
                                 this.restoreScrollTimer = setTimeout((): void => {
                                     this.restoreScrollTimer = -1;
                                     this.pageScroller.scrollTo({
@@ -799,6 +819,7 @@ export struct AppsPage {
                 .width('100%').height('100%').scrollBar(BarState.Auto)
                 .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true, effectEdge: EffectEdge.END })
                 .onDidScroll((): void => this.recordScroll(this.pageScroller))
+                .onScrollStop((): void => flushContinuationScroll())
                 .accessibilityText('可滚动并支持下拉打开应用搜索的应用页面')
             }
             .width('100%').height('100%')
