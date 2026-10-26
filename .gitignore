@@ -1,0 +1,4 @@
+
+
+# Local signing configuration; never commit credentials.
+/build-profile.json5
