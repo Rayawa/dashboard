@@ -6,3 +6,6 @@ oh_modules
 build
 oh_modules
 #build-profile.json5
+
+# Local signing configuration; never commit credentials.
+/build-profile.json5
