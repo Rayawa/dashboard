@@ -1,18 +1,19 @@
+import { RequestScope } from '../../services/cache/CachedRequest';
 import { HdsNavigationMenuItemOptions } from '@kit.UIDesignKit';
-import { SymbolGlyphModifier } from '@kit.ArkUI';
-import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
-import { appCollectionSubtitle } from '../../common/AppListPresentation';
-import { showToastSafely } from '../../common/safeUi';
-import { openDiscoveryApp } from '../../common/discoveryNavigation';
-import { MarketPageFrame } from '../../component/discovery/MarketPageFrame';
-import { AppSummaryRow } from '../../component/discovery/AppSummaryRow';
-import { BrowserPagination, BrowserStatus } from '../../component/discovery/BrowserControls';
-import { fetchAppsQuery } from '../../common/MarketApi';
-import { collectionExpression, collectionSort } from '../../common/DiscoveryQuery';
-import { getLocalCollection, saveFollowedDeveloper } from '../../common/storage';
-import { DISCOVERY_PAGE_SIZE } from '../../common/constants';
-import { formatCount } from '../../common/format';
-import type { AppCollectionTarget, MarketApp, FollowedDeveloper } from '../../common/types';
+import { collectionStarIcon } from '../../ui/icons/collectionIcon';
+import { DiscoveryInteraction } from '../../ui/interaction/DiscoveryInteraction';
+import { appCollectionSubtitle } from '../../domain/apps/AppListPresentation';
+import { showToastSafely } from '../../ui/feedback/safeUi';
+import { openDiscoveryApp } from '../../ui/navigation/discoveryNavigation';
+import { MarketPageFrame } from '../../components/discovery/MarketPageFrame';
+import { AppSummaryRow } from '../../components/discovery/AppSummaryRow';
+import { BrowserPagination, BrowserStatus } from '../../components/discovery/BrowserControls';
+import { fetchAppsQuery } from '../../services/api/MarketApi';
+import { collectionExpression, collectionSort } from '../../domain/discovery/DiscoveryQuery';
+import { getLocalCollection, saveFollowedDeveloper } from '../../services/storage/storage';
+import { DISCOVERY_PAGE_SIZE } from '../../config/constants';
+import { formatCount } from '../../utils/format/format';
+import type { AppCollectionTarget, MarketApp, FollowedDeveloper } from '../../models/types';
 
 @Builder
 export function AppCollectionPageBuilder() { AppCollectionPage() }
@@ -32,6 +33,7 @@ export struct AppCollectionPage {
     @State private followed: boolean = false;
     @State private saving: boolean = false;
     private token: number = 0;
+    private requestScope: RequestScope = new RequestScope();
     private initialized: boolean = false;
     private readonly sorts: string[] = ['download_count', 'release_date', 'listed_at', 'average_rating'];
     private readonly sortOptions: SelectOption[] = [
@@ -40,7 +42,12 @@ export struct AppCollectionPage {
 
     private alive: boolean = false;
     aboutToAppear(): void { this.alive = true; }
-    aboutToDisappear(): void { this.interaction.dispose(); this.alive = false; this.token++; }
+    aboutToDisappear(): void {
+        this.alive = false;
+        this.token++;
+        this.requestScope.cancel();
+        this.interaction.dispose();
+    }
     private shown(): void {
         if (!this.initialized) {
             this.initialized = true;
@@ -58,6 +65,9 @@ export struct AppCollectionPage {
         } catch (_) { /* 列表浏览不依赖本地关注状态。 */ }
     }
     private async load(force: boolean): Promise<void> {
+        if (!this.alive) return;
+        this.requestScope.cancel();
+        this.requestScope = new RequestScope();
         const token = ++this.token;
         this.loading = true;
         this.error = '';
@@ -65,7 +75,7 @@ export struct AppCollectionPage {
         try {
             const result = await fetchAppsQuery({
                 page: this.page, pageSize: DISCOVERY_PAGE_SIZE, sort: this.sorts[this.sortIndex], desc: true, force,
-            }, collectionExpression(this.target));
+            }, collectionExpression(this.target), this.requestScope);
             if (token !== this.token) return;
             if (!result.data.success || !result.data.data) throw new Error('应用列表暂不可用');
             this.apps = result.data.data.data;
@@ -85,9 +95,12 @@ export struct AppCollectionPage {
         try {
             await saveFollowedDeveloper({ developerId: this.target.developerId,
                 developerName: this.target.developerName || this.target.title }, next);
-            if (this.alive) this.followed = next;
+            if (this.alive) {
+                this.followed = next;
+                showToastSafely(this.getUIContext().getPromptAction(), next ? '收藏成功' : '取消收藏');
+            }
         } catch (_) {
-            showToastSafely(this.getUIContext().getPromptAction(), '保存失败，请重试');
+            if (this.alive) showToastSafely(this.getUIContext().getPromptAction(), '保存失败，请重试');
         } finally { if (this.alive) this.saving = false; }
     }
     private async chooseSort(): Promise<void> {
@@ -113,10 +126,9 @@ export struct AppCollectionPage {
             { content: { label: '刷新应用列表', icon: $r('sys.symbol.arrow_clockwise'), isEnabled: !this.loading,
                 action: (): void => { this.interaction.activate('refresh'); this.load(true); } } },
         ];
-        if (this.target.developerId) items.push({ content: {
-            label: this.followed ? '取消关注开发者' : '关注开发者',
-            icon: new SymbolGlyphModifier(this.followed ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'))
-                .fontColor([this.followed ? $r('app.color.diff_content') : $r('sys.color.icon_primary')]),
+        if (this.target.developerId) items.unshift({ content: {
+            label: this.followed ? '取消收藏开发者' : '收藏开发者',
+            icon: collectionStarIcon(this.followed),
             isEnabled: !this.saving,
             action: (): void => { this.interaction.activate('follow'); this.follow(); },
         } });

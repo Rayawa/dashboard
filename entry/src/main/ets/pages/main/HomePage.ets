@@ -1,10 +1,12 @@
-import { RequestScope } from '../../common/CachedRequest';
-import { setContinuationScrollDistance } from '../../common/appState';
-import { IdleTask } from '../../common/FrameScheduler';
-import { flushContinuationScroll } from '../../common/appState';
-import { HomeReputationCard } from '../../component/home/HomeReputationCard';
-import { openMarketRanking, openMarketTopic } from '../../common/discoveryNavigation';
-import { DiscoveryShortcuts } from '../../component/discovery/DiscoveryShortcuts';
+import type { HomeStat } from '../../models/homeTypes';
+import { RollingNumber } from '../../components/home/RollingNumber';
+import { HomeStatCard } from '../../components/home/HomeStatCard';
+import { RecentAppCard } from '../../components/home/RecentAppCard';
+import { RequestScope } from '../../services/cache/CachedRequest';
+import { IdleTask } from '../../utils/runtime/FrameScheduler';
+import { HomeReputationCard } from '../../components/home/HomeReputationCard';
+import { openMarketRanking, openMarketTopic } from '../../ui/navigation/discoveryNavigation';
+import { DiscoveryShortcuts } from '../../components/discovery/DiscoveryShortcuts';
 import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
 import {
@@ -13,21 +15,21 @@ import {
     MAIN_TAB_HOME,
     RESPONSIVE_BREAKPOINT_LARGE,
     RESPONSIVE_BREAKPOINT_MEDIUM,
-} from '../../common/constants';
-import { getContinuationState, setContinuationView, setDetailTarget } from '../../common/appState';
-import { fetchAppsPage, fetchDailyMaxDownloads, fetchDeveloperRanking, fetchMarketInfo } from '../../common/MarketApi';
-import { formatDateTime } from '../../common/format';
-import { latestDailyMaxRecords } from '../../common/DailyRanking';
-import { showToastSafely } from '../../common/safeUi';
+} from '../../config/constants';
+import { flushContinuationScroll, setContinuationScrollDistance, getContinuationState, setContinuationView, setDetailTarget } from '../../state/appState';
+import { fetchAppsPage, fetchDailyMaxDownloads, fetchDeveloperRanking, fetchMarketInfo } from '../../services/api/MarketApi';
+import { formatDateTime } from '../../utils/format/format';
+import { latestDailyMaxRecords } from '../../domain/rankings/DailyRanking';
+import { showToastSafely } from '../../ui/feedback/safeUi';
 import {
     cancelStaggerEnterAnimation,
     contentEnterTransition,
     startStaggerEnterAnimation,
-} from '../../common/motion';
-import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
-import { scrollByAxis } from '../../common/scroll';
-import { vibration } from '../../common/vibration';
-import { getDeviceName } from '../../common/storage';
+} from '../../ui/animation/motion';
+import { pressLightFieldFilter, pressVisualEffect } from '../../ui/theme/visualEffects';
+import { scrollByAxis } from '../../ui/interaction/scroll';
+import { vibration } from '../../utils/device/vibration';
+import { getDeviceName } from '../../services/storage/storage';
 import type {
     AppRouteTarget,
     BaseAPIResponse,
@@ -36,182 +38,9 @@ import type {
     MarketApp,
     MarketInfo,
     PageInfo,
-} from '../../common/types';
-import { HomeRankings } from '../../component/home/HomeRankings';
-import { SyncStatusCard } from '../../component/home/SyncStatusCard';
-
-interface HomeStat {
-    label: string;
-    value: number;
-    color: ResourceColor;
-}
-
-@Component
-struct RollingNumber {
-    @Prop @Watch('animateValue') value: number = 0;
-    @Prop fontSize: number = 24;
-    @Prop color: ResourceColor = $r('app.color.diff_content');
-    @Prop accessibilityLabel: string = '';
-    @State private displayedValue: number = 0;
-    private animationToken: number = 0;
-    private animationTimer: number = -1;
-
-    private animateValue(): void {
-        const target = Math.max(0, Math.round(this.value));
-        const token = ++this.animationToken;
-        this.displayedValue = 0;
-        if (this.animationTimer >= 0) clearTimeout(this.animationTimer);
-        this.animationTimer = setTimeout((): void => {
-            this.animationTimer = -1;
-            if (token !== this.animationToken) return;
-            this.getUIContext().animateTo({ duration: 1000, curve: Curve.EaseOut }, (): void => {
-                this.displayedValue = target;
-            });
-        }, 60);
-    }
-
-    aboutToAppear(): void {
-        this.animateValue();
-    }
-
-    aboutToDisappear(): void {
-        flushContinuationScroll();
-        this.animationToken++;
-        if (this.animationTimer >= 0) {
-            clearTimeout(this.animationTimer);
-            this.animationTimer = -1;
-        }
-    }
-
-    build() {
-        Text(String(this.displayedValue))
-            .fontSize(this.fontSize)
-            .fontWeight(FontWeight.Bold)
-            .fontColor(this.color)
-            .maxLines(1)
-            .contentTransition(new NumericTextTransition({
-                flipDirection: FlipDirection.DOWN,
-                enableBlur: true,
-            }))
-            .accessibilityText(`${this.accessibilityLabel}${this.value}`)
-    }
-}
-
-@Component
-struct HomeStatCard {
-    stat: HomeStat = { label: '', value: 0, color: $r('app.color.diff_content') };
-    @State private pressed: boolean = false;
-    onOpen: () => void = (): void => {};
-
-    build() {
-        Column({ space: 8 }) {
-            Text(this.stat.label)
-                .fontSize(13)
-                .fontColor($r('app.color.v3_text_secondary'))
-                .maxLines(1)
-                .accessibilityText(this.stat.label)
-            RollingNumber({
-                value: this.stat.value,
-                fontSize: 24,
-                color: this.stat.color,
-                accessibilityLabel: this.stat.label,
-            })
-        }
-        .alignItems(HorizontalAlign.Start)
-        .width('100%')
-        .padding(16)
-        .borderRadius(16)
-        .backgroundColor($r('app.color.v3_surface'))
-        .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .shadow({ radius: 12, color: $r('app.color.v3_shadow'), offsetY: 3 })
-        .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
-        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER))
-        .compositingFilter(pressLightFieldFilter(this.pressed))
-        .onTouch((event: TouchEvent): void => {
-            if (event.type === TouchType.Down) {
-                this.pressed = true;
-            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                this.pressed = false;
-            }
-        })
-        .accessibilityGroup(true)
-        .onClick((): void => this.onOpen())
-        .accessibilityText(`${this.stat.label}，${this.stat.value}，点击查看全部`)
-    }
-}
-
-@Component
-struct RecentAppCard {
-    app: MarketApp = {} as MarketApp;
-    onOpen: (app: MarketApp) => void = () => {};
-    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
-    @State private pressed: boolean = false;
-
-    build() {
-        Row({ space: 12 }) {
-            Stack() {
-                Image(this.app.icon_url || $r('app.media.startIcon'))
-                    .width('100%')
-                    .height('100%')
-                    .objectFit(ImageFit.Cover)
-                    .borderRadius(12)
-                    .clip(true)
-                    .alt($r('app.media.startIcon'))
-                    .accessibilityText(`${this.app.name || '未知应用'}图标`)
-            }
-                .width(48)
-                .height(48)
-                .borderRadius(12)
-                .clip(true)
-            Column({ space: 4 }) {
-                Text(this.app.name || '未知应用')
-                    .fontSize(16)
-                    .fontWeight(FontWeight.Medium)
-                    .fontColor($r('app.color.v3_text_primary'))
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                Text(`${this.app.developer_name || '未知开发者'} · ${this.app.version || '未知版本'}`)
-                    .fontSize(12)
-                    .fontColor($r('app.color.v3_text_secondary'))
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                Text(`收录于 ${formatDateTime(this.app.listed_at)}`)
-                    .fontSize(11)
-                    .fontColor($r('app.color.v3_text_secondary'))
-            }
-            .alignItems(HorizontalAlign.Start)
-            .layoutWeight(1)
-            Image($r('app.media.right'))
-                .width(18)
-                .height(18)
-                .fillColor($r('app.color.v3_text_secondary'))
-                .accessibilityText('打开详情')
-        }
-        .width('100%')
-        .padding(14)
-        .borderRadius(16)
-        .backgroundColor($r('app.color.v3_surface'))
-        .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .scale({ x: this.pressed ? 0.975 : 1, y: this.pressed ? 0.975 : 1 })
-        .animation({ duration: 130, curve: curves.springMotion(0.35, 0.9) })
-        .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER))
-        .compositingFilter(pressLightFieldFilter(this.pressed))
-        .onTouch((event: TouchEvent): void => {
-            if (event.type === TouchType.Down) {
-                this.pressed = true;
-            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                this.pressed = false;
-            }
-        })
-        .onClick(() => {
-            if (this.vibrationLevel > 0) vibration.dotVibration();
-            this.onOpen(this.app);
-        })
-        .accessibilityGroup(true)
-        .accessibilityText(`新收录应用${this.app.name || '未知应用'}，点击查看详情`)
-    }
-}
+} from '../../models/types';
+import { HomeRankings } from '../../components/home/HomeRankings';
+import { SyncStatusCard } from '../../components/home/SyncStatusCard';
 
 @Component
 export struct HomePage {

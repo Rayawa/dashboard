@@ -1,12 +1,12 @@
-import { appIconPath } from '../main/ets/common/AppIconQuery';
-import { appCollectionSubtitle } from '../main/ets/common/AppListPresentation';
-import { parseLocalCollection } from '../main/ets/common/LocalCollection';
+import { appIconPath } from '../main/ets/domain/apps/AppIconQuery';
+import { appCollectionSubtitle } from '../main/ets/domain/apps/AppListPresentation';
+import { parseLocalCollection } from '../main/ets/domain/collection/LocalCollection';
 import { describe, it, expect } from '@ohos/hypium';
-import { collectionExpression, collectionSort, versionChanges } from '../main/ets/common/DiscoveryQuery';
-import { reputationSubtitle, reputationValue, reputationSummary } from '../main/ets/common/ReputationPresentation';
-import { buildReputationPath, buildCategoryGrowthPath, buildTopicsPath } from '../main/ets/common/RankingQuery';
-import { latestDailyMaxRecords } from '../main/ets/common/DailyRanking';
-import type { ReputationItem, AppMetric, DailyMaxDownloadApp, MarketApp } from '../main/ets/common/types';
+import { collectionExpression, collectionSort, versionChanges } from '../main/ets/domain/discovery/DiscoveryQuery';
+import { reputationSubtitle, reputationValue, reputationSummary } from '../main/ets/domain/rankings/ReputationPresentation';
+import { buildReputationPath, buildCategoryGrowthPath, buildTopicsPath } from '../main/ets/domain/rankings/RankingQuery';
+import { latestDailyMaxRecords } from '../main/ets/domain/rankings/DailyRanking';
+import type { ReputationItem, AppMetric, DailyMaxDownloadApp, MarketApp } from '../main/ets/models/types';
 
 function listApp(): MarketApp {
     return { app_id: 'a', icon_url: '', created_at: '', description: '', dev_en_name: '', developer_name: '开发者甲',

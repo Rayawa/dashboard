@@ -1,10 +1,9 @@
-import { setContinuationScrollDistance } from '../../common/appState';
-import { flushContinuationScroll } from '../../common/appState';
-import { ROUTE_MY_COLLECTION } from '../../common/constants';
+import { setContinuationScrollDistance } from '../../state/appState';
+import { flushContinuationScroll } from '../../state/appState';
 import { common, Want } from '@kit.AbilityKit';
 import { PromptAction, TextModifier } from '@kit.ArkUI';
 import { HdsListItemCard, IconSize, PrefixIcon, SuffixCustomBuilder } from '@kit.UIDesignKit';
-import { SettingsPanel } from '../../component/SettingsPanel';
+import { SettingsPanel } from '../../components/settings/SettingsPanel';
 import {
     APP_VERSION,
     CONTENT_MAX_WIDTH,
@@ -28,15 +27,15 @@ import {
     ROUTE_TUTORIAL,
     ROUTE_WEB_PAGE,
     SBaseURL,
-} from '../../common/constants';
-import { getContinuationState, setContinuationView } from '../../common/appState';
-import { WebViewParam } from '../../common/types';
-import URL from '../../common/url';
-import { showToastSafely } from '../../common/safeUi';
-import { EmptyPathParam } from '../../common/safeNavigation';
-import { vibration } from '../../common/vibration';
-import { cancelStaggerEnterAnimation, startStaggerEnterAnimation } from '../../common/motion';
-import { scrollByAxis } from '../../common/scroll';
+} from '../../config/constants';
+import { getContinuationState, setContinuationView } from '../../state/appState';
+import { WebViewParam } from '../../models/types';
+import URL from '../../utils/url/url';
+import { showToastSafely } from '../../ui/feedback/safeUi';
+import { EmptyPathParam } from '../../ui/navigation/safeNavigation';
+import { vibration } from '../../utils/device/vibration';
+import { cancelStaggerEnterAnimation, startStaggerEnterAnimation } from '../../ui/animation/motion';
+import { scrollByAxis } from '../../ui/interaction/scroll';
 
 interface MoreItem {
     title: string;
@@ -204,7 +203,6 @@ export struct MyPage {
 
     private moreItems(): MoreItem[] {
         return [
-            { title: '收藏与关注', icon: $r('app.media.app_icon'), action: () => this.pushPage(ROUTE_MY_COLLECTION) },
             {
                 title: '项目网站首页',
                 icon: $r('app.media.app_icon'),

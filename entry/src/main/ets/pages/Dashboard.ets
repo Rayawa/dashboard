@@ -1,10 +1,11 @@
-import { IdleTask } from '../common/FrameScheduler';
+import { IdleTask } from '../utils/runtime/FrameScheduler';
 import lazy { RankingPage } from './discovery/RankingPage';
 import lazy { AppCollectionPage } from './discovery/AppCollectionPage';
 import lazy { TopicsPage } from './discovery/TopicsPage';
-import lazy { MyCollectionPage } from './discovery/MyCollectionPage';
-import type { RankingTarget, AppCollectionTarget, TopicTarget } from '../common/types';
-import { ROUTE_RANKINGS, ROUTE_APP_COLLECTION, ROUTE_TOPICS, ROUTE_MY_COLLECTION } from '../common/constants';
+import lazy { CollectionPage } from './main/CollectionPage';
+import lazy { CollectionManagementPage } from './collection/CollectionManagementPage';
+import type { RankingTarget, AppCollectionTarget, TopicTarget } from '../models/types';
+import { ROUTE_RANKINGS, ROUTE_APP_COLLECTION, ROUTE_TOPICS, ROUTE_COLLECTION_MANAGEMENT } from '../config/constants';
 import {
   BlurStrategy,
   HdsNavigation,
@@ -15,14 +16,15 @@ import {
 } from '@kit.UIDesignKit';
 import { curves, LengthMetrics, PromptAction, SegmentButtonV2Items, SymbolGlyphModifier } from '@kit.ArkUI';
 import { deviceInfo } from '@kit.BasicServicesKit';
-import { getFirstLaunch } from '../common/storage';
+import { getFirstLaunch } from '../services/storage/storage';
 import {
   consumeMainTab, getContinuationState, peekDetailTarget, setAppsViewIndex, setContinuationView, setMainTab,
-} from '../common/appState';
+} from '../state/appState';
 import {
   CONTINUATION_ROUTE_DETAIL,
   customUserAgent,
   MAIN_TAB_APPS,
+  MAIN_TAB_COLLECTION,
   MAIN_TAB_DEFAULT,
   MAIN_TAB_HOME,
   MAIN_TAB_MY,
@@ -39,32 +41,32 @@ import {
   ROUTE_HTML_PAGE,
   ROUTE_TUTORIAL,
   ROUTE_WEB_PAGE,
-} from '../common/constants';
-import type { AppRouteTarget } from '../common/types';
-import { WarningContent } from '../component/WarningContent';
-import { vibration } from '../common/vibration';
-import { pushPathSafely } from '../common/safeNavigation';
-import { showToastSafely } from '../common/safeUi';
+} from '../config/constants';
+import type { AppRouteTarget } from '../models/types';
+import { WarningContent } from '../components/privacy/WarningContent';
+import { vibration } from '../utils/device/vibration';
+import { pushPathSafely } from '../ui/navigation/safeNavigation';
+import { showToastSafely } from '../ui/feedback/safeUi';
 import {
   HDS_MATERIAL_LEVEL_GENTLE,
   HDS_MATERIAL_TYPE_ADAPTIVE,
   HDS_TITLE_SIZE_SMALL,
   SUPPORTS_HARMONY_API_23,
-} from '../common/platformCompatibility';
+} from '../config/platformCompatibility';
 import { HomePage } from './main/HomePage';
 import lazy { AppsPage } from './main/AppsPage';
 import lazy { MyPage } from './main/MyPage';
 import lazy { AppDetailPage } from './detail/AppDetailPage';
-import lazy { AppLogBuilder } from './more/AppLogPage';
-import lazy { HTMLBuilder } from './more/LocalHtmlPage';
-import lazy { TutorialPageBuilder } from './more/TutorialPage';
-import lazy { FriendPageBuilder } from './more/FriendLinksPage';
-import lazy { DeveloperPage } from './more/DeveloperPage';
-import lazy { WebPageBuilder } from './more/WebPage';
-import type { WebPageParams } from './more/WebPage';
-import { HdsTitleBarSegment } from '../component/HdsTitleBarSegment';
-import lazy { SStationNodeParams, SStationPreloadNodeController } from '../component/SStationPreloadNode';
-import { reportUserTelemetry } from '../common/TelemetryService';
+import lazy { AppLogBuilder } from './settings/AppLogPage';
+import lazy { HTMLBuilder } from './web/LocalHtmlPage';
+import lazy { TutorialPageBuilder } from './settings/TutorialPage';
+import lazy { FriendPageBuilder } from './settings/FriendLinksPage';
+import lazy { DeveloperPage } from './settings/DeveloperPage';
+import lazy { WebPageBuilder } from './web/WebPage';
+import type { WebPageParams } from './web/WebPage';
+import { HdsTitleBarSegment } from '../components/common/HdsTitleBarSegment';
+import lazy { SStationNodeParams, SStationPreloadNodeController } from '../ui/station/SStationPreloadNode';
+import { reportUserTelemetry } from '../services/telemetry/TelemetryService';
 
 interface MainTab {
     label: string;
@@ -106,6 +108,7 @@ struct Dashboard {
     @State private appsSearchCommandVersion: number = 0;
     @State private appsSearchOpen: boolean = false;
     @State private appsViewIndexes: number[] = [0];
+    @State private collectionViewIndexes: number[] = [0];
     @State private appsSearchCloseVersion: number = 0;
     @State private sStationCommand: number = S_STATION_COMMAND_NONE;
     @State private sStationCommandVersion: number = 0;
@@ -118,9 +121,14 @@ struct Dashboard {
         { text: '概况', accessibilityText: '概况' },
         { text: '总表', accessibilityText: '总表' },
     ]);
+    private collectionSegmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
+        { text: '应用', accessibilityText: '收藏的应用' },
+        { text: '开发者', accessibilityText: '收藏的开发者' },
+    ]);
     private readonly mainTabs: MainTab[] = [
         { label: 'S站', icon: $r('sys.symbol.wifi_router') },
         { label: '首页', icon: $r('sys.symbol.house') },
+        { label: '收藏', icon: $r('sys.symbol.star') },
         { label: '详情', icon: $r('sys.symbol.square_grid_2x2') },
         { label: '我的', icon: $r('sys.symbol.person') },
     ];
@@ -159,6 +167,35 @@ struct Dashboard {
         .width('100%')
         .height('100%')
         .justifyContent(FlexAlign.Center)
+    }
+
+    @Builder
+    private collectionTitleSegment(): void {
+        Column() {
+            HdsTitleBarSegment({
+                items: this.collectionSegmentItems,
+                selectedIndexes: $collectionViewIndexes,
+                segmentHeight: 48,
+                experimentalWidth: '50%',
+                experimentalHeight: 52,
+                onItemClicked: (index: number): void => {
+                    this.vibrate();
+                    this.collectionViewIndexes = [index];
+                },
+            })
+            .align(Alignment.Center)
+            .margin({ top: 8 })
+        }
+        .width('100%').height('100%').justifyContent(FlexAlign.Center)
+    }
+
+    @Builder
+    private mainTitleSegment(): void {
+        if (this.selectedIndex === MAIN_TAB_COLLECTION) {
+            this.collectionTitleSegment()
+        } else {
+            this.appsTitleSegment()
+        }
     }
 
     private mainTitle(): string {
@@ -252,6 +289,15 @@ struct Dashboard {
                     },
                 },
             ];
+        }
+        if (this.selectedIndex === MAIN_TAB_COLLECTION) {
+            return [{ content: {
+                label: '管理收藏', icon: $r('sys.symbol.slider_horizontal_2_square'), isEnabled: true,
+                action: (): void => {
+                    this.vibrate();
+                    pushPathSafely(this.pageStack, ROUTE_COLLECTION_MANAGEMENT, this.collectionViewIndexes[0] ?? 0);
+                },
+            } }];
         }
         if (this.selectedIndex === MAIN_TAB_APPS) {
             return [{
@@ -393,8 +439,8 @@ struct Dashboard {
             AppCollectionPage({ target: param as AppCollectionTarget })
         } else if (name === ROUTE_TOPICS) {
             TopicsPage({ target: param as TopicTarget })
-        } else if (name === ROUTE_MY_COLLECTION) {
-            MyCollectionPage()
+        } else if (name === ROUTE_COLLECTION_MANAGEMENT) {
+            CollectionManagementPage({ initialIndex: param as number })
         } else if (name === ROUTE_APP_DETAIL) {
             AppDetailPage({ routeTarget: param as AppRouteTarget })
         } else if (name === ROUTE_WEB_PAGE) {
@@ -445,6 +491,16 @@ struct Dashboard {
         .accessibilityText('首页标签页')
 
         TabContent() {
+            CollectionPage({
+                selectedIndexes: $collectionViewIndexes,
+                active: this.applicationActive && this.mainVisible && this.selectedIndex === MAIN_TAB_COLLECTION,
+                scrollToTopVersion: this.mainActionIndex === MAIN_TAB_COLLECTION ? this.mainActionVersion : 0,
+            })
+        }
+        .tabBar(this.mainTabStyle(this.mainTabs[MAIN_TAB_COLLECTION]))
+        .accessibilityText('收藏标签页')
+
+        TabContent() {
             AppsPage({
                 active: this.applicationActive && this.mainVisible && this.selectedIndex === MAIN_TAB_APPS,
                 selectedIndexes: $appsViewIndexes,
@@ -458,7 +514,7 @@ struct Dashboard {
                 onOpenAppDetail: (target: AppRouteTarget): void => this.openAppDetail(target),
             })
         }
-        .tabBar(this.mainTabStyle(this.mainTabs[2]))
+        .tabBar(this.mainTabStyle(this.mainTabs[MAIN_TAB_APPS]))
         .accessibilityText('详情标签页')
 
         TabContent() {
@@ -471,7 +527,7 @@ struct Dashboard {
                 },
             })
         }
-        .tabBar(this.mainTabStyle(this.mainTabs[3]))
+        .tabBar(this.mainTabStyle(this.mainTabs[MAIN_TAB_MY]))
         .accessibilityText('我的标签页')
     }
 
@@ -497,9 +553,9 @@ struct Dashboard {
                 this.mainTabContents()
             }
             .barPosition(BarPosition.End)
-            .barWidth(250)
+            .barWidth(320)
             // API 23+ 缓存最近切换页面，并使用系统浮动材质底栏。
-            .cachedMaxCount(4, TabsCacheMode.CACHE_LATEST_SWITCHED)
+            .cachedMaxCount(5, TabsCacheMode.CACHE_LATEST_SWITCHED)
             .scrollable(false)
             .vertical(false)
             .barOverlap(true)
@@ -515,13 +571,13 @@ struct Dashboard {
             })
             .onTabBarClick((index: number) => this.handleTabBarClick(index))
             .onChange((index: number) => this.onMainTabChanged(index))
-            .accessibilityText('主界面四个标签页，依次为S站、首页、详情和我的')
+            .accessibilityText('主界面五个标签页，依次为S站、首页、收藏、详情和我的')
         } else {
             HdsTabs({ controller: this.tabsController, index: this.selectedIndex }) {
                 this.mainTabContents()
             }
             .barPosition(BarPosition.End)
-            .barWidth(250)
+            .barWidth(320)
             .scrollable(false)
             .vertical(false)
             .barOverlap(true)
@@ -530,7 +586,7 @@ struct Dashboard {
             .barBackgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THICK)
             .onTabBarClick((index: number) => this.handleTabBarClick(index))
             .onChange((index: number) => this.onMainTabChanged(index))
-            .accessibilityText('主界面四个标签页，依次为S站、首页、详情和我的')
+            .accessibilityText('主界面五个标签页，依次为S站、首页、收藏、详情和我的')
         }
     }
 
@@ -633,8 +689,9 @@ struct Dashboard {
                 menu: {
                     value: this.titleMenuItems(),
                 },
-                stackBuilder: this.selectedIndex === MAIN_TAB_APPS && !this.appsSearchOpen ? (): void => {
-                    this.appsTitleSegment();
+                stackBuilder: (this.selectedIndex === MAIN_TAB_APPS || this.selectedIndex === MAIN_TAB_COLLECTION) &&
+                    !this.appsSearchOpen ? (): void => {
+                    this.mainTitleSegment();
                 } : undefined,
             },
         })

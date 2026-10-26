@@ -1,20 +1,21 @@
-import { PerformanceTrace } from '../../common/PerformanceTrace';
-import { RequestScope } from '../../common/CachedRequest';
-import { getMainTabIndex, setContinuationScrollDistance } from '../../common/appState';
-import { flushContinuationScroll } from '../../common/appState';
-import { DeferredDetailSection } from '../../component/detail/DeferredDetailSection';
-import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
-import { DetailTag } from '../../component/detail/DetailTag';
-import type { DetailField } from '../../component/detail/DetailTag';
-import { ScreenshotCarousel } from '../../component/detail/ScreenshotCarousel';
-import { DiscoveryButtonStyle } from '../../common/DiscoveryTheme';
-import { VersionTimeline } from '../../component/detail/VersionTimeline';
-import { sortAppMetrics, versionChanges } from '../../common/DiscoveryQuery';
-import { getLocalCollection, saveCollectedApp } from '../../common/storage';
-import { openAppCollection } from '../../common/discoveryNavigation';
-import type { VersionChange, SavedApp } from '../../common/types';
+import { AppIdentity } from '../../components/detail/AppIdentity';
+import { AppDescription } from '../../components/detail/AppDescription';
+import { PerformanceTrace } from '../../utils/diagnostics/PerformanceTrace';
+import { RequestScope } from '../../services/cache/CachedRequest';
+import { DeferredDetailSection } from '../../components/detail/DeferredDetailSection';
+import { DiscoveryInteraction } from '../../ui/interaction/DiscoveryInteraction';
+import { DetailTag } from '../../components/detail/DetailTag';
+import type { DetailField } from '../../models/detailTypes';
+import { ScreenshotCarousel } from '../../components/detail/ScreenshotCarousel';
+import { DiscoveryButtonStyle } from '../../ui/theme/DiscoveryTheme';
+import { VersionTimeline } from '../../components/detail/VersionTimeline';
+import { sortAppMetrics, versionChanges } from '../../domain/discovery/DiscoveryQuery';
+import { getLocalCollection, saveCollectedApp } from '../../services/storage/storage';
+import { openAppCollection } from '../../ui/navigation/discoveryNavigation';
+import type { VersionChange, SavedApp } from '../../models/types';
 import { common, Want } from '@kit.AbilityKit';
-import { LengthMetrics, PromptAction, SymbolGlyphModifier } from '@kit.ArkUI';
+import { LengthMetrics, PromptAction } from '@kit.ArkUI';
+import { collectionStarIcon } from '../../ui/icons/collectionIcon';
 import {
     hdsEffect,
     HdsNavDestination,
@@ -31,33 +32,32 @@ import {
     RESPONSIVE_BREAKPOINT_MEDIUM,
     S_SITE_PUBLIC_BASE_URL,
     S_SITE_APP_DETAIL_QUERY,
-} from '../../common/constants';
+} from '../../config/constants';
 import {
-    consumeDetailTarget,
+    flushContinuationScroll, getMainTabIndex, setContinuationScrollDistance, consumeDetailTarget,
     getContinuationState,
     peekDetailTarget,
     setContinuationDetailChartsState,
     setContinuationView,
-} from '../../common/appState';
-import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory } from '../../common/MarketApi';
-import { formatSdkVersion, formatBytes, formatCount, formatDateTime, formatDownloadCount } from '../../common/format';
-import { scrollByAxis } from '../../common/scroll';
-import { showToastSafely } from '../../common/safeUi';
-import { getPathParamsSafely, popPathSafely } from '../../common/safeNavigation';
+} from '../../state/appState';
+import { fetchAppById, fetchAppByPackage, fetchAppMetrics, fetchAppRatingHistory } from '../../services/api/MarketApi';
+import { scrollByAxis } from '../../ui/interaction/scroll';
+import { showToastSafely } from '../../ui/feedback/safeUi';
+import { getPathParamsSafely, popPathSafely } from '../../ui/navigation/safeNavigation';
 import {
     cancelStaggerEnterAnimation,
     contentEnterTransition,
     startStaggerEnterAnimation,
-} from '../../common/motion';
-import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
-import { WebShareManager } from '../../common/shareControl';
-import { vibration } from '../../common/vibration';
+} from '../../ui/animation/motion';
+import { pressLightFieldFilter, pressVisualEffect } from '../../ui/theme/visualEffects';
+import { WebShareManager } from '../../services/sharing/shareControl';
+import { vibration } from '../../utils/device/vibration';
 import {
     HDS_MATERIAL_LEVEL_GENTLE,
     HDS_MATERIAL_TYPE_ADAPTIVE,
     HDS_TITLE_SIZE_SMALL,
     SUPPORTS_HARMONY_API_23,
-} from '../../common/platformCompatibility';
+} from '../../config/platformCompatibility';
 import type {
     ApiDataResult,
     AppDetailPayload,
@@ -68,15 +68,12 @@ import type {
     ChartViewportState,
     MarketApp,
     ScreenshotInfo,
-} from '../../common/types';
-import { InteractiveLineChart } from '../../component/charts/InteractiveLineChart';
-import { RatingBreakdown } from '../../component/detail/RatingBreakdown';
-import type { LineChartPoint } from '../../component/charts/InteractiveLineChart';
-import { downsampleLinePoints, filterDownloadOutliers } from '../../component/charts/chartDataProcessing';
-
-interface TimedRating { rating: AppRatingHistory; time: number; value: number; }
-
-const DETAIL_CHART_MAX_POINTS: number = 360;
+} from '../../models/types';
+import { InteractiveLineChart } from '../../components/charts/InteractiveLineChart';
+import { RatingBreakdown } from '../../components/detail/RatingBreakdown';
+import type { LineChartPoint } from '../../models/chartTypes';
+import { detailDownloadPoints, detailRatingPoints } from '../../domain/detail/DetailHistory';
+import { detailFields, detailScreenshots } from '../../ui/detail/DetailPresentation';
 
 @Component
 export struct AppDetailPage {
@@ -362,10 +359,10 @@ export struct AppDetailPage {
     private loadRatings(packageName: string, force: boolean, version: number): void {
         fetchAppRatingHistory(packageName, force, this.requestScope).then((result) => {
             if (!this.active || version !== this.requestVersion || !result.data.success) return;
-            this.ratingChartPoints = this.prepareRatingPoints(result.data.data || []);
+            this.ratingChartPoints = detailRatingPoints(result.data.data || []);
             result.revalidated?.then((fresh) => {
                 if (this.active && version === this.requestVersion && !fresh.stale) {
-                    this.ratingChartPoints = this.prepareRatingPoints(fresh.data.data || []);
+                    this.ratingChartPoints = detailRatingPoints(fresh.data.data || []);
                 }
             }).catch((): void => {});
         }).catch((error: Error): void => {
@@ -382,13 +379,13 @@ export struct AppDetailPage {
             if (!this.active || version !== this.requestVersion || token !== this.metricsToken) return;
             if (!result.data.success) throw new Error('历史指标暂不可用');
             const metrics = PerformanceTrace.measure('Dashboard.Detail.SortHistory', (): AppMetric[] => sortAppMetrics(result.data.data || []));
-            this.downloadChartPoints = this.prepareDownloadPoints(metrics);
+            this.downloadChartPoints = detailDownloadPoints(metrics);
             this.versions = versionChanges(metrics, true);
             this.metricsStale = result.stale;
             result.revalidated?.then((fresh) => {
                 if (!this.active || version !== this.requestVersion || token !== this.metricsToken || fresh.stale) return;
                 const metrics = sortAppMetrics(fresh.data.data || []);
-                this.downloadChartPoints = this.prepareDownloadPoints(metrics);
+                this.downloadChartPoints = detailDownloadPoints(metrics);
                 this.versions = versionChanges(metrics, true);
                 this.metricsStale = false;
             }).catch((): void => {});
@@ -420,7 +417,10 @@ export struct AppDetailPage {
         try {
             await saveCollectedApp({ appId: this.app.app_id, packageName: this.app.pkg_name,
                 name: this.app.name, iconUrl: this.app.icon_url }, next);
-            if (this.active) this.saved = next;
+            if (this.active) {
+                this.saved = next;
+                showToastSafely(this.prompt, next ? '收藏成功' : '取消收藏');
+            }
         } catch (_) {
             showToastSafely(this.prompt, '保存收藏失败，请重试');
         } finally { if (this.active) this.saving = false; }
@@ -432,55 +432,9 @@ export struct AppDetailPage {
             developerId: this.app.dev_id, developerName: this.app.developer_name });
     }
 
-    private createFields(): DetailField[] {
-        if (!this.app) {
-            return [];
-        }
-        return [
-            { label: '应用 ID', value: this.app.app_id || '-' },
-            { label: '包名', value: this.app.pkg_name || '-' },
-            { label: '开发者', value: this.app.developer_name || '-' },
-            { label: '分类', value: `${this.app.kind_type_name || '-'} · ${this.app.kind_name || '-'}` },
-            { label: '版本', value: `${this.app.version || '-'} (${this.app.version_code || 0})` },
-            { label: '应用大小', value: formatBytes(this.app.size_bytes) },
-            { label: '最低 SDK', value: formatSdkVersion(this.app.minsdk) },
-            { label: '目标 SDK', value: formatSdkVersion(this.app.target_sdk) },
-            { label: '编译 SDK', value: formatSdkVersion(this.app.compile_sdk_version) },
-            { label: '最低 API 版本', value: String(this.app.min_hmos_api_level ?? '-') },
-            { label: '下载量', value: formatDownloadCount(this.app.download_count) },
-            { label: '评分', value: this.app.average_rating ? `${this.app.average_rating} / 5` : '-' },
-            { label: '评分数量', value: formatCount(this.app.total_star_rating_count) },
-            { label: '供应商', value: this.app.supplier || '-' },
-            { label: '标签', value: this.app.tag_name || '-' },
-            { label: '支持设备', value: this.app.main_device_codes?.join('、') || '-' },
-            { label: '应用内购买', value: this.app.iap ? '支持' : '不支持' },
-            { label: '付费状态', value: this.app.is_pay ? '付费应用' : '免费应用' },
-            { label: '价格', value: String(this.app.price ?? '免费') },
-            { label: '发行国家/地区', value: this.app.release_countries?.join('、') || '-' },
-            { label: '备案主体', value: this.app.recordal_entity_name || this.app.recordal_entity_title || '-' },
-            { label: '备案信息', value: this.app.app_recordal_info || '-' },
-            { label: '上架时间', value: formatDateTime(this.app.listed_at) },
-            { label: '数据更新', value: formatDateTime(this.app.updated_at) },
-        ];
-    }
-
-    private createScreenshots(): ScreenshotInfo[] {
-        if (!this.app) {
-            return [];
-        }
-        if (this.app.new_screen_shots && this.app.new_screen_shots.length > 0) {
-            return this.app.new_screen_shots;
-        }
-        return (this.app.screen_shots ?? []).map((url: string) => ({
-            url,
-            resolution: '',
-            rotated: 0,
-        } as ScreenshotInfo));
-    }
-
     private preparePresentation(): void {
-        this.fieldsCache = this.createFields();
-        this.screenshotCache = this.createScreenshots();
+        this.fieldsCache = detailFields(this.app);
+        this.screenshotCache = detailScreenshots(this.app);
     }
 
     private fields(): DetailField[] { return this.fieldsCache; }
@@ -501,34 +455,6 @@ export struct AppDetailPage {
         this.historyPackage = this.app.pkg_name;
         this.loadMetrics(this.app.pkg_name, force, version);
         this.loadRatings(this.app.pkg_name, force, version);
-    }
-
-    private prepareDownloadPoints(metrics: AppMetric[]): LineChartPoint[] {
-        const points = metrics.filter((metric: AppMetric): boolean =>
-            Number.isFinite(Number(metric.download_count)) && Number(metric.download_count) >= 0)
-            .map((metric: AppMetric): LineChartPoint => ({
-                label: metric.created_at, value: Number(metric.download_count), detail: metric.version || '-',
-            }));
-        return downsampleLinePoints(filterDownloadOutliers(points), DETAIL_CHART_MAX_POINTS)
-            .map((point: LineChartPoint): LineChartPoint => ({
-                label: formatDateTime(point.label).split(' ')[0], value: point.value,
-                detail: `${formatDateTime(point.label)} · 下载量 ${formatDownloadCount(point.value)} · 版本 ${point.detail}`,
-            }));
-    }
-
-    private prepareRatingPoints(ratingHistory: AppRatingHistory[]): LineChartPoint[] {
-        const timed = ratingHistory.map((rating: AppRatingHistory): TimedRating => ({ rating,
-            time: new Date(rating.report_date).getTime(),
-            value: Number(rating.cumulative_avg_rating_high_prec ?? rating.cumulative_avg_rating_origin ?? 0),
-        })).filter((item: TimedRating): boolean => Number.isFinite(item.time) &&
-            Number.isFinite(item.value) && item.value >= 0 && item.value <= 5)
-            .sort((left: TimedRating, right: TimedRating): number => left.time - right.time);
-        const points = timed.map((item: TimedRating): LineChartPoint => ({ label: item.rating.report_date,
-            value: item.value, detail: String(item.rating.cumulative_total_count ?? 0) }));
-        return downsampleLinePoints(points, DETAIL_CHART_MAX_POINTS).map((point: LineChartPoint): LineChartPoint => ({
-            label: point.label, value: point.value,
-            detail: `${point.label} · 平均评分 ${point.value} · 累计 ${point.detail} 条评分`,
-        }));
     }
 
     private async openExternal(uri: string, failureMessage: string): Promise<void> {
@@ -555,46 +481,9 @@ export struct AppDetailPage {
 
     @Builder
     private appIdentity(): void {
-        Column({ space: 8 }) {
-            Image(this.app?.icon_url || $r('app.media.startIcon'))
-                .width(100)
-                .height(100)
-                .borderRadius(22)
-                .objectFit(ImageFit.Cover)
-                .alt($r('app.media.startIcon'))
-                .accessibilityText(`${this.app?.name || '未知应用'}应用图标`)
-                .margin({ bottom: 10 })
-            Text(this.app?.name || '未知应用')
-                .fontSize(30)
-                .fontWeight(800)
-                .fontColor($r('app.color.diff_content'))
-                .textAlign(TextAlign.Center)
-                .maxLines(2)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .accessibilityText(this.app?.name || '未知应用')
-            Text(this.app?.developer_name || '未知开发者')
-                .fontSize(20)
-                .fontWeight(600)
-                .fontColor($r('app.color.v3_text_secondary'))
-                .textAlign(TextAlign.Center)
-                .maxLines(2)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .scale({ x: this.interaction.pressedKey === 'developer-link' ? 0.97 : 1,
-                    y: this.interaction.pressedKey === 'developer-link' ? 0.97 : 1 })
-                .animation({ duration: 120, curve: Curve.EaseOut })
-                .visualEffect(pressVisualEffect(this.interaction.pressedKey === 'developer-link',
-                    hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
-                .compositingFilter(pressLightFieldFilter(this.interaction.pressedKey === 'developer-link'))
-                .onTouch((event: TouchEvent): void => this.interaction.touch('developer-link', event))
-                .onClick((): void => { this.interaction.activate('developer-link'); this.openDeveloper(); })
-                .accessibilityText(`开发公司${this.app?.developer_name || '未知'}，点击查看全部应用`)
-        }
-        .width('100%')
-        .padding({ top: 18, bottom: 18, left: 12, right: 12 })
-        .opacity(this.animStep >= this.requiredStep('identity') ? 1 : 0)
-        .translate({ y: this.animStep >= this.requiredStep('identity') ? 0 : 20 })
-        .accessibilityGroup(false).accessibilityLevel('no')
-        .accessibilityText(`${this.app?.name || '未知应用'}的图标、名称和开发公司`)
+        AppIdentity({ app: this.app, onOpenDeveloper: (): void => this.openDeveloper() })
+            .opacity(this.animStep >= this.requiredStep('identity') ? 1 : 0)
+            .translate({ y: this.animStep >= this.requiredStep('identity') ? 0 : 20 })
     }
 
     @Builder
@@ -694,56 +583,10 @@ export struct AppDetailPage {
 
     @Builder
     private appDescription(): void {
-        Column({ space: 10 }) {
-            Text('应用介绍')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .fontColor($r('app.color.v3_text_primary'))
-                .width('100%')
-                .accessibilityText('应用介绍')
-            Text(this.app?.description || '暂无介绍')
-                .maxLines(this.descriptionExpanded ? 10000 : 8)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .fontSize(14)
-                .lineHeight(22)
-                .fontColor($r('app.color.v3_text_primary'))
-                .width('100%')
-                .accessibilityText(this.app?.description || '暂无应用介绍')
-            if ((this.app?.description?.length || 0) > 240) {
-                Button(this.descriptionExpanded ? '收起介绍' : '展开完整介绍')
-                    .onClick((): void => { this.descriptionExpanded = !this.descriptionExpanded; })
-            }
-            if (this.app?.new_features) {
-                Divider().color($r('app.color.v3_chart_grid')).accessibilityText('内容分隔线')
-                Text('新版特性')
-                    .fontSize(16)
-                    .fontWeight(FontWeight.Bold)
-                    .fontColor($r('app.color.v3_text_primary'))
-                    .width('100%')
-                    .accessibilityText('新版特性')
-                Text(this.app.new_features)
-                    .maxLines(this.featuresExpanded ? 10000 : 6)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    .fontSize(14)
-                    .lineHeight(22)
-                    .fontColor($r('app.color.v3_text_primary'))
-                    .width('100%')
-                    .accessibilityText(this.app.new_features)
-                if (this.app.new_features.length > 180) {
-                    Button(this.featuresExpanded ? '收起新版特性' : '展开新版特性')
-                        .onClick((): void => { this.featuresExpanded = !this.featuresExpanded; })
-                }
-            }
-        }
-        .width('100%')
-        .padding(18)
-        .borderRadius(18)
-        .backgroundColor($r('app.color.v3_surface'))
-        .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .opacity(this.animStep >= this.requiredStep('description') ? 1 : 0)
-        .translate({ y: this.animStep >= this.requiredStep('description') ? 0 : 20 })
-        .accessibilityGroup(false).accessibilityLevel('no')
-        .accessibilityText('应用介绍和新版特性')
+        AppDescription({ description: this.app?.description || '', newFeatures: this.app?.new_features || '',
+            descriptionExpanded: $descriptionExpanded, featuresExpanded: $featuresExpanded })
+            .opacity(this.animStep >= this.requiredStep('description') ? 1 : 0)
+            .translate({ y: this.animStep >= this.requiredStep('description') ? 0 : 20 })
     }
 
     @Builder
@@ -1109,8 +952,7 @@ export struct AppDetailPage {
                         {
                             content: {
                                 label: this.saved ? '取消收藏' : '收藏应用',
-                                icon: new SymbolGlyphModifier(this.saved ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'))
-                                    .fontColor([this.saved ? $r('app.color.diff_content') : $r('sys.color.icon_primary')]),
+                                icon: collectionStarIcon(this.saved),
                                 isEnabled: this.app !== undefined && !this.saving,
                                 action: (): void => { this.vibrate(); this.toggleSaved(); },
                             },

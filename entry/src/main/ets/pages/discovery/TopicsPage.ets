@@ -1,13 +1,14 @@
+import { RequestScope } from '../../services/cache/CachedRequest';
 import { HdsNavigationMenuItemOptions } from '@kit.UIDesignKit';
-import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
-import { openDiscoveryApp, openMarketTopic } from '../../common/discoveryNavigation';
-import { MarketPageFrame } from '../../component/discovery/MarketPageFrame';
-import { AppSummaryRow } from '../../component/discovery/AppSummaryRow';
-import { BrowserPagination, BrowserStatus } from '../../component/discovery/BrowserControls';
-import { fetchTopics, fetchTopic } from '../../common/MarketApi';
-import { DISCOVERY_PAGE_SIZE } from '../../common/constants';
-import { formatDateTime } from '../../common/format';
-import type { TopicTarget, TopicSummary, TopicApp } from '../../common/types';
+import { DiscoveryInteraction } from '../../ui/interaction/DiscoveryInteraction';
+import { openDiscoveryApp, openMarketTopic } from '../../ui/navigation/discoveryNavigation';
+import { MarketPageFrame } from '../../components/discovery/MarketPageFrame';
+import { AppSummaryRow } from '../../components/discovery/AppSummaryRow';
+import { BrowserPagination, BrowserStatus } from '../../components/discovery/BrowserControls';
+import { fetchTopics, fetchTopic } from '../../services/api/MarketApi';
+import { DISCOVERY_PAGE_SIZE } from '../../config/constants';
+import { formatDateTime } from '../../utils/format/format';
+import type { TopicTarget, TopicSummary, TopicApp } from '../../models/types';
 
 @Builder
 export function TopicsPageBuilder() { TopicsPage() }
@@ -26,21 +27,32 @@ export struct TopicsPage {
     @State private error: string = '';
     @State private stale: boolean = false;
     private token: number = 0;
+    private requestScope: RequestScope = new RequestScope();
     private initialized: boolean = false;
-    aboutToDisappear(): void { this.interaction.dispose(); this.token++; }
+    private alive: boolean = false;
+    aboutToAppear(): void { this.alive = true; }
+    aboutToDisappear(): void {
+        this.alive = false;
+        this.token++;
+        this.requestScope.cancel();
+        this.interaction.dispose();
+    }
     private async load(force: boolean): Promise<void> {
+        if (!this.alive) return;
+        this.requestScope.cancel();
+        this.requestScope = new RequestScope();
         const token = ++this.token;
         this.loading = true; this.error = ''; this.topics = []; this.apps = [];
         try {
             if (this.target.topicId) {
-                const result = await fetchTopic(this.target.topicId, force);
+                const result = await fetchTopic(this.target.topicId, force, this.requestScope);
                 if (token !== this.token) return;
                 if (!result.data.success || !result.data.data) throw new Error('专题暂不可用');
                 this.apps = result.data.data.apps || [];
                 this.subtitle = result.data.data.subtitle || '';
                 this.stale = result.stale;
             } else {
-                const result = await fetchTopics(this.page, DISCOVERY_PAGE_SIZE, force);
+                const result = await fetchTopics(this.page, DISCOVERY_PAGE_SIZE, force, this.requestScope);
                 if (token !== this.token) return;
                 if (!result.data.success || !result.data.data) throw new Error('专题列表暂不可用');
                 this.topics = result.data.data.data;

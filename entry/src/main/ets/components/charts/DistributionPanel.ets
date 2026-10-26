@@ -1,0 +1,618 @@
+import { formatSdkLabel } from '../../utils/format/format';
+import { common } from '@kit.AbilityKit';
+import { hdsEffect } from '@kit.UIDesignKit';
+import { formatCount } from '../../utils/format/format';
+import { pressLightFieldFilter, pressVisualEffect } from '../../ui/theme/visualEffects';
+import { vibration } from '../../utils/device/vibration';
+import { OVERVIEW_COLLAPSED_SDK_COUNT, MIN_PRESS_FEEDBACK_MS } from '../../config/constants';
+import { chartLegendColumns } from '../../ui/charts/chartLayout';
+
+export interface DistributionChart { title: string; labels: string[]; values: number[]; total: number; }
+
+@Component
+export struct DistributionPanel {
+    @Prop @Watch('onChartChanged') chart: DistributionChart = { title: '', labels: [], values: [], total: 1 };
+    @Prop @Watch('onActivityChanged') active: boolean = true;
+    private inViewport: boolean = false;
+    private entrancePlayed: boolean = false;
+    private colorCache: Map<number, number> = new Map();
+    private onActivityChanged(): void {
+        if (!this.active || !this.inViewport) {
+            this.animationToken++;
+            if (this.animationTimer >= 0) clearTimeout(this.animationTimer);
+            this.animationTimer = -1;
+            this.drawProgress = 1; this.detailProgress = this.expanded ? 1 : 0;
+        } else if (!this.entrancePlayed) this.animatePie();
+        else this.draw();
+    }
+    onWillApplyTheme(_theme: Theme): void { this.colorCache.clear(); this.draw(); }
+    @Prop horizontalLegend: boolean = false;
+    @Prop showLegend: boolean = true;
+    @Prop collapsible: boolean = false;
+    @Prop @Watch('onDisplayChanged') expanded: boolean = false;
+    @Prop colorLabels: string[] = [];
+    @Prop @Watch('onSelectedLabelChanged') selectedLabel: string = '';
+    @Prop embedded: boolean = false;
+    @Prop showTitle: boolean = true;
+    @Prop showExpandAction: boolean = false;
+    @Prop chartCaption: string = '';
+    @Prop reserveCaptionSpace: boolean = false;
+    onExpand?: () => void;
+    onCollapse?: () => void;
+    onSelect?: (label: string) => void;
+    @State private selected: number = 0;
+    @State private canvasSize: number = 220;
+    @State private panelWidth: number = 320;
+    @State private pressed: boolean = false;
+    @State private pressedControl: string = '';
+    @StorageLink('vibrationLevel') private vibrationLevel: number = 1;
+    private settings: RenderingContextSettings = new RenderingContextSettings(true);
+    private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
+    private canvasReady: boolean = false;
+    private drawProgress: number = 1;
+    private detailProgress: number = 1;
+    // 父级 Prop 提交前先用于当前 Canvas 帧，避免旧选中扇区被重复绘制一次。
+    private pendingSelectedLabel: string = '';
+    private animationToken: number = 0;
+    private controlPressToken: number = 0;
+    private controlPressStartedAt: number = 0;
+    private controlPressTimer: number = -1;
+    private animationTimer: number = -1;
+    private drawTimer: number = -1;
+
+    private beginControlPress(key: string): void {
+        const token = ++this.controlPressToken;
+        this.pressedControl = key;
+        this.controlPressStartedAt = Date.now();
+        if (this.controlPressTimer >= 0) clearTimeout(this.controlPressTimer);
+        this.controlPressTimer = setTimeout((): void => {
+            this.controlPressTimer = -1;
+            if (this.controlPressToken === token && this.pressedControl === key) {
+                this.pressedControl = '';
+            }
+        }, 800);
+    }
+
+    private endControlPress(immediate: boolean = false): void {
+        if (this.controlPressTimer >= 0) {
+            clearTimeout(this.controlPressTimer);
+            this.controlPressTimer = -1;
+        }
+        const key = this.pressedControl;
+        const token = this.controlPressToken;
+        const remaining = immediate ? 0 :
+            Math.max(0, MIN_PRESS_FEEDBACK_MS - (Date.now() - this.controlPressStartedAt));
+        if (key.length === 0 || remaining <= 0) {
+            this.controlPressToken++;
+            this.pressedControl = '';
+            return;
+        }
+        this.controlPressTimer = setTimeout((): void => {
+            this.controlPressTimer = -1;
+            if (this.controlPressToken === token && this.pressedControl === key) {
+                this.controlPressToken++;
+                this.pressedControl = '';
+            }
+        }, remaining);
+    }
+
+    private onChartChanged(): void {
+        this.endControlPress(true);
+        this.selected = 0;
+        this.scheduleAnimation((): void => this.animatePie(), 0);
+    }
+    private onDisplayChanged(): void {
+        this.endControlPress(true);
+        this.selected = 0;
+        if (this.expanded) {
+            this.scheduleAnimation((): void => this.animateOtherExpansion(), 0);
+        } else {
+            this.scheduleAnimation((): void => this.animateOtherCollapse(), 0);
+        }
+    }
+    private onSelectedLabelChanged(): void {
+        this.pendingSelectedLabel = '';
+        if (this.drawTimer >= 0) clearTimeout(this.drawTimer);
+        this.drawTimer = setTimeout((): void => {
+            this.drawTimer = -1;
+            this.draw();
+        }, 0);
+    }
+    private scheduleAnimation(action: () => void, delay: number): void {
+        if (this.animationTimer >= 0) clearTimeout(this.animationTimer);
+        this.animationTimer = setTimeout((): void => {
+            this.animationTimer = -1;
+            action();
+        }, delay);
+    }
+    private animatePie(): void {
+        if (!this.active || !this.inViewport) return;
+        this.entrancePlayed = true;
+        if (!this.canvasReady || this.chart.total <= 0) {
+            this.draw();
+            return;
+        }
+        const token = ++this.animationToken;
+        const startedAt = Date.now();
+        this.drawProgress = 0;
+        this.detailProgress = this.expanded ? 1 : 0;
+        const tick = (): void => {
+            if (token !== this.animationToken) return;
+            const elapsed = Math.min(1, (Date.now() - startedAt) / 700);
+            this.drawProgress = 1 - Math.pow(1 - elapsed, 3);
+            this.draw();
+            if (elapsed < 1) this.scheduleAnimation(tick, 16);
+        };
+        tick();
+    }
+    private animateOtherExpansion(): void {
+        this.drawProgress = 1;
+        if (!this.canvasReady || !this.hasOverflow()) {
+            this.detailProgress = 1;
+            this.draw();
+            return;
+        }
+        const token = ++this.animationToken;
+        const startedAt = Date.now();
+        this.detailProgress = 0;
+        const tick = (): void => {
+            if (token !== this.animationToken) return;
+            const elapsed = Math.min(1, (Date.now() - startedAt) / 520);
+            this.detailProgress = 1 - Math.pow(1 - elapsed, 3);
+            this.draw();
+            if (elapsed < 1) this.scheduleAnimation(tick, 16);
+        };
+        tick();
+    }
+    private animateOtherCollapse(): void {
+        this.drawProgress = 1;
+        if (!this.canvasReady || !this.hasOverflow()) {
+            this.detailProgress = 0;
+            this.draw();
+            return;
+        }
+        const token = ++this.animationToken;
+        const startedAt = Date.now();
+        this.detailProgress = 1;
+        const tick = (): void => {
+            if (token !== this.animationToken) return;
+            const elapsed = Math.min(1, (Date.now() - startedAt) / 420);
+            this.detailProgress = Math.pow(1 - elapsed, 3);
+            this.draw();
+            if (elapsed < 1) this.scheduleAnimation(tick, 16);
+        };
+        tick();
+    }
+    private colors(): Resource[] {
+        return [
+            $r('app.color.diff_content'), $r('app.color.v3_accent_cyan'), $r('app.color.v3_accent_green'),
+            $r('app.color.v3_accent_orange'), $r('app.color.v3_accent_red'), $r('app.color.v3_accent_purple'),
+            $r('app.color.v3_chart_series_7'), $r('app.color.v3_chart_series_8'),
+            $r('app.color.v3_chart_series_9'), $r('app.color.v3_chart_series_10'),
+            $r('app.color.v3_chart_series_11'), $r('app.color.v3_chart_series_12'),
+            $r('app.color.v3_chart_series_13'), $r('app.color.v3_chart_series_14'),
+            $r('app.color.v3_chart_series_15'), $r('app.color.v3_chart_series_16'),
+        ];
+    }
+    private hasOverflow(): boolean {
+        const labelCount = this.onSelect && this.colorLabels.length > 0 ?
+            this.colorLabels.length : this.chart.labels.length;
+        return this.collapsible && labelCount > OVERVIEW_COLLAPSED_SDK_COUNT;
+    }
+    private toggleExpansion(): void {
+        if (this.expanded) {
+            if (this.onCollapse) this.onCollapse();
+        } else if (this.onExpand) {
+            this.onExpand();
+        }
+    }
+    private usesSharedLabels(): boolean {
+        return this.onSelect !== undefined && this.colorLabels.length > 0;
+    }
+    private sourceLabels(): string[] {
+        return this.usesSharedLabels() ?
+            this.colorLabels :
+            this.chart.labels;
+    }
+    private displayLabels(): string[] {
+        const labels = this.sourceLabels();
+        if (!this.hasOverflow() || this.expanded) return labels;
+        return labels.slice(0, OVERVIEW_COLLAPSED_SDK_COUNT).concat(['其他']);
+    }
+    private displayValues(): number[] {
+        const collapsedLabels = this.sourceLabels().slice(0, OVERVIEW_COLLAPSED_SDK_COUNT);
+        return this.displayLabels().map((label: string): number => {
+            if (label !== '其他') {
+                const index = this.chart.labels.indexOf(label);
+                return index >= 0 ? (this.chart.values[index] ?? 0) : 0;
+            }
+            let total = 0;
+            for (let index = 0; index < this.chart.labels.length; index++) {
+                if (collapsedLabels.indexOf(this.chart.labels[index]) < 0) total += this.chart.values[index] ?? 0;
+            }
+            return total;
+        });
+    }
+    private expandedValues(): number[] {
+        return this.sourceLabels().map((label: string): number => {
+            const index = this.chart.labels.indexOf(label);
+            return index >= 0 ? (this.chart.values[index] ?? 0) : 0;
+        });
+    }
+    private visibleValues(): number[] {
+        return this.displayValues();
+    }
+    private visibleTotal(): number {
+        return this.visibleValues().reduce((sum: number, value: number) => sum + value, 0);
+    }
+    private expandFromOther(): void {
+        if (this.expanded || !this.onExpand) return;
+        this.selected = 0;
+        this.onExpand();
+    }
+    private colorAt(index: number): Resource {
+        const colors = this.colors();
+        const label = this.displayLabels()[index] ?? '';
+        if (label === '其他') return $r('app.color.nd_text_sub');
+        const sharedIndex = this.colorLabels.indexOf(label);
+        return colors[(sharedIndex >= 0 ? sharedIndex : index) % colors.length];
+    }
+    private expandedColorAt(index: number): Resource {
+        const colors = this.colors();
+        const label = this.sourceLabels()[index] ?? '';
+        const sharedIndex = this.colorLabels.indexOf(label);
+        return colors[(sharedIndex >= 0 ? sharedIndex : index) % colors.length];
+    }
+    private selectedIndex(): number {
+        if (this.onSelect && this.pendingSelectedLabel.length > 0) {
+            return this.displayLabels().indexOf(this.pendingSelectedLabel);
+        }
+        if (this.onSelect && this.selectedLabel.length > 0) {
+            return this.displayLabels().indexOf(this.selectedLabel);
+        }
+        return Math.min(this.selected, this.displayLabels().length - 1);
+    }
+    private selectedText(): string {
+        const labels = this.displayLabels();
+        const values = this.displayValues();
+        if (labels.length === 0) return '暂无数据';
+        const index = this.selectedIndex();
+        if (index < 0) return '未选择当前图表中的版本';
+        const value = values[index] ?? 0;
+        const percent = this.chart.total > 0 ? value / this.chart.total * 100 : 0;
+        return `${formatSdkLabel(labels[index])}：${formatCount(value)}，${percent.toFixed(1)}%`;
+    }
+
+    private legendText(index: number): string {
+        const value = this.displayValues()[index] ?? 0;
+        const percent = this.chart.total > 0 ? value / this.chart.total * 100 : 0;
+        return `${formatCount(value)} · ${percent.toFixed(1)}%`;
+    }
+
+    private useHorizontalLegend(): boolean { return this.horizontalLegend && this.panelWidth >= 560; }
+
+    private legendColumns(): number {
+        const available = this.panelWidth - (this.embedded ? 0 : 28) -
+            (this.useHorizontalLegend() ? this.canvasSize + 10 : 0);
+        return chartLegendColumns(available, 136, 4);
+    }
+
+    private resolvedColor(resource: Resource): number {
+        const cached = this.colorCache.get(resource.id);
+        if (cached !== undefined) return cached;
+        const host = this.getUIContext().getHostContext() as common.UIAbilityContext;
+        try {
+            const color = host.resourceManager.getColorSync(resource.id);
+            this.colorCache.set(resource.id, color); return color;
+        } catch (error) {
+            console.warn('[Dashboard][component/charts/OverviewSection][WARN]',
+                `饼图颜色读取失败: ${JSON.stringify(error)}`);
+            return 0xFF1E6FCD;
+        }
+    }
+
+    private drawSector(center: number, radius: number, startAngle: number, endAngle: number,
+        color: Resource, surfaceColor: number, highlighted: boolean): void {
+        if (endAngle <= startAngle) return;
+        this.context.beginPath();
+        this.context.moveTo(center, center);
+        this.context.arc(center, center, radius, startAngle, endAngle);
+        this.context.closePath();
+        this.context.fillStyle = this.resolvedColor(color);
+        this.context.fill();
+        this.context.strokeStyle = surfaceColor;
+        this.context.lineWidth = 2;
+        this.context.stroke();
+        if (highlighted) {
+            this.context.beginPath();
+            this.context.arc(center, center, radius + 4, startAngle, endAngle);
+            this.context.strokeStyle = this.resolvedColor(color);
+            this.context.lineWidth = 4;
+            this.context.stroke();
+        }
+    }
+
+    private draw(): void {
+        if (!this.active || !this.inViewport || !this.canvasReady) return;
+        const size = this.canvasSize;
+        this.context.clearRect(0, 0, size, size);
+        const values = this.visibleValues();
+        const visibleTotal = this.visibleTotal();
+        if (visibleTotal <= 0 || values.length === 0) return;
+        const center = size / 2;
+        const radius = Math.max(20, center - 12);
+        let startAngle = -Math.PI / 2;
+        const surfaceColor = this.resolvedColor($r('app.color.v3_surface'));
+        const animatingDetail = this.hasOverflow() &&
+            ((this.expanded && this.detailProgress < 1) || (!this.expanded && this.detailProgress > 0));
+        if (animatingDetail) {
+            const detailValues = this.expandedValues();
+            const detailTotal = detailValues.reduce((sum: number, value: number) => sum + value, 0);
+            if (detailTotal <= 0) return;
+            for (let index = 0; index < Math.min(OVERVIEW_COLLAPSED_SDK_COUNT, detailValues.length); index++) {
+                if (detailValues[index] <= 0) continue;
+                const endAngle = startAngle + Math.PI * 2 * detailValues[index] / detailTotal;
+                this.drawSector(center, radius, startAngle, endAngle, this.expandedColorAt(index), surfaceColor,
+                    index === this.selectedIndex());
+                startAngle = endAngle;
+            }
+            let tailTotal = 0;
+            for (let index = OVERVIEW_COLLAPSED_SDK_COUNT; index < detailValues.length; index++) {
+                tailTotal += Math.max(0, detailValues[index]);
+            }
+            const tailStartAngle = startAngle;
+            const tailEndAngle = tailStartAngle + Math.PI * 2 * tailTotal / detailTotal;
+            this.drawSector(center, radius, tailStartAngle, tailEndAngle, $r('app.color.nd_text_sub'),
+                surfaceColor, false);
+            const revealEndAngle = tailStartAngle + (tailEndAngle - tailStartAngle) * this.detailProgress;
+            for (let index = OVERVIEW_COLLAPSED_SDK_COUNT; index < detailValues.length; index++) {
+                if (detailValues[index] <= 0) continue;
+                const finalEndAngle = startAngle + Math.PI * 2 * detailValues[index] / detailTotal;
+                this.drawSector(center, radius, startAngle, Math.min(finalEndAngle, revealEndAngle),
+                    this.expandedColorAt(index), surfaceColor, index === this.selectedIndex());
+                startAngle = finalEndAngle;
+            }
+            return;
+        }
+        for (let index = 0; index < values.length; index++) {
+            if (values[index] <= 0) continue;
+            const sweep = Math.PI * 2 * values[index] / visibleTotal * this.drawProgress;
+            const endAngle = startAngle + sweep;
+            this.drawSector(center, radius, startAngle, endAngle, this.colorAt(index), surfaceColor,
+                index === this.selectedIndex() && this.drawProgress >= 1);
+            startAngle = endAngle;
+        }
+    }
+
+    private selectAt(x: number, y: number): void {
+        if (this.chart.total <= 0) return;
+        const labels = this.displayLabels();
+        const values = this.visibleValues();
+        const visibleTotal = this.visibleTotal();
+        if (visibleTotal <= 0) return;
+        const center = this.canvasSize / 2;
+        const dx = x - center;
+        const dy = y - center;
+        if (Math.sqrt(dx * dx + dy * dy) > center) return;
+        let angle = Math.atan2(dy, dx) + Math.PI / 2;
+        if (angle < 0) angle += Math.PI * 2;
+        let accumulated = 0;
+        for (let index = 0; index < values.length; index++) {
+            if (values[index] <= 0) continue;
+            accumulated += Math.PI * 2 * values[index] / visibleTotal;
+            if (angle <= accumulated) {
+                if (labels[index] === '其他') {
+                    this.expandFromOther();
+                    return;
+                }
+                if (!this.onSelect && index !== this.selectedIndex() && this.vibrationLevel > 0) vibration.dotVibration();
+                this.selected = index;
+                if (this.onSelect) {
+                    this.pendingSelectedLabel = labels[index];
+                    this.onSelect(labels[index]);
+                }
+                this.draw();
+                return;
+            }
+        }
+    }
+
+    aboutToDisappear(): void {
+        this.animationToken++;
+        this.endControlPress(true);
+        if (this.animationTimer >= 0) {
+            clearTimeout(this.animationTimer);
+            this.animationTimer = -1;
+        }
+        if (this.drawTimer >= 0) {
+            clearTimeout(this.drawTimer);
+            this.drawTimer = -1;
+        }
+    }
+
+    @Builder
+    private pieCanvas(): void {
+        Canvas(this.context)
+            .width(this.canvasSize).height(this.canvasSize).align(Alignment.Center)
+            .scale({ x: this.pressed ? 0.985 : 1, y: this.pressed ? 0.985 : 1 })
+            .animation({ duration: 120, curve: Curve.EaseOut })
+            .visualEffect(pressVisualEffect(this.pressed, hdsEffect.PointLightIlluminatedType.BORDER, 4, 100))
+            .compositingFilter(pressLightFieldFilter(this.pressed))
+            .onReady((): void => {
+                this.canvasReady = true;
+                this.animatePie();
+            })
+            .onTouch((event: TouchEvent): void => {
+                if (event.type === TouchType.Down) {
+                    this.pressed = true;
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                    this.pressed = false;
+                }
+                if (event.type === TouchType.Down && event.touches.length > 0) {
+                    this.selectAt(event.touches[0].x, event.touches[0].y);
+                }
+            })
+            .accessibilityText(`${this.chart.title}饼图，点一下扇区可以查看具体数据`)
+    }
+
+    @Builder
+    private legendGrid(columns: number): void {
+        GridRow({ columns, gutter: { x: 5, y: 4 } }) {
+            ForEach(this.displayLabels(), (label: string, index: number) => {
+                GridCol({ span: 1 }) {
+                    Row({ space: 5 }) {
+                        Row().width(8).height(8).borderRadius(4)
+                            .flexShrink(0)
+                            .backgroundColor(this.colorAt(index))
+                        Column({ space: 1 }) {
+                            if (label === '其他') {
+                                Text('其他（点击展开）').fontSize(13).fontWeight(FontWeight.Medium)
+                                    .fontColor($r('app.color.v3_text_primary')).width('100%')
+                                    .wordBreak(WordBreak.BREAK_ALL)
+                            } else {
+                                Text(formatSdkLabel(label)).fontSize(13).fontWeight(FontWeight.Medium)
+                                    .fontColor($r('app.color.v3_text_primary')).width('100%')
+                                    .wordBreak(WordBreak.BREAK_ALL)
+                            }
+                            Text(this.legendText(index)).fontSize(11)
+                                .fontColor($r('app.color.v3_text_secondary')).width('100%')
+                                .wordBreak(WordBreak.BREAK_ALL)
+                        }.alignItems(HorizontalAlign.Start).layoutWeight(1).constraintSize({ minWidth: 0 })
+                    }
+                    .width('100%').padding({ left: 6, right: 6, top: 5, bottom: 5 }).borderRadius(8)
+                    .border({ width: 1, color: $r('app.color.nd_card_border') })
+                    .scale({ x: this.pressedControl === label ? 0.97 : 1,
+                        y: this.pressedControl === label ? 0.97 : 1 })
+                    .animation({ duration: 120, curve: Curve.EaseOut })
+                    .backgroundColor(index === this.selectedIndex() ?
+                        $r('app.color.v3_surface_alt') : Color.Transparent)
+                    .visualEffect(pressVisualEffect(
+                        this.pressedControl === label,
+                        hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
+                    .compositingFilter(pressLightFieldFilter(this.pressedControl === label))
+                    .onTouch((event: TouchEvent): void => {
+                        if (event.type === TouchType.Down) this.beginControlPress(label);
+                        else if (event.type === TouchType.Up) {
+                            this.endControlPress();
+                        } else if (event.type === TouchType.Cancel) {
+                            this.endControlPress(true);
+                        }
+                    })
+                    .onClick(() => {
+                        this.endControlPress();
+                        if (label === '其他') {
+                            this.expandFromOther();
+                            return;
+                        }
+                        if (!this.onSelect && this.vibrationLevel > 0) vibration.dotVibration();
+                        this.selected = index;
+                        if (this.onSelect) this.onSelect(label);
+                        this.draw();
+                    })
+                    .transition(TransitionEffect.OPACITY.combine(
+                        TransitionEffect.scale({ x: 0.94, y: 0.94 })))
+                    .accessibilityText(label === '其他' ?
+                        `其他，${this.legendText(index)}，点击展开全部` :
+                        `${formatSdkLabel(label)}，${this.legendText(index)}`)
+                }
+            }, (label: string) => `${this.chart.title}-${label}`)
+        }
+        .width('100%')
+        .accessibilityText(`${this.chart.title}图例`)
+    }
+
+    build() {
+        Column({ space: (this.chartCaption.length > 0 || this.reserveCaptionSpace) ? 2 : 8 }) {
+            if (this.showTitle) {
+                Row() {
+                    Text(this.chart.title).fontSize(18).fontWeight(FontWeight.Bold)
+                        .fontColor($r('app.color.v3_text_primary')).layoutWeight(1)
+                        .accessibilityText(this.chart.title)
+                    if (this.showExpandAction && this.hasOverflow()) {
+                        Text(this.expanded ? '收起' : '展开全部')
+                            .fontSize(13)
+                            .fontColor($r('app.color.diff_content'))
+                            .padding({ left: 6, right: 6, top: 4, bottom: 4 })
+                            .borderRadius(8)
+                            .scale({ x: this.pressedControl === 'expand' ? 0.94 : 1,
+                                y: this.pressedControl === 'expand' ? 0.94 : 1 })
+                            .animation({ duration: 120, curve: Curve.EaseOut })
+                            .visualEffect(pressVisualEffect(this.pressedControl === 'expand',
+                                hdsEffect.PointLightIlluminatedType.BORDER, 5, 84))
+                            .compositingFilter(pressLightFieldFilter(this.pressedControl === 'expand'))
+                            .onTouch((event: TouchEvent): void => {
+                                if (event.type === TouchType.Down) this.beginControlPress('expand');
+                                else if (event.type === TouchType.Up) {
+                                    this.endControlPress();
+                                } else if (event.type === TouchType.Cancel) {
+                                    this.endControlPress(true);
+                                }
+                            })
+                            .onClick(() => {
+                                this.endControlPress();
+                                this.toggleExpansion();
+                            })
+                            .accessibilityText(this.expanded ? `收起${this.chart.title}` : `展开${this.chart.title}全部SDK`)
+                    }
+                }
+                .width('100%')
+                .alignItems(VerticalAlign.Center)
+            }
+            if (this.chartCaption.length > 0 || this.reserveCaptionSpace) {
+                Text(this.chartCaption)
+                    .constraintSize({ minHeight: 20 })
+                    .fontSize(13)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(this.chartCaption.length > 0 ?
+                        $r('app.color.v3_text_secondary') : Color.Transparent)
+                    .width('100%')
+                    .textAlign(TextAlign.Center)
+                    .accessibilityText(this.chartCaption)
+            }
+            if (this.chart.values.length > 0) {
+                if (this.useHorizontalLegend()) {
+                    Row({ space: 10 }) {
+                        this.pieCanvas()
+                        if (this.showLegend) {
+                            Column() {
+                                this.legendGrid(this.legendColumns())
+                            }
+                            .layoutWeight(1).constraintSize({ minWidth: 0 })
+                            .alignItems(HorizontalAlign.Start)
+                        }
+                    }
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center)
+                } else {
+                    this.pieCanvas()
+                    if (this.showLegend) this.legendGrid(this.legendColumns())
+                }
+            } else {
+                Text('暂无数据').fontColor($r('app.color.v3_text_secondary')).padding(30)
+                    .accessibilityText(`${this.chart.title}暂无数据`)
+            }
+        }
+        .width('100%').padding(this.embedded ? 0 : 14).borderRadius(this.embedded ? 0 : 18)
+        .backgroundColor(this.embedded ? Color.Transparent : $r('app.color.v3_surface'))
+        .border({ width: this.embedded ? 0 : 1, color: $r('app.color.nd_card_border') })
+        .onAreaChange((_oldArea: Area, area: Area): void => {
+            const width = Number(area.width);
+            if (width > 0) {
+                this.panelWidth = width;
+                this.canvasSize = this.useHorizontalLegend() ?
+                    Math.max(154, Math.min(196, width * 0.36)) :
+                    Math.max(1, Math.min(220, width - (this.embedded ? 0 : 28)));
+                if (this.drawTimer >= 0) clearTimeout(this.drawTimer);
+                this.drawTimer = setTimeout((): void => {
+                    this.drawTimer = -1;
+                    this.draw();
+                }, 0);
+            }
+        })
+        .onVisibleAreaChange([0, 0.01], (visible: boolean, ratio: number): void => {
+            this.inViewport = visible && ratio > 0; this.onActivityChanged();
+        })
+        .accessibilityGroup(false).accessibilityLevel('no').accessibilityText(`${this.chart.title}，${this.selectedText()}`)
+    }
+}
+

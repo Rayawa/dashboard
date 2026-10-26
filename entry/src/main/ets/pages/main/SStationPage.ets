@@ -1,4 +1,4 @@
-import { flushContinuationScroll } from '../../common/appState';
+import { flushContinuationScroll } from '../../state/appState';
 import { common } from '@kit.AbilityKit';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { webview } from '@kit.ArkWeb';
@@ -11,19 +11,19 @@ import {
     S_STATION_COMMAND_HOME,
     S_STATION_COMMAND_SHARE,
     S_STATION_COMMAND_SCROLL_TOP,
-} from '../../common/constants';
+} from '../../config/constants';
 import {
     getContinuationState,
     setContinuationPageUrl,
     setContinuationScrollDistance,
     setMainTab,
-} from '../../common/appState';
-import { vibration } from '../../common/vibration';
-import { contentEnterTransition, runPageEnterAnimation } from '../../common/motion';
-import { WebShareManager } from '../../common/shareControl';
-import type { WebShareData } from '../../common/shareControl';
-import { scrollByAxis } from '../../common/scroll';
-import { WebActivity } from '../../common/WebActivity';
+} from '../../state/appState';
+import { vibration } from '../../utils/device/vibration';
+import { contentEnterTransition, runPageEnterAnimation } from '../../ui/animation/motion';
+import { WebShareManager } from '../../services/sharing/shareControl';
+import type { WebShareData } from '../../services/sharing/shareControl';
+import { scrollByAxis } from '../../ui/interaction/scroll';
+import { WebActivity } from '../../utils/web/WebActivity';
 
 class SStationWebBridge {
     private onDetailOpenChanged: (open: boolean) => void;

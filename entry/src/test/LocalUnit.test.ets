@@ -1,14 +1,14 @@
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from "@ohos/hypium";
-import { buildAppsPagePath } from '../main/ets/common/AppListQuery';
-import { buildAdvancedAppsQueryPath, buildDeveloperRankingPath, buildDownloadGrowthPath } from '../main/ets/common/RankingQuery';
+import { buildAppsPagePath } from '../main/ets/domain/apps/AppListQuery';
+import { buildAdvancedAppsQueryPath, buildDeveloperRankingPath, buildDownloadGrowthPath } from '../main/ets/domain/rankings/RankingQuery';
 import {
     buildSearchExpression,
     defaultOperatorForField,
     normalizeSearchConditions,
     operatorNeedsValue,
     operatorsForField,
-} from '../main/ets/common/SearchExpression';
-import { formatBytes, formatCount, formatDownloadCount, formatDuration, formatSdkVersion, formatSdkLabel, formatScore } from '../main/ets/common/format';
+} from '../main/ets/domain/search/SearchExpression';
+import { formatBytes, formatCount, formatDownloadCount, formatDuration, formatSdkVersion, formatSdkLabel, formatScore } from '../main/ets/utils/format/format';
 
 export default function localUnitTest() {
     describe("localUnitTest", () => {

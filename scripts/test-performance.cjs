@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const studio = process.env.DEVECO_STUDIO_HOME || path.join(os.homedir(), 'Applications/DevEco-Studio.app');
 const ts = require(path.join(studio, 'Contents/tools/hvigor/hvigor-ohos-plugin/node_modules/typescript'));
 const root = path.resolve(__dirname, '..');
-const common = path.join(root, 'entry/src/main/ets/common');
+const etsRoot = path.join(root, 'entry/src/main/ets');
 const tests = [];
 const test = (name, run) => tests.push({ name, run });
 const hypium = {
@@ -42,7 +42,7 @@ function load(file) {
 }
 load(path.join(root, 'entry/src/test/List.test.ets')).default();
 function webActivity(resume, pause) {
-  return compile(fs.readFileSync(path.join(common, 'WebActivity.ets'), 'utf8'), {
+  return compile(fs.readFileSync(path.join(etsRoot, 'utils/web/WebActivity.ets'), 'utf8'), {
     require: name => {
       assert.equal(name, '@kit.ArkWeb');
       return { webview: { WebviewController: { resumeAllTimers: resume, pauseAllTimers: pause } } };
@@ -73,7 +73,7 @@ test('web timer state retries after the engine was not yet attached', () => {
   activity.setActive(owner, true);
   assert.equal(calls, 2);
 });
-const { CachedRequest, RequestScope } = load(path.join(common, 'CachedRequest.ets'));
+const { CachedRequest, RequestScope } = load(path.join(etsRoot, 'services/cache/CachedRequest.ets'));
 const response = value => ({ success: true, data: { value }, timestamp: 'test' });
 const validate = value => value?.success === true;
 test('network result is available while persistence is still blocked', async () => {
@@ -186,12 +186,12 @@ test('cache-owned stale revalidation survives the original page leaving', async 
 
 test('native stale detail revalidation bypasses server cache and preserves request headers', async () => {
   const urls = [];
-  const native = compile(fs.readFileSync(path.join(common, 'MarketRequest.ets'), 'utf8'), { require: name => {
-    if (name === './PerformanceTrace') return { PerformanceTrace: { begin: () => 1, finish() {}, measure: (_name, action) => action() } };
-    if (name === './CachedRequest') return { CachedRequest, RequestScope, validApiResponse: validate };
-    if (name === './CacheService') return { getCacheGeneration: () => 0, writeCache: async () => {},
+  const native = compile(fs.readFileSync(path.join(etsRoot, 'services/api/MarketRequest.ets'), 'utf8'), { require: name => {
+    if (name.endsWith('/PerformanceTrace')) return { PerformanceTrace: { begin: () => 1, finish() {}, measure: (_name, action) => action() } };
+    if (name.endsWith('/CachedRequest')) return { CachedRequest, RequestScope, validApiResponse: validate };
+    if (name.endsWith('/CacheService')) return { getCacheGeneration: () => 0, writeCache: async () => {},
       readCache: async () => ({ data: response(1), savedAt: 1, fresh: false }) };
-    if (name === './constants') return { SAPIBaseURL: { toString: () => 'https://api.test/' },
+    if (name.endsWith('/constants')) return { SAPIBaseURL: { toString: () => 'https://api.test/' },
       DEFAULT_NETWORK_TIMEOUT_MS: 10000, createApiRequestHeaders: () => ({ 'User-Agent': 'Dashboard/test' }) };
     if (name === '@kit.NetworkKit') return { http: { HttpDataType: { STRING: 1 }, RequestMethod: { GET: 'GET' },
       createHttp: () => ({ destroy() {}, request: async (url, options) => {
@@ -208,12 +208,12 @@ test('native stale detail revalidation bypasses server cache and preserves reque
 test('native cancellation finishes tracing and releases HTTP when destroy does not settle the request', async () => {
   let started, destroyed = 0, finished = 0;
   const ready = new Promise(resolve => { started = resolve; });
-  const native = compile(fs.readFileSync(path.join(common, 'MarketRequest.ets'), 'utf8'), { require: name => {
-    if (name === './PerformanceTrace') return { PerformanceTrace: { begin: () => 1,
+  const native = compile(fs.readFileSync(path.join(etsRoot, 'services/api/MarketRequest.ets'), 'utf8'), { require: name => {
+    if (name.endsWith('/PerformanceTrace')) return { PerformanceTrace: { begin: () => 1,
       finish: () => finished++, measure: (_name, action) => action() } };
-    if (name === './CachedRequest') return { CachedRequest, RequestScope, validApiResponse: validate };
-    if (name === './CacheService') return { getCacheGeneration: () => 0, writeCache: async () => {}, readCache: async () => undefined };
-    if (name === './constants') return { SAPIBaseURL: { toString: () => 'https://api.test/' },
+    if (name.endsWith('/CachedRequest')) return { CachedRequest, RequestScope, validApiResponse: validate };
+    if (name.endsWith('/CacheService')) return { getCacheGeneration: () => 0, writeCache: async () => {}, readCache: async () => undefined };
+    if (name.endsWith('/constants')) return { SAPIBaseURL: { toString: () => 'https://api.test/' },
       DEFAULT_NETWORK_TIMEOUT_MS: 10000, createApiRequestHeaders: () => ({}) };
     if (name === '@kit.NetworkKit') return { http: { HttpDataType: { STRING: 1 }, RequestMethod: { GET: 'GET' },
       createHttp: () => ({ destroy: () => destroyed++, request: () => { started(); return new Promise(() => {}); } }) } };
@@ -254,12 +254,12 @@ test('atomic cache reads remain independent of writes and clearing invalidates o
   const constants = { CACHE_DIRECTORY_NAME: 'api', CACHE_MAX_STALE_MS: 30 * 86400000,
     CACHE_MAX_BYTES: 32 * 1024 * 1024, CACHE_MAINTENANCE_INTERVAL_MS: 300000, CACHE_MAINTENANCE_DELAY_MS: 60000 };
   const makeCache = () => {
-    const api = compile(fs.readFileSync(path.join(common, 'CacheService.ets'), 'utf8'), { require: name => {
+    const api = compile(fs.readFileSync(path.join(etsRoot, 'services/cache/CacheService.ets'), 'utf8'), { require: name => {
       if (name === '@kit.CoreFileKit') return { fileIo };
       if (name === '@kit.ArkTS') return { util: { TextEncoder: class { encodeInto(text) { return new TextEncoder().encode(text); } } } };
       if (name === '@kit.ArkWeb') return { webview: { WebStorage: { deleteAllData() {} }, WebCookieManager: { clearAllCookiesSync() {} } } };
-      if (name === './constants') return constants;
-      if (name === './CachePolicy') return load(path.join(common, 'CachePolicy.ets'));
+      if (name.endsWith('/constants')) return constants;
+      if (name.endsWith('/CachePolicy')) return load(path.join(etsRoot, 'services/cache/CachePolicy.ets'));
       throw Error(`Unexpected cache import: ${name}`);
     } });
     api.initializeCache({ cacheDir: directory }); return api;
@@ -301,7 +301,7 @@ test('atomic cache reads remain independent of writes and clearing invalidates o
   }
 });
 
-const { FrameScheduler } = compile(fs.readFileSync(path.join(common, 'FrameScheduler.ets'), 'utf8'), {
+const { FrameScheduler } = compile(fs.readFileSync(path.join(etsRoot, 'utils/runtime/FrameScheduler.ets'), 'utf8'), {
   require: () => ({ FrameCallback: class {} }),
 });
 test('frame work coalesces input and cancels stale native callbacks', () => {
@@ -318,7 +318,7 @@ test('frame work coalesces input and cancels stale native callbacks', () => {
 function methodsFrom(file, names, globals = {}) {
   const source = fs.readFileSync(file, 'utf8');
   const methods = names.map(name => {
-    const declaration = source.indexOf(`private ${name}(`);
+    const declaration = source.search(new RegExp(`^    (?:private )?(?:async )?${name}\\(`, 'm'));
     assert.ok(declaration >= 0, `Missing method ${name}`);
     const start = source.indexOf('{', declaration);
     let level = 1, end = start + 1;
@@ -341,7 +341,7 @@ test('station preload suspends timers after loading and while the application is
   station.applicationActive = false; station.loading = true; station.syncWebActivity();
   assert.deepEqual(calls, [[1, true], [1, false], [1, true], [1, false]]);
 });
-const chartLayout = load(path.join(root, 'entry/src/main/ets/component/charts/chartLayout.ets'));
+const chartLayout = load(path.join(root, 'entry/src/main/ets/ui/charts/chartLayout.ets'));
 test('chart axes abbreviate large counts while exact application values remain intact', () => {
   const { chartAxisLabel, chartAxisScale } = chartLayout;
   assert.equal(chartAxisLabel(90453922, '次'), '9045.4万');
@@ -359,7 +359,7 @@ test('chart axes abbreviate large counts while exact application values remain i
     assert.ok(scale.labels.every(label => label.length <= 9));
   }
   assert.deepEqual(Array.from(chartAxisScale(3.9, '分').labels), ['5', '4', '3', '2', '1', '0']);
-  assert.equal(load(path.join(common, 'format.ets')).formatCount(90453922), '90453922');
+  assert.equal(load(path.join(etsRoot, 'utils/format/format.ets')).formatCount(90453922), '90453922');
 });
 test('chart dates use bounded horizontal lines and zoomed viewports retain both visible endpoints', () => {
   assert.deepEqual(Array.from(chartLayout.chartDateLines('2026-10-23')), ['10-23', '2026']);
@@ -382,7 +382,7 @@ test('legend columns follow the width of each chart instead of the page breakpoi
     if (columns > 1) assert.ok((width - 6 * (columns - 1)) / columns >= 150);
   }
 });
-const Chart = methodsFrom(path.join(root, 'entry/src/main/ets/component/charts/InteractiveLineChart.ets'), [
+const Chart = methodsFrom(path.join(root, 'entry/src/main/ets/components/charts/InteractiveLineChart.ets'), [
   'rebuildModel', 'sourceSeries', 'pointCount', 'labels', 'maximum', 'dimensions', 'axisFontSize', 'pointX', 'pointY',
   'traceSmoothLine', 'rgba', 'resolveColor', 'bottomAxisSpace', 'dateFontSize', 'draw',
 ], chartLayout);
@@ -448,9 +448,9 @@ test('offscreen charts do not draw or scan point values', () => {
 test('scroll events preserve the latest position with one storage write per batch', () => {
   const storage = new Map(), writes = [];
   const constants = { MAIN_TAB_DEFAULT: 1, DEFAULT_SCROLL_DISTANCE: 0, CONTINUATION_ROUTE_MAIN: 'main' };
-  const source = fs.readFileSync(path.join(common, 'constants.ets'), 'utf8');
+  const source = fs.readFileSync(path.join(etsRoot, 'config/constants.ets'), 'utf8');
   for (const match of source.matchAll(/export const (\w+)\s*=\s*'([^']*)'/g)) constants[match[1]] = match[2];
-  const state = compile(fs.readFileSync(path.join(common, 'appState.ets'), 'utf8'), {
+  const state = compile(fs.readFileSync(path.join(etsRoot, 'state/appState.ets'), 'utf8'), {
     require: () => constants, AppStorage: { get: key => storage.get(key),
       setOrCreate: (key, value) => { storage.set(key, value); writes.push(key); } },
   });
@@ -463,7 +463,7 @@ test('scroll events preserve the latest position with one storage write per batc
 });
 
 test('stable app row identities receive fresh content and positions after a reload', () => {
-  const { AppDataSource } = load(path.join(common, 'AppDataSource.ets'));
+  const { AppDataSource } = load(path.join(etsRoot, 'models/AppDataSource.ets'));
   const data = new AppDataSource(); let reloads = 0;
   data.registerDataChangeListener({ onDataReloaded: () => reloads++ });
   data.replace([{ app_id: 'a', name: 'Old' }, { app_id: 'b', name: 'Second' }]);
@@ -473,7 +473,7 @@ test('stable app row identities receive fresh content and positions after a relo
   assert.equal(original.index, 42); assert.equal(reloads, 2);
   data.replace([]); assert.equal(data.totalCount(), 0);
 });
-const Carousel = methodsFrom(path.join(root, 'entry/src/main/ets/component/detail/ScreenshotCarousel.ets'), [
+const Carousel = methodsFrom(path.join(root, 'entry/src/main/ets/components/detail/ScreenshotCarousel.ets'), [
   'updateWindow', 'onScreenshotsChanged', 'screenshotKey', 'allScreenshotsSettled', 'stopAutoPlay',
   'restartAutoPlay', 'completeSwitch',
 ], { curves: { springMotion: () => null }, setInterval: () => 1, clearInterval() {} });
@@ -544,7 +544,7 @@ test('preference batches flush once and interleaved remove operations stay order
   const preference = { get: async (key, fallback) => values.has(key) ? values.get(key) : fallback,
     put: async (key, value) => values.set(key, value), delete: async key => values.delete(key),
     flush: async () => { if (fail) throw Error('disk full'); flushes++; } };
-  const storage = compile(fs.readFileSync(path.join(common, 'DiskStorage.ets'), 'utf8'), {
+  const storage = compile(fs.readFileSync(path.join(etsRoot, 'services/storage/DiskStorage.ets'), 'utf8'), {
     console: { info() {}, warn() {}, error() {} },
     require: () => ({ default: { getPreferences: async () => preference } }),
   }).default('test', {});
@@ -555,6 +555,8 @@ test('preference batches flush once and interleaved remove operations stay order
   fail = true; await assert.rejects(storage.set('a', 4));
   fail = false; await storage.set('a', 5); assert.equal(await storage.get('a', 0), 5);
 });
+
+require('./tests/lifecycle.cjs')({ test, assert, load, compile, methodsFrom, etsRoot, fs, path });
 
 (async () => {
   for (const { name, run } of tests) {

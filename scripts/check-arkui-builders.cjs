@@ -21,7 +21,7 @@ function files(directory, extension) {
 const sourceFiles = files(sourceRoot, '.ets');
 const componentNames = new Set(sourceFiles.flatMap(file =>
   [...fs.readFileSync(file, 'utf8').matchAll(/\bstruct\s+(\w+)/g)].map(match => match[1])));
-for (const required of ['pages/detail/AppDetailPage.ts', 'component/detail/VersionTimeline.ts']) {
+for (const required of ['pages/detail/AppDetailPage.ts', 'components/detail/VersionTimeline.ts']) {
   if (!fs.existsSync(path.join(buildRoot, required))) throw Error(`Build ${mode} before checking builder output.`);
 }
 const errors = [];

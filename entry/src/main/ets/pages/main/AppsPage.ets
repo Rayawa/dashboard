@@ -1,29 +1,27 @@
-import { setContinuationScrollDistance } from '../../common/appState';
-import { AppDataSource, AppTableItem } from '../../common/AppDataSource';
-import { flushContinuationScroll } from '../../common/appState';
+import { RequestScope } from '../../services/cache/CachedRequest';
 import { curves, PromptAction } from '@kit.ArkUI';
 import { hdsEffect } from '@kit.UIDesignKit';
-import { CONTINUATION_ROUTE_MAIN, MAIN_TAB_APPS, SEARCH_SHARED_GEOMETRY_ID } from '../../common/constants';
+import { CONTINUATION_ROUTE_MAIN, MAIN_TAB_APPS, SEARCH_SHARED_GEOMETRY_ID } from '../../config/constants';
 import {
-    getContinuationState, hasPendingSearchTarget, setContinuationAppsListState, setContinuationView, setDetailTarget,
-} from '../../common/appState';
-import type { AppsListContinuationState } from '../../common/appState';
-import { fetchAppsPage, fetchAppsQuery } from '../../common/MarketApi';
-import { formatCount } from '../../common/format';
-import { scrollByAxis } from '../../common/scroll';
-import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo, SearchExpression } from '../../common/types';
-import { showToastSafely } from '../../common/safeUi';
+    flushContinuationScroll, setContinuationScrollDistance, getContinuationState, hasPendingSearchTarget, setContinuationAppsListState, setContinuationView, setDetailTarget,
+} from '../../state/appState';
+import type { AppsListContinuationState } from '../../state/appState';
+import { fetchAppsPage, fetchAppsQuery } from '../../services/api/MarketApi';
+import { formatCount } from '../../utils/format/format';
+import { scrollByAxis } from '../../ui/interaction/scroll';
+import type { AppRouteTarget, BaseAPIResponse, MarketApp, PageInfo, SearchExpression } from '../../models/types';
+import { showToastSafely } from '../../ui/feedback/safeUi';
 import {
     cancelStaggerEnterAnimation,
     contentEnterTransition,
     startStaggerEnterAnimation,
-} from '../../common/motion';
-import { pressLightFieldFilter, pressVisualEffect } from '../../common/visualEffects';
-import { vibration } from '../../common/vibration';
-import { OverviewSection } from '../../component/charts/OverviewSection';
-import { AppTableRow } from '../../component/apps/AppTableRow';
-import { AdvancedSearchPanel } from '../../component/apps/AdvancedSearchPanel';
-import { SearchPage } from './SearchPage';
+} from '../../ui/animation/motion';
+import { pressLightFieldFilter, pressVisualEffect } from '../../ui/theme/visualEffects';
+import { vibration } from '../../utils/device/vibration';
+import { OverviewSection } from '../../components/charts/OverviewSection';
+import { AppTable } from '../../components/apps/AppTable';
+import { AdvancedSearchPanel } from '../../components/apps/AdvancedSearchPanel';
+import { SearchPage } from '../search/SearchPage';
 
 interface SortChoice { label: string; field: string; }
 interface FilterChoice { label: string; field: string; }
@@ -40,8 +38,6 @@ export struct AppsPage {
     onOpenAppDetail?: (target: AppRouteTarget) => void;
     @Link selectedIndexes: number[];
     private prompt: PromptAction = this.getUIContext().getPromptAction();
-    private appSource: AppDataSource = new AppDataSource();
-    private tableScroller: Scroller = new Scroller();
     private pageScroller: Scroller = new Scroller();
     private readonly sortChoiceItems: SortChoice[] = [
         { label: '更新时间', field: 'updated_at' }, { label: '下载量', field: 'download_count' },
@@ -64,7 +60,7 @@ export struct AppsPage {
         .map((size: number) => ({ value: `每页 ${size} 条` } as SelectOption));
     @State private searchExpanded: boolean = false;
     @State private searchPullRefreshing: boolean = false;
-    @State @Watch('updateAppSource') private apps: MarketApp[] = [];
+    @State private apps: MarketApp[] = [];
     @State private page: number = 1;
     @State private total: number = 0;
     @State private loading: boolean = false;
@@ -78,7 +74,6 @@ export struct AppsPage {
     @State private filterIndex: number = 0;
     @State private filterText: string = '';
     @State private appliedFilterText: string = '';
-    @State private tableViewportWidth: number = 0;
     @State private animStep: number = 0;
     @State private searchPressed: boolean = false;
     @State private pressedControl: string = '';
@@ -88,19 +83,16 @@ export struct AppsPage {
     private lastScrollOffset: number = 0;
     private restoredScroll: boolean = false;
     private restoredView: boolean = false;
-    private reloadAfterCurrent: boolean = false;
-    private reloadForce: boolean = false;
     private listLoadToken: number = 0;
     private enterAnimationPlayed: boolean = false;
     private enterAnimationTimers: number[] = [];
     private restoreScrollTimer: number = -1;
-    private reloadTimer: number = -1;
     private advancedExpression: SearchExpression | undefined = undefined;
 
-    private updateAppSource(): void {
-        this.appSource.replace(this.apps, (this.page - 1) * this.pageSize());
-        this.tableScroller.scrollTo({ xOffset: 0, yOffset: 0 });
-    }
+    private alive: boolean = false;
+    private requestScope: RequestScope = new RequestScope();
+
+    aboutToAppear(): void { this.alive = true; }
 
     private onActiveChanged(): void {
         if (this.active) setContinuationView(MAIN_TAB_APPS, this.lastScrollOffset);
@@ -119,17 +111,14 @@ export struct AppsPage {
     aboutToDisappear(): void {
         flushContinuationScroll();
         this.listLoadToken++;
-        this.reloadAfterCurrent = false;
-        this.reloadForce = false;
+        this.alive = false;
+        this.requestScope.cancel();
+        this.loading = false;
         cancelStaggerEnterAnimation(this.enterAnimationTimers);
         this.enterAnimationTimers = [];
         if (this.restoreScrollTimer >= 0) {
             clearTimeout(this.restoreScrollTimer);
             this.restoreScrollTimer = -1;
-        }
-        if (this.reloadTimer >= 0) {
-            clearTimeout(this.reloadTimer);
-            this.reloadTimer = -1;
         }
     }
 
@@ -229,6 +218,11 @@ export struct AppsPage {
             if (this.onSearchOpenChanged) this.onSearchOpenChanged(false);
         });
     }
+    private updateControlPress(key: string, event: TouchEvent): void {
+        if (event.type === TouchType.Down) this.pressedControl = key;
+        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) this.pressedControl = '';
+    }
+
     private vibrate(): void { if (this.vibrationLevel > 0) vibration.dotVibration(); }
     private sortChoices(): SortChoice[] {
         return this.sortChoiceItems;
@@ -251,16 +245,12 @@ export struct AppsPage {
     }
     private pageSize(): number { return this.pageSizeChoices()[this.pageSizeIndex]; }
     private totalPages(): number { return Math.max(1, Math.ceil(this.total / this.pageSize())); }
-    private tableWidth(): number { return Math.max(924, this.tableViewportWidth); }
-    private developerWidth(): number { return 150 + Math.max(0, this.tableViewportWidth - 924); }
 
     private async load(force: boolean = false): Promise<void> {
+        if (!this.alive) return;
+        this.requestScope.cancel();
+        this.requestScope = new RequestScope();
         const loadToken = ++this.listLoadToken;
-        if (this.loading) {
-            this.reloadAfterCurrent = true;
-            this.reloadForce = this.reloadForce || force;
-            return;
-        }
         this.loading = true;
         const sort = this.sortChoices()[this.sortIndex].field;
         let searchKey: string | undefined = undefined;
@@ -283,7 +273,7 @@ export struct AppsPage {
                 sort,
                 desc: this.descending,
                 force,
-            }, this.advancedExpression) : await fetchAppsPage({
+            }, this.advancedExpression, this.requestScope) : await fetchAppsPage({
                 page: this.page,
                 pageSize: this.pageSize(),
                 sort,
@@ -294,7 +284,7 @@ export struct AppsPage {
                 force,
                 excludeHuawei: false,
                 excludeAtomic,
-            });
+            }, this.requestScope);
             const response = result.data as BaseAPIResponse<PageInfo<MarketApp>>;
             if (!response.success || !response.data) throw new Error('应用列表数据不可用');
             if (loadToken !== this.listLoadToken) return;
@@ -308,18 +298,10 @@ export struct AppsPage {
             console.error('[Dashboard][pages/main/AppsPage][ERROR]', `应用列表加载失败: ${message}`);
             showToastSafely(this.prompt, `应用列表加载失败：${message}`, 2500, 'V3Apps');
         } finally {
-            this.loading = false;
-            if (this.reloadAfterCurrent) {
-                const forceNext = this.reloadForce;
-                this.reloadAfterCurrent = false;
-                this.reloadForce = false;
-                this.reloadTimer = setTimeout((): void => {
-                    this.reloadTimer = -1;
-                    this.load(forceNext);
-                }, 0);
-            }
+            if (this.alive && loadToken === this.listLoadToken) this.loading = false;
         }
     }
+
     private applyFilter(): void {
         this.vibrate();
         this.advancedExpression = undefined;
@@ -441,12 +423,7 @@ export struct AppsPage {
                     .visualEffect(pressVisualEffect(
                         this.pressedControl === 'type', hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .compositingFilter(pressLightFieldFilter(this.pressedControl === 'type'))
-                    .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) this.pressedControl = 'type';
-                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                            this.pressedControl = '';
-                        }
-                    })
+                    .onTouch((event: TouchEvent): void => this.updateControlPress('type', event))
                     .onSelect((index: number) => {
                         this.vibrate();
                         this.advancedExpression = undefined;
@@ -466,12 +443,7 @@ export struct AppsPage {
                     .visualEffect(pressVisualEffect(this.pressedControl === 'filter-kind',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .compositingFilter(pressLightFieldFilter(this.pressedControl === 'filter-kind'))
-                    .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) this.pressedControl = 'filter-kind';
-                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                            this.pressedControl = '';
-                        }
-                    })
+                    .onTouch((event: TouchEvent): void => this.updateControlPress('filter-kind', event))
                     .onSelect((index: number) => {
                         this.vibrate();
                         this.filterIndex = index;
@@ -484,12 +456,7 @@ export struct AppsPage {
                     .scale({ x: this.pressedControl === 'filter-text' ? 0.97 : 1,
                         y: this.pressedControl === 'filter-text' ? 0.97 : 1 })
                     .animation({ duration: 120, curve: Curve.EaseOut })
-                    .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) this.pressedControl = 'filter-text';
-                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                            this.pressedControl = '';
-                        }
-                    })
+                    .onTouch((event: TouchEvent): void => this.updateControlPress('filter-text', event))
                     .onChange((value: string) => {
                         this.filterText = value;
                         this.recordListState();
@@ -506,12 +473,7 @@ export struct AppsPage {
                     .visualEffect(pressVisualEffect(this.pressedControl === 'apply-filter',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .compositingFilter(pressLightFieldFilter(this.pressedControl === 'apply-filter'))
-                    .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) this.pressedControl = 'apply-filter';
-                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                            this.pressedControl = '';
-                        }
-                    })
+                    .onTouch((event: TouchEvent): void => this.updateControlPress('apply-filter', event))
                     .onClick(() => { this.vibrate(); this.applyFilter(); }).accessibilityText('应用筛选条件')
                 Button('清除', { stateEffect: false }).height(42).margin(4).fontColor($r('app.color.diff_content'))
                     .backgroundColor($r('app.color.v3_surface')).onClick(() => {
@@ -524,12 +486,7 @@ export struct AppsPage {
                     .visualEffect(pressVisualEffect(this.pressedControl === 'clear-filter',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .compositingFilter(pressLightFieldFilter(this.pressedControl === 'clear-filter'))
-                    .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) this.pressedControl = 'clear-filter';
-                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                            this.pressedControl = '';
-                        }
-                    })
+                    .onTouch((event: TouchEvent): void => this.updateControlPress('clear-filter', event))
                     .accessibilityText('清除全部筛选条件')
             }.width('100%')
             Flex({ wrap: FlexWrap.Wrap }) {
@@ -541,12 +498,7 @@ export struct AppsPage {
                     .visualEffect(pressVisualEffect(
                         this.pressedControl === 'sort', hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .compositingFilter(pressLightFieldFilter(this.pressedControl === 'sort'))
-                    .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) this.pressedControl = 'sort';
-                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                            this.pressedControl = '';
-                        }
-                    })
+                    .onTouch((event: TouchEvent): void => this.updateControlPress('sort', event))
                     .onSelect((index: number) => {
                         this.vibrate();
                         this.sortIndex = index;
@@ -563,12 +515,7 @@ export struct AppsPage {
                     .visualEffect(pressVisualEffect(this.pressedControl === 'page-size',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .compositingFilter(pressLightFieldFilter(this.pressedControl === 'page-size'))
-                    .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) this.pressedControl = 'page-size';
-                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                            this.pressedControl = '';
-                        }
-                    })
+                    .onTouch((event: TouchEvent): void => this.updateControlPress('page-size', event))
                     .onSelect((index: number) => {
                         this.vibrate();
                         this.pageSizeIndex = index;
@@ -585,12 +532,7 @@ export struct AppsPage {
                     .visualEffect(pressVisualEffect(this.pressedControl === 'sort-direction',
                         hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                     .compositingFilter(pressLightFieldFilter(this.pressedControl === 'sort-direction'))
-                    .onTouch((event: TouchEvent): void => {
-                        if (event.type === TouchType.Down) this.pressedControl = 'sort-direction';
-                        else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                            this.pressedControl = '';
-                        }
-                    })
+                    .onTouch((event: TouchEvent): void => this.updateControlPress('sort-direction', event))
                     .onClick(() => {
                         this.vibrate();
                         this.descending = !this.descending;
@@ -621,59 +563,6 @@ export struct AppsPage {
     }
 
     @Builder
-    private table(): void {
-        Stack() {
-            Scroll() {
-                Column() {
-                    Row() {
-                        Text('序号').width(44).fontSize(12).textAlign(TextAlign.Center)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                        Text('应用').width(220).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text('开发者').width(this.developerWidth()).fontSize(12)
-                            .fontColor($r('app.color.v3_text_secondary'))
-                        Text('分类').width(140).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text('评分').width(70).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text('下载量').width(100).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text('大小').width(90).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                        Text('更新时间').width(110).fontSize(12).fontColor($r('app.color.v3_text_secondary'))
-                    }
-                    .height(42).width(this.tableWidth()).padding({ left: 8, right: 8 })
-                    .backgroundColor($r('app.color.v3_surface_alt')).accessibilityText('应用列表表头')
-                    List({ scroller: this.tableScroller }) {
-                        LazyForEach(this.appSource, (item: AppTableItem) => {
-                            ListItem() {
-                                AppTableRow({ item,
-                                    tableWidth: this.tableWidth(), developerWidth: this.developerWidth(),
-                                    onOpen: (target: MarketApp): void => this.openDetail(target) })
-                            }
-                        }, (item: AppTableItem) => item.app.app_id)
-                    }
-                    .width(this.tableWidth()).height(Math.min(10, Math.max(1, this.apps.length)) * 58)
-                    .cachedCount(4).scrollBar(BarState.Auto)
-                    .nestedScroll({ scrollForward: NestedScrollMode.SELF_FIRST, scrollBackward: NestedScrollMode.SELF_FIRST })
-                }.width(this.tableWidth())
-            }
-            .scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Auto).edgeEffect(EdgeEffect.None)
-            .width('100%').accessibilityText('应用列表，窄屏可横向滚动')
-            if (this.loading) {
-                Column({ space: 8 }) {
-                    LoadingProgress().width(32).height(32).color($r('app.color.diff_content'))
-                        .accessibilityText('应用列表加载中')
-                    Text('正在加载…').fontColor($r('app.color.v3_text_secondary'))
-                }.padding(22).borderRadius(14).backgroundColor($r('app.color.v3_surface')).accessibilityGroup(true)
-                    .accessibilityText('应用列表加载中')
-                    .transition(contentEnterTransition(8))
-            }
-        }
-        .width('100%').borderRadius(16).clip(true).backgroundColor($r('app.color.v3_surface'))
-        .border({ width: 1, color: $r('app.color.nd_card_border') })
-        .onAreaChange((_oldValue: Area, newValue: Area): void => {
-            const width = Number(newValue.width);
-            if (width > 0) this.tableViewportWidth = width;
-        })
-    }
-
-    @Builder
     private pagination(): void {
         Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
             Button('上一页', { stateEffect: false }).margin(4).enabled(this.page > 1 && !this.loading)
@@ -684,12 +573,7 @@ export struct AppsPage {
                 .visualEffect(pressVisualEffect(this.pressedControl === 'previous-page',
                     hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .compositingFilter(pressLightFieldFilter(this.pressedControl === 'previous-page'))
-                .onTouch((event: TouchEvent): void => {
-                    if (event.type === TouchType.Down) this.pressedControl = 'previous-page';
-                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                        this.pressedControl = '';
-                    }
-                })
+                .onTouch((event: TouchEvent): void => this.updateControlPress('previous-page', event))
                 .onClick(() => {
                     this.vibrate();
                     this.page--;
@@ -707,12 +591,7 @@ export struct AppsPage {
                 .visualEffect(pressVisualEffect(this.pressedControl === 'next-page',
                     hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .compositingFilter(pressLightFieldFilter(this.pressedControl === 'next-page'))
-                .onTouch((event: TouchEvent): void => {
-                    if (event.type === TouchType.Down) this.pressedControl = 'next-page';
-                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                        this.pressedControl = '';
-                    }
-                })
+                .onTouch((event: TouchEvent): void => this.updateControlPress('next-page', event))
                 .onClick(() => {
                     this.vibrate();
                     this.page++;
@@ -725,12 +604,7 @@ export struct AppsPage {
                 .scale({ x: this.pressedControl === 'jump-page' ? 0.97 : 1,
                     y: this.pressedControl === 'jump-page' ? 0.97 : 1 })
                 .animation({ duration: 120, curve: Curve.EaseOut })
-                .onTouch((event: TouchEvent): void => {
-                    if (event.type === TouchType.Down) this.pressedControl = 'jump-page';
-                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                        this.pressedControl = '';
-                    }
-                })
+                .onTouch((event: TouchEvent): void => this.updateControlPress('jump-page', event))
                 .onChange((value: string) => this.jumpText = value).onSubmit(() => {
                     this.vibrate();
                     this.jump();
@@ -744,12 +618,7 @@ export struct AppsPage {
                 .visualEffect(pressVisualEffect(this.pressedControl === 'jump',
                     hdsEffect.PointLightIlluminatedType.BORDER_CONTENT, 5, 84))
                 .compositingFilter(pressLightFieldFilter(this.pressedControl === 'jump'))
-                .onTouch((event: TouchEvent): void => {
-                    if (event.type === TouchType.Down) this.pressedControl = 'jump';
-                    else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                        this.pressedControl = '';
-                    }
-                })
+                .onTouch((event: TouchEvent): void => this.updateControlPress('jump', event))
                 .onClick(() => { this.vibrate(); this.jump(); }).accessibilityText('跳转到指定页')
         }.width('100%').padding({ bottom: 110 }).accessibilityText('应用列表分页控件')
     }
@@ -785,7 +654,8 @@ export struct AppsPage {
                                         .width('100%').borderRadius(10).backgroundColor($r('app.color.v3_warning_bg'))
                                         .accessibilityText('当前应用列表来自本地缓存')
                                 }
-                                this.table()
+                                AppTable({ apps: this.apps, rowOffset: (this.page - 1) * this.pageSize(),
+                                    loading: this.loading, onOpen: (app: MarketApp): void => this.openDetail(app) })
                                 this.pagination()
                             }
                             .width('100%')

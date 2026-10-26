@@ -1,13 +1,14 @@
+import { RequestScope } from '../../services/cache/CachedRequest';
 import { HdsNavigationMenuItemOptions } from '@kit.UIDesignKit';
-import { DiscoveryInteraction } from '../../common/DiscoveryInteraction';
-import { DiscoveryButtonStyle, DiscoverySelectStyle, DiscoveryToggleStyle } from '../../common/DiscoveryTheme';
-import { reputationSubtitle, reputationValue } from '../../common/ReputationPresentation';
-import { latestDailyMaxRecords } from '../../common/DailyRanking';
-import { openDiscoveryApp, openAppCollection } from '../../common/discoveryNavigation';
+import { DiscoveryInteraction } from '../../ui/interaction/DiscoveryInteraction';
+import { DiscoveryButtonStyle, DiscoverySelectStyle, DiscoveryToggleStyle } from '../../ui/theme/DiscoveryTheme';
+import { reputationSubtitle, reputationValue } from '../../domain/rankings/ReputationPresentation';
+import { latestDailyMaxRecords } from '../../domain/rankings/DailyRanking';
+import { openDiscoveryApp, openAppCollection } from '../../ui/navigation/discoveryNavigation';
 import { LengthMetrics } from '@kit.ArkUI';
-import { MarketPageFrame } from '../../component/discovery/MarketPageFrame';
-import { AppSummaryRow } from '../../component/discovery/AppSummaryRow';
-import { BrowserPagination, BrowserStatus } from '../../component/discovery/BrowserControls';
+import { MarketPageFrame } from '../../components/discovery/MarketPageFrame';
+import { AppSummaryRow } from '../../components/discovery/AppSummaryRow';
+import { BrowserPagination, BrowserStatus } from '../../components/discovery/BrowserControls';
 import {
     fetchReputation,
     fetchAppsPage,
@@ -15,9 +16,9 @@ import {
     fetchDailyMaxDownloads,
     fetchDeveloperRanking,
     fetchCategoryGrowth
-} from '../../common/MarketApi';
-import { DISCOVERY_PAGE_SIZE } from '../../common/constants';
-import { formatCount, formatDateTime } from '../../common/format';
+} from '../../services/api/MarketApi';
+import { DISCOVERY_PAGE_SIZE } from '../../config/constants';
+import { formatCount, formatDateTime } from '../../utils/format/format';
 import type {
     ReputationItem,
     ReputationCategory,
@@ -30,7 +31,7 @@ import type {
     DeveloperRankingEntry,
     CategoryGrowth,
     AppCollectionTarget
-} from '../../common/types';
+} from '../../models/types';
 
 @Builder
 export function MarketRankingsPageBuilder() { RankingPage() }
@@ -64,6 +65,7 @@ export struct RankingPage {
     private readonly samples: number[] = [10, 50, 100];
     private readonly sortOptions: SelectOption[] = [{ value: '按样本加权得分' }, { value: '按评分指标' }];
     private token: number = 0;
+    private requestScope: RequestScope = new RequestScope();
     private initialized: boolean = false;
     @State private showFilters: boolean = false;
     private readonly kinds: RankingKind[] = ['downloads', 'growth', 'developers', 'daily', 'category', 'segment', 'early', 'reputation'];
@@ -74,7 +76,14 @@ export struct RankingPage {
     ];
     private readonly periodOptions: SelectOption[] = [{ value: '近 1 天' }, { value: '近 7 天' }, { value: '近 30 天' }];
     private readonly days: number[] = [1, 7, 30];
-    aboutToDisappear(): void { this.interaction.dispose(); this.token++; }
+    private alive: boolean = false;
+    aboutToAppear(): void { this.alive = true; }
+    aboutToDisappear(): void {
+        this.alive = false;
+        this.token++;
+        this.requestScope.cancel();
+        this.interaction.dispose();
+    }
     private kind(): RankingKind { return this.kinds[this.index]; }
     private shown(): void {
         if (!this.initialized) {
@@ -86,6 +95,9 @@ export struct RankingPage {
     }
     private reset(): void { this.page = 1; this.total = 0; this.load(false); }
     private async load(force: boolean): Promise<void> {
+        if (!this.alive) return;
+        this.requestScope.cancel();
+        this.requestScope = new RequestScope();
         const token = ++this.token;
         this.loading = true;
         this.error = '';
@@ -98,7 +110,7 @@ export struct RankingPage {
                 const category = this.reputationCategories[this.categoryIndex - 1];
                 const result = await fetchReputation({ days: this.days[this.period],
                     minSamples: this.samples[this.sampleIndex], sort: this.sortIndex === 1 ? 'raw' : 'weighted',
-                    kindName: category?.kind_name, tagName: category?.tag_name ?? undefined, force });
+                    kindName: category?.kind_name, tagName: category?.tag_name ?? undefined, force }, this.requestScope);
                 if (token !== this.token) return;
                 if (!result.data.success || !result.data.data) throw new Error('口碑榜暂不可用');
                 const payload = result.data.data;
@@ -109,23 +121,23 @@ export struct RankingPage {
             } else if (kind === 'downloads') {
                 const result = await fetchAppsPage({ page: this.page, pageSize: DISCOVERY_PAGE_SIZE,
                     sort: 'download_count', desc: true, excludeHuawei: this.excludeHuawei,
-                    excludeAtomic: this.excludeAtomic, force });
+                    excludeAtomic: this.excludeAtomic, force }, this.requestScope);
                 if (token !== this.token) return;
                 if (!result.data.success || !result.data.data) throw new Error('下载榜暂不可用');
                 this.apps = result.data.data.data; this.total = result.data.data.total_count; this.stale = result.stale;
             } else if (kind === 'growth') {
                 const result = await fetchDownloadGrowth({ days: this.days[this.period], page: this.page,
-                    limit: DISCOVERY_PAGE_SIZE, excludeHuawei: this.excludeHuawei, excludeAtomic: this.excludeAtomic, force });
+                    limit: DISCOVERY_PAGE_SIZE, excludeHuawei: this.excludeHuawei, excludeAtomic: this.excludeAtomic, force }, undefined, this.requestScope);
                 if (token !== this.token) return;
                 if (!result.data.success) throw new Error('增长榜暂不可用');
                 this.growth = result.data.data || []; this.total = result.data.total || 0; this.stale = result.stale;
             } else if (kind === 'developers') {
-                const result = await fetchDeveloperRanking(DISCOVERY_PAGE_SIZE, this.page, force);
+                const result = await fetchDeveloperRanking(DISCOVERY_PAGE_SIZE, this.page, force, this.requestScope);
                 if (token !== this.token) return;
                 if (!result.data.success) throw new Error('开发者榜暂不可用');
                 this.developers = result.data.data || []; this.total = result.data.total || 0; this.stale = result.stale;
             } else if (kind === 'daily') {
-                const result = await fetchDailyMaxDownloads(force);
+                const result = await fetchDailyMaxDownloads(force, this.requestScope);
                 if (token !== this.token) return;
                 if (!result.data.success) throw new Error('每日记录暂不可用');
                 const records = latestDailyMaxRecords(result.data.data || []);
@@ -134,7 +146,7 @@ export struct RankingPage {
                 this.stale = result.stale;
             } else {
                 const result = await fetchCategoryGrowth({ kind, days: this.days[this.period],
-                    page: this.page, limit: DISCOVERY_PAGE_SIZE, force });
+                    page: this.page, limit: DISCOVERY_PAGE_SIZE, force }, this.requestScope);
                 if (token !== this.token) return;
                 if (!result.data.success) throw new Error('赛道增长数据暂不可用');
                 this.categories = result.data.data || []; this.total = result.data.total || 0; this.stale = result.stale;

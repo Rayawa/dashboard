@@ -16,7 +16,7 @@
     "abilities": [
       {
         "name": "EntryAbility",
-        "srcEntry": "./ets/ability/entry.ets",
+        "srcEntry": "./ets/abilities/EntryAbility.ets",
         "description": "$string:EntryAbility_desc",
 //        "icon": "$media:layered_image",
 //        "label": "$string:app_name",
@@ -51,7 +51,7 @@
     "extensionAbilities": [
       {
         "name": "shareAbility",
-        "srcEntry": "./ets/ability/shareAbility.ets",
+        "srcEntry": "./ets/abilities/ShareAbility.ets",
         "description": "$string:shareAbility_desc",
         "label": "$string:shareAbility_label",
         "icon": "$media:layered_image",

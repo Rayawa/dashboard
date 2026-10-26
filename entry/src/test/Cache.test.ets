@@ -1,9 +1,9 @@
 import { describe, it, expect } from '@ohos/hypium';
-import { CachedRequest, validApiResponse } from '../main/ets/common/CachedRequest';
-import type { CachedValue, RequestCache } from '../main/ets/common/CachedRequest';
-import { cacheFilesToRemove } from '../main/ets/common/CachePolicy';
-import type { CacheFileInfo } from '../main/ets/common/CachePolicy';
-import type { BaseAPIResponse } from '../main/ets/common/types';
+import { CachedRequest, validApiResponse } from '../main/ets/services/cache/CachedRequest';
+import type { CachedValue, RequestCache } from '../main/ets/services/cache/CachedRequest';
+import { cacheFilesToRemove } from '../main/ets/services/cache/CachePolicy';
+import type { CacheFileInfo } from '../main/ets/services/cache/CachePolicy';
+import type { BaseAPIResponse } from '../main/ets/models/types';
 
 interface Payload { value: number; }
 function response(value: number): BaseAPIResponse { return { success: true, data: { value } as Payload, timestamp: 'test' }; }

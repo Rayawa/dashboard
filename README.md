@@ -1,6 +1,6 @@
 # Dashboard应用看板
 
-[简体中文](README.md) · [English](README_en.md) · [Français](README_fr.md)
+[简体中文](README.md) · [English](docs/i18n/README.en.md) · [Français](docs/i18n/README.fr.md)
 
 Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过仓库后端提供的 `/api/v0` 接口查询 SDK、版本、分类、评分等公开应用信息，并保留 S 站 ArkWeb 入口。
 
@@ -13,12 +13,13 @@ Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过�
 
 ## 3.0.0 界面结构
 
-主页面使用 `HdsNavigation`，子页面使用 `HdsNavDestination`，四个主页面由固定标题栏的 `HdsTabs` 串联；底部栏不再自动隐藏或手动指定尺寸：
+主页面使用 `HdsNavigation`，子页面使用 `HdsNavDestination`，五个主页面由固定标题栏的 `HdsTabs` 串联；底部栏采用系统浮动材质样式：
 
 1. **S站**：主界面显示后在空闲阶段预热并缓存 ArkWeb 页面，支持当前网页分享、碰一碰与隔空传送；网页使用独立视口滚动，使站内悬浮详情始终显示在当前视图。
 2. **首页**：明确展示“应用总数 = 应用 + 元服务”，宽屏将信息、状态和最近收录内容左右排列。
-3. **详情**：标题栏中固定显示概况/总表切换条；搜索通过共享元素展开，总表支持类型及字段筛选、排序和分页。
-4. **我的**：依次展示 AppIcon、中英文名称、设置、更多栏目、版本/版权/备案信息；教程仅保留在此页入口，避免与标题栏重复；“联系我们”使用可在遮罩点击后关闭的半模态页面。
+3. **收藏**：位于首页与详情之间，分段切换应用／开发者；标题栏打开管理页，支持跨分类选择与批量取消收藏。
+4. **详情**：标题栏中固定显示概况/总表切换条；搜索通过共享元素展开，总表支持类型及字段筛选、排序和分页。
+5. **我的**：依次展示 AppIcon、中英文名称、设置、更多栏目、版本/版权/备案信息；教程仅保留在此页入口，避免与标题栏重复；“联系我们”使用可在遮罩点击后关闭的半模态页面。
 
 应用列表、搜索结果和系统分享入口都使用同一公用详情模板：
 
@@ -34,13 +35,13 @@ Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过�
 
 ## 3.2.0
 
-新增口碑榜摘要与完整榜单，支持报告窗口、净样本门槛与两种得分排序。详情分块加载、截图窗口化、折线图线性绘制和按帧调度；搜索按页展示，总表使用懒加载与稳定行数据。优化启动、后台任务、滚动接续与缓存等待。完整用户更新日志见 `entry/src/main/ets/pages/more/AppLogPage.ets`，实现与验收边界见 [PERFORMANCE_3.2.0.md](PERFORMANCE_3.2.0.md)。
+新增口碑榜摘要与完整榜单，支持报告窗口、净样本门槛与两种得分排序。详情分块加载、截图窗口化、折线图线性绘制和按帧调度；搜索按页展示，总表使用懒加载与稳定行数据。优化启动、后台任务、滚动接续与缓存等待。完整用户更新日志内容见 `entry/src/main/ets/config/updateLogs.ets`。
 
 桌面回归：`node scripts/test-performance.cjs` 与 `node scripts/test-discovery-feedback.cjs`。HAP 构建：`bash scripts/build.sh debug`；桌面算法验证不代替真机帧率与GPU分析。
 
 ## 数据、缓存与弱网策略
 
-所有原生业务页面统一使用 `common/MarketApi.ets`，不在页面内直接拼接 HTTP 请求；全部 API 请求都携带统一的应用 User-Agent。
+所有原生业务页面统一使用 `services/api/MarketApi.ets`，不在页面内直接拼接 HTTP 请求；全部 API 请求都携带统一的应用 User-Agent。
 
 - 首页缓存 5 分钟，列表缓存 2 分钟，详情与图表缓存 30 分钟。
 - 优先读取有容量限制的进程内缓存，再读取本地文件；网络成功结果不等待文件缓存提交。
@@ -61,7 +62,7 @@ Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过�
 ## 错误处理与日志
 
 - 文件、窗口、网络、PromptAction、分享会话及可选设备能力调用均提供 `try/catch` 或 Promise rejection fallback。
-- Toast 统一通过 `common/safeUi.ets` 显示；UIContext 暂不可用时记录日志且不打断主流程。
+- Toast 统一通过 `ui/feedback/safeUi.ets` 显示；UIContext 暂不可用时记录日志且不打断主流程。
 - `console` 日志统一为 `[Dashboard][模块路径][级别]` 前缀，便于按模块和严重级别检索。
 - 智感握持先检查 `SystemCapability.MultimodalAwareness.Motion`；不支持时复位本地状态并保持普通按钮布局。
 - 系统分享默认缩略图和振动效果能力会在首次使用后复用结果，避免同一会话内重复读取资源或查询设备能力。
@@ -94,7 +95,7 @@ Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过�
 
 ## 触觉反馈、重要提示与半模态交互
 
-应用的可操作控件使用 `common/vibration.ets` 统一提供触觉反馈，并尊重“我的 → 设置”中的三档选择：关闭、灵动和硬朗。普通按钮、筛选、图表选择、分页和网页操作使用短振动；标题栏、系统返回和侧滑返回使用带短时间去重的返回振动。
+应用的可操作控件使用 `utils/device/vibration.ets` 统一提供触觉反馈，并尊重“我的 → 设置”中的三档选择：关闭、灵动和硬朗。普通按钮、筛选、图表选择、分页和网页操作使用短振动；标题栏、系统返回和侧滑返回使用带短时间去重的返回振动。
 
 - 首次启动会在主界面容器就绪后显示不可绕过的重要提示。用户必须同意，或选择“取消并退出”。在未同意前尝试通过系统返回、侧滑、拖拽或遮罩关闭，会保持提示显示，并以长振动配合“请先阅读并同意重要提示！”提示。
 - 后续从“我的 → 重要提示”重新查看时，可使用关闭按钮、系统返回、侧滑或遮罩关闭；这些正常关闭动作会给出短振动。
@@ -105,45 +106,33 @@ Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过�
 
 ```text
 entry/src/main/ets/
-├── ability/                  EntryAbility、分享会话加载页与唯一 shareAbility
-├── common/
-│   ├── MarketApi.ets         统一 API 客户端
-│   ├── MarketRequest.ets     HTTP 传输与平台缓存适配
-│   ├── CachedRequest.ets     响应校验、请求合并与失败回退
-│   ├── CachePolicy.ets       过期与容量淘汰策略
-│   ├── CacheService.ets      文件缓存、容量统计与完整清理
-│   ├── appState.ets          跨 Ability 瞬态状态
-│   ├── storage.ets           Preferences 与 AppStorage 水合
-│   ├── safeUi.ets            PromptAction 安全调用与日志回退
-│   ├── safeNavigation.ets    路由参数与安全 push/pop
-│   ├── motion.ets            页面进入与共享转场动画
-│   ├── shareControl.ets      系统分享与被动分享生命周期
-│   ├── vibration.ets         统一短、返回、长与错误振动
-│   ├── visualEffects.ets     光场与 HDR 兼容性降级
-│   ├── dashboardConfig.ets   服务端控制的看板可见性配置
-│   ├── constants.ets         跨文件常量
-│   └── types.ets             API、页面和路由类型
-├── component/
-│   ├── charts/               首页原生图表组件
-│   ├── SettingsPanel.ets     设置和缓存管理
-│   ├── WarningContent.ets    首启提示内容
-│   └── ContactPanel.ets      联系方式与复制操作
-└── pages/
-    ├── Dashboard.ets         HdsNavigation + 四个固定 HdsTabs
-    ├── main/
-    │   ├── SStationPage.ets
-    │   ├── HomePage.ets
-    │   ├── SearchPage.ets
-    │   ├── AppsPage.ets      应用概览/列表合并页
-    │   └── MyPage.ets
-    ├── detail/               公用原生应用详情页
-    ├── more/                 TutorialPage、FriendLinksPage、AppLogPage、LocalHtmlPage 与 DeveloperPage
-    └── web/WebPage.ets       API 文档和友链共用的唯一远程网页页面
+├── abilities/
+├── pages/
+│   ├── Dashboard.ets
+│   ├── main/          SStationPage, HomePage, CollectionPage, AppsPage, MyPage
+│   ├── collection/    CollectionManagementPage
+│   ├── search/
+│   ├── detail/
+│   ├── discovery/
+│   ├── settings/
+│   ├── web/
+│   └── startup/
+├── components/        common, apps, charts, collection, detail, discovery, home, ...
+├── models/
+├── domain/            apps, charts, collection, discovery, rankings, sdk, search
+├── services/          api, cache, sharing, storage, telemetry
+├── state/
+├── config/
+├── ui/                animation, charts, feedback, icons, interaction, navigation, theme
+└── utils/             device, diagnostics, format, links, runtime, url, web
+
+docs/                  architecture, i18n
+scripts/               build and verification tools
 ```
 
-更完整的模块边界、状态约束、生命周期和资源释放规则见 [ARCHITECTURE.md](ARCHITECTURE.md)。
+更完整的模块边界、状态约束、生命周期和资源释放规则见 [ARCHITECTURE.md](docs/architecture/overview.md)。
 
-发布签名的 product 绑定、证书材料和构建命令见 [SIGNING.md](SIGNING.md)。构建模式 `release` 与签名方案 `release` 需分别配置。
+调试构建使用 `default` product 与 `debug` 模式；发布构建使用 `release` product、`release` 模式及同名签名方案。签名材料保存在仓库外，由本机配置引用。
 
 本机快速构建：`./scripts/build.sh debug` 生成调试 HAP，`./scripts/build.sh release` 生成已签名发布 APP。脚本会同时选择正确的 product 与构建模式。
 
@@ -173,7 +162,7 @@ entry/src/main/ets/
 4. 选择 phone、tablet 或 2in1 目标进行构建和真机/模拟器验证。
 5. 重点验证：弱网回退、缓存清除、深浅色、600/840vp 断点、唯一分享入口、S站与详情页三类分享、接续位置、表格滚动/页码跳转和无障碍播报。
 
-API 20 至 API 26 的分层验收项见 [API26_COMPATIBILITY.md](API26_COMPATIBILITY.md)。
+发布前应在 API 20 至 API 26 的目标设备上验证安装、启动、主标签、网页、分享与接续。
 6. 验证触觉反馈设置、首次重要提示的关闭拦截及长振动、后续查看时的正常关闭振动，以及平板上“联系我们”sheet 的遮罩拦截和外侧点击关闭。
 7. 在支持与不支持 HDR、振动硬件的设备上分别检查设置项显示、降级行为与高亮档提示。
 
@@ -182,3 +171,7 @@ API 20 至 API 26 的分层验收项见 [API26_COMPATIBILITY.md](API26_COMPATIBI
 市场数据收集自网络，不保证来源的准确性、完整性和真实性，仅供参考。应用会使用设备信息生成请求 User-Agent 和匿名运行遥测；用户主动设置的用户名会随投稿请求发送。具体处理方式以应用内隐私政策为准。
 
 Copyright © 2026 Ray Chen (Rayawa). All rights reserved. 备案域名：`rayawa.top`，京ICP备2025153453号。
+
+## 文档导航
+
+仓库约定见 [AGENTS.md](AGENTS.md)，模块边界见 [架构说明](docs/architecture/overview.md)，翻译见页首语言入口。代理计划与执行报告不保存在仓库中。

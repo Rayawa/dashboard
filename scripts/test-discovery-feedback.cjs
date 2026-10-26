@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Run with DevEco's Node.js. Native visuals still require the device checks in DISCOVERY.md.
+// Run with DevEco's Node.js. Native visuals still require device verification.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -7,7 +7,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const studio = process.env.DEVECO_STUDIO_HOME || path.join(os.homedir(), 'Applications/DevEco-Studio.app');
 const ts = require(path.join(studio, 'Contents/tools/hvigor/hvigor-ohos-plugin/node_modules/typescript'));
-const root = path.resolve(__dirname, '../entry/src/main/ets/common');
+const root = path.resolve(__dirname, '../entry/src/main/ets');
 let count = 0;
 function test(name, run) { run(); count++; console.log(`PASS ${name}`); }
 function load(file, globals) {
@@ -33,12 +33,12 @@ const globals = {
   setTimeout: (callback, ms) => { const id = ++nextTimer; timers.set(id, { callback, at: now + ms }); return id; },
   clearTimeout: id => timers.delete(id),
   require: name => {
-    if (name === './constants') return { MIN_PRESS_FEEDBACK_MS: 140, STORAGE_KEY_VIBRATION_LEVEL: 'vibrationLevel', DEFAULT_VIBRATION_LEVEL: 1 };
-    if (name === './vibration') return { vibration: { dotVibration: () => vibrations++ } };
+    if (name.endsWith('/constants')) return { MIN_PRESS_FEEDBACK_MS: 140, STORAGE_KEY_VIBRATION_LEVEL: 'vibrationLevel', DEFAULT_VIBRATION_LEVEL: 1 };
+    if (name.endsWith('/vibration')) return { vibration: { dotVibration: () => vibrations++ } };
     throw new Error(`Unexpected import: ${name}`);
   },
 };
-const { DiscoveryInteraction } = load('DiscoveryInteraction.ets', globals);
+const { DiscoveryInteraction } = load('ui/interaction/DiscoveryInteraction.ets', globals);
 test('UIContext drives press and release animation', () => {
   let animations = 0;
   const state = new DiscoveryInteraction({ animateTo: (options, update) => {
@@ -70,11 +70,11 @@ test('keyboard activation respects vibration setting', () => {
   const before = vibrations; level = 0; state.activate('key'); assert.equal(vibrations, before);
   level = 1; state.activate('key'); assert.equal(vibrations, before + 1); state.dispose();
 });
-const styles = load('DiscoveryTheme.ets', {
+const styles = load('ui/theme/DiscoveryTheme.ets', {
   $r: name => name,
   require: name => {
     if (name === '@kit.UIDesignKit') return { hdsEffect: { PointLightIlluminatedType: { BORDER_CONTENT: 1 } } };
-    if (name === './visualEffects') return { pressVisualEffect: pressed => ({ pressed }), pressLightFieldFilter: pressed => ({ pressed }) };
+    if (name.endsWith('/visualEffects')) return { pressVisualEffect: pressed => ({ pressed }), pressLightFieldFilter: pressed => ({ pressed }) };
     throw new Error(`Unexpected import: ${name}`);
   },
 });
