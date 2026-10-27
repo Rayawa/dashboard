@@ -144,4 +144,4 @@ The back end's runtime routes are authoritative. See `API.md`, `API_DOCS.md`, an
 
 Market data is collected from the internet and is provided for reference only; its accuracy, completeness, and authenticity are not guaranteed. The app uses device information to construct its request User-Agent and anonymous runtime telemetry. A username explicitly set by the user is sent with submission requests. Refer to the in-app privacy policy for details.
 
-Copyright © 2026 Ray Chen (Rayawa). All rights reserved. Filing domain: `rayawa.top`; ICP filing: 京ICP备2025153453号.
+Copyright © 2026. All rights reserved.

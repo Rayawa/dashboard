@@ -1,177 +1,34 @@
-# Dashboard应用看板
+# dashboard
 
-[简体中文](README.md) · [English](docs/i18n/README.en.md) · [Français](docs/i18n/README.fr.md)
+English | [简体中文](README_zh.md)
 
-Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过仓库后端提供的 `/api/v0` 接口查询 SDK、版本、分类、评分等公开应用信息，并保留 S 站 ArkWeb 入口。
+A native HarmonyOS client for browsing application-market data, trends and saved collections.
 
-- 包名：`top.rayawa.dashboard`
-- 版本：`3.2.0`
-- 构建号：`30200001`
-- 目标版本：`26.0.0`（HarmonyOS 7 / API 26）；最低兼容版本：`6.0.0(20)`（API 20）
-- 设备：phone、tablet、2in1
-- 当前开发分支：`v3.0.0(20)`
+## Overview
 
-## 3.0.0 界面结构
+Dashboard presents market summaries, application/developer search, filtered tables, details, trend charts and collections. Native pages share an API/cache layer; an ArkWeb tab provides access to the related web service. The backend is an external dependency and is not implemented in this repository.
 
-主页面使用 `HdsNavigation`，子页面使用 `HdsNavDestination`，五个主页面由固定标题栏的 `HdsTabs` 串联；底部栏采用系统浮动材质样式：
+## Technology and Dependencies
 
-1. **S站**：主界面显示后在空闲阶段预热并缓存 ArkWeb 页面，支持当前网页分享、碰一碰与隔空传送；网页使用独立视口滚动，使站内悬浮详情始终显示在当前视图。
-2. **首页**：明确展示“应用总数 = 应用 + 元服务”，宽屏将信息、状态和最近收录内容左右排列。
-3. **收藏**：位于首页与详情之间，分段切换应用／开发者；标题栏打开管理页，支持跨分类选择与批量取消收藏。
-4. **详情**：标题栏中固定显示概况/总表切换条；搜索通过共享元素展开，总表支持类型及字段筛选、排序和分页。
-5. **我的**：依次展示 AppIcon、中英文名称、设置、更多栏目、版本/版权/备案信息；教程仅保留在此页入口，避免与标题栏重复；“联系我们”使用可在遮罩点击后关闭的半模态页面。
+ArkTS, ArkUI/HDS, OHPM and Hvigor. The build template targets SDK 26.0.0 with API 20 compatibility. Runtime features use HarmonyOS platform APIs; tests use Hypium/Hamock. Access to the configured market API is required for live data.
 
-应用列表、搜索结果和系统分享入口都使用同一公用详情模板：
+## Repository Structure
 
-```text
-查找应用 → API 加载（显示加载状态）→ 注入数据 → 原生详情模板
-```
+- `entry/src/main/ets/` — ArkTS application code
+- `entry/src/main/resources/` — resources and routes
+- `AppScope/` — application metadata
+- `build-profile.example.json5` — build configuration template
+- `oh-package.json5` — package dependencies
+- `entry/src/main/ets/domain/` — business rules
+- `entry/src/main/ets/services/` — API, cache and device integrations
+- `entry/src/main/ets/pages/` — main tabs and business screens
+- `docs/` — architecture, development and translations
+- `scripts/` — build and regression checks
 
-详情页包含应用概要、紧凑的“标签＋文字”信息区、截图、评分趋势、应用介绍和新版特性；趋势图默认铺满容器，支持触摸选点、双指缩放和单指横移。详情页分享会生成带应用图标的 S 站详情卡片。
+## Quick Start
 
-跨设备接续会保存当前主标签、详情子视图、原生详情目标和滚动位置；目标设备统一恢复 `pages/Dashboard`，再导航至对应标签或详情位置。为避免新旧状态结构不兼容，只有 3.0.0 及以上版本允许接续。
+1. Open the repository root in DevEco Studio with the SDK required by `build-profile.example.json5`.
+2. Copy that template to `build-profile.json5`, restore OHPM dependencies and configure signing locally if installing on a device.
+3. Select the `entry` module and a compatible device/emulator, then build and run from the IDE. Keep certificates and machine-specific paths outside version control.
 
-首页和详情栏目支持顶部下拉刷新；详情栏目的搜索按钮固定显示在标题栏，并与其他导航页使用相同的高级材质。S站标题栏可实时读取当前 ArkWeb 地址进行系统分享，碰一碰与隔空传送也会发送当前页面；站内详情弹窗打开时，系统返回键或侧滑返回会优先关闭弹窗。再次点击 S站标签返回 S站首页。
-
-## 3.2.0
-
-新增口碑榜摘要与完整榜单，支持报告窗口、净样本门槛与两种得分排序。详情分块加载、截图窗口化、折线图线性绘制和按帧调度；搜索按页展示，总表使用懒加载与稳定行数据。优化启动、后台任务、滚动接续与缓存等待。完整用户更新日志内容见 `entry/src/main/ets/config/updateLogs.ets`。
-
-桌面回归：`node scripts/test-performance.cjs` 与 `node scripts/test-discovery-feedback.cjs`。HAP 构建：`bash scripts/build.sh debug`；桌面算法验证不代替真机帧率与GPU分析。
-
-## 数据、缓存与弱网策略
-
-所有原生业务页面统一使用 `services/api/MarketApi.ets`，不在页面内直接拼接 HTTP 请求；全部 API 请求都携带统一的应用 User-Agent。
-
-- 首页缓存 5 分钟，列表缓存 2 分钟，详情与图表缓存 30 分钟。
-- 优先读取有容量限制的进程内缓存，再读取本地文件；网络成功结果不等待文件缓存提交。
-- 详情及其历史指标可先显示30天内的旧缓存，并合并后台更新；其他接口过期后请求网络，失败时回退到可用旧缓存。
-- 页面会明确显示“离线缓存”状态和缓存时间，避免把旧数据误认为实时结果。
-- 投稿接口不写缓存；已有应用的后台更新会绕过新鲜缓存。
-- 仅缓存业务成功且包含对象或数组数据的响应；失败响应不会覆盖成功缓存，历史失败缓存也不会用于回退。
-- 相同请求会合并进行中的网络访问；强制刷新与普通读取分别处理，避免刷新复用旧请求。
-- 文件读写、容量统计与清理均使用异步接口。API 缓存延后维护，按文件元数据删除过期和遗留临时文件，并按保存时间淘汰最旧数据，容量预算为 32 MiB；ArkWeb 缓存不计入该 API 预算。
-- 缓存先写临时文件再替换；清除缓存会使此前请求的缓存写入失效，避免旧请求结束后恢复已清理数据。
-- “清除缓存”会删除 API 文件缓存、ArkWeb 存储与 Cookie，同时保留用户名和设置。
-- “我的 → 设置 → 清除缓存”右侧会显示缓存文件总大小，15秒内复用统计结果。
-
-3.1.1 起，下载量、应用数量、字节大小与趋势图计数直接显示原始数值；首页每日最高下载量排行会按应用去重，保留最新日期的记录。
-
-3.2.0 起，图表坐标轴使用简洁单位，日期分行显示，图例按可用宽度换行；下载量详情及应用字段仍保留精确值，百分比最多显示两位小数，非零极小占比标为“小于0.01%”。
-
-## 错误处理与日志
-
-- 文件、窗口、网络、PromptAction、分享会话及可选设备能力调用均提供 `try/catch` 或 Promise rejection fallback。
-- Toast 统一通过 `ui/feedback/safeUi.ets` 显示；UIContext 暂不可用时记录日志且不打断主流程。
-- `console` 日志统一为 `[Dashboard][模块路径][级别]` 前缀，便于按模块和严重级别检索。
-- 智感握持先检查 `SystemCapability.MultimodalAwareness.Motion`；不支持时复位本地状态并保持普通按钮布局。
-- 系统分享默认缩略图和振动效果能力会在首次使用后复用结果，避免同一会话内重复读取资源或查询设备能力。
-
-## 设置与设备能力
-
-“我的 → 设置”可保存用户名、振动强度、光场视效和沉浸式材质等级。设置启动时会从 Preferences 水合到 `AppStorage`，后续读取使用进程内缓存；各项写入仍会持久化到本地。
-
-- 用户名会随投稿请求提交；留空时由设备名称代替。
-- 振动强度提供关闭、灵动和硬朗三档；没有振动硬件的设备不显示该项。
-- 光场视效提供暗淡、明亮和高亮三档。高亮依赖 API 24 的 HDR 合成能力，当前 API 23 或不支持全局 HDR 的设备会安全回退到明亮。
-- 应用声明网络、网络状态、HDR 亮度、手势检测和振动权限；可选能力均有不可用时的降级路径。
-
-## 响应式与无障碍
-
-页面按窗口宽度使用统一断点：
-
-- 小屏：`< 600vp`
-- 中屏：`600vp–839vp`
-- 大屏：`≥ 840vp`
-
-统计卡片、图表和详情字段通过 `GridRow/GridCol` 自动改变列数；应用列表在窄屏上保留横向滚动。交互控件、图表、图片、状态提示和主要内容均绑定中文 `accessibilityText`。
-
-颜色统一维护在：
-
-- `entry/src/main/resources/base/element/color.json`
-- `entry/src/main/resources/dark/element/color.json`
-
-新增的 `v3_*` 色彩全部提供浅色和深色版本；S站 ArkWeb 占位背景在浅色模式使用 `#EEF6FE`，深色模式使用 `#030712`。
-
-## 触觉反馈、重要提示与半模态交互
-
-应用的可操作控件使用 `utils/device/vibration.ets` 统一提供触觉反馈，并尊重“我的 → 设置”中的三档选择：关闭、灵动和硬朗。普通按钮、筛选、图表选择、分页和网页操作使用短振动；标题栏、系统返回和侧滑返回使用带短时间去重的返回振动。
-
-- 首次启动会在主界面容器就绪后显示不可绕过的重要提示。用户必须同意，或选择“取消并退出”。在未同意前尝试通过系统返回、侧滑、拖拽或遮罩关闭，会保持提示显示，并以长振动配合“请先阅读并同意重要提示！”提示。
-- 后续从“我的 → 重要提示”重新查看时，可使用关闭按钮、系统返回、侧滑或遮罩关闭；这些正常关闭动作会给出短振动。
-- “联系我们”使用 `bindSheet` 的 `enableOutsideInteractive: false`。在平板默认跟手样式下，遮罩会拦截底层页面操作；点击 sheet 外侧只会先关闭 sheet。
-- 清理缓存、撤销隐私同意等确认操作及其取消选项也提供触觉反馈。
-
-## 关键目录
-
-```text
-entry/src/main/ets/
-├── abilities/
-├── pages/
-│   ├── Dashboard.ets
-│   ├── main/          SStationPage, HomePage, CollectionPage, AppsPage, MyPage
-│   ├── collection/    CollectionManagementPage
-│   ├── search/
-│   ├── detail/
-│   ├── discovery/
-│   ├── settings/
-│   ├── web/
-│   └── startup/
-├── components/        common, apps, charts, collection, detail, discovery, home, ...
-├── models/
-├── domain/            apps, charts, collection, discovery, rankings, sdk, search
-├── services/          api, cache, sharing, storage, telemetry
-├── state/
-├── config/
-├── ui/                animation, charts, feedback, icons, interaction, navigation, theme
-└── utils/             device, diagnostics, format, links, runtime, url, web
-
-docs/                  architecture, i18n
-scripts/               build and verification tools
-```
-
-更完整的模块边界、状态约束、生命周期和资源释放规则见 [ARCHITECTURE.md](docs/architecture/overview.md)。
-
-调试构建使用 `default` product 与 `debug` 模式；发布构建使用 `release` product、`release` 模式及同名签名方案。签名材料保存在仓库外，由本机配置引用。
-
-本机快速构建：`./scripts/build.sh debug` 生成调试 HAP，`./scripts/build.sh release` 生成已签名发布 APP。脚本会同时选择正确的 product 与构建模式。
-
-## API 对照
-
-客户端使用的主要接口：
-
-- `GET /api/v0/market_info`
-- `GET /api/v0/apps/list/{page}`
-- `GET /api/v0/apps/app_id/{app_id}`
-- `GET /api/v0/apps/pkg_name/{pkg_name}`
-- `GET /api/v0/apps/metrics/{pkg_name}`
-- `GET /api/v0/rankings/rate_history?pkg_name={pkg_name}`
-- `GET /api/v0/charts/rating`
-- `GET /api/v0/charts/min_sdk`
-- `GET /api/v0/charts/target_sdk`
-- `GET /api/v0/charts/api_history`
-- `POST /api/v0/submit`
-
-后端的运行时路由是最终权威；完整说明见 `harmony_get_market` 仓库内的 `API.md`、`API_DOCS.md` 和 `/openapi.json`。
-
-## 开发与验证
-
-1. 使用支持 HarmonyOS SDK 26.0.0 的 DevEco Studio 打开项目。
-2. 安装 HarmonyOS SDK 26.0.0；构建时保持最低兼容版本为 API 20。
-3. 检查签名配置是否指向本机有效文件；仓库内的其他开发者绝对路径不能直接使用。
-4. 选择 phone、tablet 或 2in1 目标进行构建和真机/模拟器验证。
-5. 重点验证：弱网回退、缓存清除、深浅色、600/840vp 断点、唯一分享入口、S站与详情页三类分享、接续位置、表格滚动/页码跳转和无障碍播报。
-
-发布前应在 API 20 至 API 26 的目标设备上验证安装、启动、主标签、网页、分享与接续。
-6. 验证触觉反馈设置、首次重要提示的关闭拦截及长振动、后续查看时的正常关闭振动，以及平板上“联系我们”sheet 的遮罩拦截和外侧点击关闭。
-7. 在支持与不支持 HDR、振动硬件的设备上分别检查设置项显示、降级行为与高亮档提示。
-
-## 隐私与说明
-
-市场数据收集自网络，不保证来源的准确性、完整性和真实性，仅供参考。应用会使用设备信息生成请求 User-Agent 和匿名运行遥测；用户主动设置的用户名会随投稿请求发送。具体处理方式以应用内隐私政策为准。
-
-Copyright © 2026 Ray Chen (Rayawa). All rights reserved. 备案域名：`rayawa.top`，京ICP备2025153453号。
-
-## 文档导航
-
-仓库约定见 [AGENTS.md](AGENTS.md)，模块边界见 [架构说明](docs/architecture/overview.md)，翻译见页首语言入口。代理计划与执行报告不保存在仓库中。
+Check the service endpoint configuration before loading market data. For a terminal debug build, run `bash scripts/build.sh debug`. The architecture is described in [docs/architecture/overview.md](docs/architecture/overview.md).

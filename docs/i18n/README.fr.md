@@ -144,4 +144,4 @@ Les routes réellement exposées par le back-end font foi. Consultez `API.md`, `
 
 Les données du marché sont collectées sur Internet et fournies à titre indicatif ; leur exactitude, leur exhaustivité et leur authenticité ne sont pas garanties. L’application utilise des informations sur l’appareil pour construire le User-Agent des requêtes et une télémétrie d’exécution anonyme. Un nom d’utilisateur explicitement défini est transmis avec les demandes de soumission. Consultez la politique de confidentialité intégrée pour plus de détails.
 
-Copyright © 2026 Ray Chen (Rayawa). Tous droits réservés. Domaine déclaré : `rayawa.top` ; enregistrement ICP : 京ICP备2025153453号.
+Copyright © 2026. All rights reserved.

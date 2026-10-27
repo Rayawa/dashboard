@@ -59,10 +59,10 @@ for (const match of moduleText.matchAll(/"srcEntry":\s*"([^"\n]+)"/g)) {
   assert.ok(fs.existsSync(path.resolve(root, 'entry/src/main', match[1])), `Missing Ability ${match[1]}`);
 }
 for (const file of fs.readdirSync(root).filter(file => file.endsWith('.md'))) {
-  assert.ok(['README.md', 'AGENTS.md'].includes(file), `Classify root document: ${file}`);
+  assert.ok(['README.md', 'README_zh.md', 'AGENTS.md'].includes(file), `Classify root document: ${file}`);
 }
 assert.ok(!fs.existsSync(path.join(root, '.deveco/plans')), 'Do not retain generated agent plans under .deveco/plans');
-for (const file of [path.join(root, 'README.md'), path.join(root, 'AGENTS.md'), ...files(path.join(root, 'docs'))].filter(file => file.endsWith('.md'))) {
+for (const file of [path.join(root, 'README.md'), path.join(root, 'README_zh.md'), path.join(root, 'AGENTS.md'), ...files(path.join(root, 'docs'))].filter(file => file.endsWith('.md'))) {
   for (const match of fs.readFileSync(file, 'utf8').matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
     const target = match[1].split('#')[0];
     if (!target || /^[a-z]+:/i.test(target)) continue;
