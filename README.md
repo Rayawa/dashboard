@@ -27,7 +27,7 @@ Main pages use `HdsNavigation`; subpages use `HdsNavDestination`. Five primary p
 Application lists, search results and system-share entry points use one shared detail template:
 
 ```text
-查找应用 → API 加载（显示加载状态）→ 注入数据 → 原生详情模板
+Find app → API loading (with loading state) → Inject data → Native detail template
 ```
 
 Details include an application summary, compact icon/text information, screenshots, rating trends, description and release changes. Trends fill their container and support touch selection, pinch zoom and one-finger panning. Sharing generates an S Site card with the application icon.
