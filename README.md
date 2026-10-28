@@ -1,4 +1,4 @@
-# Dashboard Application Dashboard
+# Dashboard Application Viewer
 
 English | [简体中文](docs/i18n/README_zh.md)
 
