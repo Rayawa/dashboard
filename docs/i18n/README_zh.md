@@ -3,7 +3,7 @@
 [English](../../README.md) | 简体中文
 
 
-[简体中文](../../README.md) · [English](README.en.md) · [Français](README.fr.md)
+[简体中文](README_zh.md) · [English](README.en.md) · [Français](README.fr.md)
 
 Dashboard应用看板是 `harmony_get_market` 的原生客户端。应用通过仓库后端提供的 `/api/v0` 接口查询 SDK、版本、分类、评分等公开应用信息，并保留 S 站 ArkWeb 入口。
 

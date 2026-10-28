@@ -1,6 +1,6 @@
 # Dashboard d’applications
 
-[简体中文](../../README.md) · [English](README.en.md) · [Français](README.fr.md)
+[简体中文](README_zh.md) · [English](README.en.md) · [Français](README.fr.md)
 
 Dashboard est le client natif de `harmony_get_market`. Il consulte les informations publiques de SDK, de version, de catégorie et de notation via les API `/api/v0` du back-end tout en conservant l’accès ArkWeb au site S.
 
@@ -144,4 +144,4 @@ Les routes réellement exposées par le back-end font foi. Consultez `API.md`, `
 
 Les données du marché sont collectées sur Internet et fournies à titre indicatif ; leur exactitude, leur exhaustivité et leur authenticité ne sont pas garanties. L’application utilise des informations sur l’appareil pour construire le User-Agent des requêtes et une télémétrie d’exécution anonyme. Un nom d’utilisateur explicitement défini est transmis avec les demandes de soumission. Consultez la politique de confidentialité intégrée pour plus de détails.
 
-Copyright © 2026. All rights reserved.
+Copyright © 2026 Équipe de maintenance. Tous droits réservés. Domaine déclaré : `rayawa.top` ; enregistrement ICP : 京ICP备2025153453号.

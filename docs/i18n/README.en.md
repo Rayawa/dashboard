@@ -1,6 +1,6 @@
 # Dashboard Application Viewer
 
-[简体中文](../../README.md) · [English](README.en.md) · [Français](README.fr.md)
+[简体中文](README_zh.md) · [English](README.en.md) · [Français](README.fr.md)
 
 Dashboard Application Viewer is the native client for `harmony_get_market`. It queries public SDK, version, category, and rating information through the back end's `/api/v0` endpoints while retaining the ArkWeb entry to the S Site.
 
@@ -144,4 +144,4 @@ The back end's runtime routes are authoritative. See `API.md`, `API_DOCS.md`, an
 
 Market data is collected from the internet and is provided for reference only; its accuracy, completeness, and authenticity are not guaranteed. The app uses device information to construct its request User-Agent and anonymous runtime telemetry. A username explicitly set by the user is sent with submission requests. Refer to the in-app privacy policy for details.
 
-Copyright © 2026. All rights reserved.
+Copyright © 2026 Project maintainers. All rights reserved. Filing domain: `rayawa.top`; ICP filing: 京ICP备2025153453号.

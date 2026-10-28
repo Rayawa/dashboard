@@ -3,7 +3,7 @@
 English | [简体中文](docs/i18n/README_zh.md)
 
 
-[Simplified Chinese](README.md) · [English](docs/i18n/README.en.md) · [Français](docs/i18n/README.fr.md)
+[Simplified Chinese](docs/i18n/README_zh.md) · [English](docs/i18n/README.en.md) · [Français](docs/i18n/README.fr.md)
 
 Dashboard is a native client for `harmony_get_market`. It queries public application information—SDK, version, category, rating and other fields—through the backend's `/api/v0` interfaces, while retaining an ArkWeb entry for S Site.
 
