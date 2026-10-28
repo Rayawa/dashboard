@@ -1,6 +1,6 @@
 # dashboard
 
-[English](README.md) | 简体中文
+[English](../../README.md) | 简体中文
 
 用于浏览应用市场数据、趋势与收藏的 HarmonyOS 原生客户端。
 
@@ -31,4 +31,4 @@ ArkTS、ArkUI/HDS、OHPM、Hvigor。构建模板目标 SDK 为 26.0.0，最低�
 2. 将模板复制为 `build-profile.json5`，恢复 OHPM 依赖；如需真机安装，在本地配置签名。
 3. 选择 `entry` 模块和兼容设备或模拟器，在 IDE 中构建运行。证书及机器路径不进入版本控制。
 
-加载市场数据前检查服务地址配置。终端调试构建使用 `bash scripts/build.sh debug`。架构说明见 [docs/architecture/overview.md](docs/architecture/overview.md)。
+加载市场数据前检查服务地址配置。终端调试构建使用 `bash scripts/build.sh debug`。架构说明见 [docs/architecture/overview.md](../architecture/overview.md)。

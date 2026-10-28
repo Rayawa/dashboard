@@ -1,6 +1,6 @@
 # dashboard
 
-English | [简体中文](README_zh.md)
+English | [简体中文](docs/i18n/README_zh.md)
 
 A native HarmonyOS client for browsing application-market data, trends and saved collections.
 
